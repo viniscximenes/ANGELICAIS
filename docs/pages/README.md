@@ -33,13 +33,13 @@ Quando a página justificar, adicionar:
 
 ## Índice de páginas
 
-| Arquivo                          | Página | Rota      | Status     |
-| -------------------------------- | ------ | --------- | ---------- |
-| [`login.md`](./login.md)         | Login  | `/login`  | documentada |
-| [`pagina-02.md`](./pagina-02.md) | [a definir] | — | rascunho |
-| [`pagina-03.md`](./pagina-03.md) | [a definir] | — | rascunho |
-| [`pagina-04.md`](./pagina-04.md) | [a definir] | — | rascunho |
-| [`pagina-05.md`](./pagina-05.md) | [a definir] | — | rascunho |
+| Arquivo                          | Página           | Rota     | Status      |
+| -------------------------------- | ---------------- | -------- | ----------- |
+| [`login.md`](./login.md)         | Login            | `/login` | documentada |
+| [`d-1.md`](./d-1.md)             | D-1 (Dia anterior) | `/d-1` | documentada |
+| [`pagina-03.md`](./pagina-03.md) | [a definir]      | —        | rascunho    |
+| [`pagina-04.md`](./pagina-04.md) | [a definir]      | —        | rascunho    |
+| [`pagina-05.md`](./pagina-05.md) | [a definir] | —      | rascunho    |
 
 ## Status possíveis
 
