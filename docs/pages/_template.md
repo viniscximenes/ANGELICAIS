@@ -20,10 +20,30 @@
 [Button, Card, Input, etc.]
 
 ## Estados
-- Loading:
-- Erro:
-- Vazio:
-- Sucesso:
+
+### Loading
+[Como a página se comporta enquanto carrega dados]
+
+### Erro
+[Mensagens, posicionamento, recuperação]
+
+### Vazio
+[O que aparece quando não há dados]
+
+### Sucesso
+[Confirmação visual ou transição]
+
+## Animações de entrada
+[Opcional — coreografia de entrada via Framer Motion, com timings em ms]
+
+## Acessibilidade
+[Opcional — foco inicial, ordem de tab, atalhos de teclado, roles ARIA]
+
+## Responsividade
+[Opcional — comportamento em desktop / tablet / mobile]
 
 ## Observações
-[Qualquer coisa específica]
+[Qualquer coisa específica que não cabe nas seções acima]
+
+## Versão
+[ex: 1.0 — criada antes da implementação]
