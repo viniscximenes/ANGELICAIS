@@ -45,6 +45,51 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+
+    /* === Font mono === */
+    --font-mono: var(--font-mono);
+
+    /* === Typography scale === */
+    --text-display: 3rem;
+    --text-h1: 1.875rem;
+    --text-h2: 1.25rem;
+    --text-h3: 1rem;
+    --text-body: 0.875rem;
+    --text-small: 0.75rem;
+    --text-mono: 0.875rem;
+    --text-mono-sm: 0.75rem;
+
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+
+    --leading-tight: 1.1;
+    --leading-snug: 1.3;
+    --leading-normal: 1.5;
+
+    --tracking-tight: -0.02em;
+    --tracking-normal: 0;
+
+    /* === Semantic colors (aliases) === */
+    --color-success: var(--success);
+    --color-success-bg: var(--success-bg);
+    --color-success-border: var(--success-border);
+    --color-warning: var(--warning);
+    --color-warning-bg: var(--warning-bg);
+    --color-warning-border: var(--warning-border);
+    --color-danger: var(--danger);
+    --color-danger-bg: var(--danger-bg);
+    --color-danger-border: var(--danger-border);
+
+    /* === Elevation (aliases) === */
+    --elevation-1-bg: var(--elevation-1-bg);
+    --elevation-1-border: var(--elevation-1-border);
+    --elevation-2-bg: var(--elevation-2-bg);
+    --elevation-2-border: var(--elevation-2-border);
+    --elevation-3-bg: var(--elevation-3-bg);
+    --elevation-3-border: var(--elevation-3-border);
+    --glow-accent: var(--glow-accent);
+    --glow-accent-strong: var(--glow-accent-strong);
 }
 
 :root {
@@ -80,6 +125,44 @@
     --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
     --sidebar-border: oklch(0.925 0.005 214.3);
     --sidebar-ring: oklch(0.723 0.014 214.4);
+
+    /* === Semantic colors === */
+    --success: oklch(0.72 0.17 152);
+    --success-bg: oklch(0.72 0.17 152 / 0.12);
+    --success-border: oklch(0.72 0.17 152 / 0.3);
+
+    --warning: oklch(0.8 0.15 85);
+    --warning-bg: oklch(0.8 0.15 85 / 0.12);
+    --warning-border: oklch(0.8 0.15 85 / 0.3);
+
+    --danger: oklch(0.65 0.22 25);
+    --danger-bg: oklch(0.65 0.22 25 / 0.12);
+    --danger-border: oklch(0.65 0.22 25 / 0.3);
+
+    /* === Elevation === */
+    --elevation-1-bg: oklch(0.218 0.008 223.9);
+    --elevation-1-border: oklch(1 0 0 / 0.06);
+
+    --elevation-2-bg: oklch(0.255 0.009 223);
+    --elevation-2-border: oklch(1 0 0 / 0.1);
+
+    --elevation-3-bg: oklch(0.29 0.01 223);
+    --elevation-3-border: oklch(1 0 0 / 0.14);
+
+    --glow-accent: oklch(0.398 0.195 277.366 / 0.15);
+    --glow-accent-strong: oklch(0.398 0.195 277.366 / 0.3);
+
+    /* === Motion === */
+    --ease-out-soft: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out-smooth: cubic-bezier(0.65, 0, 0.35, 1);
+
+    --motion-fast: 200ms;
+    --motion-base: 300ms;
+    --motion-slow: 500ms;
+
+    /* === Special effects === */
+    --grain-opacity: 0.03;
 }
 
 .dark {
@@ -114,6 +197,32 @@
     --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.56 0.021 213.5);
+
+    /* === Semantic colors === */
+    --success: oklch(0.72 0.17 152);
+    --success-bg: oklch(0.72 0.17 152 / 0.12);
+    --success-border: oklch(0.72 0.17 152 / 0.3);
+
+    --warning: oklch(0.8 0.15 85);
+    --warning-bg: oklch(0.8 0.15 85 / 0.12);
+    --warning-border: oklch(0.8 0.15 85 / 0.3);
+
+    --danger: oklch(0.65 0.22 25);
+    --danger-bg: oklch(0.65 0.22 25 / 0.12);
+    --danger-border: oklch(0.65 0.22 25 / 0.3);
+
+    /* === Elevation === */
+    --elevation-1-bg: oklch(0.218 0.008 223.9);
+    --elevation-1-border: oklch(1 0 0 / 0.06);
+
+    --elevation-2-bg: oklch(0.255 0.009 223);
+    --elevation-2-border: oklch(1 0 0 / 0.1);
+
+    --elevation-3-bg: oklch(0.29 0.01 223);
+    --elevation-3-border: oklch(1 0 0 / 0.14);
+
+    --glow-accent: oklch(0.398 0.195 277.366 / 0.15);
+    --glow-accent-strong: oklch(0.398 0.195 277.366 / 0.3);
 }
 
 @layer base {
