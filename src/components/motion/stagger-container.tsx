@@ -6,18 +6,23 @@ import type { ReactNode } from "react";
 interface StaggerContainerProps {
   children: ReactNode;
   staggerDelay?: number;
+  initialDelay?: number;
   className?: string;
 }
 
 export function StaggerContainer({
   children,
   staggerDelay = 0.06,
+  initialDelay = 0,
   className,
 }: StaggerContainerProps) {
   const containerVariants: Variants = {
     hidden: {},
     visible: {
-      transition: { staggerChildren: staggerDelay },
+      transition: {
+        staggerChildren: staggerDelay,
+        delayChildren: initialDelay,
+      },
     },
   };
 
