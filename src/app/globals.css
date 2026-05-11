@@ -235,4 +235,166 @@
   html {
     @apply font-sans;
     }
+
+  /* === Grain texture === */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
+  }
+
+  /* === Default transitions === */
+  *, *::before, *::after {
+    transition-timing-function: var(--ease-out-soft);
+    transition-duration: var(--motion-base);
+  }
+}
+
+@layer components {
+  /* === Typography utilities === */
+  .ds-display {
+    font-family: var(--font-mono);
+    font-size: var(--text-display);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .ds-h1 {
+    font-family: var(--font-sans);
+    font-size: var(--text-h1);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .ds-h2 {
+    font-family: var(--font-sans);
+    font-size: var(--text-h2);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--leading-snug);
+  }
+
+  .ds-h3 {
+    font-family: var(--font-sans);
+    font-size: var(--text-h3);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--leading-snug);
+  }
+
+  .ds-body {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    font-weight: var(--font-weight-regular);
+    line-height: var(--leading-normal);
+  }
+
+  .ds-small {
+    font-family: var(--font-sans);
+    font-size: var(--text-small);
+    font-weight: var(--font-weight-regular);
+    line-height: var(--leading-normal);
+  }
+
+  .ds-mono {
+    font-family: var(--font-mono);
+    font-size: var(--text-mono);
+    font-weight: var(--font-weight-regular);
+  }
+
+  .ds-mono-sm {
+    font-family: var(--font-mono);
+    font-size: var(--text-mono-sm);
+    font-weight: var(--font-weight-regular);
+  }
+
+  /* === Elevation utilities === */
+  .elevation-1 {
+    background: var(--elevation-1-bg);
+    border: 1px solid var(--elevation-1-border);
+  }
+
+  .elevation-2 {
+    background: var(--elevation-2-bg);
+    border: 1px solid var(--elevation-2-border);
+  }
+
+  .elevation-3 {
+    background: var(--elevation-3-bg);
+    border: 1px solid var(--elevation-3-border);
+    box-shadow: 0 0 60px var(--glow-accent);
+  }
+
+  .elevation-glow {
+    background: var(--elevation-2-bg);
+    border: 1px solid var(--elevation-2-border);
+    box-shadow: 0 0 40px var(--glow-accent-strong);
+  }
+
+  /* === Status utilities === */
+  .status-success {
+    color: var(--success);
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+  }
+
+  .status-warning {
+    color: var(--warning);
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+  }
+
+  .status-danger {
+    color: var(--danger);
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-border);
+  }
+
+  .ds-text-success { color: var(--success); }
+  .ds-text-warning { color: var(--warning); }
+  .ds-text-danger  { color: var(--danger); }
+
+  /* === Decorative divider === */
+  .divider-gradient {
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--border),
+      transparent
+    );
+    border: none;
+  }
+
+  /* === Status dot with pulse === */
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    position: relative;
+  }
+
+  .status-dot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: inherit;
+    animation: pulse-ring 2s var(--ease-out-expo) infinite;
+  }
+
+  @keyframes pulse-ring {
+    0%   { transform: scale(1);   opacity: 0.6; }
+    100% { transform: scale(2.5); opacity: 0;   }
+  }
+
+  .status-dot--success { background: var(--success); }
+  .status-dot--warning { background: var(--warning); }
+  .status-dot--danger  { background: var(--danger);  }
 }
