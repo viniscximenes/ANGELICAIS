@@ -244,23 +244,22 @@ export function LoginForm() {
 
           <AnimatePresence initial={false}>
             {errorMessage && (
-              <StaggerItem className="mt-6">
-                <motion.div
-                  role="alert"
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
-                  className="status-danger ds-small flex items-center gap-2 rounded-md p-3"
-                >
-                  <IconAlertCircle
-                    size={16}
-                    aria-hidden="true"
-                    className="shrink-0"
-                  />
-                  <span>{errorMessage}</span>
-                </motion.div>
-              </StaggerItem>
+              <motion.div
+                key="error-alert"
+                role="alert"
+                initial={{ opacity: 0, y: -4, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -4, height: 0 }}
+                transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
+                className="status-danger ds-small mt-6 flex items-center gap-2 overflow-hidden rounded-md p-3"
+              >
+                <IconAlertCircle
+                  size={16}
+                  aria-hidden="true"
+                  className="shrink-0"
+                />
+                <span>{errorMessage}</span>
+              </motion.div>
             )}
           </AnimatePresence>
 

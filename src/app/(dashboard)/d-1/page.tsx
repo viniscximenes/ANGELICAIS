@@ -8,61 +8,49 @@ import { KpiCards } from "@/components/d-1/kpi-cards";
 import { MotivosSection } from "@/components/d-1/motivos-section";
 import { UploadSection } from "@/components/d-1/upload-section";
 import { PageTransition } from "@/components/motion/page-transition";
+import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { can } from "@/lib/auth/permissions";
 import { filterByUserEmail } from "@/lib/d1/filter-by-user";
 import { getD1Data } from "@/lib/google/d1";
-import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "D-1 — ANGELICAIS",
 };
 
-// Força revalidação a cada 5 minutos (cache do Next.js)
 export const revalidate = 300;
 
 export default async function D1Page() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");
   }
 
-  // Cruzamento: email do auth do supabase é {username}@interno.angelicais.app
-  // Convertemos pra email corporativo: {username}@alloha.com
-  const username = user.email?.split("@")[0] ?? "";
-  const corporateEmail = "samyrha.fenix@alloha.com"; // TODO: hack temporário pra preview
-
-  let d1Data;
-  try {
-    d1Data = await getD1Data();
-  } catch (err) {
-    console.error("[page d-1] erro em getD1Data:", err);
-    throw err;
+  // GESTOR não acessa /d-1 — será redirecionado para /gestor/d-1 (futuro)
+  if (user.profile.role === "GESTOR") {
+    redirect("/gestor/d-1");
   }
-  const userView = filterByUserEmail(d1Data, corporateEmail);
+
+  const d1Data = await getD1Data();
+  const userView = filterByUserEmail(d1Data, user.profile.emailCorporativo);
 
   return (
     <PageTransition>
-      <div
-        className="min-h-screen px-6 py-8 lg:px-12 lg:py-12"
-        suppressHydrationWarning
-      >
+      <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
         <div className="mx-auto max-w-7xl space-y-12">
           <D1Header horaReport={userView.horaReport} />
           <KpiCards operador={userView.operador} />
           <MotivosSection motivos={userView.motivos} />
           <ContratosSection contratos={userView.contratos} />
-          {/* TODO: quando criarmos roles, esta seção só deve renderizar
-              para users com permissão "manage_base" ou role gestor/admin */}
-          <EquipeSection
-            operadores={d1Data.consolidado.operadores}
-            equipe={d1Data.consolidado.equipe}
-          />
-          {/* TODO: quando criarmos roles, esta seção só deve renderizar
-              para users com permissão "manage_base" */}
-          <UploadSection />
+
+          {can(user.profile.role, "view_d1_team") && (
+            <EquipeSection
+              operadores={d1Data.consolidado.operadores}
+              equipe={d1Data.consolidado.equipe}
+            />
+          )}
+
+          {can(user.profile.role, "manage_base") && <UploadSection />}
         </div>
       </div>
     </PageTransition>
