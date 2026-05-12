@@ -24,7 +24,7 @@ export async function loginAction(
     }
 
     return { success: true };
-  } catch {
+  } catch (err) {
     return { success: false, error: "conexao" };
   }
 }
