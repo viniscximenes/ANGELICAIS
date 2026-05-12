@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { ContratosSection } from "@/components/d-1/contratos-section";
 import { D1Header } from "@/components/d-1/d1-header";
+import { EquipeSection } from "@/components/d-1/equipe-section";
 import { KpiCards } from "@/components/d-1/kpi-cards";
 import { MotivosSection } from "@/components/d-1/motivos-section";
 import { PageTransition } from "@/components/motion/page-transition";
@@ -60,6 +61,12 @@ export default async function D1Page() {
           <KpiCards operador={userView.operador} />
           <MotivosSection motivos={userView.motivos} />
           <ContratosSection contratos={userView.contratos} />
+          {/* TODO: quando criarmos roles, esta seção só deve renderizar
+              para users com permissão "manage_base" ou role gestor/admin */}
+          <EquipeSection
+            operadores={d1Data.consolidado.operadores}
+            equipe={d1Data.consolidado.equipe}
+          />
         </div>
       </div>
     </PageTransition>
