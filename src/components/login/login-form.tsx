@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import {
   IconAlertCircle,
   IconEye,
@@ -27,7 +26,6 @@ const LOCK_DURATION = 60;
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 export function LoginForm() {
-  const router = useRouter();
   const usernameRef = useRef<HTMLInputElement>(null);
 
   const [username, setUsername] = useState("");
@@ -83,25 +81,37 @@ export function LoginForm() {
     setLoading(true);
     setErrorMessage(null);
 
-    const result = await loginAction(username, password);
+    try {
+      const result = await loginAction(username, password);
 
-    if (result.success) {
-      router.push("/dashboard");
-      return;
-    }
+      // Se chegou aqui, é porque NÃO houve redirect (ou seja, deu erro)
+      if (result && !result.success) {
+        setLoading(false);
+        const next = attempts + 1;
+        setAttempts(next);
+        setErrorMessage(
+          result.error === "conexao"
+            ? "Não foi possível conectar. Tente novamente."
+            : "Usuário ou senha incorretos.",
+        );
+        if (next >= MAX_ATTEMPTS) {
+          setLockSeconds(LOCK_DURATION);
+        }
+        usernameRef.current?.focus();
+      }
+      // Em caso de sucesso, a página redireciona e o componente
+      // desmonta — não precisa setar loading=false
+    } catch (err) {
+      // NEXT_REDIRECT é o tipo especial de erro do Next quando
+      // redirect() é chamado. Não devemos tratar como erro real.
+      if (err instanceof Error && err.message === "NEXT_REDIRECT") {
+        throw err;
+      }
 
-    setLoading(false);
-    const next = attempts + 1;
-    setAttempts(next);
-    setErrorMessage(
-      result.error === "conexao"
-        ? "Não foi possível conectar. Tente novamente."
-        : "Usuário ou senha incorretos.",
-    );
-    if (next >= MAX_ATTEMPTS) {
-      setLockSeconds(LOCK_DURATION);
+      setLoading(false);
+      setErrorMessage("Não foi possível conectar. Tente novamente.");
+      console.error("[form] exception:", err);
     }
-    usernameRef.current?.focus();
   }
 
   const isDisabled = loading || lockSeconds > 0;
