@@ -1,4 +1,4 @@
-# D-1 — Resultado do dia anterior
+# D-1 — Consolidado
 
 ## Objetivo
 Página central do operador, mostra o consolidado do dia anterior em 
@@ -8,7 +8,9 @@ e detalhamento de motivos. Para gestores/admin: visão da equipe
 inteira, com upload de base CSV e exportação de tabela como imagem.
 
 ## Rota
-`/d-1` (com tabs internas: `?view=consolidado | tempo-logado | indisponibilidade`)
+`/d-1/consolidado`
+
+Nota: `/d-1` redireciona automaticamente para `/d-1/consolidado` (default).
 
 ## Quem acessa
 - **Operador comum:** vê apenas a zona pública (cards + detalhamento 
@@ -57,12 +59,12 @@ nos roles apropriados.
 - Título "D-1" em `ds-h1`
 - Subtítulo dinâmico abaixo: "Resultado consolidado · atualizado há X min" 
   em `ds-small text-muted-foreground`
-- Tabs de filtro no canto direito do header:
-  - **CONSOLIDADO** (ativa por padrão)
-  - **TEMPO LOGADO** (vazia, mostra estado "Em breve")
-  - **INDISPONIBILIDADE** (vazia, mostra estado "Em breve")
+- Tabs de navegação abaixo do header da página (Opção A do layout):
+  - **CONSOLIDADO** (rota atual, ativa)
+  - **TEMPO LOGADO** (link para `/d-1/tempo-logado`)
+  - **INDISPONIBILIDADE** (link para `/d-1/indisponibilidade`)
 
-### Tab CONSOLIDADO — estrutura
+  As tabs aparecem em TODAS as três sub-páginas da seção D-1.
 
 #### Bloco 1: Cards superiores
 

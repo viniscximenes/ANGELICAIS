@@ -36,7 +36,9 @@ Quando a página justificar, adicionar:
 | Arquivo                          | Página           | Rota     | Status      |
 | -------------------------------- | ---------------- | -------- | ----------- |
 | [`login.md`](./login.md)         | Login            | `/login` | documentada |
-| [`d-1.md`](./d-1.md)             | D-1 (Dia anterior) | `/d-1` | documentada |
+| [`d-1-consolidado.md`](./d-1-consolidado.md) | D-1 Consolidado | `/d-1/consolidado` | documentada |
+| [`d-1-tempo-logado.md`](./d-1-tempo-logado.md) | D-1 Tempo Logado | `/d-1/tempo-logado` | rascunho |
+| [`d-1-indisponibilidade.md`](./d-1-indisponibilidade.md) | D-1 Indisponibilidade | `/d-1/indisponibilidade` | rascunho |
 | [`pagina-03.md`](./pagina-03.md) | [a definir]      | —        | rascunho    |
 | [`pagina-04.md`](./pagina-04.md) | [a definir]      | —        | rascunho    |
 | [`pagina-05.md`](./pagina-05.md) | [a definir] | —      | rascunho    |

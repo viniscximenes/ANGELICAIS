@@ -20,7 +20,7 @@ export function D1Header({ horaReport }: D1HeaderProps) {
       <div className="flex flex-wrap items-baseline gap-3">
         <h1 className="ds-h1">D-1</h1>
         <span className="ds-mono-sm text-muted-foreground">
-          / dia anterior · consolidado
+          / dia atual · consolidado
         </span>
       </div>
       <div className="ds-small text-muted-foreground flex items-center gap-2">
