@@ -15,12 +15,17 @@ export function D1Header({ horaReport }: D1HeaderProps) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: EASE_OUT_EXPO }}
-      className="flex flex-col gap-2"
+      className="flex flex-col gap-3"
     >
-      <h1 className="ds-h1">D-1</h1>
+      <div className="flex flex-wrap items-baseline gap-3">
+        <h1 className="ds-h1">D-1</h1>
+        <span className="ds-mono-sm text-muted-foreground">
+          / dia anterior · consolidado
+        </span>
+      </div>
       <div className="ds-small text-muted-foreground flex items-center gap-2">
         <IconClock size={14} aria-hidden="true" />
-        <span>Resultado consolidado · atualizado às {horaReport}</span>
+        <span>Atualizado às {horaReport}</span>
       </div>
     </motion.div>
   );

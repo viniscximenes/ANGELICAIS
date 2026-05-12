@@ -37,10 +37,18 @@ export function ContratosSection({ contratos }: ContratosSectionProps) {
       transition={{ delay: 0.6, duration: 0.5, ease: EASE_OUT_EXPO }}
       className="space-y-6"
     >
-      <div className="divider-gradient" />
+      <div className="flex items-center gap-4" aria-hidden="true">
+        <div className="divider-gradient flex-1" />
+        <span className="ds-mono-sm text-muted-foreground">◆</span>
+        <div className="divider-gradient flex-1" />
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 className="ds-h2">Contratos</h2>
+        <div className="flex items-baseline gap-3">
+          <span className="ds-mono text-muted-foreground">02</span>
+          <span className="ds-mono text-muted-foreground">·</span>
+          <h2 className="ds-h2">Contratos</h2>
+        </div>
 
         <div className="elevation-1 inline-flex gap-1 rounded-md p-1">
           <button
@@ -98,6 +106,7 @@ export function ContratosSection({ contratos }: ContratosSectionProps) {
               key={`${view}-${item.contrato}-${idx}`}
               cliente={item.cliente}
               contrato={item.contrato}
+              view={view}
             />
           ))}
         </div>

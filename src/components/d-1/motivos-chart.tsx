@@ -26,6 +26,45 @@ const LABELS = {
   outros: "Outros",
 } as const;
 
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{ value: number; payload: { motivo: string } }>;
+  total: number;
+  view: "cancelados" | "retidos";
+}
+
+function CustomTooltip({ active, payload, total, view }: CustomTooltipProps) {
+  if (!active || !payload || !payload.length) return null;
+
+  const item = payload[0];
+  const value = item.value;
+  const pct = ((value / total) * 100).toFixed(1);
+  const label = view === "cancelados" ? "Cancelados" : "Retidos";
+
+  return (
+    <div
+      className="ds-small rounded-md px-3 py-2"
+      style={{
+        background: "var(--elevation-3-bg)",
+        border: "1px solid var(--elevation-3-border)",
+        color: "var(--foreground)",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+      }}
+    >
+      <div className="ds-mono-sm text-muted-foreground mb-1">
+        {item.payload.motivo}
+      </div>
+      <div className="flex items-center gap-2">
+        <span style={{ color: "var(--foreground)" }}>{label}:</span>
+        <span className="ds-mono" style={{ color: "var(--foreground)" }}>
+          {value}
+        </span>
+        <span className="text-muted-foreground ds-mono-sm">({pct}%)</span>
+      </div>
+    </div>
+  );
+}
+
 export function MotivosChart({ data, view }: MotivosChartProps) {
   const chartData = (Object.keys(LABELS) as Array<keyof typeof LABELS>).map(
     (key) => ({
@@ -64,20 +103,14 @@ export function MotivosChart({ data, view }: MotivosChartProps) {
             allowDecimals={false}
           />
           <Tooltip
-            cursor={{ fill: "var(--elevation-2-bg)" }}
-            contentStyle={{
-              background: "var(--elevation-2-bg)",
-              border: "1px solid var(--elevation-2-border)",
-              borderRadius: "8px",
-              fontSize: "0.875rem",
-            }}
-            formatter={(value: number) => {
-              const pct = ((value / total) * 100).toFixed(1);
-              return [
-                `${value} (${pct}%)`,
-                view === "cancelados" ? "Cancelados" : "Retidos",
-              ];
-            }}
+            cursor={{ fill: "var(--elevation-2-bg)", opacity: 0.4 }}
+            content={(props) => (
+              <CustomTooltip
+                {...(props as CustomTooltipProps)}
+                total={total}
+                view={view}
+              />
+            )}
           />
           <Bar
             dataKey="valor"

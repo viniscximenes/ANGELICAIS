@@ -30,7 +30,7 @@ export default async function D1Page() {
   // Cruzamento: email do auth do supabase é {username}@interno.angelicais.app
   // Convertemos pra email corporativo: {username}@alloha.com
   const username = user.email?.split("@")[0] ?? "";
-  const corporateEmail = `${username}@alloha.com`;
+  const corporateEmail = "samyrha.fenix@alloha.com"; // TODO: hack temporário pra preview
 
   let d1Data;
   try {
@@ -42,6 +42,15 @@ export default async function D1Page() {
     throw err;
   }
   const userView = filterByUserEmail(d1Data, corporateEmail);
+
+  console.log("[d-1 page] corporateEmail:", corporateEmail);
+  console.log(
+    "[d-1 page] d1Data.consolidado.operadores emails:",
+    d1Data.consolidado.operadores.map((o) => o.email),
+  );
+  console.log("[d-1 page] userView.operador:", userView.operador);
+  console.log("[d-1 page] userView.contratos:", userView.contratos);
+  console.log("[d-1 page] userView.motivos:", userView.motivos);
 
   return (
     <PageTransition>

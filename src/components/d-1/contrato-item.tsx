@@ -7,10 +7,13 @@ import { toast } from "sonner";
 interface ContratoItemProps {
   cliente: string;
   contrato: string;
+  view: "cancelados" | "retidos";
 }
 
-export function ContratoItem({ cliente, contrato }: ContratoItemProps) {
+export function ContratoItem({ cliente, contrato, view }: ContratoItemProps) {
   const [justCopied, setJustCopied] = useState(false);
+
+  const accent = view === "cancelados" ? "var(--danger)" : "var(--success)";
 
   const handleCopy = async () => {
     try {
@@ -30,11 +33,21 @@ export function ContratoItem({ cliente, contrato }: ContratoItemProps) {
     <button
       type="button"
       onClick={handleCopy}
-      className={`elevation-1 hover:elevation-2 group flex items-center justify-between rounded-sm p-4 text-left transition-all ${
-        justCopied ? "ring-2 ring-[var(--success)]" : ""
-      }`}
+      className="group relative flex items-center justify-between rounded-sm p-4 text-left transition-all hover:brightness-110"
+      style={{
+        background: "var(--elevation-1-bg)",
+        border: "1px solid var(--elevation-1-border)",
+        boxShadow: justCopied ? `0 0 0 2px ${accent}` : undefined,
+      }}
     >
-      <div className="min-w-0 flex-1">
+      {/* Barra lateral colorida */}
+      <div
+        aria-hidden="true"
+        className="absolute top-0 left-0 h-full w-[2px]"
+        style={{ background: accent }}
+      />
+
+      <div className="min-w-0 flex-1 pl-2">
         <p className="ds-body truncate">{cliente}</p>
         <p className="ds-mono-sm text-muted-foreground mt-1">{contrato}</p>
       </div>
@@ -42,7 +55,7 @@ export function ContratoItem({ cliente, contrato }: ContratoItemProps) {
         {justCopied ? (
           <IconCheck
             size={18}
-            className="text-[var(--success)]"
+            style={{ color: accent }}
             aria-hidden="true"
           />
         ) : (
