@@ -2,7 +2,6 @@ import { getSheetsClient } from "../../sheets-client";
 
 export type UploadProgress =
   | "validating"
-  | "backup"
   | "clearing"
   | "writing"
   | "stamping";
@@ -12,14 +11,13 @@ export type UploadResult =
   | { success: false; error: string };
 
 const BASE_SHEET = "BASE - 2";
-const BACKUP_SHEET = "BASE - 2 (backup)";
 const TEMPO_LOGADO_SHEET = "TEMPO LOGADO";
 const MAX_ROWS = 50000;
 const EXPECTED_COLUMNS = 11; // A até K
 
 /**
  * Recebe o CSV já parseado como matriz (linha 0 = cabeçalho).
- * Valida estrutura, cria backup, limpa, escreve, e grava hora em
+ * Valida estrutura, limpa a BASE - 2, escreve, e grava hora em
  * TEMPO LOGADO!F2.
  */
 export async function uploadBase2ToSheet(
@@ -50,48 +48,6 @@ export async function uploadBase2ToSheet(
     }
 
     const { sheets, sheetId } = getSheetsClient();
-
-    // BACKUP
-    onProgress?.("backup");
-
-    const currentData = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: `'${BASE_SHEET}'!A1:K${MAX_ROWS}`,
-    });
-
-    const valuesToBackup = currentData.data.values ?? [];
-
-    const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
-    const backupExists = meta.data.sheets?.some(
-      (s) => s.properties?.title === BACKUP_SHEET,
-    );
-
-    if (!backupExists) {
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId: sheetId,
-        requestBody: {
-          requests: [
-            {
-              addSheet: { properties: { title: BACKUP_SHEET } },
-            },
-          ],
-        },
-      });
-    } else {
-      await sheets.spreadsheets.values.clear({
-        spreadsheetId: sheetId,
-        range: `'${BACKUP_SHEET}'!A1:K${MAX_ROWS}`,
-      });
-    }
-
-    if (valuesToBackup.length > 0) {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: sheetId,
-        range: `'${BACKUP_SHEET}'!A1`,
-        valueInputOption: "RAW",
-        requestBody: { values: valuesToBackup },
-      });
-    }
 
     // LIMPA (preserva cabeçalho linha 1)
     onProgress?.("clearing");
