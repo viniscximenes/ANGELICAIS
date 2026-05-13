@@ -2,24 +2,27 @@
 
 import { motion } from "framer-motion";
 
-import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
-import { CopyTableButton } from "./copy-table-button";
-import { EquipeTable } from "./equipe-table";
-import { UploadDropzone } from "./upload-dropzone";
+import type {
+  OperadorLoginLogout,
+  OperadorTempoLogado,
+} from "@/lib/google/d1/tempo-logado";
+import { CopyTempoLogadoButton } from "./copy-tempo-logado-button";
+import { TempoLogadoEquipeTable } from "./tempo-logado-equipe-table";
+import { UploadTempoLogadoDropzone } from "./upload-tempo-logado-dropzone";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
-interface EquipeSectionProps {
-  operadores: OperadorConsolidado[];
-  equipe: ResumoEquipe;
+interface TempoLogadoEquipeSectionProps {
+  operadores: OperadorTempoLogado[];
+  loginLogout: OperadorLoginLogout[];
   showUpload?: boolean;
 }
 
-export function EquipeSection({
+export function TempoLogadoEquipeSection({
   operadores,
-  equipe,
+  loginLogout,
   showUpload = false,
-}: EquipeSectionProps) {
+}: TempoLogadoEquipeSectionProps) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
@@ -43,7 +46,10 @@ export function EquipeSection({
           <span className="ds-mono text-muted-foreground">·</span>
           <h2 className="ds-h2">Equipe / Anexo</h2>
         </div>
-        <CopyTableButton equipe={equipe} />
+        <CopyTempoLogadoButton
+          operadores={operadores}
+          loginLogout={loginLogout}
+        />
       </div>
 
       {/* Grid: tabela à esquerda (780px) + upload à direita (resto) */}
@@ -52,12 +58,15 @@ export function EquipeSection({
         style={{ gridTemplateColumns: "780px 1fr" }}
       >
         <div>
-          <EquipeTable operadores={operadores} equipe={equipe} />
+          <TempoLogadoEquipeTable
+            operadores={operadores}
+            loginLogout={loginLogout}
+          />
         </div>
 
         {showUpload && (
           <div>
-            <UploadDropzone />
+            <UploadTempoLogadoDropzone />
           </div>
         )}
       </div>

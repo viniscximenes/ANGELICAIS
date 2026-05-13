@@ -7,9 +7,10 @@ const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 interface D1HeaderProps {
   horaReport: string;
+  subtitle?: string;
 }
 
-export function D1Header({ horaReport }: D1HeaderProps) {
+export function D1Header({ horaReport, subtitle }: D1HeaderProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -20,7 +21,7 @@ export function D1Header({ horaReport }: D1HeaderProps) {
       <div className="flex flex-wrap items-baseline gap-3">
         <h1 className="ds-h1">D-1</h1>
         <span className="ds-mono-sm text-muted-foreground">
-          / dia atual · consolidado
+          / dia atual · {subtitle ?? "consolidado"}
         </span>
       </div>
       <div className="ds-small text-muted-foreground flex items-center gap-2">

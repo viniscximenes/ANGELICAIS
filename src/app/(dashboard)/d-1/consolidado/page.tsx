@@ -7,7 +7,6 @@ import { D1Tabs } from "@/components/d-1/d1-tabs";
 import { EquipeSection } from "@/components/d-1/equipe-section";
 import { KpiCards } from "@/components/d-1/kpi-cards";
 import { MotivosSection } from "@/components/d-1/motivos-section";
-import { UploadSection } from "@/components/d-1/upload-section";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
@@ -38,7 +37,7 @@ export default async function ConsolidadoPage() {
     <PageTransition>
       <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
         <div className="mx-auto max-w-7xl space-y-8">
-          <D1Header horaReport={userView.horaReport} />
+          <D1Header horaReport={userView.horaReport} subtitle="consolidado" />
           <D1Tabs />
           <div className="space-y-12">
             <KpiCards operador={userView.operador} />
@@ -49,10 +48,9 @@ export default async function ConsolidadoPage() {
               <EquipeSection
                 operadores={d1Data.consolidado.operadores}
                 equipe={d1Data.consolidado.equipe}
+                showUpload={can(user.profile.role, "manage_base")}
               />
             )}
-
-            {can(user.profile.role, "manage_base") && <UploadSection />}
           </div>
         </div>
       </div>

@@ -2,12 +2,11 @@
 
 import { useCallback, useState } from "react";
 import { IconFileSpreadsheet, IconUpload } from "@tabler/icons-react";
-import Papa from "papaparse";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
-import { uploadBaseAction } from "@/lib/auth/upload-base-action";
-import { UploadProgressModal } from "./upload-progress-modal";
+import { UploadProgressModal } from "@/components/d-1/upload-progress-modal";
+import { uploadBase2Action } from "@/lib/auth/upload-base-2-action";
 
 export type UploadStep =
   | "attaching"
@@ -16,7 +15,7 @@ export type UploadStep =
   | "done"
   | null;
 
-export function UploadDropzone() {
+export function UploadTempoLogadoDropzone() {
   const [step, setStep] = useState<UploadStep>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [rowsWritten, setRowsWritten] = useState<number>(0);
@@ -26,94 +25,65 @@ export function UploadDropzone() {
     setStep("attaching");
 
     try {
-      // Lê o arquivo como ArrayBuffer pra detectar encoding
       const buffer = await file.arrayBuffer();
       const bytes = new Uint8Array(buffer);
 
       let csvText: string;
 
-      // Detecta BOM UTF-8 (EF BB BF)
+      // BOM UTF-8 (EF BB BF)
       if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
-        // UTF-8 com BOM — pula os 3 primeiros bytes
         csvText = new TextDecoder("utf-8").decode(bytes.slice(3));
       } else {
-        // Tenta UTF-8 primeiro (modo estrito)
         try {
           const utf8Decoder = new TextDecoder("utf-8", { fatal: true });
           csvText = utf8Decoder.decode(bytes);
         } catch {
-          // UTF-8 falhou — provavelmente Windows-1252 (CSV exportado do Excel)
           csvText = new TextDecoder("windows-1252").decode(bytes);
         }
       }
 
-      // Agora passa a STRING decodificada pro papaparse
-      Papa.parse<string[]>(csvText, {
-        complete: async (result) => {
-          if (result.errors.length > 0) {
-            setStep(null);
-            setErrorMessage("Erro ao ler o CSV. Verifique o formato.");
-            toast.error("CSV inválido");
-            return;
-          }
+      // Validação rápida no client (linha minimamente decente)
+      const firstLineBreak = csvText.indexOf("\n");
+      if (firstLineBreak === -1 || csvText.length < 50) {
+        setStep(null);
+        setErrorMessage("CSV vazio ou inválido.");
+        toast.error("CSV vazio");
+        return;
+      }
 
-          const rows = result.data.filter((row) =>
-            row.some((cell) => cell !== ""),
-          );
+      await new Promise((r) => setTimeout(r, 600));
 
-          if (rows.length < 2) {
-            setStep(null);
-            setErrorMessage("CSV vazio ou só com cabeçalho.");
-            toast.error("CSV vazio");
-            return;
-          }
+      setStep("deleting");
+      await new Promise((r) => setTimeout(r, 400));
 
-          // Delay pra UX mostrar a etapa "ANEXANDO"
-          await new Promise((r) => setTimeout(r, 600));
+      setStep("replacing");
 
-          // Etapa 2 — apagando antiga
-          setStep("deleting");
-          await new Promise((r) => setTimeout(r, 400));
+      const uploadResult = await uploadBase2Action(csvText);
 
-          // Etapa 3 — substituindo
-          setStep("replacing");
+      if (!uploadResult.success) {
+        setStep(null);
+        setErrorMessage(uploadResult.error);
+        toast.error("Falha ao atualizar base", {
+          description: uploadResult.error,
+        });
+        return;
+      }
 
-          const uploadResult = await uploadBaseAction(rows);
-
-          if (!uploadResult.success) {
-            setStep(null);
-            setErrorMessage(uploadResult.error);
-            toast.error("Falha ao atualizar base", {
-              description: uploadResult.error,
-            });
-            return;
-          }
-
-          // Etapa 4 — concluído
-          setRowsWritten(uploadResult.rowsWritten);
-          setStep("done");
-          toast.success("Base atualizada", {
-            description: `${uploadResult.rowsWritten} linhas inseridas`,
-          });
-
-          // Após 3s, recarrega a página para mostrar dados novos
-          setTimeout(() => {
-            setStep(null);
-            window.location.reload();
-          }, 3000);
-        },
-        error: (err) => {
-          setStep(null);
-          setErrorMessage(err.message);
-          toast.error("Erro ao processar arquivo");
-        },
-        skipEmptyLines: true,
+      setRowsWritten(uploadResult.rowsWritten);
+      setStep("done");
+      toast.success("Base atualizada", {
+        description: `${uploadResult.rowsWritten} linhas inseridas`,
       });
+
+      setTimeout(() => {
+        setStep(null);
+        window.location.reload();
+      }, 3000);
     } catch (err) {
       setStep(null);
       setErrorMessage("Erro ao ler arquivo");
       toast.error("Não foi possível ler o arquivo");
-      console.error("[upload] read error:", err);
+      console.error("[upload-tempo-logado] read error:", err);
     }
   }, []);
 
@@ -157,7 +127,7 @@ export function UploadDropzone() {
           padding: "2rem 1.5rem",
           opacity: isProcessing ? 0.5 : 1,
           pointerEvents: isProcessing ? "none" : "auto",
-          minHeight: "100%",
+          minHeight: "200px",
         }}
       >
         <input {...getInputProps()} />
@@ -178,13 +148,11 @@ export function UploadDropzone() {
           )}
 
           <div className="space-y-1">
-            <p className="ds-body">
-              {isDragActive
-                ? "Solte para enviar"
-                : "Arraste o CSV aqui ou clique para selecionar"}
+            <p className="ds-small">
+              {isDragActive ? "Solte para enviar" : "Arraste o CSV aqui"}
             </p>
-            <p className="ds-small text-muted-foreground">
-              Apenas .csv · até 10 mil linhas
+            <p className="ds-mono-sm text-muted-foreground">
+              .csv · até 50 mil linhas
             </p>
           </div>
         </div>
@@ -192,7 +160,7 @@ export function UploadDropzone() {
         {errorMessage && !isProcessing && (
           <div
             role="alert"
-            className="status-danger ds-small mt-4 flex items-center justify-center gap-2 rounded-md p-3"
+            className="status-danger ds-mono-sm absolute right-2 bottom-2 left-2 mt-4 flex items-center justify-center gap-2 rounded-md p-2"
           >
             {errorMessage}
           </div>
