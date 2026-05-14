@@ -40,7 +40,7 @@ Quando a página justificar, adicionar:
 | [`d-1-tempo-logado.md`](./d-1-tempo-logado.md) | D-1 Tempo Logado | `/d-1/tempo-logado` | documentada |
 | [`d-1-indisponibilidade.md`](./d-1-indisponibilidade.md) | D-1 Indisponibilidade | `/d-1/indisponibilidade` | documentada |
 | [`config-kpi.md`](./config-kpi.md) | Configurações — KPI | `/config/kpi` | documentada |
-| [`pagina-04.md`](./pagina-04.md) | [a definir]      | —        | rascunho    |
+| [`bases-kpi.md`](./bases-kpi.md) | Bases — KPI | `/bases/kpi` | documentada |
 | [`pagina-05.md`](./pagina-05.md) | [a definir] | —      | rascunho    |
 
 ## Status possíveis
