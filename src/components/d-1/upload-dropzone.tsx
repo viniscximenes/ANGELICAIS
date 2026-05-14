@@ -102,7 +102,7 @@ export function UploadDropzone() {
             window.location.reload();
           }, 3000);
         },
-        error: (err) => {
+        error: (err: Error) => {
           setStep(null);
           setErrorMessage(err.message);
           toast.error("Erro ao processar arquivo");

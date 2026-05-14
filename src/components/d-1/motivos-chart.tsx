@@ -106,7 +106,7 @@ export function MotivosChart({ data, view }: MotivosChartProps) {
             cursor={{ fill: "var(--elevation-2-bg)", opacity: 0.4 }}
             content={(props) => (
               <CustomTooltip
-                {...(props as CustomTooltipProps)}
+                {...(props as unknown as CustomTooltipProps)}
                 total={total}
                 view={view}
               />
