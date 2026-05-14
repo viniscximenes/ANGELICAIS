@@ -22,7 +22,7 @@ const ALL_SECTIONS: SidebarSection[] = [
     iconName: "target",
     basePath: "/kpi",
     permission: "view_kpi",
-    items: [{ label: "Painel", href: "/kpi/painel" }],
+    items: [{ label: "Mês Atual", href: "/kpi/atual-principal" }],
   },
   {
     id: "bases",
