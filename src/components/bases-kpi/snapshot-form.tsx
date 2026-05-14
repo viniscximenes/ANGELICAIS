@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { IconClipboard, IconLoader2 } from "@tabler/icons-react";
+import { useEffect, useState, useTransition } from "react";
+import {
+  IconAlertTriangle,
+  IconClipboard,
+  IconLoader2,
+} from "@tabler/icons-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -9,55 +13,116 @@ import { Button } from "@/components/ui/button";
 import {
   formatMonthLabel,
   getCurrentMonthRef,
+  getLastDayOfMonth,
   getToday,
   getYesterday,
+  toMonthRef,
 } from "@/lib/kpi/bases/format-date";
 import {
   processSnapshotAction,
   type ProcessSnapshotResult,
 } from "@/lib/kpi/bases/process-snapshot-action";
 
+import {
+  OverrideMappingModal,
+  type MissingKpiInfo,
+} from "./override-mapping-modal";
 import { SnapshotResult } from "./snapshot-result";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 interface SnapshotFormProps {
-  onSaved?: () => void;
+  existingMonths: string[];
 }
 
-export function SnapshotForm({ onSaved }: SnapshotFormProps) {
+export function SnapshotForm({ existingMonths }: SnapshotFormProps) {
   const currentMesRef = getCurrentMonthRef();
-  const monthLabel = formatMonthLabel(currentMesRef);
 
-  const [dataCorte, setDataCorte] = useState(getYesterday());
+  const [selectedOption, setSelectedOption] = useState<string>(currentMesRef);
+  const [customMonth, setCustomMonth] = useState<string>("");
   const [clipboardText, setClipboardText] = useState("");
   const [result, setResult] = useState<ProcessSnapshotResult | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [missingKpisForModal, setMissingKpisForModal] = useState<
+    MissingKpiInfo[]
+  >([]);
+  const [detectedHeadersForModal, setDetectedHeadersForModal] = useState<
+    string[]
+  >([]);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const effectiveMesRef =
+    selectedOption === "__other__"
+      ? customMonth
+        ? toMonthRef(customMonth)
+        : ""
+      : selectedOption;
+
+  const isCurrentMonth = effectiveMesRef === currentMesRef;
+  const isPastMonth = effectiveMesRef && effectiveMesRef !== currentMesRef;
+
+  const [dataCorte, setDataCorte] = useState(getYesterday());
+
+  useEffect(() => {
+    if (!effectiveMesRef) return;
+    if (isCurrentMonth) {
+      setDataCorte(getYesterday());
+    } else {
+      setDataCorte(getLastDayOfMonth(effectiveMesRef));
+    }
+  }, [effectiveMesRef, isCurrentMonth]);
+
+  const pastMonths = existingMonths.filter((m) => m !== currentMesRef);
+
+  async function processWithOverrides(overrides?: Record<string, string>) {
+    const res = await processSnapshotAction({
+      clipboardText,
+      mesRef: effectiveMesRef,
+      dataCorte,
+      headerOverrides: overrides,
+    });
+
+    setResult(res);
+
+    if (res.success) {
+      if (res.missingKpis.length > 0 && !overrides) {
+        setMissingKpisForModal(res.missingKpisFull);
+        setDetectedHeadersForModal(res.detectedHeaders);
+        setModalOpen(true);
+        toast.warning("Alguns KPIs não foram encontrados", {
+          description: "Ajuste os nomes no modal que apareceu.",
+        });
+      } else {
+        toast.success("Snapshot processado", {
+          description: `${res.totalOperators} operadores salvos`,
+        });
+        setClipboardText("");
+        setModalOpen(false);
+      }
+    } else {
+      toast.error("Falha ao salvar", { description: res.error });
+    }
+  }
 
   function handleSubmit() {
+    if (!effectiveMesRef) {
+      toast.error("Selecione um mês válido");
+      return;
+    }
+
     if (!clipboardText.trim()) {
       toast.error("Cole os dados primeiro");
       return;
     }
 
     startTransition(async () => {
-      const res = await processSnapshotAction({
-        clipboardText,
-        mesRef: currentMesRef,
-        dataCorte,
-      });
+      await processWithOverrides();
+    });
+  }
 
-      setResult(res);
-
-      if (res.success) {
-        toast.success("Snapshot processado", {
-          description: `${res.totalOperators} operadores salvos`,
-        });
-        setClipboardText("");
-        onSaved?.();
-      } else {
-        toast.error("Falha ao salvar", { description: res.error });
-      }
+  function handleReprocessWithOverrides(overrides: Record<string, string>) {
+    startTransition(async () => {
+      await processWithOverrides(overrides);
     });
   }
 
@@ -74,12 +139,41 @@ export function SnapshotForm({ onSaved }: SnapshotFormProps) {
             <label className="ds-mono-sm text-muted-foreground mb-1 block">
               Mês de referência
             </label>
-            <div
-              className="elevation-2 ds-mono rounded-md px-3 py-2"
-              style={{ border: "1px solid var(--border)" }}
+            <select
+              value={selectedOption}
+              onChange={(e) => setSelectedOption(e.target.value)}
+              disabled={isPending}
+              className="elevation-2 ds-mono w-full rounded-md px-3 py-2"
+              style={{
+                border: "1px solid var(--border)",
+                colorScheme: "dark",
+              }}
             >
-              {monthLabel}
-            </div>
+              <option value={currentMesRef}>
+                {formatMonthLabel(currentMesRef)} (mês atual)
+              </option>
+              {pastMonths.map((m) => (
+                <option key={m} value={m}>
+                  {formatMonthLabel(m)} (passado)
+                </option>
+              ))}
+              <option disabled>──────────</option>
+              <option value="__other__">Outro mês…</option>
+            </select>
+
+            {selectedOption === "__other__" && (
+              <input
+                type="month"
+                value={customMonth}
+                onChange={(e) => setCustomMonth(e.target.value)}
+                disabled={isPending}
+                className="elevation-2 ds-mono date-input-styled mt-2 w-full rounded-md px-3 py-2"
+                style={{
+                  border: "1px solid var(--border)",
+                  colorScheme: "dark",
+                }}
+              />
+            )}
           </div>
 
           <div>
@@ -94,9 +188,15 @@ export function SnapshotForm({ onSaved }: SnapshotFormProps) {
               type="date"
               value={dataCorte}
               onChange={(e) => setDataCorte(e.target.value)}
-              max={getToday()}
-              min={currentMesRef}
-              disabled={isPending}
+              min={effectiveMesRef || undefined}
+              max={
+                isCurrentMonth
+                  ? getToday()
+                  : effectiveMesRef
+                    ? getLastDayOfMonth(effectiveMesRef)
+                    : undefined
+              }
+              disabled={isPending || !effectiveMesRef}
               className="elevation-2 ds-mono date-input-styled w-full rounded-md px-3 py-2"
               style={{
                 border: "1px solid var(--border)",
@@ -105,6 +205,33 @@ export function SnapshotForm({ onSaved }: SnapshotFormProps) {
             />
           </div>
         </div>
+
+        {isPastMonth && effectiveMesRef && (
+          <div
+            className="flex items-start gap-2 rounded-md p-3"
+            style={{
+              background:
+                "color-mix(in oklch, var(--warning) 12%, transparent)",
+              border:
+                "1px solid color-mix(in oklch, var(--warning) 35%, transparent)",
+            }}
+            role="alert"
+          >
+            <IconAlertTriangle
+              size={16}
+              style={{
+                color: "var(--warning)",
+                flexShrink: 0,
+                marginTop: "2px",
+              }}
+              aria-hidden="true"
+            />
+            <p className="ds-mono-sm" style={{ color: "var(--warning)" }}>
+              Você está colando dados de um mês fechado. Os valores atuais
+              desse mês serão sobrescritos.
+            </p>
+          </div>
+        )}
       </motion.div>
 
       <motion.div
@@ -150,7 +277,7 @@ export function SnapshotForm({ onSaved }: SnapshotFormProps) {
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={isPending}
+            disabled={isPending || !effectiveMesRef}
             className="gap-2"
           >
             {isPending && (
@@ -166,6 +293,15 @@ export function SnapshotForm({ onSaved }: SnapshotFormProps) {
       </motion.div>
 
       {result && <SnapshotResult result={result} />}
+
+      <OverrideMappingModal
+        open={modalOpen}
+        missingKpis={missingKpisForModal}
+        detectedHeaders={detectedHeadersForModal}
+        onCancel={() => setModalOpen(false)}
+        onReprocess={handleReprocessWithOverrides}
+        isPending={isPending}
+      />
     </div>
   );
 }

@@ -66,3 +66,22 @@ export function formatDateTimeBR(iso: string): string {
   const mn = String(d.getMinutes()).padStart(2, "0");
   return `${dd}/${mm}/${yy} às ${hh}:${mn}`;
 }
+
+/**
+ * "YYYY-MM" ou "YYYY-MM-DD" → "YYYY-MM-01".
+ */
+export function toMonthRef(yearMonth: string): string {
+  const match = yearMonth.match(/^(\d{4})-(\d{2})/);
+  if (!match) return "";
+  return `${match[1]}-${match[2]}-01`;
+}
+
+/**
+ * Último dia do mês informado no formato "YYYY-MM-DD".
+ * Aceita "YYYY-MM-01" como entrada.
+ */
+export function getLastDayOfMonth(mesRef: string): string {
+  const [year, month] = mesRef.split("-").map(Number);
+  const lastDay = new Date(year, month, 0).getDate();
+  return `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+}

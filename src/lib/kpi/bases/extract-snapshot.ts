@@ -15,11 +15,6 @@ function findColumnIndex(
   return -1;
 }
 
-/**
- * Converte string em número.
- * Aceita: "62.5", "62,5", "62.5%", "62,5%", "-3", "0", "HH:MM:SS" → segundos.
- * Retorna null para vazio, "—", ou inválido.
- */
 function parseNumeric(value: string): number | null {
   if (
     !value ||
@@ -43,9 +38,18 @@ function parseNumeric(value: string): number | null {
   return num;
 }
 
+/**
+ * Extrai snapshot estruturado.
+ *
+ * @param parsed ParsedClipboard do parseClipboard()
+ * @param definitions KPI definitions do banco
+ * @param headerOverrides Map opcional de slug -> nome de cabeçalho
+ *                        a usar APENAS nesta extração
+ */
 export function extractSnapshot(
   parsed: ParsedClipboard,
   definitions: KpiDefinition[],
+  headerOverrides?: Map<string, string>,
 ): ExtractionResult {
   const result: ExtractionResult = {
     operators: [],
@@ -68,9 +72,12 @@ export function extractSnapshot(
   }
 
   const kpiColumnMap = new Map<string, number>();
+
   for (const def of definitions) {
-    const normalized = normalizeHeader(def.expectedHeader);
+    const headerToSearch = headerOverrides?.get(def.slug) ?? def.expectedHeader;
+    const normalized = normalizeHeader(headerToSearch);
     const idx = normalizedHeaders.indexOf(normalized);
+
     if (idx === -1) {
       result.missingKpis.push(def);
     } else {

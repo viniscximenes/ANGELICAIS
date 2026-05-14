@@ -23,6 +23,7 @@ export default async function BasesKpiPage() {
   }
 
   const snapshots = await getSnapshotsSummary();
+  const existingMonths = snapshots.map((s) => s.mesRef);
 
   return (
     <PageTransition>
@@ -39,7 +40,7 @@ export default async function BasesKpiPage() {
             </p>
           </div>
 
-          <SnapshotForm />
+          <SnapshotForm existingMonths={existingMonths} />
 
           <SnapshotsHistory snapshots={snapshots} />
         </div>

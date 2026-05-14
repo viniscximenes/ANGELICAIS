@@ -16,6 +16,7 @@ export type ProcessSnapshotInput = {
   clipboardText: string;
   mesRef: string;
   dataCorte: string;
+  headerOverrides?: Record<string, string>;
 };
 
 export type ProcessSnapshotResult =
@@ -25,6 +26,11 @@ export type ProcessSnapshotResult =
       cadastradosNoSistema: string[];
       naoCadastrados: string[];
       missingKpis: string[];
+      missingKpisFull: Array<{
+        slug: string;
+        displayName: string;
+        expectedHeader: string;
+      }>;
       missingMetadata: string[];
       monthsDeleted: string[];
       detectedHeaders: string[];
@@ -66,7 +72,11 @@ export async function processSnapshotAction(
   }
 
   const definitions = await getKpiDefinitions();
-  const extraction = extractSnapshot(parsed, definitions);
+  const overridesMap = input.headerOverrides
+    ? new Map(Object.entries(input.headerOverrides))
+    : undefined;
+
+  const extraction = extractSnapshot(parsed, definitions, overridesMap);
 
   if (extraction.operators.length === 0) {
     return {
@@ -160,6 +170,11 @@ export async function processSnapshotAction(
     cadastradosNoSistema: cadastradosNoSistema.sort(),
     naoCadastrados: naoCadastrados.sort(),
     missingKpis: extraction.missingKpis.map((k) => k.displayName),
+    missingKpisFull: extraction.missingKpis.map((k) => ({
+      slug: k.slug,
+      displayName: k.displayName,
+      expectedHeader: k.expectedHeader,
+    })),
     missingMetadata: extraction.missingMetadata,
     monthsDeleted,
     detectedHeaders: parsed.headers,
