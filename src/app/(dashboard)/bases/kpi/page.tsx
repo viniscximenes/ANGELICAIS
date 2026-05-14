@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { IconDatabase } from "@tabler/icons-react";
 
+import { SnapshotForm } from "@/components/bases-kpi/snapshot-form";
+import { SnapshotsHistory } from "@/components/bases-kpi/snapshots-history";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
+import { getSnapshotsSummary } from "@/lib/kpi/bases/get-snapshots-summary";
 
 export const metadata: Metadata = {
   title: "Base KPI — ANGELICAIS",
@@ -13,25 +15,33 @@ export const metadata: Metadata = {
 export default async function BasesKpiPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+
   if (user.profile.role === "GESTOR") redirect("/gestor/d-1");
-  if (!can(user.profile.role, "manage_base")) redirect("/d-1");
+
+  if (!can(user.profile.role, "manage_base")) {
+    redirect("/d-1");
+  }
+
+  const snapshots = await getSnapshotsSummary();
 
   return (
     <PageTransition>
       <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
-        <div className="mx-auto max-w-7xl">
-          <div className="elevation-1 rounded-xl p-16 text-center">
-            <IconDatabase
-              size={48}
-              className="text-muted-foreground mx-auto mb-4"
-              aria-hidden="true"
-            />
-            <h2 className="ds-h2 mb-2">Base KPI</h2>
-            <p className="ds-body text-muted-foreground mx-auto max-w-md">
-              Em construção. Aqui você poderá colar dados de KPI para alimentar
-              o sistema.
+        <div className="mx-auto max-w-5xl space-y-10">
+          <div className="space-y-1">
+            <div className="flex items-baseline gap-3">
+              <h1 className="ds-h1">Bases</h1>
+              <span className="ds-mono text-muted-foreground">/ KPI</span>
+            </div>
+            <p className="ds-small text-muted-foreground">
+              Cole os dados exportados da planilha do planejamento para
+              alimentar o painel de KPI.
             </p>
           </div>
+
+          <SnapshotForm />
+
+          <SnapshotsHistory snapshots={snapshots} />
         </div>
       </div>
     </PageTransition>

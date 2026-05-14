@@ -51,13 +51,16 @@ A cada colagem para o **mesmo mês**, os dados anteriores daquele mês são sobr
 
 ### Retenção de histórico
 
-O sistema mantém os **últimos 12 meses**. Quando um mês novo é detectado (que ainda não existe no banco), o sistema:
+O sistema mantém apenas **2 meses** de snapshots: o mês atual e o
+mês anterior. Qualquer outro mês é apagado automaticamente ao salvar
+um novo snapshot.
 
-1. Verifica quantos meses únicos existem
-2. Se passou de 12, identifica o **mais antigo** e o apaga
-3. Insere o novo mês
+Lógica aplicada na server action ao salvar:
 
-A regra é aplicada na server action de salvar, não em trigger do banco.
+1. Lê todos os meses únicos existentes
+2. Adiciona o mês novo ao conjunto
+3. Mantém só os 2 mais recentes
+4. Apaga o restante
 
 ## Modelo de dados
 
@@ -156,15 +159,15 @@ Total: **22 linhas por operador por mês**.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  Mês de referência:      [ Maio / 2026  ▼ ]              │
+│  Mês de referência:       Maio / 2026                     │
 │  Dados até o dia:        [  13/05/2026   ]                │
 └──────────────────────────────────────────────────────────┘
 ```
 
-**Mês de referência:**
-- Dropdown com últimos 12 meses + mês atual
-- Default: mês atual
-- Se o ADM selecionar mês passado, mostra alerta amarelo: "Você está editando um mês passado. Os dados atuais desse mês serão sobrescritos."
+**Mês de referência (fixo):**
+- Exibido como texto (não editável): nome do mês atual com base na data do servidor
+- Exemplo: "Maio / 2026"
+- Sistema sempre usa o mês corrente
 
 **Dados até o dia:**
 - Input date

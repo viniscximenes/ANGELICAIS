@@ -397,4 +397,14 @@
   .status-dot--success { background: var(--success); }
   .status-dot--warning { background: var(--warning); }
   .status-dot--danger  { background: var(--danger);  }
+
+  /* Ícone do date picker em cinza, padronizado com texto */
+  input[type="date"].date-input-styled::-webkit-calendar-picker-indicator {
+    filter: invert(0.55);
+    cursor: pointer;
+  }
+
+  input[type="date"].date-input-styled::-webkit-calendar-picker-indicator:hover {
+    filter: invert(0.75);
+  }
 }
