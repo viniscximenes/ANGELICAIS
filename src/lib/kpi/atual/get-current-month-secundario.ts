@@ -9,7 +9,11 @@ function getCurrentMesRef(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
-export async function getCurrentMonthSnapshot(
+/**
+ * Mesmo padrão de getCurrentMonthSnapshot mas retorna os 9 KPIs SECUNDÁRIOS.
+ * Lê também tx_retencao_bruta para calcular o diff da Líquida 15d.
+ */
+export async function getCurrentMonthSecundario(
   operatorEmail: string,
 ): Promise<CurrentMonthSnapshot> {
   const supabase = await createClient();
@@ -23,7 +27,7 @@ export async function getCurrentMonthSnapshot(
     .eq("mes_ref", mesRef);
 
   if (error) {
-    console.error("[get-current-month-snapshot] erro:", error);
+    console.error("[get-current-month-secundario] erro:", error);
     return {
       hasData: false,
       mesRef,
@@ -52,6 +56,7 @@ export async function getCurrentMonthSnapshot(
 
   const forecastPedidos = valuesBySlug.get("forecast_pedidos") ?? null;
   const forecastChurn = valuesBySlug.get("forecast_churn") ?? null;
+  const txRetencaoBruta = valuesBySlug.get("tx_retencao_bruta") ?? null;
 
   const dataCorte =
     data
@@ -67,14 +72,12 @@ export async function getCurrentMonthSnapshot(
       .sort()
       .reverse()[0] ?? null;
 
-  const txRetencaoBruta = valuesBySlug.get("tx_retencao_bruta") ?? null;
-
   const definitions = await getKpiDefinitions();
   const enriched = enrichWithDefinitions(
     definitions,
     valuesBySlug,
     { forecastPedidos, forecastChurn, txRetencaoBruta },
-    "principal",
+    "secundario",
   );
 
   return {

@@ -42,6 +42,7 @@ Quando a página justificar, adicionar:
 | [`config-kpi.md`](./config-kpi.md) | Configurações — KPI | `/config/kpi` | documentada |
 | [`bases-kpi.md`](./bases-kpi.md) | Bases — KPI | `/bases/kpi` | documentada |
 | [`kpi-atual-principal.md`](./kpi-atual-principal.md) | KPI Atual Principal | `/kpi/atual-principal` | documentada |
+| [`kpi-atual-secundario.md`](./kpi-atual-secundario.md) | KPI Atual Secundário | `/kpi/atual-secundario` | documentada |
 
 ## Status possíveis
 
