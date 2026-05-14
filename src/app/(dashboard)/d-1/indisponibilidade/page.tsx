@@ -1,32 +1,62 @@
 import type { Metadata } from "next";
-import { IconAlertTriangle } from "@tabler/icons-react";
+import { redirect } from "next/navigation";
 
 import { D1Header } from "@/components/d-1/d1-header";
 import { D1Tabs } from "@/components/d-1/d1-tabs";
+import { IndispCards } from "@/components/d-1/indisponibilidade/indisp-cards";
+import { IndispEquipeSection } from "@/components/d-1/indisponibilidade/indisp-equipe-section";
+import { IndispPausasSection } from "@/components/d-1/indisponibilidade/indisp-pausas-section";
 import { PageTransition } from "@/components/motion/page-transition";
+import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { can } from "@/lib/auth/permissions";
+import { filterIndispByEmail } from "@/lib/d1/indisponibilidade/filter-by-user";
+import { getIndisponibilidadeData } from "@/lib/google/d1/indisponibilidade";
 
 export const metadata: Metadata = {
   title: "Indisponibilidade — D-1 ANGELICAIS",
 };
 
-export default function IndisponibilidadePage() {
+export const revalidate = 300;
+
+export default async function IndisponibilidadePage() {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  if (user.profile.role === "GESTOR") {
+    redirect("/gestor/d-1");
+  }
+
+  const data = await getIndisponibilidadeData();
+  const userView = filterIndispByEmail(data, user.profile.emailCorporativo);
+
   return (
     <PageTransition>
       <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
         <div className="mx-auto max-w-7xl space-y-8">
-          <D1Header horaReport="—" />
+          <D1Header
+            horaReport={userView.horaReport}
+            subtitle="indisponibilidade"
+          />
           <D1Tabs />
+          <div className="space-y-12">
+            <IndispCards indisp={userView.indisp} pausa={userView.pausa} />
 
-          <div className="elevation-1 rounded-xl p-16 text-center">
-            <IconAlertTriangle
-              size={48}
-              className="text-muted-foreground mx-auto mb-4"
-              aria-hidden="true"
-            />
-            <h2 className="ds-h2 mb-2">Em construção</h2>
-            <p className="ds-body text-muted-foreground mx-auto max-w-md">
-              A visualização de indisponibilidade estará disponível em breve.
-            </p>
+            {can(user.profile.role, "view_d1_team") && (
+              <IndispEquipeSection
+                operadoresIndisp={data.operadoresIndisp}
+                operadoresPausa={data.operadoresPausa}
+              />
+            )}
+
+            {can(user.profile.role, "manage_system") && (
+              <IndispPausasSection
+                operadoresIndisp={data.operadoresIndisp}
+                operadoresPausa={data.operadoresPausa}
+              />
+            )}
           </div>
         </div>
       </div>
