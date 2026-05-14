@@ -41,7 +41,7 @@ Quando a página justificar, adicionar:
 | [`d-1-indisponibilidade.md`](./d-1-indisponibilidade.md) | D-1 Indisponibilidade | `/d-1/indisponibilidade` | documentada |
 | [`config-kpi.md`](./config-kpi.md) | Configurações — KPI | `/config/kpi` | documentada |
 | [`bases-kpi.md`](./bases-kpi.md) | Bases — KPI | `/bases/kpi` | documentada |
-| [`pagina-05.md`](./pagina-05.md) | [a definir] | —      | rascunho    |
+| [`kpi-atual-principal.md`](./kpi-atual-principal.md) | KPI Atual Principal | `/kpi/atual-principal` | documentada |
 
 ## Status possíveis
 
