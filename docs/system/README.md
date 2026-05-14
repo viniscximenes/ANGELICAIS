@@ -14,6 +14,7 @@ Esta pasta contém documentação técnica sobre subsistemas que NÃO são pági
 | ------- | ---------- | ------ |
 | [`authentication.md`](./authentication.md) | Autenticação e sessão | documentado |
 | [`permissions.md`](./permissions.md) | Roles e permissões | documentado |
+| [`sidebar.md`](./sidebar.md) | Navegação global (sidebar) | documentado |
 
 ## Status possíveis
 
