@@ -3,14 +3,16 @@
 import { motion } from "framer-motion";
 
 import type { EnrichedKpiValue } from "@/lib/kpi/atual/types";
+import type { NeutralKpiValue } from "@/lib/kpi/passado/types";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 interface TxRetencaoHeroCardProps {
-  kpi: EnrichedKpiValue;
+  kpi: EnrichedKpiValue | NeutralKpiValue;
+  neutral?: boolean;
 }
 
-function getStatusColor(status: EnrichedKpiValue["status"]): string {
+function getStatusColor(status: string | undefined): string {
   switch (status) {
     case "success":
       return "var(--success)";
@@ -18,7 +20,7 @@ function getStatusColor(status: EnrichedKpiValue["status"]): string {
       return "var(--warning)";
     case "danger":
       return "var(--danger)";
-    case "neutral":
+    default:
       return "var(--muted-foreground)";
   }
 }
@@ -29,9 +31,14 @@ function getMetaLabel(kpi: EnrichedKpiValue): string {
   return `meta: ≥ ${def.thresholdYellow}% (verde) • ${def.thresholdRed}–${def.thresholdYellow}% (amarelo)`;
 }
 
-export function TxRetencaoHeroCard({ kpi }: TxRetencaoHeroCardProps) {
-  const color = getStatusColor(kpi.status);
-  const isNeutral = kpi.status === "neutral";
+export function TxRetencaoHeroCard({
+  kpi,
+  neutral = false,
+}: TxRetencaoHeroCardProps) {
+  const status = "status" in kpi ? kpi.status : undefined;
+  const color = neutral ? "var(--foreground)" : getStatusColor(status);
+  const showBar = !neutral && status && status !== "neutral";
+  const showMeta = !neutral && "status" in kpi;
 
   return (
     <motion.div
@@ -40,7 +47,7 @@ export function TxRetencaoHeroCard({ kpi }: TxRetencaoHeroCardProps) {
       transition={{ delay: 0.2, duration: 0.6, ease: EASE_OUT_EXPO }}
       className="elevation-2 relative overflow-hidden rounded-xl p-6 text-center lg:p-8"
     >
-      {!isNeutral && (
+      {showBar && (
         <div
           aria-hidden="true"
           className="absolute top-0 right-0 left-0 h-[2px]"
@@ -81,9 +88,11 @@ export function TxRetencaoHeroCard({ kpi }: TxRetencaoHeroCardProps) {
         )}
       </div>
 
-      <p className="ds-mono-sm text-muted-foreground mt-2">
-        {getMetaLabel(kpi)}
-      </p>
+      {showMeta && (
+        <p className="ds-mono-sm text-muted-foreground mt-2">
+          {getMetaLabel(kpi as EnrichedKpiValue)}
+        </p>
+      )}
     </motion.div>
   );
 }

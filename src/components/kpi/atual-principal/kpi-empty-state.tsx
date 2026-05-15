@@ -5,7 +5,15 @@ import { motion } from "framer-motion";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
-export function KpiEmptyState() {
+interface KpiEmptyStateProps {
+  title?: string;
+  description?: string;
+}
+
+export function KpiEmptyState({
+  title = "Sem dados de KPI para este mês",
+  description = "Fale com seu administrador.",
+}: KpiEmptyStateProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -19,9 +27,9 @@ export function KpiEmptyState() {
         className="text-muted-foreground mx-auto mb-4"
         aria-hidden="true"
       />
-      <h2 className="ds-h2 mb-2">Sem dados de KPI para este mês</h2>
+      <h2 className="ds-h2 mb-2">{title}</h2>
       <p className="ds-body text-muted-foreground mx-auto max-w-md">
-        Fale com seu administrador.
+        {description}
       </p>
     </motion.div>
   );

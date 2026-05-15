@@ -4,15 +4,17 @@ import { motion } from "framer-motion";
 
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import type { EnrichedKpiValue } from "@/lib/kpi/atual/types";
+import type { NeutralKpiValue } from "@/lib/kpi/passado/types";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 interface KpiMediumCardProps {
-  kpi: EnrichedKpiValue;
+  kpi: EnrichedKpiValue | NeutralKpiValue;
   delayIndex: number;
+  neutral?: boolean;
 }
 
-function getStatusColor(status: EnrichedKpiValue["status"]): string {
+function getStatusColor(status: string | undefined): string {
   switch (status) {
     case "success":
       return "var(--success)";
@@ -20,7 +22,7 @@ function getStatusColor(status: EnrichedKpiValue["status"]): string {
       return "var(--warning)";
     case "danger":
       return "var(--danger)";
-    case "neutral":
+    default:
       return "var(--muted-foreground)";
   }
 }
@@ -49,11 +51,22 @@ function getMetaLabel(kpi: EnrichedKpiValue): string | null {
   }
 }
 
-export function KpiMediumCard({ kpi, delayIndex }: KpiMediumCardProps) {
-  const color = getStatusColor(kpi.status);
-  const isNeutral = kpi.status === "neutral";
-  const metaLabel = getMetaLabel(kpi);
+export function KpiMediumCard({
+  kpi,
+  delayIndex,
+  neutral = false,
+}: KpiMediumCardProps) {
+  const status = "status" in kpi ? kpi.status : undefined;
+  const color = neutral ? "var(--muted-foreground)" : getStatusColor(status);
   const isVariation = kpi.definition.valueType === "percent_negative";
+  const showMeta = !neutral && "status" in kpi;
+  const metaLabel = showMeta ? getMetaLabel(kpi as EnrichedKpiValue) : null;
+
+  const valueColor = neutral
+    ? "var(--foreground)"
+    : isVariation || status === "neutral"
+      ? "var(--foreground)"
+      : undefined;
 
   return (
     <motion.div
@@ -70,7 +83,8 @@ export function KpiMediumCard({ kpi, delayIndex }: KpiMediumCardProps) {
         aria-hidden="true"
         className="absolute top-0 left-0 h-full w-[3px]"
         style={{
-          background: isVariation ? "var(--muted-foreground)" : color,
+          background:
+            neutral || isVariation ? "var(--muted-foreground)" : color,
         }}
       />
 
@@ -82,7 +96,7 @@ export function KpiMediumCard({ kpi, delayIndex }: KpiMediumCardProps) {
         className="ds-display"
         style={{
           fontSize: "2.25rem",
-          color: isVariation || isNeutral ? "var(--foreground)" : undefined,
+          color: valueColor,
         }}
       >
         {formatKpiValue(kpi.valor, kpi.definition.valueType)}
