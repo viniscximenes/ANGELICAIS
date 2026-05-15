@@ -28,6 +28,17 @@ const ALL_SECTIONS: SidebarSection[] = [
     ],
   },
   {
+    id: "rv",
+    label: "RV",
+    iconName: "cash",
+    basePath: "/rv",
+    permission: "view_kpi",
+    items: [
+      { label: "Estimativa Atual", href: "/rv/atual" },
+      { label: "Estimativa Passada", href: "/rv/passado" },
+    ],
+  },
+  {
     id: "bases",
     label: "Bases",
     iconName: "database",
@@ -41,7 +52,10 @@ const ALL_SECTIONS: SidebarSection[] = [
     iconName: "settings",
     basePath: "/config",
     permission: "manage_system",
-    items: [{ label: "KPI", href: "/config/kpi" }],
+    items: [
+      { label: "KPI", href: "/config/kpi" },
+      { label: "RV", href: "/config/rv" },
+    ],
   },
 ];
 

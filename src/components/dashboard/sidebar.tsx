@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  IconCash,
   IconChartBar,
   IconDatabase,
   IconSettings,
@@ -18,7 +19,7 @@ const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 export type SidebarSection = {
   id: string;
   label: string;
-  iconName: "chart" | "target" | "database" | "settings";
+  iconName: "chart" | "target" | "cash" | "database" | "settings";
   basePath: string;
   permission: Permission;
   items: { label: string; href: string }[];
@@ -34,6 +35,7 @@ const ICONS: Record<
 > = {
   chart: IconChartBar,
   target: IconTargetArrow,
+  cash: IconCash,
   database: IconDatabase,
   settings: IconSettings,
 };

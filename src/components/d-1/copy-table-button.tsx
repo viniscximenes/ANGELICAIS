@@ -38,22 +38,15 @@ export function CopyTableButton({ equipe }: CopyTableButtonProps) {
       const blobResponse = await fetch(pngDataUrl);
       const imageBlob = await blobResponse.blob();
 
-      // Texto que acompanha (asteriscos = negrito em WhatsApp/Slack)
       const horaText =
         equipe.horaReport && equipe.horaReport !== "—"
-          ? `Tabela do *CONSOLIDADO* até *${equipe.horaReport}*`
-          : "Tabela do *CONSOLIDADO*";
-
-      // HTML equivalente com <b> pra Teams/Gmail interpretarem negrito
-      const htmlHora =
-        equipe.horaReport && equipe.horaReport !== "—"
-          ? `Tabela do <b>CONSOLIDADO</b> até <b>${equipe.horaReport}</b>`
-          : `Tabela do <b>CONSOLIDADO</b>`;
+          ? `RESULTADO CONSOLIDADO DAS ${equipe.horaReport}`
+          : "RESULTADO CONSOLIDADO";
 
       const htmlContent = `
         <div>
-          <p>${htmlHora}</p>
-          <img src="${pngDataUrl}" alt="Tabela CONSOLIDADO" />
+          <p>${horaText}</p>
+          <img src="${pngDataUrl}" alt="RESULTADO CONSOLIDADO" />
         </div>
       `;
 
