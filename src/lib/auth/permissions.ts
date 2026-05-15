@@ -11,7 +11,7 @@ export type Permission =
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   OP: ["view_d1_personal", "view_kpi"],
-  AUX: ["view_d1_personal", "view_kpi", "view_d1_team", "manage_base"],
+  AUX: ["view_d1_personal", "view_kpi", "view_d1_team"],
   ADM: [
     "view_d1_personal",
     "view_kpi",

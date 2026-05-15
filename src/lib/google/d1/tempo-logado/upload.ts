@@ -1,3 +1,5 @@
+import { getTimePartsInBR } from "@/lib/utils/format-datetime-br";
+
 import { getSheetsClient } from "../../sheets-client";
 
 export type UploadProgress =
@@ -70,8 +72,8 @@ export async function uploadBase2ToSheet(
     // STAMP HORA em TEMPO LOGADO!F2
     onProgress?.("stamping");
 
-    const now = new Date();
-    const hora = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const { hour, minute } = getTimePartsInBR();
+    const hora = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,

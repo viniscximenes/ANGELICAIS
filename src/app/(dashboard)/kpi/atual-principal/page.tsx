@@ -8,6 +8,7 @@ import { KpiTabs } from "@/components/kpi/kpi-tabs";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getCurrentMonthSnapshot } from "@/lib/kpi/atual/get-current-month-snapshot";
+import { formatDateBR } from "@/lib/utils/format-datetime-br";
 
 export const metadata: Metadata = {
   title: "KPI Atual — Principal — ANGELICAIS",
@@ -39,11 +40,6 @@ function formatMonthLabel(mesRef: string): string {
     "Dezembro",
   ];
   return `${meses[parseInt(month) - 1]} ${year}`;
-}
-
-function formatDateBR(date: string): string {
-  const [year, month, day] = date.split("-");
-  return `${day}/${month}/${year}`;
 }
 
 export default async function KpiAtualPrincipalPage() {

@@ -1,3 +1,5 @@
+import { formatTimeBR } from "@/lib/utils/format-datetime-br";
+
 import type { ContratoItem } from "./types";
 
 function isSheetError(str: string): boolean {
@@ -66,9 +68,7 @@ export function parseHora(value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
 
   if (value instanceof Date) {
-    const h = String(value.getHours()).padStart(2, "0");
-    const m = String(value.getMinutes()).padStart(2, "0");
-    return `${h}:${m}`;
+    return formatTimeBR(value);
   }
 
   if (typeof value === "number" && Number.isFinite(value)) {

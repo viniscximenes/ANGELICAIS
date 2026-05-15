@@ -1,27 +1,33 @@
+import {
+  formatDateBR as _formatDateBR,
+  formatDateTimeBR as _formatDateTimeBR,
+  getDatePartsInBR,
+} from "@/lib/utils/format-datetime-br";
+
 /**
- * Primeiro dia do mês atual no formato "YYYY-MM-01".
+ * Primeiro dia do mês atual no fuso de Brasília, formato "YYYY-MM-01".
  */
 export function getCurrentMonthRef(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const { year, month } = getDatePartsInBR();
+  return `${year}-${String(month).padStart(2, "0")}-01`;
 }
 
 /**
- * Data de ontem no formato "YYYY-MM-DD". Se hoje é dia 1, retorna o
- * último dia do mês passado.
+ * Data de ontem no fuso de Brasília, formato "YYYY-MM-DD".
+ * Se hoje é dia 1, retorna o último dia do mês passado.
  */
 export function getYesterday(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const { year, month, day } = getDatePartsInBR(yesterday);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 /**
- * Data de hoje no formato "YYYY-MM-DD".
+ * Data de hoje no fuso de Brasília, formato "YYYY-MM-DD".
  */
 export function getToday(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const { year, month, day } = getDatePartsInBR();
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 /**
@@ -46,26 +52,8 @@ export function formatMonthLabel(mesRef: string): string {
   return `${meses[parseInt(month) - 1]} / ${year}`;
 }
 
-/**
- * "2026-05-13" → "13/05/2026".
- */
-export function formatDateBR(date: string): string {
-  const [year, month, day] = date.split("-");
-  return `${day}/${month}/${year}`;
-}
-
-/**
- * ISO datetime → "13/05/2026 às 15:30".
- */
-export function formatDateTimeBR(iso: string): string {
-  const d = new Date(iso);
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yy = d.getFullYear();
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mn = String(d.getMinutes()).padStart(2, "0");
-  return `${dd}/${mm}/${yy} às ${hh}:${mn}`;
-}
+export const formatDateBR = _formatDateBR;
+export const formatDateTimeBR = _formatDateTimeBR;
 
 /**
  * "YYYY-MM" ou "YYYY-MM-DD" → "YYYY-MM-01".

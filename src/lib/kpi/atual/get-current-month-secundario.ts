@@ -1,12 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
+import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
 
 import { getKpiDefinitions } from "../get-definitions";
 import { enrichWithDefinitions } from "./enrich-with-definitions";
 import type { CurrentMonthSnapshot } from "./types";
 
 function getCurrentMesRef(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const { year, month } = getDatePartsInBR();
+  return `${year}-${String(month).padStart(2, "0")}-01`;
 }
 
 /**
