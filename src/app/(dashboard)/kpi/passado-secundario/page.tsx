@@ -3,24 +3,26 @@ import { redirect } from "next/navigation";
 
 import { KpiEmptyState } from "@/components/kpi/atual-principal/kpi-empty-state";
 import { KpiMediumCard } from "@/components/kpi/atual-principal/kpi-medium-card";
-import { TxRetencaoHeroCard } from "@/components/kpi/atual-principal/tx-retencao-hero-card";
 import { KpiPassadoTabs } from "@/components/kpi/kpi-passado-tabs";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { getPreviousMonthSnapshot } from "@/lib/kpi/passado/get-previous-month-snapshot";
+import { getPreviousMonthSecundario } from "@/lib/kpi/passado/get-previous-month-secundario";
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 
 export const metadata: Metadata = {
-  title: "KPI Passado — Principal — ANGELICAIS",
+  title: "KPI Passado — Secundário — ANGELICAIS",
 };
 
-const MEDIUM_CARDS_ORDER = [
-  "indisp_total",
-  "tma",
-  "abs",
-  "pedidos",
-  "churn",
-  "variacao_ticket",
+const SECUNDARIO_ORDER = [
+  "tx_retencao_liquida_15d",
+  "atendidas",
+  "transfer",
+  "short_call",
+  "rechamada_d7",
+  "csat",
+  "nr17",
+  "pessoal",
+  "outras_pausas",
 ];
 
 function formatMonthLabel(mesRef: string): string {
@@ -42,7 +44,7 @@ function formatMonthLabel(mesRef: string): string {
   return `${meses[parseInt(month) - 1]} ${year}`;
 }
 
-export default async function KpiPassadoPrincipalPage() {
+export default async function KpiPassadoSecundarioPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
@@ -50,14 +52,14 @@ export default async function KpiPassadoPrincipalPage() {
     redirect("/gestor/d-1");
   }
 
-  const snapshot = await getPreviousMonthSnapshot(user.profile.emailCorporativo);
+  const snapshot = await getPreviousMonthSecundario(
+    user.profile.emailCorporativo,
+  );
 
   const monthLabel = formatMonthLabel(snapshot.mesRef);
   const dataCorteLabel = snapshot.dataCorte
     ? `dados até ${formatDateBR(snapshot.dataCorte)}`
     : null;
-
-  const txRetencao = snapshot.kpis.get("tx_retencao_bruta");
 
   let emptyStateTitle: string | undefined;
   let emptyStateDescription: string | undefined;
@@ -78,7 +80,7 @@ export default async function KpiPassadoPrincipalPage() {
             <div className="flex items-baseline gap-3">
               <h1 className="ds-h1">KPI</h1>
               <span className="ds-mono text-muted-foreground">
-                / passado · principal
+                / passado · secundário
               </span>
             </div>
             <p className="ds-mono-sm text-muted-foreground">
@@ -95,23 +97,19 @@ export default async function KpiPassadoPrincipalPage() {
               description={emptyStateDescription}
             />
           ) : (
-            <div className="space-y-6">
-              {txRetencao && <TxRetencaoHeroCard kpi={txRetencao} neutral />}
-
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {MEDIUM_CARDS_ORDER.map((slug, idx) => {
-                  const kpi = snapshot.kpis.get(slug);
-                  if (!kpi) return null;
-                  return (
-                    <KpiMediumCard
-                      key={slug}
-                      kpi={kpi}
-                      delayIndex={idx}
-                      neutral
-                    />
-                  );
-                })}
-              </div>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {SECUNDARIO_ORDER.map((slug, idx) => {
+                const kpi = snapshot.kpis.get(slug);
+                if (!kpi) return null;
+                return (
+                  <KpiMediumCard
+                    key={slug}
+                    kpi={kpi}
+                    delayIndex={idx}
+                    neutral
+                  />
+                );
+              })}
             </div>
           )}
         </div>
