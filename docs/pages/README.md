@@ -44,6 +44,7 @@ Quando a página justificar, adicionar:
 | [`kpi-atual-principal.md`](./kpi-atual-principal.md) | KPI Atual Principal | `/kpi/atual-principal` | documentada |
 | [`kpi-atual-secundario.md`](./kpi-atual-secundario.md) | KPI Atual Secundário | `/kpi/atual-secundario` | documentada |
 | [`kpi-passado-principal.md`](./kpi-passado-principal.md) | KPI Passado Principal | `/kpi/passado-principal` | documentada |
+| [`kpi-passado-secundario.md`](./kpi-passado-secundario.md) | KPI Passado Secundário | `/kpi/passado-secundario` | documentada |
 
 ## Status possíveis
 
