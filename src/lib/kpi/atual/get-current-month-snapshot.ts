@@ -1,3 +1,4 @@
+import { resolveKpiEmailForProfile } from "@/lib/profile/get-kpi-email-for-profile";
 import { createClient } from "@/lib/supabase/server";
 import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
 
@@ -15,12 +16,12 @@ export async function getCurrentMonthSnapshot(
 ): Promise<CurrentMonthSnapshot> {
   const supabase = await createClient();
   const mesRef = getCurrentMesRef();
-  const normalizedEmail = operatorEmail.trim().toLowerCase();
+  const emailParaBuscar = await resolveKpiEmailForProfile(operatorEmail);
 
   const { data, error } = await supabase
     .from("kpi_monthly_snapshots")
     .select("kpi_slug, valor_numerico, valor_texto, data_corte, updated_at")
-    .eq("operator_email", normalizedEmail)
+    .eq("operator_email", emailParaBuscar)
     .eq("mes_ref", mesRef);
 
   if (error) {

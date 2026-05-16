@@ -1,3 +1,4 @@
+import { resolveKpiEmailForProfile } from "@/lib/profile/get-kpi-email-for-profile";
 import { createClient } from "@/lib/supabase/server";
 
 import type { RvCalculation } from "./calc-types";
@@ -21,11 +22,12 @@ export async function getRvForOperator(
 ): Promise<RvCalculation | null> {
   const supabase = await createClient();
   const normalizedEmail = operatorEmail.trim().toLowerCase();
+  const emailParaBuscarKpi = await resolveKpiEmailForProfile(operatorEmail);
 
   const { data: snapshotRows, error: snapError } = await supabase
     .from("kpi_monthly_snapshots")
     .select("kpi_slug, valor_numerico, valor_texto")
-    .eq("operator_email", normalizedEmail)
+    .eq("operator_email", emailParaBuscarKpi)
     .eq("mes_ref", mesRef);
 
   if (snapError) {
