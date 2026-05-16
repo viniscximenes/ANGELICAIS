@@ -12,7 +12,7 @@ interface StaggerContainerProps {
 
 export function StaggerContainer({
   children,
-  staggerDelay = 0.06,
+  staggerDelay = 0.03,
   initialDelay = 0,
   className,
 }: StaggerContainerProps) {
@@ -49,7 +49,7 @@ const itemVariants: Variants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] },
   },
 };
 

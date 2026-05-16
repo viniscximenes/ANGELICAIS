@@ -73,8 +73,8 @@ export function KpiMediumCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
-        delay: 0.35 + delayIndex * 0.08,
-        duration: 0.5,
+        delay: 0.15 + delayIndex * 0.04,
+        duration: 0.25,
         ease: EASE_OUT_EXPO,
       }}
       className="elevation-1 relative overflow-hidden rounded-lg p-6"

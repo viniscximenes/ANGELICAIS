@@ -131,7 +131,7 @@ export function SnapshotForm({ existingMonths }: SnapshotFormProps) {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.4, ease: EASE_OUT_EXPO }}
+        transition={{ delay: 0.1, duration: 0.2, ease: EASE_OUT_EXPO }}
         className="elevation-1 space-y-4 rounded-xl p-5"
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -237,7 +237,7 @@ export function SnapshotForm({ existingMonths }: SnapshotFormProps) {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.18, duration: 0.4, ease: EASE_OUT_EXPO }}
+        transition={{ delay: 0.18, duration: 0.2, ease: EASE_OUT_EXPO }}
         className="elevation-1 space-y-4 rounded-xl p-5"
       >
         <div className="flex items-start gap-2">

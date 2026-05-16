@@ -62,7 +62,7 @@ export function UploadProgressModal({
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ duration: 0.4, ease: EASE_OUT_EXPO }}
+            transition={{ duration: 0.2, ease: EASE_OUT_EXPO }}
             className="elevation-3 mx-4 w-full max-w-md rounded-xl p-8"
           >
             <h3 className="ds-h2 mb-1">Atualizando base</h3>

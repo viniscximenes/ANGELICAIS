@@ -4,6 +4,7 @@ export type Permission =
   | "view_d1_personal"
   | "view_d1_team"
   | "view_kpi"
+  | "view_monitoria"
   | "manage_base"
   | "view_gestor_panel"
   | "manage_users"
@@ -11,11 +12,12 @@ export type Permission =
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   OP: ["view_d1_personal", "view_kpi"],
-  AUX: ["view_d1_personal", "view_kpi", "view_d1_team"],
+  AUX: ["view_d1_personal", "view_kpi", "view_monitoria"],
   ADM: [
     "view_d1_personal",
     "view_kpi",
     "view_d1_team",
+    "view_monitoria",
     "manage_base",
     "view_gestor_panel",
     "manage_users",

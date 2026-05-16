@@ -36,7 +36,7 @@ export function KpiCards({ operador }: KpiCardsProps) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2, duration: 0.6, ease: EASE_OUT_EXPO }}
+        transition={{ delay: 0.1, duration: 0.3, ease: EASE_OUT_EXPO }}
         className="elevation-2 relative overflow-hidden rounded-xl p-6 text-center lg:p-8"
       >
         {/* Borda decorativa superior com cor do status */}
@@ -128,7 +128,7 @@ function KpiCard({ label, value, accent, delay }: KpiCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5, ease: EASE_OUT_EXPO }}
+      transition={{ delay, duration: 0.25, ease: EASE_OUT_EXPO }}
       className="elevation-1 relative overflow-hidden rounded-lg p-6"
     >
       <div

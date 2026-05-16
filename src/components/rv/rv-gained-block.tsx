@@ -51,7 +51,7 @@ export function RvGainedBlock({ calculation }: Props) {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.35, duration: 0.5, ease: EASE_OUT_EXPO }}
+      transition={{ delay: 0.15, duration: 0.25, ease: EASE_OUT_EXPO }}
       className="elevation-1 space-y-3 rounded-xl p-5"
     >
       <div className="flex items-center justify-between">

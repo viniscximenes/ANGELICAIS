@@ -29,6 +29,7 @@ export function D1Tabs() {
             role="tab"
             aria-selected={isActive}
             onClick={() => router.push(tab.href)}
+            onMouseEnter={() => router.prefetch(tab.href)}
             className={`ds-small rounded-md px-4 py-1.5 transition-colors ${
               isActive
                 ? "bg-primary text-primary-foreground"

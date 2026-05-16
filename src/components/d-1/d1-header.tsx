@@ -15,7 +15,7 @@ export function D1Header({ horaReport, subtitle }: D1HeaderProps) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: EASE_OUT_EXPO }}
+      transition={{ duration: 0.25, ease: EASE_OUT_EXPO }}
       className="flex flex-col gap-3"
     >
       <div className="flex flex-wrap items-baseline gap-3">

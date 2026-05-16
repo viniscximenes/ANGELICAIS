@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   IconCash,
   IconChartBar,
+  IconClipboardCheck,
   IconDatabase,
   IconSettings,
   IconTargetArrow,
@@ -19,7 +20,13 @@ const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 export type SidebarSection = {
   id: string;
   label: string;
-  iconName: "chart" | "target" | "cash" | "database" | "settings";
+  iconName:
+    | "chart"
+    | "target"
+    | "cash"
+    | "clipboard"
+    | "database"
+    | "settings";
   basePath: string;
   permission: Permission;
   items: { label: string; href: string }[];
@@ -36,6 +43,7 @@ const ICONS: Record<
   chart: IconChartBar,
   target: IconTargetArrow,
   cash: IconCash,
+  clipboard: IconClipboardCheck,
   database: IconDatabase,
   settings: IconSettings,
 };

@@ -12,7 +12,7 @@ export function LoginHero() {
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.8, ease: EASE_OUT_EXPO }}
+        transition={{ delay: 0.1, duration: 0.2, ease: EASE_OUT_EXPO }}
         className="relative z-0"
       >
         <AnimatedOrb />
@@ -21,7 +21,7 @@ export function LoginHero() {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.6, ease: EASE_OUT_EXPO }}
+        transition={{ delay: 0.1, duration: 0.3, ease: EASE_OUT_EXPO }}
         className="relative z-10 mt-4 flex flex-col items-center px-6 text-center"
         style={{ textShadow: "0 2px 24px var(--background)" }}
       >

@@ -18,7 +18,7 @@ export function RvStatusCard({ calculation }: Props) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: 0.2, duration: 0.6, ease: EASE_OUT_EXPO }}
+      transition={{ delay: 0.1, duration: 0.3, ease: EASE_OUT_EXPO }}
       className="elevation-2 relative overflow-hidden rounded-xl p-6 text-center lg:p-8"
     >
       <div

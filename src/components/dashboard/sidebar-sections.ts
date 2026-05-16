@@ -39,6 +39,14 @@ const ALL_SECTIONS: SidebarSection[] = [
     ],
   },
   {
+    id: "registros",
+    label: "Registros",
+    iconName: "clipboard",
+    basePath: "/registros",
+    permission: "view_monitoria",
+    items: [{ label: "Monitoria", href: "/registros/monitoria" }],
+  },
+  {
     id: "bases",
     label: "Bases",
     iconName: "database",

@@ -71,7 +71,7 @@ export function TempoLogadoCards({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2, duration: 0.6, ease: EASE_OUT_EXPO }}
+        transition={{ delay: 0.1, duration: 0.3, ease: EASE_OUT_EXPO }}
         className="elevation-2 relative overflow-hidden rounded-xl p-6 text-center lg:p-8"
       >
         <p className="ds-small text-muted-foreground mb-3 tracking-wider">
@@ -102,7 +102,7 @@ export function TempoLogadoCards({
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5, ease: EASE_OUT_EXPO }}
+          transition={{ delay: 0.15, duration: 0.25, ease: EASE_OUT_EXPO }}
           className="elevation-1 relative overflow-hidden rounded-lg p-6"
         >
           <div
@@ -122,7 +122,7 @@ export function TempoLogadoCards({
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.38, duration: 0.5, ease: EASE_OUT_EXPO }}
+          transition={{ delay: 0.19, duration: 0.25, ease: EASE_OUT_EXPO }}
           className="elevation-1 relative overflow-hidden rounded-lg p-6"
         >
           <div
@@ -151,7 +151,7 @@ export function TempoLogadoCards({
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.46, duration: 0.5, ease: EASE_OUT_EXPO }}
+          transition={{ delay: 0.13, duration: 0.25, ease: EASE_OUT_EXPO }}
           className="elevation-1 relative overflow-hidden rounded-lg p-6"
         >
           <div

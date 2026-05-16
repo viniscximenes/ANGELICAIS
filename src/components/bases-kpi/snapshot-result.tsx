@@ -22,7 +22,7 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: EASE_OUT_EXPO }}
+        transition={{ duration: 0.2, ease: EASE_OUT_EXPO }}
         className="elevation-1 rounded-xl p-5"
         role="alert"
       >
@@ -47,7 +47,7 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: EASE_OUT_EXPO }}
+      transition={{ duration: 0.2, ease: EASE_OUT_EXPO }}
       className="space-y-4"
     >
       <div className="elevation-1 rounded-xl p-5">
