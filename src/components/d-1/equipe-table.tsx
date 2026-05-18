@@ -21,6 +21,10 @@ function formatTx(tx: number | null): string {
   return `${(tx * 100).toFixed(1)}%`;
 }
 
+function meetsMeta(tx: number): boolean {
+  return Math.round(tx * 1000) >= Math.round(META_TX * 1000);
+}
+
 function getNumberColor(value: number): string {
   if (value === 0) return "var(--muted-foreground)";
   return "color-mix(in oklch, var(--foreground) 75%, transparent)";
@@ -28,9 +32,9 @@ function getNumberColor(value: number): string {
 
 function getTxBg(tx: number | null): string {
   if (tx === null) return "transparent";
-  if (tx >= META_TX) {
+  if (meetsMeta(tx)) {
     const ratio = Math.min((tx - META_TX) / (1 - META_TX), 1);
-    const alpha = 0.06 + ratio * 0.12;
+    const alpha = 0.06 + Math.max(ratio, 0) * 0.12;
     return `color-mix(in oklch, var(--success) ${alpha * 100}%, transparent)`;
   }
   const ratio = Math.min((META_TX - tx) / META_TX, 1);
@@ -40,13 +44,13 @@ function getTxBg(tx: number | null): string {
 
 function getTxTextColor(tx: number | null): string {
   if (tx === null) return "var(--muted-foreground)";
-  if (tx >= META_TX) return "var(--success)";
+  if (meetsMeta(tx)) return "var(--success)";
   return "var(--danger)";
 }
 
 function getTxDotColor(tx: number | null): string | null {
   if (tx === null) return null;
-  if (tx >= META_TX) return "var(--success)";
+  if (meetsMeta(tx)) return "var(--success)";
   return "var(--danger)";
 }
 
@@ -99,10 +103,8 @@ export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
         <div>
           {operadores.map((op) => {
             const dotColor = getTxDotColor(op.txRetencao);
-            const isBelow =
-              op.txRetencao !== null && op.txRetencao < META_TX;
-            const isAbove =
-              op.txRetencao !== null && op.txRetencao >= META_TX;
+            const isAbove = op.txRetencao !== null && meetsMeta(op.txRetencao);
+            const isBelow = op.txRetencao !== null && !isAbove;
 
             let rowBackground = "transparent";
             if (isBelow) {

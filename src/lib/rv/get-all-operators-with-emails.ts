@@ -17,6 +17,7 @@ export async function getAllOperatorsWithEmails(): Promise<OperatorListItem[]> {
   const { data, error } = await supabase
     .from("profiles")
     .select("id, full_name, email_corporativo, role")
+    .eq("is_active", true)
     .order("full_name");
 
   if (error) {

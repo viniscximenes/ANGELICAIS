@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 type LoginResult = {
   success: false;
-  error: "credenciais" | "conexao";
+  error: "credenciais" | "conexao" | "inativo";
 };
 
 export async function loginAction(
@@ -17,13 +17,26 @@ export async function loginAction(
 
   try {
     const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
       return { success: false, error: "credenciais" };
+    }
+
+    if (authData.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_active")
+        .eq("id", authData.user.id)
+        .maybeSingle();
+
+      if (profile && profile.is_active === false) {
+        await supabase.auth.signOut();
+        return { success: false, error: "inativo" };
+      }
     }
   } catch (err) {
     console.error("[login] exception", err);

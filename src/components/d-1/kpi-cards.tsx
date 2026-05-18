@@ -5,7 +5,11 @@ import { motion } from "framer-motion";
 import type { OperadorConsolidado } from "@/lib/google/d1";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
-const META_TX = 0.66; // 66%
+const META_TX = 0.6; // 60%
+
+function meetsMeta(tx: number): boolean {
+  return Math.round(tx * 1000) >= Math.round(META_TX * 1000);
+}
 
 interface KpiCardsProps {
   operador: OperadorConsolidado | null;
@@ -19,7 +23,7 @@ export function KpiCards({ operador }: KpiCardsProps) {
   const txStatus: "success" | "danger" | "neutral" =
     tx === null || tx === undefined
       ? "neutral"
-      : tx >= META_TX
+      : meetsMeta(tx)
         ? "success"
         : "danger";
 

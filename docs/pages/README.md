@@ -47,6 +47,8 @@ Quando a página justificar, adicionar:
 | [`kpi-passado-secundario.md`](./kpi-passado-secundario.md) | KPI Passado Secundário | `/kpi/passado-secundario` | documentada |
 | [`rv.md`](./rv.md) | RV — Remuneração Variável | `/config/rv`, `/rv/atual`, `/rv/passado` | documentada |
 | [`registros-monitoria.md`](./registros-monitoria.md) | Monitoria de Ligações | `/registros/monitoria` | documentada |
+| [`registros-diario.md`](./registros-diario.md) | Diário de Bordo | `/registros/diario`, `/registros/diario/[operator_email]` | documentada |
+| [`config-usuarios.md`](./config-usuarios.md) | Gerenciar Usuários | `/config/usuarios` | documentada |
 
 ## Status possíveis
 

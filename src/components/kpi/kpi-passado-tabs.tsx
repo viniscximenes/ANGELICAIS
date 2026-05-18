@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const TABS = [
   { id: "principal", label: "Principais", href: "/kpi/passado-principal" },
@@ -9,7 +10,6 @@ const TABS = [
 
 export function KpiPassadoTabs() {
   const pathname = usePathname();
-  const router = useRouter();
 
   return (
     <div
@@ -19,21 +19,19 @@ export function KpiPassadoTabs() {
       {TABS.map((tab) => {
         const isActive = pathname === tab.href;
         return (
-          <button
+          <Link
             key={tab.id}
+            href={tab.href}
             role="tab"
             aria-selected={isActive}
-            onClick={() => router.push(tab.href)}
-            onMouseEnter={() => router.prefetch(tab.href)}
             className={`ds-small rounded-md px-4 py-1.5 transition-colors ${
               isActive
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
-            type="button"
           >
             {tab.label}
-          </button>
+          </Link>
         );
       })}
     </div>

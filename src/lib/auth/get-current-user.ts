@@ -34,7 +34,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, username, email_corporativo, full_name, role")
+    .select("id, username, email_corporativo, full_name, role, is_active")
     .eq("id", user.id)
     .single();
 
@@ -43,6 +43,11 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       "[getCurrentUser] profile não encontrado para user",
       user.id,
     );
+    return null;
+  }
+
+  if (profile.is_active === false) {
+    await supabase.auth.signOut();
     return null;
   }
 

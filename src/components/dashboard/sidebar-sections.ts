@@ -44,7 +44,10 @@ const ALL_SECTIONS: SidebarSection[] = [
     iconName: "clipboard",
     basePath: "/registros",
     permission: "view_monitoria",
-    items: [{ label: "Monitoria", href: "/registros/monitoria" }],
+    items: [
+      { label: "Monitoria", href: "/registros/monitoria" },
+      { label: "Diário de Bordo", href: "/registros/diario" },
+    ],
   },
   {
     id: "bases",
@@ -63,6 +66,7 @@ const ALL_SECTIONS: SidebarSection[] = [
     items: [
       { label: "KPI", href: "/config/kpi" },
       { label: "RV", href: "/config/rv" },
+      { label: "Usuários", href: "/config/usuarios" },
     ],
   },
 ];

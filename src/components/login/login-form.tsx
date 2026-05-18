@@ -92,7 +92,9 @@ export function LoginForm() {
         setErrorMessage(
           result.error === "conexao"
             ? "Não foi possível conectar. Tente novamente."
-            : "Usuário ou senha incorretos.",
+            : result.error === "inativo"
+              ? "Conta desativada. Contate o administrador."
+              : "Usuário ou senha incorretos.",
         );
         if (next >= MAX_ATTEMPTS) {
           setLockSeconds(LOCK_DURATION);
