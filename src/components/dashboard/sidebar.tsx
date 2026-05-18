@@ -15,6 +15,8 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import type { Permission } from "@/lib/auth/permissions";
 
+import { ThemeToggle } from "./theme-toggle";
+
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 export type SidebarSection = {
@@ -58,7 +60,7 @@ export function Sidebar({ sections }: SidebarProps) {
   return (
     <nav
       aria-label="Navegação principal"
-      className="sticky top-[60px] h-[calc(100vh-60px)] overflow-y-auto px-4 py-6"
+      className="sticky top-[60px] flex h-[calc(100vh-60px)] flex-col overflow-y-auto px-4 py-6"
       style={{
         width: "240px",
         borderRight: "1px solid var(--border)",
@@ -140,6 +142,13 @@ export function Sidebar({ sections }: SidebarProps) {
             </div>
           );
         })}
+      </div>
+
+      <div
+        className="mt-auto space-y-1 pt-3"
+        style={{ borderTop: "1px solid var(--border)" }}
+      >
+        <ThemeToggle />
       </div>
     </nav>
   );

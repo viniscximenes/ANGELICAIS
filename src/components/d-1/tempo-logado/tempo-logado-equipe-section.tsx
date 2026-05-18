@@ -2,10 +2,12 @@
 
 import { motion } from "framer-motion";
 
+import { clearTempoLogadoAction } from "@/lib/google/d1/actions/clear-tempo-logado-action";
 import type {
   OperadorLoginLogout,
   OperadorTempoLogado,
 } from "@/lib/google/d1/tempo-logado";
+import { ClearBaseButton } from "../clear-base-button";
 import { CopyTempoLogadoButton } from "./copy-tempo-logado-button";
 import { TempoLogadoEquipeTable } from "./tempo-logado-equipe-table";
 import { UploadTempoLogadoDropzone } from "./upload-tempo-logado-dropzone";
@@ -46,10 +48,13 @@ export function TempoLogadoEquipeSection({
           <span className="ds-mono text-muted-foreground">·</span>
           <h2 className="ds-h2">Equipe / Anexo</h2>
         </div>
-        <CopyTempoLogadoButton
-          operadores={operadores}
-          loginLogout={loginLogout}
-        />
+        <div className="flex items-center gap-2">
+          <CopyTempoLogadoButton
+            operadores={operadores}
+            loginLogout={loginLogout}
+          />
+          {showUpload && <ClearBaseButton action={clearTempoLogadoAction} />}
+        </div>
       </div>
 
       {/* Grid: tabela à esquerda (780px) + upload à direita (resto) */}

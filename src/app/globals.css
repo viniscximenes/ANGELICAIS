@@ -163,6 +163,116 @@
 
     /* === Special effects === */
     --grain-opacity: 0.03;
+
+    /* Borda horizontal entre linhas de tabelas densas */
+    --row-border: color-mix(in oklch, var(--border) 50%, transparent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Tema claro — overrides
+   ═══════════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] {
+    /* ─── Backgrounds com profundidade ─── */
+
+    /* Fundo principal: branco-azulado muito sutil (não branco puro) */
+    --background: oklch(98% 0.008 230);
+
+    /* Cards: branco puro pra contrastar com o fundo azulado */
+    --card: oklch(100% 0 0);
+    --card-foreground: oklch(25% 0.04 235);
+    --popover: oklch(100% 0 0);
+    --popover-foreground: oklch(25% 0.04 235);
+
+    /* Muted: cinza-azulado pra zonas secundárias e badges */
+    --muted: oklch(95% 0.012 230);
+    --muted-foreground: oklch(45% 0.04 235);
+
+    /* Bordas suaves mas presentes, com tom azulado */
+    --border: oklch(86% 0.018 230);
+
+    /* ─── Texto ─── */
+
+    /* Cinza-azul escuro em vez de preto puro */
+    --foreground: oklch(25% 0.04 235);
+
+    /* ─── Brand azul corporativo (chroma baixo p/ consistência cross-device) ─── */
+
+    --primary: oklch(46% 0.13 240);
+    --primary-foreground: oklch(99% 0 0);
+
+    /* ─── Status (bg/border ajustados pra fundo claro) ─── */
+
+    --success: oklch(42% 0.14 150);
+    --success-bg: oklch(93% 0.05 150);
+    --success-border: oklch(75% 0.09 150);
+
+    --warning: oklch(50% 0.13 75);
+    --warning-bg: oklch(94% 0.05 75);
+    --warning-border: oklch(77% 0.11 75);
+
+    --danger: oklch(48% 0.18 27);
+    --danger-bg: oklch(93% 0.05 27);
+    --danger-border: oklch(77% 0.12 27);
+
+    /* ─── Elevation: cards brancos puros com bordas azuladas ─── */
+
+    --elevation-1-bg: oklch(100% 0 0);
+    --elevation-1-border: oklch(88% 0.018 235);
+
+    --elevation-2-bg: oklch(100% 0 0);
+    --elevation-2-border: oklch(85% 0.020 235);
+
+    --elevation-3-bg: oklch(100% 0 0);
+    --elevation-3-border: oklch(82% 0.022 235);
+
+    /* ─── Glow (gradientes do topo de cards hero) ─── */
+
+    --glow-accent: oklch(55% 0.12 240);
+    --glow-accent-strong: oklch(46% 0.14 240);
+
+    /* ─── Hover states ─── */
+
+    --card-hover-bg: oklch(98% 0.01 240);
+    --muted-hover-bg: oklch(92% 0.015 235);
+    --border-hover: oklch(80% 0.025 235);
+
+    /* Linha guia entre operadores: ligeiramente mais visível por ser dashed */
+    --row-border: oklch(88% 0.008 240);
+}
+
+/* Hover apenas em LINKS com elevation (cards clicáveis).
+   Transition aplicada só nos <a> — não afeta os centenas de divs estáticos. */
+[data-theme="light"] a.elevation-1,
+[data-theme="light"] a.elevation-2 {
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease;
+}
+
+[data-theme="light"] a.elevation-1:hover,
+[data-theme="light"] a.elevation-2:hover {
+    background: var(--card-hover-bg);
+    border-color: var(--border-hover);
+}
+
+/* Sombras com tinta azulada — visíveis sobre fundo claro */
+[data-theme="light"] .elevation-1 {
+    box-shadow:
+        0 1px 3px oklch(40% 0.10 235 / 0.08),
+        0 1px 2px oklch(40% 0.10 235 / 0.06);
+}
+
+[data-theme="light"] .elevation-2 {
+    box-shadow:
+        0 4px 12px oklch(40% 0.10 235 / 0.10),
+        0 2px 4px oklch(40% 0.10 235 / 0.06);
+}
+
+[data-theme="light"] .elevation-3 {
+    box-shadow:
+        0 12px 32px oklch(40% 0.10 235 / 0.12),
+        0 4px 12px oklch(40% 0.10 235 / 0.08);
 }
 
 .dark {
@@ -407,4 +517,55 @@
   input[type="date"].date-input-styled::-webkit-calendar-picker-indicator:hover {
     filter: invert(0.75);
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Focus rings de acessibilidade (Tab navigation)
+   ═══════════════════════════════════════════════════════════════════ */
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Selection color — usa a cor da marca
+   ═══════════════════════════════════════════════════════════════════ */
+
+::selection {
+  background: color-mix(in oklch, var(--primary) 25%, transparent);
+  color: var(--foreground);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Transição suave entre temas
+   A classe `theme-transition` é aplicada no <html> SÓ durante a troca
+   (~300ms) — fora disso, zero transições globais (sem custo de scroll)
+   ═══════════════════════════════════════════════════════════════════ */
+
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease !important;
+  transition-delay: 0s !important;
 }

@@ -10,7 +10,10 @@ interface EquipeTableProps {
 }
 
 const META_TX = 0.6;
-const COLS = "grid-cols-[2.2fr_1fr_1fr_1fr_1fr]";
+
+const COL_DIVIDER: React.CSSProperties = {
+  borderRight: "1px solid var(--row-border)",
+};
 
 function formatOperatorLabel(email: string): string {
   return email.split("@")[0] || email;
@@ -25,196 +28,173 @@ function meetsMeta(tx: number): boolean {
   return Math.round(tx * 1000) >= Math.round(META_TX * 1000);
 }
 
-function getNumberColor(value: number): string {
-  if (value === 0) return "var(--muted-foreground)";
-  return "color-mix(in oklch, var(--foreground) 75%, transparent)";
-}
-
-function getTxBg(tx: number | null): string {
-  if (tx === null) return "transparent";
-  if (meetsMeta(tx)) {
-    const ratio = Math.min((tx - META_TX) / (1 - META_TX), 1);
-    const alpha = 0.06 + Math.max(ratio, 0) * 0.12;
-    return `color-mix(in oklch, var(--success) ${alpha * 100}%, transparent)`;
-  }
-  const ratio = Math.min((META_TX - tx) / META_TX, 1);
-  const alpha = 0.06 + ratio * 0.12;
-  return `color-mix(in oklch, var(--danger) ${alpha * 100}%, transparent)`;
-}
-
-function getTxTextColor(tx: number | null): string {
-  if (tx === null) return "var(--muted-foreground)";
-  if (meetsMeta(tx)) return "var(--success)";
-  return "var(--danger)";
-}
-
-function getTxDotColor(tx: number | null): string | null {
-  if (tx === null) return null;
-  if (meetsMeta(tx)) return "var(--success)";
-  return "var(--danger)";
-}
-
 export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
   function EquipeTable({ operadores, equipe }, ref) {
+    const equipeMeets =
+      equipe.txRetencao !== null && meetsMeta(equipe.txRetencao);
+
     return (
       <div
         ref={ref}
         data-equipe-table
-        className="elevation-1 rounded-xl p-3"
+        className="elevation-1 overflow-hidden rounded-xl"
       >
-        {/* Cabeçalho */}
+        {/* Header */}
         <div
-          className="grid grid-cols-[2.2fr_1fr_1fr_1fr_1fr] gap-0 overflow-hidden rounded-md"
-          style={{ background: "var(--elevation-2-bg)" }}
+          className="ds-mono-sm text-muted-foreground grid grid-cols-12 gap-0 border-b px-0 py-2 font-semibold tracking-wider uppercase"
+          style={{ borderColor: "var(--border)" }}
         >
-          <span
-            className="ds-mono-sm border-r border-[var(--border)] px-1.5 py-1.5 font-semibold tracking-wider uppercase"
-            style={{ color: "var(--muted-foreground)" }}
-          >
+          <div className="col-span-3 px-3" style={COL_DIVIDER}>
             Operador
-          </span>
-          <span
-            className="ds-mono-sm border-r border-[var(--border)] px-1.5 py-1.5 text-right font-semibold tracking-wider uppercase"
-            style={{ color: "var(--muted-foreground)" }}
-          >
+          </div>
+          <div className="col-span-2 px-3 text-right" style={COL_DIVIDER}>
             Retidos
-          </span>
-          <span
-            className="ds-mono-sm border-r border-[var(--border)] px-1.5 py-1.5 text-right font-semibold tracking-wider uppercase"
-            style={{ color: "var(--muted-foreground)" }}
-          >
+          </div>
+          <div className="col-span-2 px-3 text-right" style={COL_DIVIDER}>
             Cancelados
-          </span>
-          <span
-            className="ds-mono-sm border-r border-[var(--border)] px-1.5 py-1.5 text-right font-semibold tracking-wider uppercase"
-            style={{ color: "var(--muted-foreground)" }}
-          >
+          </div>
+          <div className="col-span-2 px-3 text-right" style={COL_DIVIDER}>
             Pedidos
-          </span>
-          <span
-            className="ds-mono-sm px-1.5 py-1.5 text-right font-semibold tracking-wider uppercase"
-            style={{ color: "var(--muted-foreground)" }}
-          >
-            Tx Retenção
-          </span>
+          </div>
+          <div className="col-span-3 px-3 text-right">Tx Retenção</div>
         </div>
 
         {/* Linhas de operadores */}
-        <div>
-          {operadores.map((op) => {
-            const dotColor = getTxDotColor(op.txRetencao);
-            const isAbove = op.txRetencao !== null && meetsMeta(op.txRetencao);
-            const isBelow = op.txRetencao !== null && !isAbove;
+        {operadores.map((op, idx) => {
+          const isLast = idx === operadores.length - 1;
+          const semAtendimentos = op.pedidos === 0 || op.txRetencao === null;
+          const meetsM = op.txRetencao !== null && meetsMeta(op.txRetencao);
+          const belowMeta = !semAtendimentos && !meetsM;
 
-            let rowBackground = "transparent";
-            if (isBelow) {
-              rowBackground =
-                "linear-gradient(to left, color-mix(in oklch, var(--danger) 18%, transparent) 0%, color-mix(in oklch, var(--danger) 12%, transparent) 40%, transparent 85%)";
-            } else if (isAbove) {
-              rowBackground =
-                "linear-gradient(to left, color-mix(in oklch, var(--success) 18%, transparent) 0%, color-mix(in oklch, var(--success) 12%, transparent) 40%, transparent 85%)";
-            }
-            return (
+          return (
+            <div
+              key={op.email}
+              className="grid grid-cols-12 items-center gap-0 px-0 py-1.5"
+              style={{
+                background: belowMeta
+                  ? "color-mix(in oklch, var(--danger) 7%, transparent)"
+                  : "transparent",
+                borderBottom: isLast ? "none" : "1px solid var(--row-border)",
+                opacity: semAtendimentos ? 0.35 : 1,
+              }}
+            >
               <div
-                key={op.email}
-                className={`grid ${COLS} items-center gap-0 py-1 transition-colors hover:bg-[var(--elevation-2-bg)]`}
-                style={{ background: rowBackground }}
+                className="ds-body col-span-3 truncate px-3"
+                style={{
+                  ...COL_DIVIDER,
+                  color: semAtendimentos
+                    ? "var(--muted-foreground)"
+                    : belowMeta
+                      ? "var(--danger)"
+                      : "var(--foreground)",
+                  fontWeight: belowMeta ? 500 : 400,
+                }}
               >
-                <span className="ds-mono-sm text-muted-foreground border-r border-[var(--border)] px-1.5">
-                  {formatOperatorLabel(op.email)}
-                </span>
-                <span
-                  className="ds-mono flex items-center justify-end border-r border-[var(--border)] px-1.5 text-right"
-                  style={{ color: getNumberColor(op.retidos) }}
-                >
-                  {op.retidos}
-                </span>
-                <span
-                  className="ds-mono flex items-center justify-end border-r border-[var(--border)] px-1.5 text-right"
-                  style={{ color: getNumberColor(op.cancelados) }}
-                >
-                  {op.cancelados}
-                </span>
-                <span
-                  className="ds-mono flex items-center justify-end border-r border-[var(--border)] px-1.5 text-right"
-                  style={{ color: getNumberColor(op.pedidos) }}
-                >
-                  {op.pedidos}
-                </span>
-                <span
-                  className="ds-mono flex items-center justify-end gap-2 px-1.5 font-medium"
-                  style={{
-                    background: "transparent",
-                    color: getTxTextColor(op.txRetencao),
-                  }}
-                >
-                  {formatTx(op.txRetencao)}
-                  {dotColor && (
+                {formatOperatorLabel(op.email)}
+              </div>
+              <div
+                className="ds-mono-sm col-span-2 px-3 text-right"
+                style={{ ...COL_DIVIDER, fontVariantNumeric: "tabular-nums" }}
+              >
+                {op.retidos}
+              </div>
+              <div
+                className="ds-mono-sm col-span-2 px-3 text-right"
+                style={{ ...COL_DIVIDER, fontVariantNumeric: "tabular-nums" }}
+              >
+                {op.cancelados}
+              </div>
+              <div
+                className="ds-mono-sm col-span-2 px-3 text-right"
+                style={{ ...COL_DIVIDER, fontVariantNumeric: "tabular-nums" }}
+              >
+                {op.pedidos}
+              </div>
+              <div className="ds-mono-sm col-span-3 flex items-center justify-end gap-1.5 px-3">
+                {semAtendimentos ? (
+                  <span className="text-muted-foreground">—</span>
+                ) : (
+                  <>
+                    <span
+                      style={{
+                        color: belowMeta
+                          ? "var(--danger)"
+                          : "var(--success)",
+                        fontWeight: 500,
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {formatTx(op.txRetencao)}
+                    </span>
                     <span
                       aria-hidden="true"
-                      className="inline-block rounded-full"
+                      className="inline-block h-1.5 w-1.5 rounded-full"
                       style={{
-                        width: "7px",
-                        height: "7px",
-                        background: dotColor,
-                        flexShrink: 0,
+                        background: belowMeta
+                          ? "var(--danger)"
+                          : "var(--success)",
                       }}
                     />
-                  )}
-                </span>
+                  </>
+                )}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
 
-        {/* Linha Equipe — neutra, label em muted, números em branco */}
+        {/* Linha Equipe (rodapé) */}
         <div
-          className="mt-2 overflow-hidden rounded-md border border-[var(--border)]"
-          style={{ background: "var(--elevation-2-bg)" }}
+          className="ds-body grid grid-cols-12 items-center gap-0 px-0 py-2"
+          style={{
+            borderTop: "1px solid var(--border)",
+            fontWeight: 500,
+          }}
         >
-          <div className="grid grid-cols-[2.2fr_1fr_1fr_1fr_1fr] gap-0 py-1.5">
-            <span
-              className="ds-mono-sm flex items-center border-r border-[var(--border)] px-1.5 font-semibold tracking-[0.15em] uppercase"
-              style={{ color: "var(--muted-foreground)" }}
-            >
-              Equipe
-            </span>
-            <span
-              className="ds-mono flex items-center justify-end border-r border-[var(--border)] px-1.5 text-right font-semibold"
-              style={{ color: "var(--foreground)" }}
-            >
-              {equipe.retidos}
-            </span>
-            <span
-              className="ds-mono flex items-center justify-end border-r border-[var(--border)] px-1.5 text-right font-semibold"
-              style={{ color: "var(--foreground)" }}
-            >
-              {equipe.cancelados}
-            </span>
-            <span
-              className="ds-mono flex items-center justify-end border-r border-[var(--border)] px-1.5 text-right font-semibold"
-              style={{ color: "var(--foreground)" }}
-            >
-              {equipe.pedidos}
-            </span>
-            <span
-              className="ds-mono flex items-center justify-end gap-2 px-1.5 font-semibold"
-              style={{ color: "var(--foreground)" }}
-            >
-              {formatTx(equipe.txRetencao)}
-              {getTxDotColor(equipe.txRetencao) && (
+          <div className="col-span-3 px-3" style={COL_DIVIDER}>
+            EQUIPE
+          </div>
+          <div
+            className="col-span-2 px-3 text-right"
+            style={{ ...COL_DIVIDER, fontVariantNumeric: "tabular-nums" }}
+          >
+            {equipe.retidos}
+          </div>
+          <div
+            className="col-span-2 px-3 text-right"
+            style={{ ...COL_DIVIDER, fontVariantNumeric: "tabular-nums" }}
+          >
+            {equipe.cancelados}
+          </div>
+          <div
+            className="col-span-2 px-3 text-right"
+            style={{ ...COL_DIVIDER, fontVariantNumeric: "tabular-nums" }}
+          >
+            {equipe.pedidos}
+          </div>
+          <div className="col-span-3 flex items-center justify-end gap-1.5 px-3">
+            {equipe.txRetencao === null ? (
+              <span className="text-muted-foreground">—</span>
+            ) : (
+              <>
+                <span
+                  style={{
+                    color: equipeMeets ? "var(--success)" : "var(--danger)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {formatTx(equipe.txRetencao)}
+                </span>
                 <span
                   aria-hidden="true"
-                  className="inline-block rounded-full"
+                  className="inline-block h-1.5 w-1.5 rounded-full"
                   style={{
-                    width: "7px",
-                    height: "7px",
-                    background: getTxDotColor(equipe.txRetencao)!,
-                    flexShrink: 0,
+                    background: equipeMeets
+                      ? "var(--success)"
+                      : "var(--danger)",
                   }}
                 />
-              )}
-            </span>
+              </>
+            )}
           </div>
         </div>
       </div>

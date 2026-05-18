@@ -8,6 +8,7 @@ export type UserProfile = {
   emailCorporativo: string;
   fullName: string;
   role: UserRole;
+  themePreference: "dark" | "light";
 };
 
 export type CurrentUser = {
@@ -34,7 +35,9 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, username, email_corporativo, full_name, role, is_active")
+    .select(
+      "id, username, email_corporativo, full_name, role, is_active, theme_preference",
+    )
     .eq("id", user.id)
     .single();
 
@@ -60,6 +63,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       emailCorporativo: profile.email_corporativo,
       fullName: profile.full_name,
       role: profile.role as UserRole,
+      themePreference: profile.theme_preference as "dark" | "light",
     },
   };
 }

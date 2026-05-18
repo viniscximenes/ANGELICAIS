@@ -9,6 +9,7 @@ export type UserProfile = {
   emailCorporativoAliasKpi: string | null;
   role: UserRole;
   isActive: boolean;
+  themePreference: "dark" | "light";
   createdAt: string | null;
   updatedAt: string | null;
 };

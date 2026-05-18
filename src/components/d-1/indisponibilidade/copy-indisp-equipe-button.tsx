@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
-import { toPng } from "html-to-image";
+import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -23,11 +23,7 @@ export function CopyIndispEquipeButton() {
     setState("copying");
 
     try {
-      const pngDataUrl = await toPng(target, {
-        backgroundColor: "#15171c",
-        pixelRatio: 2,
-        cacheBust: true,
-      });
+      const pngDataUrl = await domToPng(target, { scale: 2 });
 
       const blobResponse = await fetch(pngDataUrl);
       const imageBlob = await blobResponse.blob();

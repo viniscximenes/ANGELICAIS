@@ -2,7 +2,9 @@
 
 import { motion } from "framer-motion";
 
+import { clearConsolidadoAction } from "@/lib/google/d1/actions/clear-consolidado-action";
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
+import { ClearBaseButton } from "./clear-base-button";
 import { CopyTableButton } from "./copy-table-button";
 import { EquipeTable } from "./equipe-table";
 import { UploadDropzone } from "./upload-dropzone";
@@ -33,33 +35,35 @@ export function EquipeSection({
         <div className="divider-gradient flex-1" />
       </div>
 
-      {/* Título + botão copiar */}
-      <div
-        className="flex items-center justify-between gap-4"
-        style={{ maxWidth: "780px" }}
-      >
-        <div className="flex items-baseline gap-3">
-          <span className="ds-mono text-muted-foreground">03</span>
-          <span className="ds-mono text-muted-foreground">·</span>
-          <h2 className="ds-h2">Equipe / Anexo</h2>
-        </div>
-        <CopyTableButton equipe={equipe} />
-      </div>
-
-      {/* Grid: tabela à esquerda (780px) + upload à direita (resto) */}
-      <div
-        className="grid items-stretch gap-4"
-        style={{ gridTemplateColumns: "780px 1fr" }}
-      >
-        <div>
-          <EquipeTable operadores={operadores} equipe={equipe} />
-        </div>
-
-        {showUpload && (
-          <div>
-            <UploadDropzone />
+      <div className="flex flex-col gap-3">
+        {/* Linha 1: header compartilhado (título alinhado com tabela, botão alinhado com anexo) */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="shrink-0" style={{ width: "600px" }}>
+            <div className="flex items-baseline gap-3">
+              <span className="ds-mono text-muted-foreground">03</span>
+              <span className="ds-mono text-muted-foreground">·</span>
+              <h2 className="ds-h2">Equipe</h2>
+            </div>
           </div>
-        )}
+
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+            <CopyTableButton operadores={operadores} equipe={equipe} />
+            {showUpload && <ClearBaseButton action={clearConsolidadoAction} />}
+          </div>
+        </div>
+
+        {/* Linha 2: conteúdo (tabela 600px | dropzone esticada) */}
+        <div className="flex items-stretch gap-4">
+          <div className="shrink-0" style={{ width: "600px" }}>
+            <EquipeTable operadores={operadores} equipe={equipe} />
+          </div>
+
+          {showUpload && (
+            <div className="min-w-0 flex-1">
+              <UploadDropzone />
+            </div>
+          )}
+        </div>
       </div>
     </motion.section>
   );
