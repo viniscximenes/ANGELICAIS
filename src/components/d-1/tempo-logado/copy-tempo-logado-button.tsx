@@ -35,7 +35,7 @@ export function CopyTempoLogadoButton({
     setState("copying");
 
     try {
-      const pngDataUrl = await domToPng(target, { scale: 2 });
+      const pngDataUrl = await domToPng(target, { scale: 3 });
 
       const blobResponse = await fetch(pngDataUrl);
       const imageBlob = await blobResponse.blob();

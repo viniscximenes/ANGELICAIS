@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
+import { saveEvolucaoAction } from "@/lib/d1/evolucao/actions/save-evolucao-action";
+import { fetchConsolidado } from "@/lib/google/d1";
 import { uploadBaseToSheet } from "@/lib/google/d1/upload";
 import { getCurrentUser } from "./get-current-user";
 import { can } from "./permissions";
@@ -26,6 +28,23 @@ export async function uploadBaseAction(
   const result = await uploadBaseToSheet(parsedRows);
 
   if (result.success) {
+    // Snapshot da evolução da TX (complementar — falha silenciosa não bloqueia upload).
+    try {
+      const consolidado = await fetchConsolidado();
+      const tx = consolidado.equipe.txRetencao;
+      if (tx !== null && !isNaN(tx)) {
+        const snapshotResult = await saveEvolucaoAction(tx * 100);
+        if (!snapshotResult.success) {
+          console.error(
+            "[upload-base] falha ao salvar snapshot evolução:",
+            snapshotResult.error,
+          );
+        }
+      }
+    } catch (err) {
+      console.error("[upload-base] erro ao processar snapshot:", err);
+    }
+
     revalidatePath("/d-1");
   }
 

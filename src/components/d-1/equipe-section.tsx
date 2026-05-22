@@ -2,11 +2,15 @@
 
 import { motion } from "framer-motion";
 
+import type { EvolucaoSnapshot } from "@/lib/d1/evolucao/types";
 import { clearConsolidadoAction } from "@/lib/google/d1/actions/clear-consolidado-action";
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
 import { ClearBaseButton } from "./clear-base-button";
 import { CopyTableButton } from "./copy-table-button";
+import { DownloadTableButton } from "./download-table-button";
 import { EquipeTable } from "./equipe-table";
+import { EvolucaoEmptyState } from "./evolucao/evolucao-empty-state";
+import { EvolucaoGrafico } from "./evolucao/evolucao-grafico";
 import { UploadDropzone } from "./upload-dropzone";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
@@ -14,14 +18,18 @@ const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 interface EquipeSectionProps {
   operadores: OperadorConsolidado[];
   equipe: ResumoEquipe;
+  snapshots: EvolucaoSnapshot[];
   showUpload?: boolean;
 }
 
 export function EquipeSection({
   operadores,
   equipe,
+  snapshots,
   showUpload = false,
 }: EquipeSectionProps) {
+  const hasSnapshots = snapshots.length > 0;
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
@@ -48,21 +56,63 @@ export function EquipeSection({
 
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
             <CopyTableButton operadores={operadores} equipe={equipe} />
+            <DownloadTableButton />
             {showUpload && <ClearBaseButton action={clearConsolidadoAction} />}
           </div>
         </div>
 
-        {/* Linha 2: conteúdo (tabela 600px | dropzone esticada) */}
+        {/*
+          Wrapper INVISÍVEL usado SÓ pela captura do PNG (tabela + gráfico
+          empilhados). Vive off-screen pra não afetar o layout normal.
+        */}
+        <div
+          data-equipe-png-wrapper
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: "-99999px",
+            left: "-99999px",
+            width: "600px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+          }}
+        >
+          <EquipeTable
+            key="equipe-png"
+            operadores={operadores}
+            equipe={equipe}
+          />
+          {hasSnapshots && (
+            <EvolucaoGrafico key="grafico-png" snapshots={snapshots} />
+          )}
+        </div>
+
+        {/* Layout visível: tabela à esquerda | (gráfico em cima + dropzone embaixo) à direita */}
         <div className="flex items-stretch gap-4">
           <div className="shrink-0" style={{ width: "600px" }}>
-            <EquipeTable operadores={operadores} equipe={equipe} />
+            <EquipeTable
+              key="equipe-visible"
+              operadores={operadores}
+              equipe={equipe}
+            />
           </div>
 
-          {showUpload && (
-            <div className="min-w-0 flex-1">
-              <UploadDropzone />
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            <div className="shrink-0">
+              {hasSnapshots ? (
+                <EvolucaoGrafico key="grafico-visible" snapshots={snapshots} />
+              ) : (
+                <EvolucaoEmptyState />
+              )}
             </div>
-          )}
+
+            {showUpload && (
+              <div className="min-h-0 flex-1">
+                <UploadDropzone />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </motion.section>

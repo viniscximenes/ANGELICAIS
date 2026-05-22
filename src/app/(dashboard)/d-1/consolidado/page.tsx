@@ -11,6 +11,7 @@ import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { filterByUserEmail } from "@/lib/d1/filter-by-user";
+import { getEvolucaoTxHoje } from "@/lib/d1/evolucao/get-evolucao-tx-hoje";
 import { getD1Data } from "@/lib/google/d1";
 
 export const metadata: Metadata = {
@@ -30,7 +31,10 @@ export default async function ConsolidadoPage() {
     redirect("/gestor/d-1");
   }
 
-  const d1Data = await getD1Data();
+  const [d1Data, evolucaoSnapshots] = await Promise.all([
+    getD1Data(),
+    getEvolucaoTxHoje(),
+  ]);
   const userView = filterByUserEmail(d1Data, user.profile.emailCorporativo);
 
   return (
@@ -48,6 +52,7 @@ export default async function ConsolidadoPage() {
               <EquipeSection
                 operadores={d1Data.consolidado.operadores}
                 equipe={d1Data.consolidado.equipe}
+                snapshots={evolucaoSnapshots}
                 showUpload={can(user.profile.role, "manage_base")}
               />
             )}

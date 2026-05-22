@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getSheetsClient } from "../../sheets-client";
 
@@ -34,6 +35,17 @@ export async function clearConsolidadoAction(): Promise<ClearConsolidadoResult> 
       spreadsheetId: sheetId,
       range: `'${CONSOLIDADO_SHEET}'!L2`,
     });
+
+    // Limpa histórico de evolução do dia (falha silenciosa — complementar).
+    try {
+      const adminClient = createAdminClient();
+      await adminClient
+        .from("d1_evolucao_tx")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+    } catch (e) {
+      console.error("[clear-consolidado] erro ao limpar histórico:", e);
+    }
 
     revalidatePath("/d-1");
     return { success: true };
