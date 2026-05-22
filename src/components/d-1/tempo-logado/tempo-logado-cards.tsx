@@ -12,7 +12,6 @@ const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 // Metas em segundos
 const META_TEMPO_LOGADO = 6 * 3600 + 20 * 60; // 06:20:00
-const TEMPO_ATENCAO = 5 * 3600; // 05:00:00
 const LIMITE_LOGIN_OK = 14 * 3600 + 5 * 60; // 14:05:00
 const LIMITE_LOGIN_ATENCAO = 14 * 3600 + 10 * 60; // 14:10:00
 
@@ -21,21 +20,14 @@ interface TempoLogadoCardsProps {
   loginLogout: OperadorLoginLogout | null;
 }
 
-function getTempoLogadoColor(tempo: string): {
-  bar: string;
-  status: "success" | "warning" | "danger" | "neutral";
-} {
-  if (tempo === "00:00:00") {
-    return { bar: "var(--muted-foreground)", status: "neutral" };
-  }
+/**
+ * 3 zonas (sem amarelo): cinza se 0, vermelho < 06:20, verde >= 06:20.
+ */
+function getTempoLogadoColor(tempo: string): string {
+  if (tempo === "00:00:00") return "var(--muted-foreground)";
   const sec = timeToSeconds(tempo);
-  if (sec >= META_TEMPO_LOGADO) {
-    return { bar: "var(--success)", status: "success" };
-  }
-  if (sec >= TEMPO_ATENCAO) {
-    return { bar: "var(--warning)", status: "warning" };
-  }
-  return { bar: "var(--danger)", status: "danger" };
+  if (sec >= META_TEMPO_LOGADO) return "var(--success)";
+  return "var(--danger)";
 }
 
 function getLoginColor(login: string | null): string {
@@ -63,6 +55,7 @@ export function TempoLogadoCards({
   const displayLogin = loginLogout?.horaLogin ?? "—";
 
   const tempoLogadoColor = getTempoLogadoColor(displayTempoLogado);
+  const tempoLogadoIsZero = displayTempoLogado === "00:00:00";
   const restanteIsZero = displayRestante === "00:00:00";
 
   return (
@@ -74,6 +67,14 @@ export function TempoLogadoCards({
         transition={{ delay: 0.1, duration: 0.3, ease: EASE_OUT_EXPO }}
         className="elevation-2 relative overflow-hidden rounded-xl p-6 text-center lg:p-8"
       >
+        {/* Linha superior cinza fixa (igual ao hero do consolidado) */}
+        <div
+          aria-hidden="true"
+          className="absolute top-0 left-0 h-[2px] w-full"
+          style={{
+            background: `linear-gradient(to right, transparent, var(--border), transparent)`,
+          }}
+        />
         <p className="ds-small text-muted-foreground mb-3 tracking-wider">
           LOGOUT ESTIMADO
         </p>
@@ -105,15 +106,24 @@ export function TempoLogadoCards({
           transition={{ delay: 0.15, duration: 0.25, ease: EASE_OUT_EXPO }}
           className="elevation-1 relative overflow-hidden rounded-lg p-6"
         >
+          {/* Linha superior cinza fixa (igual ao hero do consolidado) */}
           <div
             aria-hidden="true"
-            className="absolute top-0 left-0 h-full w-[3px]"
-            style={{ background: tempoLogadoColor.bar }}
+            className="absolute top-0 left-0 h-[2px] w-full"
+            style={{
+              background: `linear-gradient(to right, transparent, var(--border), transparent)`,
+            }}
           />
           <p className="ds-small text-muted-foreground mb-2 tracking-wider">
             TEMPO LOGADO
           </p>
-          <p className="ds-display" style={{ fontSize: "2.25rem" }}>
+          <p
+            className="ds-display"
+            style={{
+              fontSize: "2.25rem",
+              color: tempoLogadoIsZero ? "var(--muted-foreground)" : tempoLogadoColor,
+            }}
+          >
             {displayTempoLogado}
           </p>
         </motion.div>

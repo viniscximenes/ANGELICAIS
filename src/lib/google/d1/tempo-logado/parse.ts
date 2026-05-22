@@ -75,3 +75,41 @@ export function timeToSeconds(time: string): number {
   const [, h, m, s] = match;
   return parseInt(h) * 3600 + parseInt(m) * 60 + parseInt(s);
 }
+
+/**
+ * Extrai HH:MM de uma string contendo padrão H:M[:S]. Retorna null
+ * se não encontrar.
+ */
+export function extractHHMM(
+  value: string | null | undefined,
+): string | null {
+  if (!value) return null;
+  const match = String(value).match(/(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const [, h, m] = match;
+  return `${h.padStart(2, "0")}:${m}`;
+}
+
+function hhmmToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+}
+
+/**
+ * Retorna true se o horário de logout cair dentro de ±tolerance min
+ * do horário do report. Aceita strings com HH:MM embutido (incluindo
+ * "Tue, 12 May 2026 19:55:33" ou "19:55:33").
+ */
+export function isWithinReportWindow(
+  logoutTime: string | null | undefined,
+  reportTime: string | null | undefined,
+  toleranceMinutes = 5,
+): boolean {
+  const logoutHHMM = extractHHMM(logoutTime);
+  const reportHHMM = extractHHMM(reportTime);
+  if (!logoutHHMM || !reportHHMM) return false;
+  return (
+    Math.abs(hhmmToMinutes(logoutHHMM) - hhmmToMinutes(reportHHMM)) <=
+    toleranceMinutes
+  );
+}

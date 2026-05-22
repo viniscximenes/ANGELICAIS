@@ -38,42 +38,41 @@ export function TempoLogadoEquipeSection({
         <div className="divider-gradient flex-1" />
       </div>
 
-      {/* Título + botão copiar */}
-      <div
-        className="flex items-center justify-between gap-4"
-        style={{ maxWidth: "780px" }}
-      >
-        <div className="flex items-baseline gap-3">
-          <span className="ds-mono text-muted-foreground">03</span>
-          <span className="ds-mono text-muted-foreground">·</span>
-          <h2 className="ds-h2">Equipe / Anexo</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <CopyTempoLogadoButton
-            operadores={operadores}
-            loginLogout={loginLogout}
-          />
-          {showUpload && <ClearBaseButton action={clearTempoLogadoAction} />}
-        </div>
-      </div>
-
-      {/* Grid: tabela à esquerda (780px) + upload à direita (resto) */}
-      <div
-        className="grid items-stretch gap-4"
-        style={{ gridTemplateColumns: "780px 1fr" }}
-      >
-        <div>
-          <TempoLogadoEquipeTable
-            operadores={operadores}
-            loginLogout={loginLogout}
-          />
-        </div>
-
-        {showUpload && (
-          <div>
-            <UploadTempoLogadoDropzone />
+      <div className="flex flex-col gap-3">
+        {/* Linha 1: header (título alinhado com tabela, botões alinhados com anexo) */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="shrink-0" style={{ width: "600px" }}>
+            <div className="flex items-baseline gap-3">
+              <span className="ds-mono text-muted-foreground">03</span>
+              <span className="ds-mono text-muted-foreground">·</span>
+              <h2 className="ds-h2">Equipe</h2>
+            </div>
           </div>
-        )}
+
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+            <CopyTempoLogadoButton
+              operadores={operadores}
+              loginLogout={loginLogout}
+            />
+            {showUpload && <ClearBaseButton action={clearTempoLogadoAction} />}
+          </div>
+        </div>
+
+        {/* Linha 2: conteúdo (tabela 600px | dropzone esticada) */}
+        <div className="flex items-start gap-4">
+          <div className="shrink-0" style={{ width: "600px" }}>
+            <TempoLogadoEquipeTable
+              operadores={operadores}
+              loginLogout={loginLogout}
+            />
+          </div>
+
+          {showUpload && (
+            <div className="min-w-0 flex-1">
+              <UploadTempoLogadoDropzone />
+            </div>
+          )}
+        </div>
       </div>
     </motion.section>
   );

@@ -7,6 +7,12 @@ import type {
 import { timeToSeconds } from "@/lib/google/d1/tempo-logado/parse";
 
 const META_TEMPO_LOGADO = 6 * 3600 + 20 * 60; // 06:20:00
+const LIMITE_LOGIN_OK = 14 * 3600 + 5 * 60; // 14:05:00
+const LIMITE_LOGIN_ATENCAO = 14 * 3600 + 10 * 60; // 14:10:00
+
+const COL_DIVIDER: React.CSSProperties = {
+  borderRight: "1px solid var(--row-border)",
+};
 
 interface TempoLogadoEquipeTableProps {
   operadores: OperadorTempoLogado[];
@@ -17,41 +23,12 @@ function formatOperatorLabel(email: string): string {
   return email.split("@")[0] || email;
 }
 
-function formatLogoutDisplay(value: string | null): string {
-  if (!value) return "—";
-  if (value === "00:00:00") return "ainda logado";
-  return value;
-}
-
-function formatLoginDisplay(value: string | null): string {
-  return value ?? "—";
-}
-
-function getTempoLogadoStatus(tempo: string): "above" | "below" | "neutral" {
-  if (tempo === "00:00:00") return "neutral";
-  const sec = timeToSeconds(tempo);
-  if (sec >= META_TEMPO_LOGADO) return "above";
-  return "below";
-}
-
-function getTempoLogadoColor(
-  status: "above" | "below" | "neutral",
-): string {
-  if (status === "above") return "var(--success)";
-  if (status === "below") return "var(--danger)";
-  return "var(--muted-foreground)";
-}
-
-function getRowBackground(
-  status: "above" | "below" | "neutral",
-): string {
-  if (status === "above") {
-    return "linear-gradient(to left, color-mix(in oklch, var(--success) 18%, transparent) 0%, color-mix(in oklch, var(--success) 12%, transparent) 40%, transparent 85%)";
-  }
-  if (status === "below") {
-    return "linear-gradient(to left, color-mix(in oklch, var(--danger) 18%, transparent) 0%, color-mix(in oklch, var(--danger) 12%, transparent) 40%, transparent 85%)";
-  }
-  return "transparent";
+function getLoginColor(login: string | null): string {
+  if (!login) return "var(--muted-foreground)";
+  const sec = timeToSeconds(login);
+  if (sec <= LIMITE_LOGIN_OK) return "var(--success)";
+  if (sec <= LIMITE_LOGIN_ATENCAO) return "var(--warning)";
+  return "var(--danger)";
 }
 
 export function TempoLogadoEquipeTable({
@@ -59,144 +36,200 @@ export function TempoLogadoEquipeTable({
   loginLogout,
 }: TempoLogadoEquipeTableProps) {
   const loginLogoutMap = new Map(loginLogout.map((l) => [l.email, l]));
+  const logadosCount = operadores.filter(
+    (o) => o.tempoLogado !== "00:00:00",
+  ).length;
 
   return (
     <div
-      className="elevation-1 rounded-xl p-3"
       data-tempo-logado-equipe-table
+      className="elevation-1 overflow-hidden rounded-xl"
     >
-      {/* Cabeçalho */}
+      {/* Header */}
       <div
-        className="grid grid-cols-[2fr_0.9fr_0.9fr_0.9fr_0.9fr_1fr] gap-0 overflow-hidden rounded-md"
-        style={{ background: "var(--elevation-2-bg)" }}
+        className="ds-mono-sm text-muted-foreground grid grid-cols-12 gap-0 border-b px-0 py-2 font-semibold tracking-wider uppercase"
+        style={{ borderColor: "var(--border)" }}
       >
-        <span
-          className="ds-mono-sm border-r border-[var(--border)] px-1.5 py-1.5 font-semibold tracking-wider uppercase"
-          style={{ color: "var(--muted-foreground)" }}
-        >
+        <div className="col-span-3 px-3" style={COL_DIVIDER}>
           Operador
-        </span>
-        <span
-          className="ds-mono-sm border-r border-[var(--border)] px-1.5 py-1.5 text-right font-semibold tracking-wider uppercase"
-          style={{ color: "var(--muted-foreground)" }}
-        >
+        </div>
+        <div className="col-span-2 px-3 text-right" style={COL_DIVIDER}>
           Login
-        </span>
-        <span
-          className="ds-mono-sm border-r border-[var(--border)] px-1.5 py-1.5 text-right font-semibold tracking-wider uppercase"
-          style={{ color: "var(--muted-foreground)" }}
-        >
+        </div>
+        <div className="col-span-2 px-3 text-right" style={COL_DIVIDER}>
           Logout
-        </span>
-        <span
-          className="ds-mono-sm border-r border-[var(--border)] px-1.5 py-1.5 text-right font-semibold tracking-wider uppercase"
-          style={{ color: "var(--muted-foreground)" }}
-        >
+        </div>
+        <div className="col-span-1 px-3 text-right" style={COL_DIVIDER}>
           Restante
-        </span>
-        <span
-          className="ds-mono-sm border-r border-[var(--border)] px-1.5 py-1.5 text-right font-semibold tracking-wider uppercase"
-          style={{ color: "var(--muted-foreground)" }}
-        >
+        </div>
+        <div className="col-span-2 px-3 text-right" style={COL_DIVIDER}>
           Logout est.
-        </span>
-        <span
-          className="ds-mono-sm px-1.5 py-1.5 text-right font-semibold tracking-wider uppercase"
-          style={{ color: "var(--muted-foreground)" }}
-        >
-          Tempo logado
-        </span>
+        </div>
+        <div className="col-span-2 px-3 text-right">Tempo logado</div>
       </div>
 
       {/* Linhas dos operadores */}
-      {operadores.map((op) => {
-        const status = getTempoLogadoStatus(op.tempoLogado);
-        const rowBg = getRowBackground(status);
-        const tempoColor = getTempoLogadoColor(status);
-        const dotColor =
-          status === "above"
-            ? "var(--success)"
-            : status === "below"
-              ? "var(--danger)"
-              : null;
-
+      {operadores.map((op, idx) => {
+        const isLast = idx === operadores.length - 1;
         const ll = loginLogoutMap.get(op.email);
-        const restanteIsZero = op.tempoRestante === "00:00:00";
         const semLogin = op.tempoLogado === "00:00:00";
+        const tempoSec = semLogin ? 0 : timeToSeconds(op.tempoLogado);
+        const meetsM = !semLogin && tempoSec >= META_TEMPO_LOGADO;
+        const belowMeta = !semLogin && !meetsM;
+        const restanteIsZero = op.tempoRestante === "00:00:00";
+
+        const loginColor = getLoginColor(ll?.horaLogin ?? null);
+        const logoutStatus = ll?.logoutStatus ?? "sem_login";
+        const logoutLabel =
+          logoutStatus === "logado"
+            ? "Logado"
+            : logoutStatus === "deslogado"
+              ? "Deslogado"
+              : "—";
+        const logoutColor =
+          logoutStatus === "logado"
+            ? "var(--success)"
+            : "var(--muted-foreground)";
 
         return (
           <div
             key={op.email}
-            className="grid grid-cols-[2fr_0.9fr_0.9fr_0.9fr_0.9fr_1fr] gap-0 py-1"
-            style={{ background: rowBg }}
+            className="grid grid-cols-12 items-center gap-0 px-0 py-1.5"
+            style={{
+              background: belowMeta
+                ? "color-mix(in oklch, var(--danger) 7%, transparent)"
+                : "transparent",
+              borderBottom: isLast ? "none" : "1px solid var(--row-border)",
+              opacity: semLogin ? 0.35 : 1,
+            }}
           >
-            <span className="ds-mono-sm text-muted-foreground flex items-center border-r border-[var(--border)] px-1.5">
-              {formatOperatorLabel(op.email)}
-            </span>
-            <span
-              className="ds-mono flex items-center justify-end border-r border-[var(--border)] px-1.5 text-right"
+            <div
+              className="ds-body col-span-3 truncate px-3"
               style={{
-                color: ll?.horaLogin
-                  ? "color-mix(in oklch, var(--foreground) 75%, transparent)"
-                  : "var(--muted-foreground)",
-              }}
-            >
-              {formatLoginDisplay(ll?.horaLogin ?? null)}
-            </span>
-            <span
-              className="ds-mono flex items-center justify-end border-r border-[var(--border)] px-1.5 text-right"
-              style={{
-                color: !ll?.horaLogout
+                ...COL_DIVIDER,
+                color: semLogin
                   ? "var(--muted-foreground)"
-                  : ll.horaLogout === "00:00:00"
-                    ? "var(--success)"
-                    : "color-mix(in oklch, var(--foreground) 75%, transparent)",
-                fontSize: ll?.horaLogout === "00:00:00" ? "0.75rem" : undefined,
+                  : belowMeta
+                    ? "var(--danger)"
+                    : "var(--foreground)",
+                fontWeight: belowMeta ? 500 : 400,
               }}
             >
-              {formatLogoutDisplay(ll?.horaLogout ?? null)}
-            </span>
-            <span
-              className="ds-mono flex items-center justify-end border-r border-[var(--border)] px-1.5 text-right"
+              {formatOperatorLabel(op.email)}
+            </div>
+            <div
+              className="ds-mono-sm col-span-2 px-3 text-right"
               style={{
+                ...COL_DIVIDER,
+                color: loginColor,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {ll?.horaLogin ?? "—"}
+            </div>
+            <div
+              className="ds-mono-sm col-span-2 px-3 text-right"
+              style={{ ...COL_DIVIDER, color: logoutColor }}
+            >
+              {logoutLabel}
+            </div>
+            <div
+              className="ds-mono-sm col-span-1 px-3 text-right"
+              style={{
+                ...COL_DIVIDER,
                 color: restanteIsZero
                   ? "var(--muted-foreground)"
-                  : "color-mix(in oklch, var(--foreground) 75%, transparent)",
+                  : "var(--foreground)",
+                fontVariantNumeric: "tabular-nums",
               }}
             >
               {op.tempoRestante}
-            </span>
-            <span
-              className="ds-mono flex items-center justify-end border-r border-[var(--border)] px-1.5 text-right"
+            </div>
+            <div
+              className="ds-mono-sm col-span-2 px-3 text-right"
               style={{
+                ...COL_DIVIDER,
                 color: semLogin
                   ? "var(--muted-foreground)"
-                  : "color-mix(in oklch, var(--foreground) 75%, transparent)",
+                  : "var(--foreground)",
+                fontVariantNumeric: "tabular-nums",
               }}
             >
               {semLogin ? "—" : op.logoutEstimado}
-            </span>
-            <span
-              className="ds-mono flex items-center justify-end gap-2 px-1.5 font-medium"
-              style={{ color: tempoColor }}
-            >
-              {op.tempoLogado}
-              {dotColor && (
-                <span
-                  aria-hidden="true"
-                  className="inline-block rounded-full"
-                  style={{
-                    width: "7px",
-                    height: "7px",
-                    background: dotColor,
-                    flexShrink: 0,
-                  }}
-                />
+            </div>
+            <div className="ds-mono-sm col-span-2 flex items-center justify-end gap-1.5 px-3">
+              {semLogin ? (
+                <span className="text-muted-foreground">—</span>
+              ) : (
+                <>
+                  <span
+                    style={{
+                      color: belowMeta
+                        ? "var(--danger)"
+                        : "var(--success)",
+                      fontWeight: 500,
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {op.tempoLogado}
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-1.5 w-1.5 rounded-full"
+                    style={{
+                      background: belowMeta
+                        ? "var(--danger)"
+                        : "var(--success)",
+                    }}
+                  />
+                </>
               )}
-            </span>
+            </div>
           </div>
         );
       })}
+
+      {/* Linha EQUIPE (rodapé) */}
+      <div
+        className="ds-body grid grid-cols-12 items-center gap-0 px-0 py-2"
+        style={{
+          borderTop: "1px solid var(--border)",
+          fontWeight: 500,
+        }}
+      >
+        <div className="col-span-3 px-3" style={COL_DIVIDER}>
+          EQUIPE
+        </div>
+        <div
+          className="text-muted-foreground col-span-2 px-3 text-right"
+          style={COL_DIVIDER}
+        >
+          —
+        </div>
+        <div
+          className="text-muted-foreground col-span-2 px-3 text-right"
+          style={COL_DIVIDER}
+        >
+          —
+        </div>
+        <div
+          className="text-muted-foreground col-span-1 px-3 text-right"
+          style={COL_DIVIDER}
+        >
+          —
+        </div>
+        <div
+          className="text-muted-foreground col-span-2 px-3 text-right"
+          style={COL_DIVIDER}
+        >
+          —
+        </div>
+        <div className="col-span-2 px-3 text-right">
+          <span className="ds-mono-sm text-muted-foreground">
+            {logadosCount} de {operadores.length} logados
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

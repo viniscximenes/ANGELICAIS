@@ -5,10 +5,13 @@ export type OperadorTempoLogado = {
   logoutEstimado: string; // "HH:MM:SS"
 };
 
+export type LogoutStatus = "logado" | "deslogado" | "sem_login";
+
 export type OperadorLoginLogout = {
   email: string;
   horaLogin: string | null; // "HH:MM:SS" ou null se vazio
   horaLogout: string | null; // "HH:MM:SS", "00:00:00" (ainda logado), ou null se sem login
+  logoutStatus: LogoutStatus;
 };
 
 export type TempoLogadoData = {

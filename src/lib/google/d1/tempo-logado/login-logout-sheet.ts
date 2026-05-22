@@ -18,5 +18,6 @@ export async function fetchLoginLogout(): Promise<OperadorLoginLogout[]> {
       email: String(row[0]).trim().toLowerCase(),
       horaLogin: parseLoginLogoutTime(row[1]),
       horaLogout: parseLoginLogoutTime(row[2]),
+      logoutStatus: "sem_login" as const, // preenchido em getTempoLogadoData
     }));
 }
