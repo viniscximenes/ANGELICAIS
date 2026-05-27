@@ -6,8 +6,8 @@ import type { EvolucaoSnapshot } from "@/lib/d1/evolucao/types";
 import { clearConsolidadoAction } from "@/lib/google/d1/actions/clear-consolidado-action";
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
 import { ClearBaseButton } from "./clear-base-button";
+import { CopyGraficoButton } from "./copy-grafico-button";
 import { CopyTableButton } from "./copy-table-button";
-import { DownloadTableButton } from "./download-table-button";
 import { EquipeTable } from "./equipe-table";
 import { EvolucaoEmptyState } from "./evolucao/evolucao-empty-state";
 import { EvolucaoGrafico } from "./evolucao/evolucao-grafico";
@@ -56,7 +56,7 @@ export function EquipeSection({
 
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
             <CopyTableButton operadores={operadores} equipe={equipe} />
-            <DownloadTableButton />
+            {hasSnapshots && <CopyGraficoButton />}
             {showUpload && <ClearBaseButton action={clearConsolidadoAction} />}
           </div>
         </div>
@@ -78,13 +78,22 @@ export function EquipeSection({
             gap: "12px",
           }}
         >
-          <EquipeTable
-            key="equipe-png"
-            operadores={operadores}
-            equipe={equipe}
-          />
+          <div data-tabela-png>
+            <EquipeTable
+              key="equipe-png"
+              operadores={operadores}
+              equipe={equipe}
+              variant="excel"
+            />
+          </div>
           {hasSnapshots && (
-            <EvolucaoGrafico key="grafico-png" snapshots={snapshots} />
+            <div data-grafico-png>
+              <EvolucaoGrafico
+                key="grafico-png"
+                snapshots={snapshots}
+                variant="excel"
+              />
+            </div>
           )}
         </div>
 

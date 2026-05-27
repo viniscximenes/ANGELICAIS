@@ -49,6 +49,8 @@ Quando a página justificar, adicionar:
 | [`registros-monitoria.md`](./registros-monitoria.md) | Monitoria de Ligações | `/registros/monitoria` | documentada |
 | [`registros-diario.md`](./registros-diario.md) | Diário de Bordo | `/registros/diario`, `/registros/diario/[operator_email]` | documentada |
 | [`config-usuarios.md`](./config-usuarios.md) | Gerenciar Usuários | `/config/usuarios` | documentada |
+| [`atendimento.md`](./atendimento.md) | Atendimento ao vivo | `/atendimento` | documentada |
+| [`config-planos.md`](./config-planos.md) | Configurações — Planos e Descontos | `/config/planos` | documentada |
 
 ## Status possíveis
 

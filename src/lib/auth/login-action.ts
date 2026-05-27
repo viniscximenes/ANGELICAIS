@@ -46,5 +46,5 @@ export async function loginAction(
   // Redirect server-side. NÃO pode estar dentro do try/catch
   // porque o redirect() lança uma exceção especial que o Next
   // intercepta. Se estiver no try, o catch engoliria.
-  redirect("/d-1");
+  redirect("/kpi/atual-principal");
 }

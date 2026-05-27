@@ -17,7 +17,7 @@ export default async function LoginPage() {
   } = await supabase.auth.getUser();
 
   if (user) {
-    redirect("/d-1");
+    redirect("/kpi/atual-principal");
   }
 
   return (

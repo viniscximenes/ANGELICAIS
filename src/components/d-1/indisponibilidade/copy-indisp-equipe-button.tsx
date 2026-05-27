@@ -5,14 +5,12 @@ import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-
 export function CopyIndispEquipeButton() {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
 
   async function handleCopy() {
     const target = document.querySelector<HTMLElement>(
-      "[data-indisp-equipe-table]",
+      "[data-indisp-equipe-png-wrapper] [data-indisp-equipe-table]",
     );
 
     if (!target) {
@@ -49,39 +47,39 @@ export function CopyIndispEquipeButton() {
   }
 
   return (
-    <Button
+    <button
       type="button"
-      variant="outline"
       onClick={handleCopy}
       disabled={state === "copying"}
-      className="gap-2"
+      className="elevation-2 text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors"
+      style={{ border: "1px solid var(--border)", fontSize: "12px" }}
     >
       {state === "copying" && (
         <>
           <IconLoader2
-            size={16}
+            size={14}
             className="animate-spin"
             aria-hidden="true"
           />
-          Gerando...
+          <span className="ds-mono-sm">Gerando...</span>
         </>
       )}
       {state === "done" && (
         <>
           <IconCheck
-            size={16}
+            size={14}
             style={{ color: "var(--success)" }}
             aria-hidden="true"
           />
-          Copiado
+          <span className="ds-mono-sm">Copiado</span>
         </>
       )}
       {state === "idle" && (
         <>
-          <IconCamera size={16} aria-hidden="true" />
-          Copiar como imagem
+          <IconCamera size={14} aria-hidden="true" />
+          <span className="ds-mono-sm">Copiar como imagem</span>
         </>
       )}
-    </Button>
+    </button>
   );
 }

@@ -58,10 +58,33 @@ export function TempoLogadoEquipeSection({
           </div>
         </div>
 
+        {/*
+          Wrapper INVISÍVEL usado SÓ pela captura do PNG (variant excel).
+          Vive off-screen pra não afetar o layout normal.
+        */}
+        <div
+          data-tempo-logado-png-wrapper
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: "-99999px",
+            left: "-99999px",
+            width: "600px",
+          }}
+        >
+          <TempoLogadoEquipeTable
+            key="tempo-logado-png"
+            operadores={operadores}
+            loginLogout={loginLogout}
+            variant="excel"
+          />
+        </div>
+
         {/* Linha 2: conteúdo (tabela 600px | dropzone esticada) */}
         <div className="flex items-start gap-4">
           <div className="shrink-0" style={{ width: "600px" }}>
             <TempoLogadoEquipeTable
+              key="tempo-logado-visible"
               operadores={operadores}
               loginLogout={loginLogout}
             />

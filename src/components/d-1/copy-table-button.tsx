@@ -147,9 +147,7 @@ export function CopyTableButton({
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
 
   async function handleCopy() {
-    const target = document.querySelector<HTMLElement>(
-      "[data-equipe-png-wrapper]",
-    );
+    const target = document.querySelector<HTMLElement>("[data-tabela-png]");
 
     if (!target) {
       toast.error("Tabela não encontrada");

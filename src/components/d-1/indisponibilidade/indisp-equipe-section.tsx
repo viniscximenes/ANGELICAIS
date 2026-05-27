@@ -43,7 +43,30 @@ export function IndispEquipeSection({
           <CopyIndispEquipeButton />
         </div>
 
+        {/*
+          Wrapper INVISÍVEL usado SÓ pela captura do PNG (variant excel).
+          Vive off-screen pra não afetar o layout normal.
+        */}
+        <div
+          data-indisp-equipe-png-wrapper
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: "-99999px",
+            left: "-99999px",
+            width: "780px",
+          }}
+        >
+          <IndispEquipeTable
+            key="indisp-equipe-png"
+            operadoresIndisp={operadoresIndisp}
+            operadoresPausa={operadoresPausa}
+            variant="excel"
+          />
+        </div>
+
         <IndispEquipeTable
+          key="indisp-equipe-visible"
           operadoresIndisp={operadoresIndisp}
           operadoresPausa={operadoresPausa}
         />

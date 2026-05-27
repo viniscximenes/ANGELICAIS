@@ -8,6 +8,7 @@ import {
   IconChartBar,
   IconClipboardCheck,
   IconDatabase,
+  IconHeadset,
   IconSettings,
   IconTargetArrow,
 } from "@tabler/icons-react";
@@ -28,7 +29,8 @@ export type SidebarSection = {
     | "cash"
     | "clipboard"
     | "database"
-    | "settings";
+    | "settings"
+    | "headset";
   basePath: string;
   permission: Permission;
   items: { label: string; href: string }[];
@@ -48,6 +50,7 @@ const ICONS: Record<
   clipboard: IconClipboardCheck,
   database: IconDatabase,
   settings: IconSettings,
+  headset: IconHeadset,
 };
 
 interface SidebarProps {

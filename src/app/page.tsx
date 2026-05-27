@@ -13,5 +13,5 @@ export default async function RootPage() {
     redirect("/gestor/d-1");
   }
 
-  redirect("/d-1");
+  redirect("/kpi/atual-principal");
 }

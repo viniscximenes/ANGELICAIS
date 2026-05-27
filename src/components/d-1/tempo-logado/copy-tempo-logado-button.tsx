@@ -23,7 +23,7 @@ export function CopyTempoLogadoButton({
 
   async function handleCopy() {
     const target = document.querySelector<HTMLElement>(
-      "[data-tempo-logado-equipe-table]",
+      "[data-tempo-logado-png-wrapper] [data-tempo-logado-equipe-table]",
     );
 
     if (!target) {

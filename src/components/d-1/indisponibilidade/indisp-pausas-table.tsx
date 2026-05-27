@@ -10,6 +10,7 @@ const META_INDISP = 14.5;
 interface IndispPausasTableProps {
   operadoresIndisp: OperadorIndisp[];
   operadoresPausa: OperadorPausa[];
+  variant?: "screen" | "excel";
 }
 
 type IndispStatus = "above" | "below" | "neutral";
@@ -40,13 +41,43 @@ function getIndispStatus(percent: number | null): IndispStatus {
   return "below";
 }
 
-function getIndispColor(status: IndispStatus): string {
+function formatPercent(value: number | null): string {
+  if (value === null) return "—";
+  return `${value.toFixed(1)}%`;
+}
+
+export function IndispPausasTable({
+  operadoresIndisp,
+  operadoresPausa,
+  variant = "screen",
+}: IndispPausasTableProps) {
+  if (variant === "excel") {
+    return (
+      <ExcelTable
+        operadoresIndisp={operadoresIndisp}
+        operadoresPausa={operadoresPausa}
+      />
+    );
+  }
+  return (
+    <ScreenTable
+      operadoresIndisp={operadoresIndisp}
+      operadoresPausa={operadoresPausa}
+    />
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   SCREEN — visual padrão do site
+   ──────────────────────────────────────────────────────────────────── */
+
+function getIndispColorScreen(status: IndispStatus): string {
   if (status === "above") return "var(--success)";
   if (status === "below") return "var(--danger)";
   return "var(--muted-foreground)";
 }
 
-function getRowBackground(status: IndispStatus): string {
+function getRowBackgroundScreen(status: IndispStatus): string {
   if (status === "above") {
     return "linear-gradient(to left, color-mix(in oklch, var(--success) 18%, transparent) 0%, color-mix(in oklch, var(--success) 12%, transparent) 40%, transparent 85%)";
   }
@@ -56,17 +87,14 @@ function getRowBackground(status: IndispStatus): string {
   return "transparent";
 }
 
-function formatPercent(value: number | null): string {
-  if (value === null) return "—";
-  return `${value.toFixed(1)}%`;
-}
-
-export function IndispPausasTable({
+function ScreenTable({
   operadoresIndisp,
   operadoresPausa,
-}: IndispPausasTableProps) {
+}: {
+  operadoresIndisp: OperadorIndisp[];
+  operadoresPausa: OperadorPausa[];
+}) {
   const pausaMap = new Map(operadoresPausa.map((p) => [p.email, p]));
-
   const gridTemplate = `1.4fr ${PAUSA_COLUMNS.map(() => "0.7fr").join(" ")} 0.9fr`;
 
   return (
@@ -103,20 +131,16 @@ export function IndispPausasTable({
 
       {operadoresIndisp.map((op) => {
         const status = getIndispStatus(op.indispPercent);
-        const rowBg = getRowBackground(status);
-        const indispColor = getIndispColor(status);
+        const rowBg = getRowBackgroundScreen(status);
+        const indispColor = getIndispColorScreen(status);
         const dotColor = status !== "neutral" ? indispColor : null;
-
         const pausa = pausaMap.get(op.email);
 
         return (
           <div
             key={op.email}
             className="grid gap-0 py-0.5"
-            style={{
-              background: rowBg,
-              gridTemplateColumns: gridTemplate,
-            }}
+            style={{ background: rowBg, gridTemplateColumns: gridTemplate }}
           >
             <span
               className="ds-mono-sm text-muted-foreground flex items-center border-r border-[var(--border)] px-1"
@@ -160,6 +184,181 @@ export function IndispPausasTable({
                 />
               )}
             </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   EXCEL — visual de planilha (usado só no wrapper invisível do PNG)
+   ──────────────────────────────────────────────────────────────────── */
+
+const SANS_STACK = "'Segoe UI', 'Arial', sans-serif";
+const MONO_STACK = "'Consolas', 'Courier New', monospace";
+
+const EXCEL_COL_DIVIDER: React.CSSProperties = {
+  borderRight: "1px solid #d0d0d0",
+};
+
+const EXCEL_HEADER_DIVIDER: React.CSSProperties = {
+  borderRight: "1px solid #4a7ba6",
+};
+
+function ExcelTable({
+  operadoresIndisp,
+  operadoresPausa,
+}: {
+  operadoresIndisp: OperadorIndisp[];
+  operadoresPausa: OperadorPausa[];
+}) {
+  const pausaMap = new Map(operadoresPausa.map((p) => [p.email, p]));
+  const gridTemplate = `1.6fr ${PAUSA_COLUMNS.map(() => "0.7fr").join(" ")} 0.9fr`;
+  const lastIdx = operadoresIndisp.length - 1;
+
+  const headerCellBase: React.CSSProperties = {
+    padding: "6px 6px",
+    fontFamily: SANS_STACK,
+    fontSize: "10px",
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.4px",
+    color: "#ffffff",
+  };
+
+  const numCellBase: React.CSSProperties = {
+    padding: "5px 6px",
+    fontFamily: MONO_STACK,
+    fontSize: "11px",
+    textAlign: "right",
+    fontVariantNumeric: "tabular-nums",
+  };
+
+  const textCellBase: React.CSSProperties = {
+    padding: "5px 6px",
+    fontFamily: SANS_STACK,
+    fontSize: "11px",
+    textAlign: "left",
+    color: "#000000",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  };
+
+  return (
+    <div
+      data-indisp-pausas-table
+      style={{
+        background: "#ffffff",
+        color: "#000000",
+        border: "1px solid #c0c0c0",
+        boxShadow: "none",
+        fontFamily: SANS_STACK,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: gridTemplate,
+          background: "#1f4e78",
+          borderBottom: "1px solid #1f4e78",
+        }}
+      >
+        <div style={{ ...headerCellBase, ...EXCEL_HEADER_DIVIDER }}>
+          Operador
+        </div>
+        {PAUSA_COLUMNS.map((col) => (
+          <div
+            key={col.key}
+            style={{
+              ...headerCellBase,
+              ...EXCEL_HEADER_DIVIDER,
+              textAlign: "right",
+            }}
+          >
+            {col.label}
+          </div>
+        ))}
+        <div style={{ ...headerCellBase, textAlign: "right" }}>Indisp %</div>
+      </div>
+
+      {operadoresIndisp.map((op, idx) => {
+        const status = getIndispStatus(op.indispPercent);
+        const pausa = pausaMap.get(op.email);
+        const isLast = idx === lastIdx;
+
+        const rowBg = status === "below" ? "#fff5f5" : "#ffffff";
+        const indispColor =
+          status === "above"
+            ? "#2e7d32"
+            : status === "below"
+              ? "#c62828"
+              : "#000000";
+        const dotColor = status !== "neutral" ? indispColor : null;
+
+        return (
+          <div
+            key={op.email}
+            style={{
+              display: "grid",
+              gridTemplateColumns: gridTemplate,
+              background: rowBg,
+              borderBottom: isLast ? "none" : "1px solid #d0d0d0",
+            }}
+          >
+            <div
+              style={{
+                ...textCellBase,
+                ...EXCEL_COL_DIVIDER,
+                fontWeight: status === "below" ? 600 : 400,
+              }}
+            >
+              {formatOperatorLabel(op.email)}
+            </div>
+            {PAUSA_COLUMNS.map((col) => {
+              const value = (pausa?.[col.key] as string) ?? "00:00:00";
+              const isZero = value === "00:00:00";
+              return (
+                <div
+                  key={col.key}
+                  style={{
+                    ...numCellBase,
+                    ...EXCEL_COL_DIVIDER,
+                    color: isZero ? "#4a5560" : "#000000",
+                  }}
+                >
+                  {value}
+                </div>
+              );
+            })}
+            <div
+              style={{
+                ...numCellBase,
+                color: indispColor,
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+                gap: "5px",
+              }}
+            >
+              <span>{formatPercent(op.indispPercent)}</span>
+              {dotColor && (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    display: "inline-block",
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: dotColor,
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+            </div>
           </div>
         );
       })}

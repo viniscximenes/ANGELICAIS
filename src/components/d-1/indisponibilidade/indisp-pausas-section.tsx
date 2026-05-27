@@ -43,7 +43,30 @@ export function IndispPausasSection({
           <CopyIndispPausasButton />
         </div>
 
+        {/*
+          Wrapper INVISÍVEL usado SÓ pela captura do PNG (variant excel).
+          Vive off-screen pra não afetar o layout normal.
+        */}
+        <div
+          data-indisp-pausas-png-wrapper
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: "-99999px",
+            left: "-99999px",
+            width: "1200px",
+          }}
+        >
+          <IndispPausasTable
+            key="indisp-pausas-png"
+            operadoresIndisp={operadoresIndisp}
+            operadoresPausa={operadoresPausa}
+            variant="excel"
+          />
+        </div>
+
         <IndispPausasTable
+          key="indisp-pausas-visible"
           operadoresIndisp={operadoresIndisp}
           operadoresPausa={operadoresPausa}
         />
