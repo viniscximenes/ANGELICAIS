@@ -200,12 +200,21 @@ export function calculateRv(
   for (const cb of ruleSet.combinedBonus) {
     const conditionResults: BonusConditionResult[] = cb.conditions.map((c) => {
       const valor = valuesBySlug.get(c.kpiSlug) ?? null;
+
+      const effectiveThreshold = c.thresholdKpiSlug
+        ? (valuesBySlug.get(c.thresholdKpiSlug) ?? null)
+        : c.threshold;
+
+      const atingiu =
+        effectiveThreshold !== null &&
+        compareValues(valor, c.comparison, effectiveThreshold);
+
       return {
         kpiSlug: c.kpiSlug,
         comparison: c.comparison,
-        threshold: c.threshold,
+        threshold: effectiveThreshold ?? c.threshold,
         valorAtual: valor,
-        atingiu: compareValues(valor, c.comparison, c.threshold),
+        atingiu,
       };
     });
 
@@ -216,9 +225,18 @@ export function calculateRv(
 
     for (const c of cb.conditions) {
       const valor = valuesBySlug.get(c.kpiSlug) ?? null;
-      if (isCondicaoEstouradaIrreversivel(valor, c.comparison, c.threshold)) {
+
+      const effectiveThreshold = c.thresholdKpiSlug
+        ? (valuesBySlug.get(c.thresholdKpiSlug) ?? null)
+        : c.threshold;
+
+      if (effectiveThreshold === null) continue;
+
+      if (
+        isCondicaoEstouradaIrreversivel(valor, c.comparison, effectiveThreshold)
+      ) {
         ainda_possivel = false;
-        motivoImpossivel = `${c.kpiSlug} já estourou (valor atual: ${valor}, precisava: ${c.comparison} ${c.threshold})`;
+        motivoImpossivel = `${c.kpiSlug} já estourou (valor atual: ${valor}, precisava: ${c.comparison} ${effectiveThreshold})`;
         break;
       }
     }

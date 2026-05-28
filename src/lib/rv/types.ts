@@ -55,6 +55,7 @@ export type BonusCondition = {
   kpiSlug: string;
   comparison: Comparison;
   threshold: number;
+  thresholdKpiSlug?: string | null;
 };
 
 export type CombinedBonus = {

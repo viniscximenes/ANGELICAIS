@@ -42,6 +42,11 @@ export function CombinedBonusCard({ bonus }: Props) {
       const num = parseFloat(val.replace(",", "."));
       if (isNaN(num)) return;
       newConditions[idx] = { ...newConditions[idx], threshold: num };
+    } else if (field === "thresholdKpiSlug") {
+      newConditions[idx] = {
+        ...newConditions[idx],
+        thresholdKpiSlug: val || null,
+      };
     } else {
       newConditions[idx] = {
         ...newConditions[idx],
@@ -54,7 +59,12 @@ export function CombinedBonusCard({ bonus }: Props) {
   function addCondition() {
     setConditions([
       ...conditions,
-      { kpiSlug: "", comparison: "gte", threshold: 0 },
+      {
+        kpiSlug: "",
+        comparison: "gte",
+        threshold: 0,
+        thresholdKpiSlug: null,
+      },
     ]);
   }
 
@@ -97,53 +107,86 @@ export function CombinedBonusCard({ bonus }: Props) {
           Condições (todas precisam ser atingidas)
         </p>
         <div className="space-y-2">
-          {conditions.map((c, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-              <input
-                type="text"
-                value={c.kpiSlug}
-                onChange={(e) => updateCondition(idx, "kpiSlug", e.target.value)}
-                disabled={isPending}
-                placeholder="kpi_slug"
-                className="elevation-2 ds-mono flex-1 rounded-md px-3 py-2"
-                style={{ border: "1px solid var(--border)" }}
-              />
-              <select
-                value={c.comparison}
-                onChange={(e) =>
-                  updateCondition(idx, "comparison", e.target.value)
-                }
-                disabled={isPending}
-                className="elevation-2 ds-mono w-20 rounded-md px-3 py-2"
-                style={{ border: "1px solid var(--border)", colorScheme: "dark" }}
-              >
-                {COMPARISONS.map((cmp) => (
-                  <option key={cmp.value} value={cmp.value}>
-                    {cmp.label}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="text"
-                value={String(c.threshold)}
-                onChange={(e) =>
-                  updateCondition(idx, "threshold", e.target.value)
-                }
-                disabled={isPending}
-                className="elevation-2 ds-mono w-24 rounded-md px-3 py-2"
-                style={{ border: "1px solid var(--border)" }}
-              />
-              <button
-                type="button"
-                onClick={() => removeCondition(idx)}
-                disabled={isPending}
-                className="text-muted-foreground hover:text-danger p-1 transition-colors"
-                aria-label="Remover condição"
-              >
-                <IconTrash size={16} aria-hidden="true" />
-              </button>
-            </div>
-          ))}
+          {conditions.map((c, idx) => {
+            const usaKpiDinamico = Boolean(c.thresholdKpiSlug);
+            return (
+              <div key={idx} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={c.kpiSlug}
+                  onChange={(e) =>
+                    updateCondition(idx, "kpiSlug", e.target.value)
+                  }
+                  disabled={isPending}
+                  placeholder="kpi_slug"
+                  className="elevation-2 ds-mono flex-1 rounded-md px-3 py-2"
+                  style={{ border: "1px solid var(--border)" }}
+                />
+                <select
+                  value={c.comparison}
+                  onChange={(e) =>
+                    updateCondition(idx, "comparison", e.target.value)
+                  }
+                  disabled={isPending}
+                  className="elevation-2 ds-mono w-20 rounded-md px-3 py-2"
+                  style={{
+                    border: "1px solid var(--border)",
+                    colorScheme: "dark",
+                  }}
+                >
+                  {COMPARISONS.map((cmp) => (
+                    <option key={cmp.value} value={cmp.value}>
+                      {cmp.label}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={String(c.threshold)}
+                  onChange={(e) =>
+                    updateCondition(idx, "threshold", e.target.value)
+                  }
+                  disabled={isPending || usaKpiDinamico}
+                  title={
+                    usaKpiDinamico
+                      ? "Threshold vem do KPI selecionado ao lado"
+                      : undefined
+                  }
+                  className="elevation-2 ds-mono w-24 rounded-md px-3 py-2"
+                  style={{
+                    border: "1px solid var(--border)",
+                    opacity: usaKpiDinamico ? 0.4 : 1,
+                  }}
+                />
+                <select
+                  value={c.thresholdKpiSlug ?? ""}
+                  onChange={(e) =>
+                    updateCondition(idx, "thresholdKpiSlug", e.target.value)
+                  }
+                  disabled={isPending}
+                  title="Comparar com KPI dinâmico (opcional)"
+                  className="elevation-2 ds-mono w-44 rounded-md px-2 py-2"
+                  style={{
+                    border: "1px solid var(--border)",
+                    colorScheme: "dark",
+                  }}
+                >
+                  <option value="">(valor fixo)</option>
+                  <option value="forecast_churn">forecast_churn</option>
+                  <option value="forecast_pedidos">forecast_pedidos</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => removeCondition(idx)}
+                  disabled={isPending}
+                  className="text-muted-foreground hover:text-danger p-1 transition-colors"
+                  aria-label="Remover condição"
+                >
+                  <IconTrash size={16} aria-hidden="true" />
+                </button>
+              </div>
+            );
+          })}
           <button
             type="button"
             onClick={addCondition}

@@ -144,7 +144,16 @@ export async function getFullRuleSet(
     id: r.id,
     ruleSetId: r.rule_set_id,
     displayName: r.display_name,
-    conditions: (r.conditions as BonusCondition[]) ?? [],
+    conditions: ((r.conditions as Array<Record<string, unknown>>) ?? []).map(
+      (c) => ({
+        kpiSlug: (c.kpiSlug ?? c.kpi_slug) as string,
+        comparison: c.comparison as Comparison,
+        threshold: Number(c.threshold),
+        thresholdKpiSlug: (c.thresholdKpiSlug ??
+          c.threshold_kpi_slug ??
+          null) as string | null,
+      }),
+    ),
     valueIfAllAchieved: Number(r.value_if_all_achieved),
     displayOrder: r.display_order,
   }));
