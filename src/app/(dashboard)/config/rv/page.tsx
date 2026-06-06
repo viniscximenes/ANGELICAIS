@@ -9,6 +9,7 @@ import { ConfigRvTabs } from "@/components/config-rv/config-rv-tabs";
 import { DeflatorTypeCard } from "@/components/config-rv/deflator-type-card";
 import { EligibilityRuleCard } from "@/components/config-rv/eligibility-rule-card";
 import { MultiplierCard } from "@/components/config-rv/multiplier-card";
+import { PerUnitIndicatorCard } from "@/components/config-rv/per-unit-indicator-card";
 import { PromoteButton } from "@/components/config-rv/promote-button";
 import { RuleSetGeneralCard } from "@/components/config-rv/rule-set-general-card";
 import { TieredIndicatorCard } from "@/components/config-rv/tiered-indicator-card";
@@ -86,6 +87,20 @@ export default async function ConfigRvPage() {
         {fullRuleSet.tiered.map((t) => (
           <TieredIndicatorCard key={t.id} indicator={t} />
         ))}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="ds-h2" style={{ fontSize: "1.15rem" }}>
+          Multiplicador por retido
+        </h2>
+        <p className="ds-mono-sm text-muted-foreground">
+          Valor em R$ por unidade de retido bruto (pedidos − churn), conforme a
+          faixa de TX atingida.
+        </p>
+        <PerUnitIndicatorCard
+          ruleSetId={fullRuleSet.ruleSet.id}
+          indicator={fullRuleSet.perUnitIndicators[0] ?? null}
+        />
       </section>
 
       <section className="space-y-3">

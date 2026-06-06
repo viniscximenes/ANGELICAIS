@@ -49,6 +49,7 @@ export async function getRvForOperator(
       tieredResults: [],
       binaryResults: [],
       combinedBonusResults: [],
+      perUnitResults: [],
       deflatorResults: [],
     };
   }

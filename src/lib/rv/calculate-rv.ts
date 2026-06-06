@@ -3,11 +3,17 @@ import type {
   BonusConditionResult,
   CombinedBonusResult,
   DeflatorResult,
+  PerUnitResult,
   RvCalculation,
   TieredResult,
 } from "./calc-types";
 import { compareValues, isCondicaoEstouradaIrreversivel } from "./compare";
-import type { DeflatorApplication, Faixa, FullRuleSet } from "./types";
+import type {
+  DeflatorApplication,
+  Faixa,
+  FullRuleSet,
+  PerUnitFaixa,
+} from "./types";
 
 function normalizeStatus(s: string | null): string {
   if (!s) return "";
@@ -78,6 +84,36 @@ function findProximaFaixa(
 }
 
 /**
+ * Faixa de TX atingida: maior threshold que a TX alcança.
+ */
+function findPerUnitFaixa(
+  tx: number | null,
+  faixas: PerUnitFaixa[],
+): PerUnitFaixa | null {
+  if (tx === null) return null;
+  // Ordena por threshold desc, pega a primeira que a TX atinge
+  const sorted = [...faixas].sort((a, b) => b.threshold - a.threshold);
+  for (const f of sorted) {
+    if (tx >= f.threshold) return f;
+  }
+  return null;
+}
+
+/**
+ * Próxima faixa de TX imediatamente acima da atual (pra mostrar potencial).
+ */
+function findProximaPerUnitFaixa(
+  faixaAtual: PerUnitFaixa | null,
+  faixas: PerUnitFaixa[],
+): PerUnitFaixa | null {
+  const sorted = [...faixas].sort((a, b) => a.threshold - b.threshold);
+  if (!faixaAtual) return sorted[0] ?? null;
+  const idx = sorted.findIndex((f) => f.threshold === faixaAtual.threshold);
+  if (idx === -1 || idx === sorted.length - 1) return null;
+  return sorted[idx + 1];
+}
+
+/**
  * Cálculo puro de RV. Não toca em Supabase — só recebe dados.
  */
 export function calculateRv(
@@ -106,6 +142,7 @@ export function calculateRv(
       tieredResults: [],
       binaryResults: [],
       combinedBonusResults: [],
+      perUnitResults: [],
       deflatorResults: [],
     };
   }
@@ -135,6 +172,7 @@ export function calculateRv(
         tieredResults: [],
         binaryResults: [],
         combinedBonusResults: [],
+        perUnitResults: [],
         deflatorResults: [],
       };
     }
@@ -192,6 +230,19 @@ export function calculateRv(
       atingiu,
       valorGanho,
     });
+  }
+
+  // Pseudo-KPIs: contagem de cada deflator manual, pra permitir condições
+  // de bônus tipo "0 advertência". Casa por display_name normalizado
+  // ("Advertência" → "advertencia"), então uma condition com
+  // kpiSlug "deflator:advertencia" e comparison lte/eq contra 0 funciona
+  // como qualquer outra. Sobrevive à promoção (display_name é copiado).
+  for (const dt of ruleSet.deflatorTypes) {
+    if (dt.isAuto) continue;
+    const ocorr = deflatorApplications
+      .filter((a) => a.deflatorTypeId === dt.id)
+      .reduce((s, a) => s + a.occurrenceCount, 0);
+    valuesBySlug.set(`deflator:${normalizeStatus(dt.displayName)}`, ocorr);
   }
 
   const combinedBonusResults: CombinedBonusResult[] = [];
@@ -255,6 +306,42 @@ export function calculateRv(
       ainda_possivel,
       motivoImpossivel,
       valorGanho,
+    });
+  }
+
+  // ─── ETAPA 2.b: per-unit (valor por retido) ───
+  // Aditiva e condicional: só roda se houver per-unit indicators. Maio
+  // (previous) não tem rows, então perUnitIndicators vem [] e o bruto não muda.
+  const perUnitResults: PerUnitResult[] = [];
+  for (const pu of ruleSet.perUnitIndicators) {
+    const tx = valuesBySlug.get(pu.txKpiSlug) ?? null;
+
+    // Contagem de retidos: derived_retido = pedidos - churn
+    let contagemRetidos = 0;
+    if (pu.countSource === "derived_retido") {
+      const pedidos = valuesBySlug.get("pedidos") ?? 0;
+      const churn = valuesBySlug.get("churn") ?? 0;
+      contagemRetidos = Math.max((pedidos ?? 0) - (churn ?? 0), 0);
+    } else {
+      // fallback: tenta ler countSource como slug direto
+      contagemRetidos = valuesBySlug.get(pu.countSource) ?? 0;
+    }
+
+    const faixaAtingida = findPerUnitFaixa(tx, pu.faixas);
+    const valorPorRetido = faixaAtingida ? faixaAtingida.value : 0;
+    const valorGanho = valorPorRetido * contagemRetidos;
+    const proximaFaixa = findProximaPerUnitFaixa(faixaAtingida, pu.faixas);
+
+    bruto += valorGanho;
+
+    perUnitResults.push({
+      indicator: pu,
+      txAtual: tx,
+      faixaAtingida,
+      valorPorRetido,
+      contagemRetidos,
+      valorGanho,
+      proximaFaixa,
     });
   }
 
@@ -344,6 +431,7 @@ export function calculateRv(
     tieredResults,
     binaryResults,
     combinedBonusResults,
+    perUnitResults,
     deflatorResults,
   };
 }

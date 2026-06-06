@@ -11,6 +11,8 @@ import type {
   Faixa,
   FullRuleSet,
   Multiplier,
+  PerUnitFaixa,
+  PerUnitIndicator,
   RvRuleSet,
   RvScope,
   TieredIndicator,
@@ -18,7 +20,7 @@ import type {
 
 /**
  * Lê o conjunto completo de regras de um scope (current ou previous).
- * Faz 1 query do rule_set + 6 em paralelo das tabelas filhas.
+ * Faz 1 query do rule_set + 7 em paralelo das tabelas filhas.
  * Retorna null se o rule_set do scope não existir.
  */
 export async function getFullRuleSet(
@@ -46,8 +48,15 @@ export async function getFullRuleSet(
     multiplicadorMaxPct: Number(rsRow.multiplicador_max_pct),
   };
 
-  const [eligRes, tieredRes, binaryRes, bonusRes, multRes, deflRes] =
-    await Promise.all([
+  const [
+    eligRes,
+    tieredRes,
+    binaryRes,
+    bonusRes,
+    multRes,
+    deflRes,
+    perUnitRes,
+  ] = await Promise.all([
       supabase
         .from("rv_eligibility_rules")
         .select(
@@ -90,6 +99,13 @@ export async function getFullRuleSet(
         )
         .eq("rule_set_id", ruleSet.id)
         .order("display_order"),
+      supabase
+        .from("rv_per_unit_indicators")
+        .select(
+          "id, rule_set_id, slug, display_name, tx_kpi_slug, count_source, faixas, display_order",
+        )
+        .eq("rule_set_id", ruleSet.id)
+        .order("display_order", { ascending: true }),
     ]);
 
   if (
@@ -98,7 +114,8 @@ export async function getFullRuleSet(
     binaryRes.error ||
     bonusRes.error ||
     multRes.error ||
-    deflRes.error
+    deflRes.error ||
+    perUnitRes.error
   ) {
     console.error("[get-rule-set] erro em alguma query filha");
     return null;
@@ -182,6 +199,19 @@ export async function getFullRuleSet(
     isAuto: r.auto_from_kpi_slug !== null,
   }));
 
+  const perUnitIndicators: PerUnitIndicator[] = (perUnitRes.data ?? []).map(
+    (r) => ({
+      id: r.id,
+      ruleSetId: r.rule_set_id,
+      slug: r.slug,
+      displayName: r.display_name,
+      txKpiSlug: r.tx_kpi_slug,
+      countSource: r.count_source,
+      faixas: (r.faixas as PerUnitFaixa[]) ?? [],
+      displayOrder: r.display_order,
+    }),
+  );
+
   return {
     ruleSet,
     eligibility,
@@ -190,5 +220,6 @@ export async function getFullRuleSet(
     combinedBonus,
     multiplier,
     deflatorTypes,
+    perUnitIndicators,
   };
 }

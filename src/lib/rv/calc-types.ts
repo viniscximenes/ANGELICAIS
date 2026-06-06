@@ -3,6 +3,8 @@ import type {
   CombinedBonus,
   DeflatorType,
   Faixa,
+  PerUnitFaixa,
+  PerUnitIndicator,
   TieredIndicator,
 } from "./types";
 
@@ -34,6 +36,16 @@ export type BinaryResult = {
   valorAtual: number | null;
   atingiu: boolean;
   valorGanho: number;
+};
+
+export type PerUnitResult = {
+  indicator: PerUnitIndicator;
+  txAtual: number | null;
+  faixaAtingida: PerUnitFaixa | null;
+  valorPorRetido: number; // R$/retido da faixa (0 se nenhuma)
+  contagemRetidos: number; // retido bruto calculado
+  valorGanho: number; // valorPorRetido × contagemRetidos
+  proximaFaixa: PerUnitFaixa | null; // pra mostrar potencial
 };
 
 export type BonusConditionResult = {
@@ -79,5 +91,6 @@ export type RvCalculation = {
   tieredResults: TieredResult[];
   binaryResults: BinaryResult[];
   combinedBonusResults: CombinedBonusResult[];
+  perUnitResults: PerUnitResult[];
   deflatorResults: DeflatorResult[];
 };

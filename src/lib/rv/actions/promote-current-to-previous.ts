@@ -58,6 +58,7 @@ export async function promoteCurrentToPreviousAction(): Promise<PromoteResult> {
     "rv_combined_bonus",
     "rv_multiplier",
     "rv_deflator_types",
+    "rv_per_unit_indicators",
   ];
 
   for (const table of tables) {

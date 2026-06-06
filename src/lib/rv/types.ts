@@ -26,6 +26,22 @@ export type Faixa = {
   value: number;
 };
 
+export type PerUnitFaixa = {
+  threshold: number; // TX mínima da faixa
+  value: number; // R$ por retido
+};
+
+export type PerUnitIndicator = {
+  id: string;
+  ruleSetId: string;
+  slug: string;
+  displayName: string;
+  txKpiSlug: string; // ex: "tx_retencao_bruta"
+  countSource: string; // "derived_retido" = pedidos - churn
+  faixas: PerUnitFaixa[];
+  displayOrder: number;
+};
+
 export type TieredIndicator = {
   id: string;
   ruleSetId: string;
@@ -112,4 +128,5 @@ export type FullRuleSet = {
   combinedBonus: CombinedBonus[];
   multiplier: Multiplier | null;
   deflatorTypes: DeflatorType[];
+  perUnitIndicators: PerUnitIndicator[];
 };
