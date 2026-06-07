@@ -36,6 +36,18 @@ export function RvPotentialBlock({ calculation }: Props) {
     }
   }
 
+  for (const pu of calculation.perUnitResults) {
+    if (!pu.proximaFaixa) continue;
+    const ganhoEstimado =
+      (pu.proximaFaixa.value - pu.valorPorRetido) * pu.contagemRetidos;
+    if (ganhoEstimado <= 0) continue;
+
+    sugestoes.push({
+      texto: `Subir TX para ${pu.proximaFaixa.threshold}% → ${formatBRL(pu.proximaFaixa.value)}/retido`,
+      valor: `+${formatBRL(ganhoEstimado)}`,
+    });
+  }
+
   for (const b of calculation.binaryResults) {
     if (!b.atingiu) {
       sugestoes.push({

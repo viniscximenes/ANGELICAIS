@@ -13,6 +13,9 @@ interface Props {
 
 export function RvStatusCard({ calculation }: Props) {
   const bonusBloqueado = calculation.valorTravadoImpossivel > 0;
+  // Modelo Junho (per-unit) não tem teto real — o teto_base é só display
+  // herdado. Esconde a linha de teto quando há per-unit configurado.
+  const temPerUnit = calculation.perUnitResults.length > 0;
 
   return (
     <motion.div
@@ -36,12 +39,14 @@ export function RvStatusCard({ calculation }: Props) {
       <p className="ds-display">{formatBRL(calculation.liquido)}</p>
 
       <div className="ds-mono-sm text-muted-foreground mt-3 space-y-1">
-        <p>
-          Teto possível:{" "}
-          <span style={{ color: "var(--foreground)" }}>
-            {formatBRL(calculation.tetoPossivel)}
-          </span>
-        </p>
+        {!temPerUnit && (
+          <p>
+            Teto possível:{" "}
+            <span style={{ color: "var(--foreground)" }}>
+              {formatBRL(calculation.tetoPossivel)}
+            </span>
+          </p>
+        )}
 
         {bonusBloqueado && (
           <p style={{ color: "var(--warning)" }}>

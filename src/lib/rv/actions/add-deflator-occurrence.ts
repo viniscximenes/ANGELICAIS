@@ -62,12 +62,21 @@ export async function addDeflatorOccurrenceAction(
       return { success: false, error: "Erro ao atualizar" };
     }
   } else {
+    // Grava o slug estável junto (o id fica pra retrocompat). Assim a
+    // aplicação sobrevive à promoção, que regenera o id do tipo.
+    const { data: typeRow } = await supabase
+      .from("rv_deflator_types")
+      .select("slug")
+      .eq("id", input.deflatorTypeId)
+      .maybeSingle();
+
     const { error: insErr } = await supabase
       .from("rv_deflator_applications")
       .insert({
         operator_email: normalizedEmail,
         mes_ref: input.mesRef,
         deflator_type_id: input.deflatorTypeId,
+        deflator_slug: typeRow?.slug ?? null,
         occurrence_count: 1,
         applied_by: user.profile.id,
       });

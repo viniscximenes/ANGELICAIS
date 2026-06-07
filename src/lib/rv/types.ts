@@ -95,6 +95,7 @@ export type Multiplier = {
 export type DeflatorType = {
   id: string;
   ruleSetId: string;
+  slug: string;
   displayName: string;
   initialPercent: number;
   incrementPerOccurrence: number;
@@ -110,6 +111,7 @@ export type DeflatorApplication = {
   operatorEmail: string;
   mesRef: string;
   deflatorTypeId: string;
+  deflatorSlug: string | null;
   occurrenceCount: number;
   notes: string | null;
   appliedBy: string;

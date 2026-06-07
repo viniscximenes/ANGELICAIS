@@ -47,6 +47,12 @@ export function RvGainedBlock({ calculation }: Props) {
     }
   }
 
+  // Per-unit (multiplicador por retido): renderizado à parte porque tem
+  // duas linhas (cabeçalho com a faixa de TX + detalhe da contagem).
+  const perUnitGanhos = calculation.perUnitResults.filter(
+    (pu) => pu.valorGanho > 0,
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -70,7 +76,7 @@ export function RvGainedBlock({ calculation }: Props) {
         </span>
       </div>
 
-      {linhas.length === 0 ? (
+      {linhas.length === 0 && perUnitGanhos.length === 0 ? (
         <p className="ds-mono-sm text-muted-foreground italic">
           Nenhum indicador atingido até o momento.
         </p>
@@ -84,6 +90,32 @@ export function RvGainedBlock({ calculation }: Props) {
               <span className="text-muted-foreground">{linha.label}</span>
               <span style={{ color: "var(--success)" }}>
                 {formatBRL(linha.valor)}
+              </span>
+            </div>
+          ))}
+
+          {perUnitGanhos.map((pu) => (
+            <div
+              key={pu.indicator.id}
+              className="flex items-baseline justify-between gap-3"
+            >
+              <div className="flex flex-col">
+                <span className="ds-mono-sm text-muted-foreground">
+                  {pu.indicator.displayName}
+                  {pu.faixaAtingida && (
+                    <span>
+                      {" "}
+                      (TX {pu.txAtual?.toFixed(1).replace(".", ",")}% →{" "}
+                      {formatBRL(pu.valorPorRetido)}/retido)
+                    </span>
+                  )}
+                </span>
+                <span className="ds-mono-sm text-muted-foreground">
+                  {pu.contagemRetidos} retidos × {formatBRL(pu.valorPorRetido)}
+                </span>
+              </div>
+              <span className="ds-mono-sm" style={{ color: "var(--success)" }}>
+                {formatBRL(pu.valorGanho)}
               </span>
             </div>
           ))}

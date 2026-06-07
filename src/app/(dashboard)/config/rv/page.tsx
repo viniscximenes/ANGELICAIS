@@ -66,7 +66,10 @@ export default async function ConfigRvPage() {
 
   const regrasContent = (
     <div className="space-y-8">
-      <RuleSetGeneralCard ruleSet={fullRuleSet.ruleSet} />
+      <RuleSetGeneralCard
+        ruleSet={fullRuleSet.ruleSet}
+        hideTeto={fullRuleSet.perUnitIndicators.length > 0}
+      />
 
       <section className="space-y-3">
         <h2 className="ds-h2" style={{ fontSize: "1.15rem" }}>

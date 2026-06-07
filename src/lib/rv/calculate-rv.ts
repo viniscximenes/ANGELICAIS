@@ -24,6 +24,18 @@ function normalizeStatus(s: string | null): string {
     .trim();
 }
 
+/**
+ * KPIs "monotônicos": só crescem no mês, não voltam.
+ * - churn: contagem absoluta de cancelamentos (definitivo)
+ * - deflator:*: ocorrências aplicadas (advertência, suspensão, etc) —
+ *   o operador não reverte por desempenho
+ * Percentuais e médias (tx, tma, indisp) NÃO são monotônicos: oscilam e
+ * podem recuperar, então nunca são "irreversíveis".
+ */
+function isSlugMonotonico(slug: string): boolean {
+  return slug === "churn" || slug.startsWith("deflator:");
+}
+
 function mensagemIndisponibilidade(statusOriginal: string): string {
   const norm = normalizeStatus(statusOriginal);
 
@@ -242,7 +254,10 @@ export function calculateRv(
     const ocorr = deflatorApplications
       .filter((a) => a.deflatorTypeId === dt.id)
       .reduce((s, a) => s + a.occurrenceCount, 0);
-    valuesBySlug.set(`deflator:${normalizeStatus(dt.displayName)}`, ocorr);
+    // Usa o slug estável; durante a transição (slug vazio, pré-backfill) cai
+    // no nome normalizado — que pra "Advertência" dá o mesmo "advertencia".
+    const dSlug = dt.slug || normalizeStatus(dt.displayName);
+    valuesBySlug.set(`deflator:${dSlug}`, ocorr);
   }
 
   const combinedBonusResults: CombinedBonusResult[] = [];
@@ -282,6 +297,10 @@ export function calculateRv(
         : c.threshold;
 
       if (effectiveThreshold === null) continue;
+
+      // Só KPIs monotônicos (churn, deflatores) podem ser "irreversíveis".
+      // Percentuais/médias (tx, tma, indisp) sempre podem recuperar.
+      if (!isSlugMonotonico(c.kpiSlug)) continue;
 
       if (
         isCondicaoEstouradaIrreversivel(valor, c.comparison, effectiveThreshold)
@@ -383,8 +402,12 @@ export function calculateRv(
       const dispara = compareValues(valor, dt.autoComparison, dt.autoThreshold);
       ocorrencias = dispara ? 1 : 0;
     } else {
+      // Casa por slug estável (sobrevive à promoção, que regenera o id).
+      // Fallback pro id antigo enquanto o backfill do deflator_slug não rodou.
       const apps = deflatorApplications.filter(
-        (a) => a.deflatorTypeId === dt.id,
+        (a) =>
+          (a.deflatorSlug && dt.slug && a.deflatorSlug === dt.slug) ||
+          a.deflatorTypeId === dt.id,
       );
       ocorrencias = apps.reduce((sum, a) => sum + a.occurrenceCount, 0);
     }

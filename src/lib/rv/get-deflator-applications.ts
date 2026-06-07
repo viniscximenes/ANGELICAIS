@@ -15,7 +15,7 @@ export async function getDeflatorApplications(
   const { data, error } = await supabase
     .from("rv_deflator_applications")
     .select(
-      "id, operator_email, mes_ref, deflator_type_id, occurrence_count, notes, applied_by, applied_at",
+      "id, operator_email, mes_ref, deflator_type_id, deflator_slug, occurrence_count, notes, applied_by, applied_at",
     )
     .eq("operator_email", normalizedEmail)
     .eq("mes_ref", mesRef);
@@ -30,6 +30,7 @@ export async function getDeflatorApplications(
     operatorEmail: r.operator_email,
     mesRef: r.mes_ref,
     deflatorTypeId: r.deflator_type_id,
+    deflatorSlug: r.deflator_slug ?? null,
     occurrenceCount: r.occurrence_count,
     notes: r.notes,
     appliedBy: r.applied_by,
@@ -49,7 +50,7 @@ export async function getAllDeflatorApplicationsForMonth(
   const { data, error } = await supabase
     .from("rv_deflator_applications")
     .select(
-      "id, operator_email, mes_ref, deflator_type_id, occurrence_count, notes, applied_by, applied_at",
+      "id, operator_email, mes_ref, deflator_type_id, deflator_slug, occurrence_count, notes, applied_by, applied_at",
     )
     .eq("mes_ref", mesRef)
     .order("operator_email");
@@ -64,6 +65,7 @@ export async function getAllDeflatorApplicationsForMonth(
     operatorEmail: r.operator_email,
     mesRef: r.mes_ref,
     deflatorTypeId: r.deflator_type_id,
+    deflatorSlug: r.deflator_slug ?? null,
     occurrenceCount: r.occurrence_count,
     notes: r.notes,
     appliedBy: r.applied_by,

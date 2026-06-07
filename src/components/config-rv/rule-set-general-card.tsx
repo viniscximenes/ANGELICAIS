@@ -10,9 +10,12 @@ import type { RvRuleSet } from "@/lib/rv/types";
 
 interface Props {
   ruleSet: RvRuleSet;
+  // Modelo Junho (per-unit) não tem teto real — o teto_base é só display
+  // herdado. O pai passa true quando há per-unit indicators.
+  hideTeto?: boolean;
 }
 
-export function RuleSetGeneralCard({ ruleSet }: Props) {
+export function RuleSetGeneralCard({ ruleSet, hideTeto = false }: Props) {
   const [tetoBase, setTetoBase] = useState(String(ruleSet.tetoBase));
   const [maxPct, setMaxPct] = useState(String(ruleSet.multiplicadorMaxPct));
   const [isPending, startTransition] = useTransition();
@@ -48,19 +51,21 @@ export function RuleSetGeneralCard({ ruleSet }: Props) {
       </h3>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div>
-          <label className="ds-mono-sm text-muted-foreground mb-1 block">
-            Teto base (R$)
-          </label>
-          <input
-            type="text"
-            value={tetoBase}
-            onChange={(e) => setTetoBase(e.target.value)}
-            disabled={isPending}
-            className="elevation-2 ds-mono w-full rounded-md px-3 py-2"
-            style={{ border: "1px solid var(--border)" }}
-          />
-        </div>
+        {!hideTeto && (
+          <div>
+            <label className="ds-mono-sm text-muted-foreground mb-1 block">
+              Teto base (R$)
+            </label>
+            <input
+              type="text"
+              value={tetoBase}
+              onChange={(e) => setTetoBase(e.target.value)}
+              disabled={isPending}
+              className="elevation-2 ds-mono w-full rounded-md px-3 py-2"
+              style={{ border: "1px solid var(--border)" }}
+            />
+          </div>
+        )}
 
         <div>
           <label className="ds-mono-sm text-muted-foreground mb-1 block">

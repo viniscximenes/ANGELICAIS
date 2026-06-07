@@ -95,7 +95,7 @@ export async function getFullRuleSet(
       supabase
         .from("rv_deflator_types")
         .select(
-          "id, rule_set_id, display_name, initial_percent, increment_per_occurrence, auto_from_kpi_slug, auto_comparison, auto_threshold, display_order",
+          "id, rule_set_id, slug, display_name, initial_percent, increment_per_occurrence, auto_from_kpi_slug, auto_comparison, auto_threshold, display_order",
         )
         .eq("rule_set_id", ruleSet.id)
         .order("display_order"),
@@ -189,6 +189,9 @@ export async function getFullRuleSet(
   const deflatorTypes: DeflatorType[] = (deflRes.data ?? []).map((r) => ({
     id: r.id,
     ruleSetId: r.rule_set_id,
+    // "" durante a janela entre deploy e backfill (coluna ainda NULL no banco).
+    // O cálculo cai no fallback por id quando o slug está vazio.
+    slug: r.slug ?? "",
     displayName: r.display_name,
     initialPercent: Number(r.initial_percent),
     incrementPerOccurrence: Number(r.increment_per_occurrence),
