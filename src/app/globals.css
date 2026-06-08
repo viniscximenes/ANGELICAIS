@@ -508,6 +508,30 @@
   .status-dot--warning { background: var(--warning); }
   .status-dot--danger  { background: var(--danger);  }
 
+  /* === Scrollbar discreta no tema (claro/escuro via vars) === */
+  .scrollbar-tema {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: var(--border) transparent; /* thumb track */
+  }
+
+  .scrollbar-tema::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+
+  .scrollbar-tema::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-tema::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+  }
+
+  .scrollbar-tema::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+
   /* Ícone do date picker em cinza, padronizado com texto */
   input[type="date"].date-input-styled::-webkit-calendar-picker-indicator {
     filter: invert(0.55);

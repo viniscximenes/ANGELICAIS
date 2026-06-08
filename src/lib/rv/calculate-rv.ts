@@ -7,6 +7,8 @@ import type {
   RvCalculation,
   TieredResult,
 } from "./calc-types";
+import { normalizeStatus } from "@/lib/status/normalize-status";
+
 import { compareValues, isCondicaoEstouradaIrreversivel } from "./compare";
 import type {
   DeflatorApplication,
@@ -14,15 +16,6 @@ import type {
   FullRuleSet,
   PerUnitFaixa,
 } from "./types";
-
-function normalizeStatus(s: string | null): string {
-  if (!s) return "";
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .trim();
-}
 
 /**
  * KPIs "monotônicos": só crescem no mês, não voltam.

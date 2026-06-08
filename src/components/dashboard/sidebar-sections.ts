@@ -39,16 +39,27 @@ const ALL_SECTIONS: SidebarSection[] = [
     ],
   },
   {
-    id: "registros",
-    label: "Registros",
-    iconName: "clipboard",
-    basePath: "/registros",
-    permission: "view_monitoria",
-    items: [
-      { label: "Monitoria", href: "/registros/monitoria" },
-      { label: "Diário de Bordo", href: "/registros/diario" },
-    ],
+    id: "evolucao",
+    label: "EVOLUÇÃO",
+    iconName: "trending",
+    basePath: "/evolucao",
+    permission: "view_kpi",
+    items: [{ label: "KPI", href: "/evolucao/kpi" }],
   },
+  // TEMP: oculto — seção "Registros" removida da sidebar (todos os roles).
+  // As rotas /registros/* continuam acessíveis via URL direta; só não
+  // aparecem no menu. Para reexibir, descomentar este bloco.
+  // {
+  //   id: "registros",
+  //   label: "Registros",
+  //   iconName: "clipboard",
+  //   basePath: "/registros",
+  //   permission: "view_monitoria",
+  //   items: [
+  //     { label: "Monitoria", href: "/registros/monitoria" },
+  //     { label: "Diário de Bordo", href: "/registros/diario" },
+  //   ],
+  // },
   {
     id: "bases",
     label: "Bases",

@@ -51,6 +51,7 @@ Quando a página justificar, adicionar:
 | [`config-usuarios.md`](./config-usuarios.md) | Gerenciar Usuários | `/config/usuarios` | documentada |
 | [`atendimento.md`](./atendimento.md) | Atendimento ao vivo | `/atendimento` | documentada |
 | [`config-planos.md`](./config-planos.md) | Configurações — Planos e Descontos | `/config/planos` | documentada |
+- [Evolução](docs/pages/evolucao.md) — painel de evolução mensal do operador (gráfico de linha por KPI + consolidado, guia KPI)
 
 ## Status possíveis
 

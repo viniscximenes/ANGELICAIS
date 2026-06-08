@@ -11,6 +11,7 @@ import {
   IconHeadset,
   IconSettings,
   IconTargetArrow,
+  IconTrendingUp,
 } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -30,7 +31,8 @@ export type SidebarSection = {
     | "clipboard"
     | "database"
     | "settings"
-    | "headset";
+    | "headset"
+    | "trending";
   basePath: string;
   permission: Permission;
   items: { label: string; href: string }[];
@@ -51,6 +53,7 @@ const ICONS: Record<
   database: IconDatabase,
   settings: IconSettings,
   headset: IconHeadset,
+  trending: IconTrendingUp,
 };
 
 interface SidebarProps {
