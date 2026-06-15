@@ -20,7 +20,6 @@ import {
 } from "@/components/motion/stagger-container";
 import { loginAction } from "@/lib/auth/login-action";
 
-const USERNAME_REGEX = /^[a-z]+\.[a-z]+$/;
 const MAX_ATTEMPTS = 5;
 const LOCK_DURATION = 60;
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
@@ -52,9 +51,12 @@ export function LoginForm() {
     return () => clearInterval(interval);
   }, [lockSeconds]);
 
+  // O login não valida formato — quem decide se as credenciais existem é o
+  // Supabase Auth. Isso permite usuários especiais (ex.: "relatorio", sem
+  // ponto / senha curta) sem afetar os demais. Aqui só evitamos enviar vazio.
   function validateUsername(value: string) {
-    if (!USERNAME_REGEX.test(value)) {
-      setUsernameError("Use o formato nome.sobrenome");
+    if (!value.trim()) {
+      setUsernameError("Informe seu usuário");
       return false;
     }
     setUsernameError(null);
@@ -62,7 +64,7 @@ export function LoginForm() {
   }
 
   function validatePassword(value: string) {
-    if (value.length < 6) {
+    if (value.length === 0) {
       setPasswordError("Informe sua senha");
       return false;
     }

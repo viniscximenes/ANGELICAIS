@@ -21,7 +21,7 @@ export async function uploadBaseAction(
     return { success: false, error: "Não autenticado" };
   }
 
-  if (!can(user.profile.role, "manage_base")) {
+  if (!can(user.profile.role, "manage_d1_base")) {
     return { success: false, error: "Sem permissão para atualizar a base" };
   }
 
@@ -31,7 +31,19 @@ export async function uploadBaseAction(
     // Snapshot da evolução da TX (complementar — falha silenciosa não bloqueia upload).
     try {
       const consolidado = await fetchConsolidado();
-      const tx = consolidado.equipe.txRetencao;
+      // FASE 1: a estrutura nova não tem mais um total único de equipe. Como
+      // stopgap, usa a TX agregada da empresa (Σ retidos / Σ pedidos sobre
+      // todos os operadores). Revisitar na Fase 2 quando houver seleção de
+      // supervisor / definição de qual TX registrar.
+      const totalRetidos = consolidado.operadores.reduce(
+        (acc, op) => acc + op.retidos,
+        0,
+      );
+      const totalPedidos = consolidado.operadores.reduce(
+        (acc, op) => acc + op.pedidos,
+        0,
+      );
+      const tx = totalPedidos > 0 ? totalRetidos / totalPedidos : null;
       if (tx !== null && !isNaN(tx)) {
         const snapshotResult = await saveEvolucaoAction(tx * 100);
         if (!snapshotResult.success) {

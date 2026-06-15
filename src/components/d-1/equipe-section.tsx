@@ -20,6 +20,10 @@ interface EquipeSectionProps {
   equipe: ResumoEquipe;
   snapshots: EvolucaoSnapshot[];
   showUpload?: boolean;
+  /** Nome do supervisor da equipe exibida (usado no texto do report copiado). */
+  supervisor?: string;
+  /** Esconde a linha de totais (EQUIPE) — modo busca de 1 operador. */
+  hideTotais?: boolean;
 }
 
 export function EquipeSection({
@@ -27,6 +31,8 @@ export function EquipeSection({
   equipe,
   snapshots,
   showUpload = false,
+  supervisor,
+  hideTotais = false,
 }: EquipeSectionProps) {
   const hasSnapshots = snapshots.length > 0;
 
@@ -55,7 +61,11 @@ export function EquipeSection({
           </div>
 
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-            <CopyTableButton operadores={operadores} equipe={equipe} />
+            <CopyTableButton
+              operadores={operadores}
+              equipe={equipe}
+              supervisor={supervisor}
+            />
             {hasSnapshots && <CopyGraficoButton />}
             {showUpload && <ClearBaseButton action={clearConsolidadoAction} />}
           </div>
@@ -84,6 +94,7 @@ export function EquipeSection({
               operadores={operadores}
               equipe={equipe}
               variant="excel"
+              hideTotais={hideTotais}
             />
           </div>
           {hasSnapshots && (
@@ -104,6 +115,7 @@ export function EquipeSection({
               key="equipe-visible"
               operadores={operadores}
               equipe={equipe}
+              hideTotais={hideTotais}
             />
           </div>
 

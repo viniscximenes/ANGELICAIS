@@ -32,6 +32,10 @@ export default async function IndisponibilidadePage() {
   const data = await getIndisponibilidadeData();
   const userView = filterIndispByEmail(data, user.profile.emailCorporativo);
 
+  const role = user.profile.role;
+  // RELATORIO não tem linha na planilha: vê apenas a seção de equipe.
+  const isRelatorio = role === "RELATORIO";
+
   return (
     <PageTransition>
       <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
@@ -42,16 +46,18 @@ export default async function IndisponibilidadePage() {
           />
           <D1Tabs />
           <div className="space-y-12">
-            <IndispCards indisp={userView.indisp} pausa={userView.pausa} />
+            {!isRelatorio && can(role, "view_d1_personal") && (
+              <IndispCards indisp={userView.indisp} pausa={userView.pausa} />
+            )}
 
-            {can(user.profile.role, "view_d1_team") && (
+            {can(role, "view_d1_team") && (
               <IndispEquipeSection
                 operadoresIndisp={data.operadoresIndisp}
                 operadoresPausa={data.operadoresPausa}
               />
             )}
 
-            {can(user.profile.role, "manage_system") && (
+            {can(role, "manage_system") && (
               <IndispPausasSection
                 operadoresIndisp={data.operadoresIndisp}
                 operadoresPausa={data.operadoresPausa}

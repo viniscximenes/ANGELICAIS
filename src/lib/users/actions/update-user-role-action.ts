@@ -58,10 +58,15 @@ export async function updateUserRoleAction(
     return { success: false, error: "Usuário não encontrado" };
   }
 
-  if (target.role === "GESTOR" || target.role === "ADM") {
+  if (
+    target.role === "GESTOR" ||
+    target.role === "ADM" ||
+    target.role === "RELATORIO"
+  ) {
     return {
       success: false,
-      error: "Não é possível alterar role de ADM ou GESTOR pelo painel",
+      error:
+        "Não é possível alterar role de ADM, GESTOR ou RELATORIO pelo painel",
     };
   }
 

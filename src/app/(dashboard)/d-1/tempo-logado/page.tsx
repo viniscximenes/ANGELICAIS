@@ -32,6 +32,10 @@ export default async function TempoLogadoPage() {
   const data = await getTempoLogadoData();
   const userView = filterTempoLogadoByEmail(data, user.profile.emailCorporativo);
 
+  const role = user.profile.role;
+  // RELATORIO não tem linha na planilha: vê apenas a seção de equipe.
+  const isRelatorio = role === "RELATORIO";
+
   return (
     <PageTransition>
       <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
@@ -39,16 +43,18 @@ export default async function TempoLogadoPage() {
           <D1Header horaReport={userView.horaReport} subtitle="tempo logado" />
           <D1Tabs />
           <div className="space-y-12">
-            <TempoLogadoCards
-              tempoLogado={userView.tempoLogado}
-              loginLogout={userView.loginLogout}
-            />
+            {!isRelatorio && can(role, "view_d1_personal") && (
+              <TempoLogadoCards
+                tempoLogado={userView.tempoLogado}
+                loginLogout={userView.loginLogout}
+              />
+            )}
 
-            {can(user.profile.role, "view_d1_team") && (
+            {can(role, "view_d1_team") && (
               <TempoLogadoEquipeSection
                 operadores={data.operadores}
                 loginLogout={data.loginLogout}
-                showUpload={can(user.profile.role, "manage_base")}
+                showUpload={can(role, "manage_d1_base")}
               />
             )}
           </div>

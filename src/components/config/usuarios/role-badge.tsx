@@ -10,6 +10,7 @@ export function RoleBadge({ role }: Props) {
     AUX: { color: "var(--success)", label: "AUX" },
     OP: { color: "var(--muted-foreground)", label: "OP" },
     GESTOR: { color: "var(--warning)", label: "GESTOR" },
+    RELATORIO: { color: "var(--primary)", label: "RELATÓRIO" },
   };
 
   const { color, label } = config[role];

@@ -62,7 +62,12 @@ export async function createUserAction(
   if (!input.password || input.password.length < 8) {
     return { success: false, error: "Senha deve ter pelo menos 8 caracteres" };
   }
-  if (!["OP", "AUX", "ADM"].includes(input.role)) {
+  // RELATORIO é um perfil especial (ex.: usuário "relatorio"), normalmente
+  // criado via script admin/SQL — NÃO pela UI (a regex de username acima exige
+  // o padrão nome.sobrenome). Incluído aqui apenas para o caso de uma criação
+  // futura via UI; se isso for desejado, a regex de username precisaria ser
+  // flexibilizada para aceitar nomes sem ponto.
+  if (!["OP", "AUX", "ADM", "RELATORIO"].includes(input.role)) {
     return { success: false, error: "Role inválida" };
   }
 

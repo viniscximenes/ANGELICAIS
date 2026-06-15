@@ -8,6 +8,8 @@ interface EquipeTableProps {
   operadores: OperadorConsolidado[];
   equipe: ResumoEquipe;
   variant?: "screen" | "excel";
+  /** Esconde a linha de totais (EQUIPE) — usado na busca de 1 operador. */
+  hideTotais?: boolean;
 }
 
 const META_TX = 0.6;
@@ -26,13 +28,28 @@ function meetsMeta(tx: number): boolean {
 }
 
 export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
-  function EquipeTable({ operadores, equipe, variant = "screen" }, ref) {
+  function EquipeTable(
+    { operadores, equipe, variant = "screen", hideTotais },
+    ref,
+  ) {
     if (variant === "excel") {
       return (
-        <ExcelTable ref={ref} operadores={operadores} equipe={equipe} />
+        <ExcelTable
+          ref={ref}
+          operadores={operadores}
+          equipe={equipe}
+          hideTotais={hideTotais}
+        />
       );
     }
-    return <ScreenTable ref={ref} operadores={operadores} equipe={equipe} />;
+    return (
+      <ScreenTable
+        ref={ref}
+        operadores={operadores}
+        equipe={equipe}
+        hideTotais={hideTotais}
+      />
+    );
   },
 );
 
@@ -45,7 +62,7 @@ const COL_DIVIDER_SCREEN: React.CSSProperties = {
 };
 
 const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
-  function ScreenTable({ operadores, equipe }, ref) {
+  function ScreenTable({ operadores, equipe, hideTotais }, ref) {
     const equipeMeets =
       equipe.txRetencao !== null && meetsMeta(equipe.txRetencao);
 
@@ -174,6 +191,7 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           );
         })}
 
+        {!hideTotais && (
         <div
           className="ds-body grid grid-cols-12 items-center gap-0 px-0 py-2"
           style={{
@@ -237,6 +255,7 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
             )}
           </div>
         </div>
+        )}
       </div>
     );
   },
@@ -246,8 +265,15 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
    EXCEL — visual de planilha (usado só no wrapper invisível do PNG)
    ──────────────────────────────────────────────────────────────────── */
 
+// Tudo no PNG usa Segoe UI — inclusive os números (antes Consolas/monospace).
 const SANS_STACK = "'Segoe UI', 'Arial', sans-serif";
-const MONO_STACK = "'Consolas', 'Courier New', monospace";
+
+// Cores das colunas no PNG (variant excel) — legíveis sobre fundo branco.
+const EXCEL_GREEN = "#2e7d32"; // retidos / tx >= 60%
+const EXCEL_RED = "#c62828"; // cancelados / tx < 60%
+const EXCEL_AMBER = "#ed6c02"; // pedidos (âmbar, contrasta no branco)
+const EXCEL_RED_BG = "#ffe5e5"; // fundo de alerta da célula de TX < 60%
+const EXCEL_NEUTRAL = "#000000"; // nome do operador / TX nula
 
 const EXCEL_COL_DIVIDER: React.CSSProperties = {
   borderRight: "1px solid #d0d0d0",
@@ -265,27 +291,29 @@ const EXCEL_HEADER_CELL: React.CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: "0.5px",
   color: "#ffffff",
+  textAlign: "center",
 };
 
 const EXCEL_TEXT_CELL: React.CSSProperties = {
   padding: "6px 8px",
   fontFamily: SANS_STACK,
   fontSize: "12px",
-  textAlign: "left",
+  textAlign: "center",
 };
 
 const EXCEL_NUM_CELL: React.CSSProperties = {
   padding: "6px 8px",
-  fontFamily: MONO_STACK,
+  fontFamily: SANS_STACK,
   fontSize: "12px",
-  textAlign: "right",
+  textAlign: "center",
   fontVariantNumeric: "tabular-nums",
 };
 
 const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
-  function ExcelTable({ operadores, equipe }, ref) {
+  function ExcelTable({ operadores, equipe, hideTotais }, ref) {
     const equipeMeets =
       equipe.txRetencao !== null && meetsMeta(equipe.txRetencao);
+    const equipeBelowMeta = equipe.txRetencao !== null && !equipeMeets;
 
     return (
       <div
@@ -311,36 +339,16 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           <div style={{ ...EXCEL_HEADER_CELL, ...EXCEL_HEADER_DIVIDER }}>
             Operador
           </div>
-          <div
-            style={{
-              ...EXCEL_HEADER_CELL,
-              ...EXCEL_HEADER_DIVIDER,
-              textAlign: "right",
-            }}
-          >
+          <div style={{ ...EXCEL_HEADER_CELL, ...EXCEL_HEADER_DIVIDER }}>
             Retidos
           </div>
-          <div
-            style={{
-              ...EXCEL_HEADER_CELL,
-              ...EXCEL_HEADER_DIVIDER,
-              textAlign: "right",
-            }}
-          >
+          <div style={{ ...EXCEL_HEADER_CELL, ...EXCEL_HEADER_DIVIDER }}>
             Cancelados
           </div>
-          <div
-            style={{
-              ...EXCEL_HEADER_CELL,
-              ...EXCEL_HEADER_DIVIDER,
-              textAlign: "right",
-            }}
-          >
+          <div style={{ ...EXCEL_HEADER_CELL, ...EXCEL_HEADER_DIVIDER }}>
             Pedidos
           </div>
-          <div style={{ ...EXCEL_HEADER_CELL, textAlign: "right" }}>
-            Tx Retenção
-          </div>
+          <div style={EXCEL_HEADER_CELL}>Tx Retenção</div>
         </div>
 
         {operadores.map((op, idx) => {
@@ -349,13 +357,14 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           const meetsM = op.txRetencao !== null && meetsMeta(op.txRetencao);
           const belowMeta = !semAtendimentos && !meetsM;
 
-          const rowBg = belowMeta ? "#fff5f5" : "#ffffff";
-          const nameColor = belowMeta ? "#c62828" : "#000000";
+          // TX < 60%: a LINHA INTEIRA fica vermelho claro (alerta). Os números
+          // mantêm a cor por coluna; o nome fica preto para legibilidade.
+          const rowBg = belowMeta ? EXCEL_RED_BG : "#ffffff";
           const txColor = semAtendimentos
-            ? "#000000"
+            ? EXCEL_NEUTRAL
             : belowMeta
-              ? "#c62828"
-              : "#2e7d32";
+              ? EXCEL_RED
+              : EXCEL_GREEN;
 
           return (
             <div
@@ -371,8 +380,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                 style={{
                   ...EXCEL_TEXT_CELL,
                   ...EXCEL_COL_DIVIDER,
-                  color: nameColor,
-                  fontWeight: belowMeta ? 600 : 400,
+                  color: EXCEL_NEUTRAL,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -384,7 +392,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                 style={{
                   ...EXCEL_NUM_CELL,
                   ...EXCEL_COL_DIVIDER,
-                  color: "#000000",
+                  color: EXCEL_GREEN,
                 }}
               >
                 {op.retidos}
@@ -393,7 +401,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                 style={{
                   ...EXCEL_NUM_CELL,
                   ...EXCEL_COL_DIVIDER,
-                  color: "#000000",
+                  color: EXCEL_RED,
                 }}
               >
                 {op.cancelados}
@@ -402,7 +410,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                 style={{
                   ...EXCEL_NUM_CELL,
                   ...EXCEL_COL_DIVIDER,
-                  color: "#000000",
+                  color: EXCEL_AMBER,
                 }}
               >
                 {op.pedidos}
@@ -413,7 +421,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                   color: txColor,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "flex-end",
+                  justifyContent: "center",
                   gap: "6px",
                 }}
               >
@@ -439,11 +447,12 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           );
         })}
 
+        {!hideTotais && (
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "3fr 2fr 2fr 2fr 3fr",
-            background: "#f0f0f0",
+            background: equipeBelowMeta ? EXCEL_RED_BG : "#f0f0f0",
             borderTop: "2px solid #808080",
             fontWeight: 600,
             color: "#000000",
@@ -465,6 +474,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               ...EXCEL_NUM_CELL,
               ...EXCEL_COL_DIVIDER,
               fontWeight: 600,
+              color: EXCEL_GREEN,
             }}
           >
             {equipe.retidos}
@@ -474,6 +484,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               ...EXCEL_NUM_CELL,
               ...EXCEL_COL_DIVIDER,
               fontWeight: 600,
+              color: EXCEL_RED,
             }}
           >
             {equipe.cancelados}
@@ -483,6 +494,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               ...EXCEL_NUM_CELL,
               ...EXCEL_COL_DIVIDER,
               fontWeight: 600,
+              color: EXCEL_AMBER,
             }}
           >
             {equipe.pedidos}
@@ -493,13 +505,13 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               fontWeight: 600,
               color:
                 equipe.txRetencao === null
-                  ? "#000000"
+                  ? EXCEL_NEUTRAL
                   : equipeMeets
-                    ? "#2e7d32"
-                    : "#c62828",
+                    ? EXCEL_GREEN
+                    : EXCEL_RED,
               display: "flex",
               alignItems: "center",
-              justifyContent: "flex-end",
+              justifyContent: "center",
               gap: "6px",
             }}
           >
@@ -515,13 +527,14 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                     width: "6px",
                     height: "6px",
                     borderRadius: "50%",
-                    background: equipeMeets ? "#2e7d32" : "#c62828",
+                    background: equipeMeets ? EXCEL_GREEN : EXCEL_RED,
                   }}
                 />
               </>
             )}
           </div>
         </div>
+        )}
       </div>
     );
   },

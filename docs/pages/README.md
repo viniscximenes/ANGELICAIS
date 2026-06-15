@@ -52,6 +52,7 @@ Quando a página justificar, adicionar:
 | [`atendimento.md`](./atendimento.md) | Atendimento ao vivo | `/atendimento` | documentada |
 | [`config-planos.md`](./config-planos.md) | Configurações — Planos e Descontos | `/config/planos` | documentada |
 - [Evolução](docs/pages/evolucao.md) — painel de evolução mensal do operador (gráfico de linha por KPI + consolidado, guia KPI)
+- [D-1 Relatório por Supervisor](docs/pages/d-1-relatorio-supervisor.md) — exportação do D-1 por supervisor (empresa toda) + usuário relatorio
 
 ## Status possíveis
 

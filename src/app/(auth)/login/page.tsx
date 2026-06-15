@@ -4,20 +4,20 @@ import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/login/login-form";
 import { LoginHero } from "@/components/login/login-hero";
 import { PageTransition } from "@/components/motion/page-transition";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { getPostLoginPath } from "@/lib/auth/post-login-path";
 
 export const metadata: Metadata = {
   title: "Entrar — ANGELICAIS",
 };
 
 export default async function LoginPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Usuário já autenticado que volta para /login vai para a landing da sua
+  // role (por permissão), não para um KPI hardcoded.
+  const user = await getCurrentUser();
 
   if (user) {
-    redirect("/kpi/atual-principal");
+    redirect(getPostLoginPath(user.profile.role));
   }
 
   return (

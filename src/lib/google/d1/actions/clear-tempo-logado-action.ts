@@ -18,7 +18,7 @@ export type ClearTempoLogadoResult =
 export async function clearTempoLogadoAction(): Promise<ClearTempoLogadoResult> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Não autenticado" };
-  if (!can(user.profile.role, "manage_base")) {
+  if (!can(user.profile.role, "manage_d1_base")) {
     return { success: false, error: "Sem permissão para limpar a base" };
   }
 

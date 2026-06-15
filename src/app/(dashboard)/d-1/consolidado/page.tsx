@@ -4,14 +4,15 @@ import { redirect } from "next/navigation";
 import { ContratosSection } from "@/components/d-1/contratos-section";
 import { D1Header } from "@/components/d-1/d1-header";
 import { D1Tabs } from "@/components/d-1/d1-tabs";
-import { EquipeSection } from "@/components/d-1/equipe-section";
 import { KpiCards } from "@/components/d-1/kpi-cards";
 import { MotivosSection } from "@/components/d-1/motivos-section";
+import { RelatorioSupervisorView } from "@/components/d-1/relatorio/relatorio-supervisor-view";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { filterByUserEmail } from "@/lib/d1/filter-by-user";
 import { getEvolucaoTxHoje } from "@/lib/d1/evolucao/get-evolucao-tx-hoje";
+import { getSupervisoresDistintos } from "@/lib/d1/supervisor";
 import { getD1Data } from "@/lib/google/d1";
 
 export const metadata: Metadata = {
@@ -37,6 +38,14 @@ export default async function ConsolidadoPage() {
   ]);
   const userView = filterByUserEmail(d1Data, user.profile.emailCorporativo);
 
+  // Lista de supervisores (coluna B) para o seletor da seção de equipe.
+  const supervisores = getSupervisoresDistintos(d1Data.consolidado.operadores);
+
+  const role = user.profile.role;
+  // RELATORIO não tem linha na planilha: a parte pessoal apareceria zerada e
+  // é inútil. Ele vê apenas a seção de equipe (tabela + seletor + export).
+  const isRelatorio = role === "RELATORIO";
+
   return (
     <PageTransition>
       <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
@@ -44,16 +53,20 @@ export default async function ConsolidadoPage() {
           <D1Header horaReport={userView.horaReport} subtitle="consolidado" />
           <D1Tabs />
           <div className="space-y-12">
-            <KpiCards operador={userView.operador} />
-            <MotivosSection motivos={userView.motivos} />
-            <ContratosSection contratos={userView.contratos} />
+            {!isRelatorio && can(role, "view_d1_personal") && (
+              <>
+                <KpiCards operador={userView.operador} />
+                <MotivosSection motivos={userView.motivos} />
+                <ContratosSection contratos={userView.contratos} />
+              </>
+            )}
 
-            {can(user.profile.role, "view_d1_team") && (
-              <EquipeSection
-                operadores={d1Data.consolidado.operadores}
-                equipe={d1Data.consolidado.equipe}
+            {can(role, "view_d1_team") && (
+              <RelatorioSupervisorView
+                consolidado={d1Data.consolidado}
+                supervisores={supervisores}
                 snapshots={evolucaoSnapshots}
-                showUpload={can(user.profile.role, "manage_base")}
+                showUpload={can(role, "manage_d1_base")}
               />
             )}
           </div>

@@ -20,7 +20,7 @@ export async function uploadBase2Action(
     return { success: false, error: "Não autenticado" };
   }
 
-  if (!can(user.profile.role, "manage_base")) {
+  if (!can(user.profile.role, "manage_d1_base")) {
     return { success: false, error: "Sem permissão para atualizar a base" };
   }
 

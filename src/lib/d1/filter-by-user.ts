@@ -22,6 +22,6 @@ export function filterByUserEmail(data: D1Data, email: string): UserD1View {
     contratos:
       data.contratos.find((c) => c.email === normalizedEmail) ?? null,
     motivos: data.motivos.find((m) => m.email === normalizedEmail) ?? null,
-    horaReport: data.consolidado.equipe.horaReport,
+    horaReport: data.consolidado.horaReport,
   };
 }

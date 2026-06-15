@@ -7,60 +7,10 @@ import { toast } from "sonner";
 
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
 
-const META_TX = 0.6;
-
-function formatTxBR(percent: number): string {
-  return percent.toFixed(2).replace(".", ",");
-}
-
-function meetsMeta(tx: number): boolean {
-  return Math.round(tx * 1000) >= Math.round(META_TX * 1000);
-}
-
-function usernameFromEmail(email: string): string {
-  return email.split("@")[0] || email;
-}
-
-type ReportSections = {
-  hora: string;
-  tail:
-    | { kind: "urgent"; ops: Array<{ name: string; txPercent: number }> }
-    | { kind: "celebration" }
-    | { kind: "none" };
-};
-
-function buildReportSections(
-  operadores: OperadorConsolidado[],
-  equipe: ResumoEquipe,
-): ReportSections {
-  const hora =
-    equipe.horaReport && equipe.horaReport !== "—" ? equipe.horaReport : "—";
-
-  const withAtendimentos = operadores.filter(
-    (op) => op.pedidos > 0 && op.txRetencao !== null,
-  );
-
-  // Abaixo da meta, ordenados do mais crítico (menor TX) pro maior
-  const belowMeta = withAtendimentos
-    .filter((op) => !meetsMeta(op.txRetencao!))
-    .sort((a, b) => a.txRetencao! - b.txRetencao!);
-
-  if (belowMeta.length > 0) {
-    return {
-      hora,
-      tail: {
-        kind: "urgent",
-        ops: belowMeta.map((op) => ({
-          name: usernameFromEmail(op.email),
-          txPercent: (op.txRetencao as number) * 100,
-        })),
-      },
-    };
-  }
-  if (withAtendimentos.length > 0) {
-    return { hora, tail: { kind: "celebration" } };
-  }
-  return { hora, tail: { kind: "none" } };
+function getHoraReport(equipe: ResumoEquipe): string {
+  return equipe.horaReport && equipe.horaReport !== "—"
+    ? equipe.horaReport
+    : "—";
 }
 
 function escapeHtml(str: string): string {
@@ -70,28 +20,19 @@ function escapeHtml(str: string): string {
     .replace(/>/g, "&gt;");
 }
 
-function formatReportHtml(s: ReportSections, pngDataUrl: string): string {
+function formatReportHtml(hora: string, pngDataUrl: string): string {
+  // Blocos empilhados verticalmente, nesta ordem: título → report → imagem.
+  // O Teams Web strippa font-size de <div>/<span>, mas RESPEITA font-size em
+  // <h2> — por isso o título grande precisa ser <h2> (e o negrito via <b>, que
+  // o Teams nunca remove). O report é um <div> (bloco) com <i> dentro: o div
+  // garante a quebra de linha e o <i> o itálico. A <img> fica em bloco com
+  // display:block (+ <br> de reforço) para não fluir ao lado do texto.
   const parts: string[] = [
-    `<h2 style="font-size: 22px; margin: 0;"><b>CONSOLIDADO / EVOLUÇÃO POR TAXA:</b></h2>`,
-    `<sub style="font-size: 10px;"><font size="1">REPORT DAS </font></sub> <font size="3"><i>${escapeHtml(s.hora)}</i></font>`,
-    `<br><br>`,
-    `<img src="${pngDataUrl}" style="max-width:1000px; width:100%;" alt="Tabela consolidado">`,
-    `<br><br>`,
+    `<h2 style="font-size: 24px; margin: 0;"><b>D-1 CONSOLIDADO</b></h2>`,
+    `<div style="margin-top: 4px;"><i>report das ${escapeHtml(hora)}</i></div>`,
+    `<br>`,
+    `<div style="margin-top: 8px;"><img src="${pngDataUrl}" style="display: block; max-width: 1000px; width: 100%;" alt="Tabela consolidado"></div>`,
   ];
-  if (s.tail.kind === "urgent") {
-    const ops = s.tail.ops;
-    parts.push(
-      `<b>AJUDA AOS OPERADORES ABAIXO DOS 60%</b><br>`,
-      ops
-        .map(
-          (o, i) =>
-            `• ${escapeHtml(o.name.toUpperCase())} - TAXA ${formatTxBR(o.txPercent)}%${i < ops.length - 1 ? "<br>" : ""}`,
-        )
-        .join(""),
-    );
-  } else if (s.tail.kind === "celebration") {
-    parts.push(`<b>EQUIPE TODA ACIMA DA META</b>`);
-  }
   return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">${parts.join("")}</div>`;
 }
 
@@ -136,14 +77,14 @@ async function copyFormattedHtml(html: string): Promise<void> {
 }
 
 interface CopyTableButtonProps {
+  // operadores e supervisor continuam aceitos (o caller os passa), mas o texto
+  // copiado não os usa mais — agora é só título + hora do report + imagem.
   operadores: OperadorConsolidado[];
   equipe: ResumoEquipe;
+  supervisor?: string;
 }
 
-export function CopyTableButton({
-  operadores,
-  equipe,
-}: CopyTableButtonProps) {
+export function CopyTableButton({ equipe }: CopyTableButtonProps) {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
 
   async function handleCopy() {
@@ -158,8 +99,8 @@ export function CopyTableButton({
 
     try {
       const pngDataUrl = await domToPng(target, { scale: 3 });
-      const sections = buildReportSections(operadores, equipe);
-      const html = formatReportHtml(sections, pngDataUrl);
+      const hora = getHoraReport(equipe);
+      const html = formatReportHtml(hora, pngDataUrl);
 
       await copyFormattedHtml(html);
 
