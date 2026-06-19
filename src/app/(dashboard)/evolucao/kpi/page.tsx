@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getEvolucaoOperador } from "@/lib/evolucao/get-evolucao-operador";
 
 export const metadata: Metadata = {
-  title: "Evolução — KPI — ANGELICAIS",
+  title: "Evolução — KPI — ALLOHA FIBRA",
 };
 
 export default async function EvolucaoKpiPage() {

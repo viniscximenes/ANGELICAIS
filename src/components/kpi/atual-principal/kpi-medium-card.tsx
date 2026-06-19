@@ -77,7 +77,7 @@ export function KpiMediumCard({
         duration: 0.25,
         ease: EASE_OUT_EXPO,
       }}
-      className="elevation-1 relative overflow-hidden rounded-lg p-6"
+      className="elevation-1 relative overflow-hidden rounded-lg p-6 border border-border/50"
     >
       <div
         aria-hidden="true"
@@ -93,7 +93,7 @@ export function KpiMediumCard({
       </p>
 
       <p
-        className="ds-display"
+        className="ds-display font-semibold"
         style={{
           fontSize: "2.25rem",
           color: valueColor,
@@ -103,7 +103,13 @@ export function KpiMediumCard({
       </p>
 
       {metaLabel && (
-        <p className="ds-mono-sm text-muted-foreground mt-2">{metaLabel}</p>
+        <div className="mt-3 flex items-center gap-1.5">
+          <span 
+            className="w-1.5 h-1.5 rounded-full inline-block" 
+            style={{ backgroundColor: color }} 
+          />
+          <p className="ds-small text-muted-foreground">{metaLabel}</p>
+        </div>
       )}
     </motion.div>
   );

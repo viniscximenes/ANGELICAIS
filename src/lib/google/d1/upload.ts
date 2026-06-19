@@ -46,7 +46,12 @@ export async function uploadBaseToSheet(
     }
 
     // Validação 3 — não excede limite
-    const dataRows = parsedRows.slice(1); // remove cabeçalho
+    // Trava cada linha em EXPECTED_COLUMNS (A:R). Mesmo que uma linha do CSV
+    // venha com colunas extras, a escrita nunca passa de R — protege as
+    // fórmulas fixas da coluna S em diante.
+    const dataRows = parsedRows
+      .slice(1) // remove cabeçalho
+      .map((row) => row.slice(0, EXPECTED_COLUMNS));
     if (dataRows.length > MAX_ROWS - 1) {
       return {
         success: false,

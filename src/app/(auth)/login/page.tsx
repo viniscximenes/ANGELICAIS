@@ -8,7 +8,7 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 
 export const metadata: Metadata = {
-  title: "Entrar — ANGELICAIS",
+  title: "Entrar — Alloha Fibra",
 };
 
 export default async function LoginPage() {
@@ -21,8 +21,15 @@ export default async function LoginPage() {
   }
 
   return (
-    <PageTransition className="min-h-screen">
-      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
+    <PageTransition className="min-h-screen relative overflow-hidden bg-background">
+      {/* Glow unificado de fundo azul cobrindo as duas colunas */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-20 z-0" 
+        style={{
+          background: "radial-gradient(circle at 40% 50%, #091755 0%, transparent 65%)"
+        }}
+      />
+      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2 relative z-10">
         <LoginHero />
         <LoginForm />
       </div>

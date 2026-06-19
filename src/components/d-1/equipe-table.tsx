@@ -313,7 +313,6 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
   function ExcelTable({ operadores, equipe, hideTotais }, ref) {
     const equipeMeets =
       equipe.txRetencao !== null && meetsMeta(equipe.txRetencao);
-    const equipeBelowMeta = equipe.txRetencao !== null && !equipeMeets;
 
     return (
       <div
@@ -452,7 +451,9 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           style={{
             display: "grid",
             gridTemplateColumns: "3fr 2fr 2fr 2fr 3fr",
-            background: equipeBelowMeta ? EXCEL_RED_BG : "#f0f0f0",
+            // Linha de total SEMPRE cinza — nunca pinta de vermelho, mesmo com
+            // TX < 60% (o alerta vermelho vale só para linhas de operador).
+            background: "#f0f0f0",
             borderTop: "2px solid #808080",
             fontWeight: 600,
             color: "#000000",

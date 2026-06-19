@@ -10,7 +10,7 @@ import { getCurrentMonthSecundario } from "@/lib/kpi/atual/get-current-month-sec
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 
 export const metadata: Metadata = {
-  title: "KPI Atual — Secundário — ANGELICAIS",
+  title: "KPI Atual — Secundário — ALLOHA FIBRA",
 };
 
 const SECUNDARIO_ORDER = [

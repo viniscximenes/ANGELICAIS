@@ -26,7 +26,7 @@ export async function AppHeader() {
         {/* Logo / nome do sistema */}
         <div className="flex items-baseline gap-3">
           <span className="ds-mono font-semibold tracking-wider">
-            ANGELICAIS
+            ALLOHA FIBRA
           </span>
           <span className="ds-mono-sm text-muted-foreground hidden sm:inline">
             / gestão operacional

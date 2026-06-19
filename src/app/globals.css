@@ -99,8 +99,8 @@
     --card-foreground: oklch(0.148 0.004 228.8);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.148 0.004 228.8);
-    --primary: oklch(0.457 0.24 277.023);
-    --primary-foreground: oklch(0.962 0.018 272.314);
+    --primary: oklch(0.398 0.195 240.0);
+    --primary-foreground: oklch(0.99 0 0);
     --secondary: oklch(0.967 0.001 286.375);
     --secondary-foreground: oklch(0.21 0.006 285.885);
     --muted: oklch(0.963 0.002 197.1);
@@ -175,70 +175,65 @@
 [data-theme="light"] {
     /* ─── Backgrounds com profundidade ─── */
 
-    /* Fundo principal: branco-azulado muito sutil (não branco puro) */
-    --background: oklch(98% 0.008 230);
+    /* Fundo principal: Branco puro para um visual extremamente clean, moderno e corporativo */
+    --background: oklch(1.00 0.00 0);
 
-    /* Cards: branco puro pra contrastar com o fundo azulado */
-    --card: oklch(100% 0 0);
-    --card-foreground: oklch(25% 0.04 235);
-    --popover: oklch(100% 0 0);
-    --popover-foreground: oklch(25% 0.04 235);
+    /* Cards e áreas de destaque: Cinza sutil para contraste reverso sofisticado */
+    --card: oklch(0.985 0.001 240); /* #f8f9fa */
+    --card-foreground: oklch(0.18 0.002 240); /* #1a1a1a */
+    --popover: oklch(0.985 0.001 240);
+    --popover-foreground: oklch(0.18 0.002 240);
 
-    /* Muted: cinza-azulado pra zonas secundárias e badges */
-    --muted: oklch(95% 0.012 230);
-    --muted-foreground: oklch(45% 0.04 235);
+    /* Muted: cinza leve para áreas secundárias e badges */
+    --muted: oklch(0.95 0.002 240);
+    --muted-foreground: oklch(0.45 0.003 240);
 
-    /* Bordas suaves mas presentes, com tom azulado */
-    --border: oklch(86% 0.018 230);
+    /* Bordas ultrafinas e discretas */
+    --border: oklch(0.94 0.002 240);
 
     /* ─── Texto ─── */
 
-    /* Cinza-azul escuro em vez de preto puro */
-    --foreground: oklch(25% 0.04 235);
+    /* Grafite escuro elegante e profissional */
+    --foreground: oklch(0.18 0.002 240);
 
-    /* ─── Brand azul corporativo (chroma baixo p/ consistência cross-device) ─── */
+    /* ─── Brand azul ALLOHA FIBRA ─── */
+    --primary: oklch(0.398 0.195 240.0);
+    --primary-foreground: oklch(1.00 0.00 0);
 
-    --primary: oklch(46% 0.13 240);
-    --primary-foreground: oklch(99% 0 0);
+    /* ─── Status (bg/border limpos e sem saturação estranha) ─── */
+    --success: oklch(0.55 0.13 145);
+    --success-bg: oklch(0.96 0.02 145);
+    --success-border: oklch(0.88 0.04 145);
 
-    /* ─── Status (bg/border ajustados pra fundo claro) ─── */
+    --warning: oklch(0.65 0.11 80);
+    --warning-bg: oklch(0.97 0.02 80);
+    --warning-border: oklch(0.90 0.04 80);
 
-    --success: oklch(42% 0.14 150);
-    --success-bg: oklch(93% 0.05 150);
-    --success-border: oklch(75% 0.09 150);
+    --danger: oklch(0.52 0.16 25);
+    --danger-bg: oklch(0.97 0.01 25);
+    --danger-border: oklch(0.89 0.03 25);
 
-    --warning: oklch(50% 0.13 75);
-    --warning-bg: oklch(94% 0.05 75);
-    --warning-border: oklch(77% 0.11 75);
+    /* ─── Elevation ─── */
+    --elevation-1-bg: oklch(0.985 0.001 240);
+    --elevation-1-border: oklch(0.94 0.002 240);
 
-    --danger: oklch(48% 0.18 27);
-    --danger-bg: oklch(93% 0.05 27);
-    --danger-border: oklch(77% 0.12 27);
+    --elevation-2-bg: oklch(0.985 0.001 240);
+    --elevation-2-border: oklch(0.92 0.002 240);
 
-    /* ─── Elevation: cards brancos puros com bordas azuladas ─── */
+    --elevation-3-bg: oklch(0.985 0.001 240);
+    --elevation-3-border: oklch(0.90 0.002 240);
 
-    --elevation-1-bg: oklch(100% 0 0);
-    --elevation-1-border: oklch(88% 0.018 235);
-
-    --elevation-2-bg: oklch(100% 0 0);
-    --elevation-2-border: oklch(85% 0.020 235);
-
-    --elevation-3-bg: oklch(100% 0 0);
-    --elevation-3-border: oklch(82% 0.022 235);
-
-    /* ─── Glow (gradientes do topo de cards hero) ─── */
-
-    --glow-accent: oklch(55% 0.12 240);
-    --glow-accent-strong: oklch(46% 0.14 240);
+    /* ─── Glow ─── */
+    --glow-accent: oklch(0.398 0.195 240.0 / 0.06);
+    --glow-accent-strong: oklch(0.398 0.195 240.0 / 0.12);
 
     /* ─── Hover states ─── */
+    --card-hover-bg: oklch(0.97 0.002 240);
+    --muted-hover-bg: oklch(0.92 0.003 240);
+    --border-hover: oklch(0.88 0.004 240);
 
-    --card-hover-bg: oklch(98% 0.01 240);
-    --muted-hover-bg: oklch(92% 0.015 235);
-    --border-hover: oklch(80% 0.025 235);
-
-    /* Linha guia entre operadores: ligeiramente mais visível por ser dashed */
-    --row-border: oklch(88% 0.008 240);
+    /* Linha guia */
+    --row-border: oklch(0.95 0.001 240);
 }
 
 /* Hover apenas em LINKS com elevation (cards clicáveis).
@@ -256,23 +251,23 @@
     border-color: var(--border-hover);
 }
 
-/* Sombras com tinta azulada — visíveis sobre fundo claro */
+/* Sombras neutras — visíveis sobre fundo claro */
 [data-theme="light"] .elevation-1 {
     box-shadow:
-        0 1px 3px oklch(40% 0.10 235 / 0.08),
-        0 1px 2px oklch(40% 0.10 235 / 0.06);
+        0 1px 3px rgba(0, 0, 0, 0.05),
+        0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 [data-theme="light"] .elevation-2 {
     box-shadow:
-        0 4px 12px oklch(40% 0.10 235 / 0.10),
-        0 2px 4px oklch(40% 0.10 235 / 0.06);
+        0 4px 10px rgba(0, 0, 0, 0.06),
+        0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 [data-theme="light"] .elevation-3 {
     box-shadow:
-        0 12px 32px oklch(40% 0.10 235 / 0.12),
-        0 4px 12px oklch(40% 0.10 235 / 0.08);
+        0 12px 24px rgba(0, 0, 0, 0.08),
+        0 4px 10px rgba(0, 0, 0, 0.04);
 }
 
 .dark {
@@ -282,8 +277,8 @@
     --card-foreground: oklch(0.987 0.002 197.1);
     --popover: oklch(0.218 0.008 223.9);
     --popover-foreground: oklch(0.987 0.002 197.1);
-    --primary: oklch(0.398 0.195 277.366);
-    --primary-foreground: oklch(0.962 0.018 272.314);
+    --primary: oklch(0.398 0.195 240.0);
+    --primary-foreground: oklch(0.99 0 0);
     --secondary: oklch(0.274 0.006 286.033);
     --secondary-foreground: oklch(0.985 0 0);
     --muted: oklch(0.275 0.011 216.9);
@@ -331,8 +326,8 @@
     --elevation-3-bg: oklch(0.29 0.01 223);
     --elevation-3-border: oklch(1 0 0 / 0.14);
 
-    --glow-accent: oklch(0.398 0.195 277.366 / 0.15);
-    --glow-accent-strong: oklch(0.398 0.195 277.366 / 0.3);
+    --glow-accent: oklch(0.398 0.195 240.0 / 0.15);
+    --glow-accent-strong: oklch(0.50 0.18 145.0 / 0.25);
 }
 
 @layer base {

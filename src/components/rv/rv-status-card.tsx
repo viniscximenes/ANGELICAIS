@@ -28,7 +28,7 @@ export function RvStatusCard({ calculation }: Props) {
         aria-hidden="true"
         className="absolute top-0 right-0 left-0 h-[2px]"
         style={{
-          background: `linear-gradient(to right, transparent 0%, var(--primary) 50%, transparent 100%)`,
+          background: `linear-gradient(to right, transparent 0%, var(--muted-foreground) 50%, transparent 100%)`,
         }}
       />
 

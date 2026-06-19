@@ -36,8 +36,9 @@ export function TxRetencaoHeroCard({
   neutral = false,
 }: TxRetencaoHeroCardProps) {
   const status = "status" in kpi ? kpi.status : undefined;
-  const color = neutral ? "var(--foreground)" : getStatusColor(status);
-  const showBar = !neutral && status && status !== "neutral";
+  const color = neutral ? "var(--muted-foreground)" : getStatusColor(status);
+  const textColor = neutral ? "var(--foreground)" : color;
+  const showBar = neutral || (status && status !== "neutral");
   const showMeta = !neutral && "status" in kpi;
 
   return (
@@ -50,7 +51,7 @@ export function TxRetencaoHeroCard({
       {showBar && (
         <div
           aria-hidden="true"
-          className="absolute top-0 right-0 left-0 h-[2px]"
+          className="absolute top-0 right-0 left-0 h-[3px]"
           style={{
             background: `linear-gradient(to right, transparent 0%, ${color} 50%, transparent 100%)`,
           }}
@@ -71,13 +72,13 @@ export function TxRetencaoHeroCard({
           </span>
         ) : (
           <>
-            <span className="ds-display" style={{ color }}>
+            <span className="ds-display font-semibold" style={{ color: textColor }}>
               {kpi.valor.toFixed(1)}
             </span>
             <span
-              className="ds-display"
+              className="ds-display font-semibold"
               style={{
-                color: `color-mix(in oklch, ${color} 60%, transparent)`,
+                color: `color-mix(in oklch, ${textColor} 60%, transparent)`,
                 fontSize: "60%",
                 marginLeft: "0.1em",
               }}
@@ -89,9 +90,15 @@ export function TxRetencaoHeroCard({
       </div>
 
       {showMeta && (
-        <p className="ds-mono-sm text-muted-foreground mt-2">
-          {getMetaLabel(kpi as EnrichedKpiValue)}
-        </p>
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <span 
+            className="w-2 h-2 rounded-full inline-block animate-pulse" 
+            style={{ backgroundColor: color }} 
+          />
+          <p className="ds-mono-sm text-muted-foreground">
+            {getMetaLabel(kpi as EnrichedKpiValue)}
+          </p>
+        </div>
       )}
     </motion.div>
   );

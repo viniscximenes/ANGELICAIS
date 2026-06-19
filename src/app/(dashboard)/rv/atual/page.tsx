@@ -14,7 +14,7 @@ import { getRvForOperator } from "@/lib/rv/get-rv-for-operator";
 import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
 
 export const metadata: Metadata = {
-  title: "RV Estimada — Atual — ANGELICAIS",
+  title: "RV Estimada — Atual — ALLOHA FIBRA",
 };
 
 function getCurrentMesRef(): string {

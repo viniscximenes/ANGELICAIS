@@ -62,7 +62,7 @@ const ALL_SECTIONS: SidebarSection[] = [
   // },
   {
     id: "bases",
-    label: "Bases",
+    label: "BASES",
     iconName: "database",
     basePath: "/bases",
     permission: "manage_base",
@@ -70,7 +70,7 @@ const ALL_SECTIONS: SidebarSection[] = [
   },
   {
     id: "config",
-    label: "Configurações",
+    label: "CONFIGURAÇÕES",
     iconName: "settings",
     basePath: "/config",
     permission: "manage_system",

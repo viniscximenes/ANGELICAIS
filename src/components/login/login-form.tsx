@@ -134,7 +134,7 @@ export function LoginForm() {
 
           <StaggerItem>
             <p className="ds-body text-muted-foreground mt-2">
-              Acesse seu painel ANGELICAIS
+              Acesse seu painel operacional
             </p>
           </StaggerItem>
 

@@ -11,7 +11,7 @@ import { getCurrentMonthSnapshot } from "@/lib/kpi/atual/get-current-month-snaps
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 
 export const metadata: Metadata = {
-  title: "KPI Atual — Principal — ANGELICAIS",
+  title: "KPI Atual — Principal — ALLOHA FIBRA",
 };
 
 const MEDIUM_CARDS_ORDER = [

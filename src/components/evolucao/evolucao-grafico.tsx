@@ -2,10 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
   LabelList,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -119,15 +119,15 @@ function ChartTooltip({
   const status = item?.payload?.status ?? null;
   return (
     <div
-      className="elevation-2 rounded-md px-3 py-2"
-      style={{ border: "1px solid var(--border)" }}
+      className="elevation-2 rounded-lg px-4 py-3 backdrop-blur-md border border-border bg-background/80"
     >
-      <p className="ds-mono-sm text-muted-foreground">{label}</p>
-      <p className="ds-mono" style={{ color: "var(--foreground)" }}>
+      <p className="ds-small text-muted-foreground font-medium mb-1">{label}</p>
+      <p className="ds-body font-bold text-foreground">
         {formatValorIndicador(indicador, valor)}
       </p>
       {inativo && (
-        <p className="ds-mono-sm" style={{ color: "var(--warning)" }}>
+        <p className="ds-small mt-1 text-warning flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block" />
           {status ?? "Inativo"} — fora do consolidado
         </p>
       )}
@@ -207,7 +207,14 @@ export function EvolucaoGrafico({ serie }: Props) {
       <div ref={scrollRef} className="scrollbar-tema overflow-x-auto">
         <div style={{ width: innerWidth, minWidth: "100%", height: CHART_HEIGHT }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={CHART_MARGIN}>
+            <AreaChart data={data} margin={CHART_MARGIN}>
+              <defs>
+                <linearGradient id="colorValor" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
+
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="var(--border)"
@@ -219,7 +226,7 @@ export function EvolucaoGrafico({ serie }: Props) {
                 stroke="var(--muted-foreground)"
                 tick={{
                   fontSize: 11,
-                  fontFamily: "var(--font-geist-mono)",
+                  fontFamily: "var(--font-mono)",
                   fill: "var(--foreground)",
                 }}
                 tickMargin={8}
@@ -233,7 +240,7 @@ export function EvolucaoGrafico({ serie }: Props) {
                 allowDecimals
                 tick={{
                   fontSize: 11,
-                  fontFamily: "var(--font-geist-mono)",
+                  fontFamily: "var(--font-mono)",
                   fill: "var(--foreground)",
                 }}
                 tickFormatter={(v) =>
@@ -251,20 +258,17 @@ export function EvolucaoGrafico({ serie }: Props) {
                 }
               />
 
-              <Line
+              <Area
                 type="monotone"
                 dataKey="valor"
                 stroke="var(--primary)"
                 strokeWidth={2.5}
+                fillOpacity={1}
+                fill="url(#colorValor)"
                 connectNulls
                 dot={EvolucaoDot}
                 activeDot={{ r: 6 }}
-                // Sem animação de "desenho": o draw via stroke-dasharray usa o
-                // comprimento do path medido num render anterior (mais estreito,
-                // por causa do overflow-x-auto + minWidth:100%), trava nesse
-                // valor e o último trecho (penúltimo→último mês) nunca chega a
-                // ser desenhado — o dot aparece, a linha não. Desligar garante
-                // a linha completa.
+                // Sem animação de "desenho" para compatibilidade com o scroll lateral
                 isAnimationActive={false}
               >
                 <LabelList
@@ -278,13 +282,13 @@ export function EvolucaoGrafico({ serie }: Props) {
                   }
                   style={{
                     fontSize: 11,
-                    fontFamily: "var(--font-geist-mono)",
+                    fontFamily: "var(--font-mono)",
                     fill: "var(--foreground)",
                     fontWeight: 500,
                   }}
                 />
-              </Line>
-            </LineChart>
+              </Area>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
