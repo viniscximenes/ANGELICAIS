@@ -15,6 +15,7 @@ const ALL_SECTIONS: SidebarSection[] = [
     items: [
       { label: "Consolidado", href: "/gestor/d-1" },
       { label: "Tempo Logado", href: "/gestor/tempo-logado" },
+      { label: "Indisponibilidade", href: "/gestor/indisponibilidade" },
     ],
   },
   {
