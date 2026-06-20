@@ -115,11 +115,11 @@ export function GestorIndisponibilidadeSection({
 
       <Divider />
 
-      {/* ── 04 Detalhe de pausas (sem export) ───────────────────────── */}
+      {/* ── 04 Tabela de Pausas (sem export) ────────────────────────── */}
       <div className="flex items-baseline gap-3">
         <span className="ds-mono text-muted-foreground">04</span>
         <span className="ds-mono text-muted-foreground">·</span>
-        <h2 className="ds-h2">Detalhe de Pausas</h2>
+        <h2 className="ds-h2">Tabela de Pausas</h2>
       </div>
 
       <IndisponibilidadePausasTable operadores={operadores} />

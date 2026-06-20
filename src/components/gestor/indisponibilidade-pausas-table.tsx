@@ -45,28 +45,25 @@ export function IndisponibilidadePausasTable({
   operadores,
 }: IndisponibilidadePausasTableProps) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-border/80 elevation-1">
+    <div className="overflow-x-auto rounded-xl border border-border/80 elevation-1 scrollbar-tema">
       <div style={{ minWidth: `${TABLE_MIN_WIDTH}px` }}>
         {/* Cabeçalho */}
         <div
+          className="ds-mono-sm text-muted-foreground grid gap-0 font-semibold tracking-wider uppercase bg-muted/40"
           style={{
-            display: "grid",
             gridTemplateColumns: GRID_COLS,
-            background: "#1f4e78",
+            borderBottom: "1px solid var(--border)",
             fontFamily: SANS_STACK,
           }}
         >
           <div
             style={{
-              padding: "7px 10px",
-              fontSize: "11px",
-              fontWeight: 700,
-              textTransform: "uppercase" as const,
-              letterSpacing: "0.4px",
-              color: "#ffffff",
+              padding: "8px 10px",
+              fontSize: "10px",
+              fontWeight: 600,
               textAlign: "center" as const,
-              borderRight: "1px solid #4a7ba6",
             }}
+            className="border-r border-border/30"
           >
             Operador
           </div>
@@ -74,16 +71,13 @@ export function IndisponibilidadePausasTable({
             <div
               key={col.key}
               style={{
-                padding: "7px 4px",
-                fontSize: "11px",
-                fontWeight: 700,
-                textTransform: "uppercase" as const,
-                letterSpacing: "0.4px",
-                color: "#ffffff",
+                padding: "8px 4px",
+                fontSize: "10px",
+                fontWeight: 600,
                 textAlign: "center" as const,
-                borderRight: i < COLUNAS.length - 1 ? "1px solid #4a7ba6" : undefined,
                 whiteSpace: "nowrap" as const,
               }}
+              className={i < COLUNAS.length - 1 ? "border-r border-border/30" : undefined}
             >
               {col.label}
             </div>
