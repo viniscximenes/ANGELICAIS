@@ -51,21 +51,52 @@ function breakdownFromRow(row: unknown[], start: number): MotivosBreakdown {
  * carrega o email do operador dono (campo `operador`) — preserva o vínculo
  * operador→contrato para a UI agrupar se quiser.
  */
+const ZERO_BREAKDOWN: MotivosBreakdown = {
+  financeiro: 0,
+  mudancaEndereco: 0,
+  insatisfacaoServico: 0,
+  insatisfacaoAtendimento: 0,
+  mudancaProvedora: 0,
+  outros: 0,
+};
+
+const EMPTY_GESTOR_DATA: GestorData = {
+  operadores: [],
+  consolidado: { gestora: "", retidos: 0, cancelados: 0, pedidos: 0, txRetencao: null },
+  contratosRetidos: [],
+  contratosCancelados: [],
+  motivosConsolidados: { retidos: ZERO_BREAKDOWN, cancelados: ZERO_BREAKDOWN },
+  txPorMotivo: {
+    financeiro: null,
+    mudancaEndereco: null,
+    insatisfacaoServico: null,
+    insatisfacaoAtendimento: null,
+    mudancaProvedora: null,
+    outros: null,
+  },
+};
+
 export async function fetchGestorData(
   guia: string = DEFAULT_GUIA_GESTOR,
 ): Promise<GestorData> {
   const { sheets, sheetId } = getSheetsClient();
   const ref = (range: string) => `'${guia}'!${range}`;
 
-  const response = await sheets.spreadsheets.values.batchGet({
-    spreadsheetId: sheetId,
-    ranges: [
-      ref("A2:AD100"), // operadores (A–F) + contratos (N–Q) + motivos (S–AD)
-      ref("H2:L2"), // consolidado da equipe (1 linha)
-      ref("AF2:AQ2"), // motivos consolidados da equipe (1 linha, 12 valores)
-      ref("AS2:AX2"), // tx por motivo (1 linha, 6 valores)
-    ],
-  });
+  let response;
+  try {
+    response = await sheets.spreadsheets.values.batchGet({
+      spreadsheetId: sheetId,
+      ranges: [
+        ref("A2:AD100"), // operadores (A–F) + contratos (N–Q) + motivos (S–AD)
+        ref("H2:L2"), // consolidado da equipe (1 linha)
+        ref("AF2:AQ2"), // motivos consolidados da equipe (1 linha, 12 valores)
+        ref("AS2:AX2"), // tx por motivo (1 linha, 6 valores)
+      ],
+    });
+  } catch (err) {
+    console.error(`[fetchGestorData] Erro ao ler guia "${guia}":`, err);
+    return EMPTY_GESTOR_DATA;
+  }
 
   const opsRange = response.data.valueRanges?.[0]?.values ?? [];
   const consRow = response.data.valueRanges?.[1]?.values?.[0] ?? [];

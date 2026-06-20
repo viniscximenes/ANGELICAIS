@@ -60,6 +60,25 @@ export default async function GestorD1Page() {
     fetchUltimoReportHora(), // hora do report (BASE - 1!S2), para o export
   ]);
 
+  if (data.operadores.length === 0) {
+    return (
+      <PageTransition>
+        <div className="flex min-h-[60vh] items-center justify-center px-6">
+          <div
+            className="elevation-1 ds-body text-muted-foreground max-w-md rounded-xl px-6 py-10 text-center"
+            style={{ border: "1px solid var(--border)" }}
+          >
+            Não foi possível carregar os dados da equipe.
+            <br />
+            <span className="ds-mono-sm" style={{ color: "var(--muted-foreground)" }}>
+              Verifique se a guia &ldquo;{guia}&rdquo; existe na planilha.
+            </span>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
   const showUpload = can(user.profile.role, "manage_d1_base");
 
   // Converte para o formato que a EquipeTable do D-1 já aceita. O rótulo do

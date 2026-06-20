@@ -65,13 +65,19 @@ export async function fetchGestorTempoLogado(
 ): Promise<GestorTempoLogadoData> {
   const { sheets, sheetId } = getSheetsClient();
 
-  const response = await sheets.spreadsheets.values.batchGet({
-    spreadsheetId: sheetId,
-    ranges: [
-      "'BASE - 2'!L2",
-      `'${guia}'!A2:G100`,
-    ],
-  });
+  let response;
+  try {
+    response = await sheets.spreadsheets.values.batchGet({
+      spreadsheetId: sheetId,
+      ranges: [
+        "'BASE - 2'!L2",
+        `'${guia}'!A2:G100`,
+      ],
+    });
+  } catch (err) {
+    console.error(`[fetchGestorTempoLogado] Erro ao ler guia "${guia}":`, err);
+    return { operadores: [], horaReport: "—" };
+  }
 
   const valueRanges = response.data.valueRanges ?? [];
   const horaCell = valueRanges[0]?.values?.[0]?.[0];
