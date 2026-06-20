@@ -137,8 +137,8 @@ export function QuartilEquipeSection({
   dataEmpresa,
 }: QuartilEquipeSectionProps) {
   const [universo, setUniverso] = useState<Universo>("equipe");
-  // Padrão: ordem alfabética. Colunas KPI: asc = rank 1 (melhor) no topo.
-  const [sort, setSort] = useState<SortState>({ slug: "operador", dir: "asc" });
+  // Padrão: tx_retencao_bruta desc (menor para maior taxa de retenção).
+  const [sort, setSort] = useState<SortState>({ slug: "tx_retencao_bruta", dir: "desc" });
 
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   const [topScrollEl, setTopScrollEl] = useState<HTMLDivElement | null>(null);
@@ -171,7 +171,7 @@ export function QuartilEquipeSection({
 
   const handleUniversoChange = (u: Universo) => {
     setUniverso(u);
-    setSort({ slug: "operador", dir: "asc" });
+    setSort({ slug: "tx_retencao_bruta", dir: "desc" });
   };
 
   const handleSort = (slug: string) => {
