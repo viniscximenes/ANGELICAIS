@@ -145,6 +145,11 @@ export function IndisponibilidadeGrafico({
                     : d.cumpriuMeta
                       ? "Dentro da meta"
                       : "Acima da meta";
+
+                  const nr17 = d._op.nr17Pct !== null ? fmtPct(d._op.nr17Pct) : "—";
+                  const particular = d._op.pausaParticularPct !== null ? fmtPct(d._op.pausaParticularPct) : "—";
+                  const outras = d._op.outrasPausasPct !== null ? fmtPct(d._op.outrasPausasPct) : "—";
+
                   return (
                     <div
                       className="ds-small rounded-md px-3 py-2"
@@ -153,7 +158,7 @@ export function IndisponibilidadeGrafico({
                         border: "1px solid var(--elevation-3-border)",
                         color: "var(--foreground)",
                         boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-                        minWidth: "180px",
+                        minWidth: "200px",
                       }}
                     >
                       <div className="ds-mono-sm text-muted-foreground mb-1 font-bold">
@@ -165,7 +170,25 @@ export function IndisponibilidadeGrafico({
                           {d.valorFormatado}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between gap-4 mt-0.5">
+
+                      {!d.ausente && (
+                        <>
+                          <div className="flex items-center justify-between gap-4 mt-1.5 border-t border-border/40 pt-1.5">
+                            <span className="text-muted-foreground text-xs">NR17:</span>
+                            <span className="ds-mono text-xs">{nr17}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-4 mt-0.5">
+                            <span className="text-muted-foreground text-xs">Pausa Particular:</span>
+                            <span className="ds-mono text-xs">{particular}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-4 mt-0.5">
+                            <span className="text-muted-foreground text-xs">Outras Pausas:</span>
+                            <span className="ds-mono text-xs">{outras}</span>
+                          </div>
+                        </>
+                      )}
+
+                      <div className="flex items-center justify-between gap-4 mt-1.5 border-t border-border/40 pt-1.5">
                         <span className="text-muted-foreground">Status:</span>
                         <span className="ds-mono-sm">{statusLabel}</span>
                       </div>
