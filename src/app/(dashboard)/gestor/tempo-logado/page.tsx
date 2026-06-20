@@ -76,7 +76,7 @@ export default async function GestorTempoLogadoPage() {
         <div className="mx-auto max-w-7xl space-y-8">
           <header className="flex flex-col gap-2">
             <div className="flex flex-wrap items-baseline gap-3">
-              <h1 className="ds-h1">ALLOHA FIBRA - Tempo Logado</h1>
+              <h1 className="ds-h1">Tempo Logado</h1>
               <span className="ds-mono-sm text-muted-foreground">
                 / D-1 · {gestora}
               </span>
