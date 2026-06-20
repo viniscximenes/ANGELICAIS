@@ -43,8 +43,8 @@ export function GestorIndisponibilidadeSection({
     >
       <div className="flex flex-col gap-4">
         {/* Row 1: Headers aligned on desktop */}
-        <div className="hidden lg:flex lg:items-end">
-          <div className="shrink-0 flex items-center justify-between gap-4" style={{ width: "650px", paddingRight: "16px" }}>
+        <div className="hidden lg:flex lg:items-baseline">
+          <div className="shrink-0 flex items-baseline justify-between gap-4" style={{ width: "650px", paddingRight: "16px" }}>
             <div className="flex items-baseline gap-3">
               <span className="ds-mono text-muted-foreground">01</span>
               <span className="ds-mono text-muted-foreground">·</span>
@@ -56,9 +56,11 @@ export function GestorIndisponibilidadeSection({
                 </span>
               )}
             </div>
-            <CopyIndisponibilidadeButton horaReport={horaReport} />
+            <div className="self-center translate-y-[2px]">
+              <CopyIndisponibilidadeButton horaReport={horaReport} />
+            </div>
           </div>
-          <div className="min-w-0 flex-1 flex items-baseline gap-3 pb-[8px] pl-2">
+          <div className="min-w-0 flex-1 flex items-baseline gap-3 pl-2">
             <span className="ds-mono text-muted-foreground">02</span>
             <span className="ds-mono text-muted-foreground">·</span>
             <h2 className="ds-h2">Visão Rápida</h2>
