@@ -45,14 +45,12 @@ export default async function OperacionalKpiPage() {
 
   const [definitions, dataAtualRaw, dataPassadoRaw] = await Promise.all([
     getKpiDefinitions(),
-    getKpiEquipeGestor(fullName, mesAtual, "principal", false),
-    getKpiEquipeGestor(fullName, mesPassado, "principal", true),
+    getKpiEquipeGestor(fullName, mesAtual, false),
+    getKpiEquipeGestor(fullName, mesPassado, true),
   ]);
 
-  const principalDefs = definitions.filter((d) => d.groupType === "principal");
-
-  const dataAtual = toKpiEquipeSerial(dataAtualRaw, principalDefs);
-  const dataPassado = toKpiEquipeSerial(dataPassadoRaw, principalDefs);
+  const dataAtual = toKpiEquipeSerial(dataAtualRaw, definitions);
+  const dataPassado = toKpiEquipeSerial(dataPassadoRaw, definitions);
 
   const nomeGestora = formatNomeProprio(fullName);
 

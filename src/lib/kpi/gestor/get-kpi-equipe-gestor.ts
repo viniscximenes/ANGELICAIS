@@ -12,18 +12,17 @@ import type { KpiEquipeGestorData, OperadorKpiEquipe } from "./types";
 /**
  * Busca os KPIs de toda a equipe do gestor em uma query batch.
  *
- * Abordagem: query única com .in("operator_email", emails) + .eq("mes_ref").
- * 18 ops × 22 slugs = ~396 linhas — bem dentro do teto de 1000 do PostgREST.
- * Não faz N queries individuais.
+ * A query puxa TODOS os slugs do mês (sem filtro por kpi_slug), então tanto
+ * os KPIs principais quanto os secundários ficam disponíveis em uma única
+ * roundtrip. Os dois grupos são enriquecidos e retornados separados por
+ * operador: kpisPrincipal e kpisSecundario.
  *
  * Mês atual: enrich com status/cor (EnrichedKpiValue).
- * Mês passado: modo neutro, sem cor (NeutralKpiValue) — igual ao padrão das
- * páginas de KPI passado existentes.
+ * Mês passado: modo neutro, sem cor (NeutralKpiValue).
  */
 export async function getKpiEquipeGestor(
   fullName: string,
   mesRef: string,
-  grupo: "principal" | "secundario",
   isMesPassado: boolean,
 ): Promise<KpiEquipeGestorData> {
   // 1. Emails da equipe via matching ILIKE
@@ -37,16 +36,10 @@ export async function getKpiEquipeGestor(
   const aliasMap = await resolveKpiEmailsForProfiles(emailsOriginal);
   const emailsResolvidos = [...new Set([...aliasMap.values()])];
 
-  // Mapa inverso kpiEmail → emailOriginal (para reverter depois)
-  const kpiToOriginal = new Map<string, string>();
-  for (const [orig, kpi] of aliasMap.entries()) {
-    if (!kpiToOriginal.has(kpi)) kpiToOriginal.set(kpi, orig);
-  }
-
   // 3. Definições (uma chamada cacheável)
   const definitions = await getKpiDefinitions();
 
-  // 4. Query batch: todos os snapshots dos operadores da equipe no mês
+  // 4. Query batch: todos os slugs de todos os operadores no mês
   const supabase = await createClient();
 
   const { data: rows, error } = await supabase
@@ -80,7 +73,7 @@ export async function getKpiEquipeGestor(
     rowsByEmail.get(key)!.push(row);
   }
 
-  // 6. Montar OperadorKpiEquipe para cada operador
+  // 6. Montar OperadorKpiEquipe para cada operador (ambos os grupos)
   const operadores: OperadorKpiEquipe[] = [];
 
   for (const emailOriginal of emailsOriginal) {
@@ -94,15 +87,17 @@ export async function getKpiEquipeGestor(
       }
     }
 
-    const kpis = new Map<string, EnrichedKpiValue | NeutralKpiValue>();
+    const kpisPrincipal = new Map<string, EnrichedKpiValue | NeutralKpiValue>();
+    const kpisSecundario = new Map<string, EnrichedKpiValue | NeutralKpiValue>();
 
     if (isMesPassado) {
       for (const def of definitions) {
-        if (def.groupType !== grupo) continue;
-        kpis.set(def.slug, {
+        const entry = {
           definition: def,
           valor: valuesBySlug.get(def.slug) ?? null,
-        } satisfies NeutralKpiValue);
+        } satisfies NeutralKpiValue;
+        if (def.groupType === "principal") kpisPrincipal.set(def.slug, entry);
+        else if (def.groupType === "secundario") kpisSecundario.set(def.slug, entry);
       }
     } else {
       const extra = {
@@ -110,22 +105,28 @@ export async function getKpiEquipeGestor(
         forecastChurn: valuesBySlug.get("forecast_churn") ?? null,
         txRetencaoBruta: valuesBySlug.get("tx_retencao_bruta") ?? null,
       };
-      const enriched = enrichWithDefinitions(
+      const enrichedPrincipal = enrichWithDefinitions(
         definitions,
         valuesBySlug,
         extra,
-        grupo,
+        "principal",
       );
-      for (const [slug, val] of enriched) {
-        kpis.set(slug, val);
-      }
+      const enrichedSecundario = enrichWithDefinitions(
+        definitions,
+        valuesBySlug,
+        extra,
+        "secundario",
+      );
+      for (const [slug, val] of enrichedPrincipal) kpisPrincipal.set(slug, val);
+      for (const [slug, val] of enrichedSecundario) kpisSecundario.set(slug, val);
     }
 
     operadores.push({
       email: emailOriginal,
       emailKpi,
       nome: deriveNomeOperador(emailOriginal),
-      kpis,
+      kpisPrincipal,
+      kpisSecundario,
     });
   }
 

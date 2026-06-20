@@ -5,7 +5,8 @@ export type OperadorKpiEquipe = {
   email: string;    // email original (antes do alias)
   emailKpi: string; // email resolvido para busca no KPI (pode ser igual)
   nome: string;     // deriveNomeOperador(email)
-  kpis: Map<string, EnrichedKpiValue | NeutralKpiValue>;
+  kpisPrincipal: Map<string, EnrichedKpiValue | NeutralKpiValue>;
+  kpisSecundario: Map<string, EnrichedKpiValue | NeutralKpiValue>;
 };
 
 export type KpiEquipeGestorData = {
