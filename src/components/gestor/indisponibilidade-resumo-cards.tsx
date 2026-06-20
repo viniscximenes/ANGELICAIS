@@ -79,7 +79,7 @@ export function IndisponibilidadeResumoCards({
       </motion.div>
 
       {/* 3 cards menores */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+      <div className="grid grid-cols-3 gap-4">
         <ResumoCard
           label="DENTRO DA META"
           value={resumo.dentroDaMeta}

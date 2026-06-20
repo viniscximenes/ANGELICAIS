@@ -41,7 +41,7 @@ export function GestorIndisponibilidadeSection({
       transition={{ delay: 0.1, duration: 0.25, ease: EASE_OUT_EXPO }}
       className="space-y-4"
     >
-      {/* ── 01 Equipe (Tabela + Cards no topo) ─────────────────────────── */}
+      {/* ── 01 Equipe (Tabela no topo) ─────────────────────────────────── */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-baseline gap-3">
@@ -58,21 +58,27 @@ export function GestorIndisponibilidadeSection({
           <CopyIndisponibilidadeButton horaReport={horaReport} />
         </div>
 
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
-          <div className="shrink-0" style={{ width: "650px", maxWidth: "100%" }}>
-            <IndisponibilidadeTable operadores={operadores} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <IndisponibilidadeResumoCards resumo={resumo} />
-          </div>
+        <div style={{ width: "650px", maxWidth: "100%" }}>
+          <IndisponibilidadeTable operadores={operadores} />
         </div>
       </div>
 
       <Divider />
 
-      {/* ── 02 Gráfico ───────────────────────────────────────────────── */}
+      {/* ── 02 Visão Rápida ───────────────────────────────────────────── */}
       <div className="flex items-baseline gap-3">
         <span className="ds-mono text-muted-foreground">02</span>
+        <span className="ds-mono text-muted-foreground">·</span>
+        <h2 className="ds-h2">Visão Rápida</h2>
+      </div>
+
+      <IndisponibilidadeResumoCards resumo={resumo} />
+
+      <Divider />
+
+      {/* ── 03 Gráfico ───────────────────────────────────────────────── */}
+      <div className="flex items-baseline gap-3">
+        <span className="ds-mono text-muted-foreground">03</span>
         <span className="ds-mono text-muted-foreground">·</span>
         <h2 className="ds-h2">Indisponibilidade por Operador</h2>
       </div>
@@ -81,9 +87,9 @@ export function GestorIndisponibilidadeSection({
 
       <Divider />
 
-      {/* ── 03 Detalhe de pausas (sem export) ───────────────────────── */}
+      {/* ── 04 Detalhe de pausas (sem export) ───────────────────────── */}
       <div className="flex items-baseline gap-3">
-        <span className="ds-mono text-muted-foreground">03</span>
+        <span className="ds-mono text-muted-foreground">04</span>
         <span className="ds-mono text-muted-foreground">·</span>
         <h2 className="ds-h2">Detalhe de Pausas</h2>
       </div>
