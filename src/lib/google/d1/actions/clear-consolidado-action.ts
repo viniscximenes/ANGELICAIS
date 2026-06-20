@@ -9,7 +9,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSheetsClient } from "../../sheets-client";
 
 const BASE_SHEET = "BASE - 1";
-const CONSOLIDADO_SHEET = "CONSOLIDADO";
 const MAX_ROWS = 10000;
 
 export type ClearConsolidadoResult =
@@ -31,9 +30,14 @@ export async function clearConsolidadoAction(): Promise<ClearConsolidadoResult> 
       range: `'${BASE_SHEET}'!A2:R${MAX_ROWS}`,
     });
 
-    await sheets.spreadsheets.values.clear({
+    await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: sheetId,
-      range: `'${CONSOLIDADO_SHEET}'!L2`,
+      requestBody: {
+        valueInputOption: "USER_ENTERED",
+        data: [
+          { range: `'${BASE_SHEET}'!S2`, values: [["—"]] },
+        ],
+      },
     });
 
     // Limpa histórico de evolução do dia (falha silenciosa — complementar).

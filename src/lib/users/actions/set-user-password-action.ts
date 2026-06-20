@@ -22,13 +22,6 @@ export async function setUserPasswordAction(
     return { success: false, error: "Sem permissão" };
   }
 
-  if (input.id === user.profile.id) {
-    return {
-      success: false,
-      error: "Use as configurações da sua conta para mudar sua própria senha",
-    };
-  }
-
   if (!input.newPassword || input.newPassword.length < 8) {
     return { success: false, error: "Senha deve ter pelo menos 8 caracteres" };
   }
@@ -40,19 +33,6 @@ export async function setUserPasswordAction(
     return {
       success: false,
       error: e instanceof Error ? e.message : "Erro de configuração",
-    };
-  }
-
-  const { data: target } = await adminClient
-    .from("profiles")
-    .select("role")
-    .eq("id", input.id)
-    .maybeSingle();
-
-  if (target?.role === "GESTOR") {
-    return {
-      success: false,
-      error: "Não é possível alterar senha da gestora pelo painel",
     };
   }
 

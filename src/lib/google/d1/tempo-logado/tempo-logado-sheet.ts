@@ -3,33 +3,53 @@ import { parseHora } from "../parse";
 import { parseTimeHHMMSS } from "./parse";
 import type { OperadorTempoLogado } from "./types";
 
+const SUPERVISORES = [
+  "ANA ANGELICA",
+  "JULIANA FERREIRA",
+  "JOAO VILELA",
+  "GABRIEL XIMENES",
+  "VITOR GOMES",
+  "PATRICIA DALMASIO",
+  "SAMIRA LEAO",
+  "FERNANDA QUEIROZ",
+];
+
 export async function fetchTempoLogado(): Promise<{
   operadores: OperadorTempoLogado[];
   horaReport: string;
 }> {
   const { sheets, sheetId } = getSheetsClient();
 
+  const ranges = [
+    "'BASE - 2'!L2", // hora do report
+    ...SUPERVISORES.map((s) => `'${s}2'!A2:E100`), // operadores: A=email, C=tempo logado, D=tempo restante, E=logout estimado
+  ];
+
   const response = await sheets.spreadsheets.values.batchGet({
     spreadsheetId: sheetId,
-    ranges: [
-      "'TEMPO LOGADO'!A2:D50", // operadores: A=email, B=logado, C=restante, D=logout estimado
-      "'TEMPO LOGADO'!F2", // hora do report
-    ],
+    ranges,
   });
 
-  const opsRange = response.data.valueRanges?.[0]?.values ?? [];
-  const horaCell = response.data.valueRanges?.[1]?.values?.[0]?.[0];
-
-  const operadores: OperadorTempoLogado[] = opsRange
-    .filter((row) => row[0])
-    .map((row) => ({
-      email: String(row[0]).trim().toLowerCase(),
-      tempoLogado: parseTimeHHMMSS(row[1]),
-      tempoRestante: parseTimeHHMMSS(row[2]),
-      logoutEstimado: parseTimeHHMMSS(row[3]),
-    }));
-
+  const valueRanges = response.data.valueRanges ?? [];
+  const horaCell = valueRanges[0]?.values?.[0]?.[0];
   const horaReport = parseHora(horaCell);
+
+  const operadores: OperadorTempoLogado[] = [];
+
+  for (let i = 0; i < SUPERVISORES.length; i++) {
+    const opsValues = valueRanges[1 + i]?.values ?? [];
+    for (const row of opsValues) {
+      const email = String(row[0] ?? "").trim().toLowerCase();
+      if (!email || email.includes("@gestora") || email === "agente") continue;
+      
+      operadores.push({
+        email,
+        tempoLogado: parseTimeHHMMSS(row[2]),
+        tempoRestante: parseTimeHHMMSS(row[3]),
+        logoutEstimado: parseTimeHHMMSS(row[4]),
+      });
+    }
+  }
 
   return { operadores, horaReport };
 }

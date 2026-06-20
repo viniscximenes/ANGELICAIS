@@ -27,7 +27,9 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "manage_users",
     "manage_system",
   ],
-  GESTOR: ["view_gestor_panel"],
+  // GESTOR: vê o painel da própria equipe e sobe a base do D-1 (BASE - 1, a
+  // mesma do RELATORIO). O export (copiar imagem) já vem da tabela do painel.
+  GESTOR: ["view_gestor_panel", "manage_d1_base"],
   // RELATORIO: perfil dedicado ao relatório do D-1 (empresa toda).
   // Vê a seção D-1, a tabela de equipe + seletor de supervisor + exportação,
   // e faz upload da base do D-1. Sem KPI/RV/Evolução/Bases(KPI)/config.

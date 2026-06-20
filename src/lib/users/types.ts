@@ -16,4 +16,4 @@ export type UserProfile = {
 
 export const EDITABLE_ROLES: UserRole[] = ["OP", "AUX"];
 
-export const ALL_ROLES_FOR_CREATION: UserRole[] = ["OP", "AUX", "ADM"];
+export const ALL_ROLES_FOR_CREATION: UserRole[] = ["OP", "AUX", "ADM", "GESTOR"];

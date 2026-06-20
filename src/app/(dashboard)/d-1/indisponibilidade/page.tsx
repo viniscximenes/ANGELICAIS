@@ -13,7 +13,7 @@ import { filterIndispByEmail } from "@/lib/d1/indisponibilidade/filter-by-user";
 import { getIndisponibilidadeData } from "@/lib/google/d1/indisponibilidade";
 
 export const metadata: Metadata = {
-  title: "Indisponibilidade — D-1 ANGELICAIS",
+  title: "Indisponibilidade — D-1 ALLOHA FIBRA",
 };
 
 export const revalidate = 300;

@@ -5,6 +5,19 @@ import type { SidebarSection } from "./sidebar";
 
 const ALL_SECTIONS: SidebarSection[] = [
   {
+    id: "gestor",
+    label: "D-1",
+    iconName: "headset",
+    basePath: "/gestor",
+    permission: "view_gestor_panel",
+    // Só o GESTOR vê — o ADM tem a permissão, mas não acessa esta tela.
+    onlyRoles: ["GESTOR"],
+    items: [
+      { label: "Consolidado", href: "/gestor/d-1" },
+      { label: "Tempo Logado", href: "/gestor/tempo-logado" },
+    ],
+  },
+  {
     id: "d-1",
     label: "D-1",
     iconName: "chart",
@@ -83,5 +96,9 @@ const ALL_SECTIONS: SidebarSection[] = [
 ];
 
 export function getSidebarSectionsForRole(role: UserRole): SidebarSection[] {
-  return ALL_SECTIONS.filter((section) => can(role, section.permission));
+  return ALL_SECTIONS.filter(
+    (section) =>
+      can(role, section.permission) &&
+      (!section.onlyRoles || section.onlyRoles.includes(role)),
+  );
 }

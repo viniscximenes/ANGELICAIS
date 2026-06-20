@@ -70,36 +70,31 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
       <div
         ref={ref}
         data-equipe-table
-        className="elevation-1 overflow-hidden rounded-xl"
+        className="elevation-1 overflow-hidden rounded-xl border border-border/80"
       >
+        {/* Cabeçalho Estilo Planilha */}
         <div
-          className="ds-mono-sm text-muted-foreground grid grid-cols-12 gap-0 border-b px-0 py-2 font-semibold tracking-wider uppercase"
-          style={{ borderColor: "var(--border)" }}
+          className="ds-mono-sm text-muted-foreground grid grid-cols-12 gap-0 font-semibold tracking-wider uppercase bg-muted/40"
+          style={{ borderBottom: "1px solid var(--border)" }}
         >
-          <div className="col-span-3 px-3" style={COL_DIVIDER_SCREEN}>
+          <div className="col-span-3 px-3 py-2.5 text-center border-r border-border/50">
             Operador
           </div>
-          <div
-            className="col-span-2 px-3 text-right"
-            style={COL_DIVIDER_SCREEN}
-          >
+          <div className="col-span-2 px-3 py-2.5 text-center border-r border-border/50">
             Retidos
           </div>
-          <div
-            className="col-span-2 px-3 text-right"
-            style={COL_DIVIDER_SCREEN}
-          >
+          <div className="col-span-2 px-3 py-2.5 text-center border-r border-border/50">
             Cancelados
           </div>
-          <div
-            className="col-span-2 px-3 text-right"
-            style={COL_DIVIDER_SCREEN}
-          >
+          <div className="col-span-2 px-3 py-2.5 text-center border-r border-border/50">
             Pedidos
           </div>
-          <div className="col-span-3 px-3 text-right">Tx Retenção</div>
+          <div className="col-span-3 px-3 py-2.5 text-center">
+            Tx Retenção
+          </div>
         </div>
 
+        {/* Linhas de Operadores */}
         {operadores.map((op, idx) => {
           const isLast = idx === operadores.length - 1;
           const semAtendimentos = op.pedidos === 0 || op.txRetencao === null;
@@ -109,57 +104,46 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           return (
             <div
               key={op.email}
-              className="grid grid-cols-12 items-center gap-0 px-0 py-1.5"
+              className="grid grid-cols-12 items-center gap-0"
               style={{
                 background: belowMeta
-                  ? "color-mix(in oklch, var(--danger) 7%, transparent)"
+                  ? "color-mix(in oklch, var(--danger) 5%, transparent)"
                   : "transparent",
-                borderBottom: isLast ? "none" : "1px solid var(--row-border)",
-                opacity: semAtendimentos ? 0.35 : 1,
+                borderBottom: isLast && hideTotais ? "none" : "1px solid var(--border)/40",
+                opacity: semAtendimentos ? 0.4 : 1,
               }}
             >
               <div
-                className="ds-body col-span-3 truncate px-3"
+                className="ds-body col-span-3 truncate px-3 py-2 text-center border-r border-border/30 font-medium"
                 style={{
-                  ...COL_DIVIDER_SCREEN,
                   color: semAtendimentos
                     ? "var(--muted-foreground)"
                     : belowMeta
                       ? "var(--danger)"
                       : "var(--foreground)",
-                  fontWeight: belowMeta ? 500 : 400,
                 }}
               >
                 {formatOperatorLabel(op.email)}
               </div>
               <div
-                className="ds-mono-sm col-span-2 px-3 text-right"
-                style={{
-                  ...COL_DIVIDER_SCREEN,
-                  fontVariantNumeric: "tabular-nums",
-                }}
+                className="ds-mono-sm col-span-2 px-3 py-2 text-center border-r border-border/30"
+                style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {op.retidos}
               </div>
               <div
-                className="ds-mono-sm col-span-2 px-3 text-right"
-                style={{
-                  ...COL_DIVIDER_SCREEN,
-                  fontVariantNumeric: "tabular-nums",
-                }}
+                className="ds-mono-sm col-span-2 px-3 py-2 text-center border-r border-border/30"
+                style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {op.cancelados}
               </div>
               <div
-                className="ds-mono-sm col-span-2 px-3 text-right"
-                style={{
-                  ...COL_DIVIDER_SCREEN,
-                  fontVariantNumeric: "tabular-nums",
-                }}
+                className="ds-mono-sm col-span-2 px-3 py-2 text-center border-r border-border/30"
+                style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {op.pedidos}
               </div>
-              <div className="ds-mono-sm col-span-3 flex items-center justify-end gap-1.5 px-3">
+              <div className="ds-mono-sm col-span-3 flex items-center justify-center gap-1.5 px-3 py-2">
                 {semAtendimentos ? (
                   <span className="text-muted-foreground">—</span>
                 ) : (
@@ -169,7 +153,7 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                         color: belowMeta
                           ? "var(--danger)"
                           : "var(--success)",
-                        fontWeight: 500,
+                        fontWeight: 600,
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
@@ -191,70 +175,62 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           );
         })}
 
+        {/* Linha de Totais (Equipe) - Fechamento Contábil / Excel */}
         {!hideTotais && (
-        <div
-          className="ds-body grid grid-cols-12 items-center gap-0 px-0 py-2"
-          style={{
-            borderTop: "1px solid var(--border)",
-            fontWeight: 500,
-          }}
-        >
-          <div className="col-span-3 px-3" style={COL_DIVIDER_SCREEN}>
-            EQUIPE
-          </div>
           <div
-            className="col-span-2 px-3 text-right"
+            className="ds-body grid grid-cols-12 items-center gap-0 bg-muted/20 font-bold"
             style={{
-              ...COL_DIVIDER_SCREEN,
-              fontVariantNumeric: "tabular-nums",
+              borderTop: "2px solid var(--border)",
+              borderBottom: "2px double var(--border)",
             }}
           >
-            {equipe.retidos}
+            <div className="col-span-3 px-3 py-2.5 text-center border-r border-border/40 text-foreground">
+              EQUIPE
+            </div>
+            <div
+              className="col-span-2 px-3 py-2.5 text-center border-r border-border/40"
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
+              {equipe.retidos}
+            </div>
+            <div
+              className="col-span-2 px-3 py-2.5 text-center border-r border-border/40"
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
+              {equipe.cancelados}
+            </div>
+            <div
+              className="col-span-2 px-3 py-2.5 text-center border-r border-border/40"
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
+              {equipe.pedidos}
+            </div>
+            <div className="col-span-3 flex items-center justify-center gap-1.5 px-3 py-2.5">
+              {equipe.txRetencao === null ? (
+                <span className="text-muted-foreground">—</span>
+              ) : (
+                <>
+                  <span
+                    style={{
+                      color: equipeMeets ? "var(--success)" : "var(--danger)",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {formatTx(equipe.txRetencao)}
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-1.5 w-1.5 rounded-full"
+                    style={{
+                      background: equipeMeets
+                        ? "var(--success)"
+                        : "var(--danger)",
+                    }}
+                  />
+                </>
+              )}
+            </div>
           </div>
-          <div
-            className="col-span-2 px-3 text-right"
-            style={{
-              ...COL_DIVIDER_SCREEN,
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
-            {equipe.cancelados}
-          </div>
-          <div
-            className="col-span-2 px-3 text-right"
-            style={{
-              ...COL_DIVIDER_SCREEN,
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
-            {equipe.pedidos}
-          </div>
-          <div className="col-span-3 flex items-center justify-end gap-1.5 px-3">
-            {equipe.txRetencao === null ? (
-              <span className="text-muted-foreground">—</span>
-            ) : (
-              <>
-                <span
-                  style={{
-                    color: equipeMeets ? "var(--success)" : "var(--danger)",
-                    fontVariantNumeric: "tabular-nums",
-                  }}
-                >
-                  {formatTx(equipe.txRetencao)}
-                </span>
-                <span
-                  aria-hidden="true"
-                  className="inline-block h-1.5 w-1.5 rounded-full"
-                  style={{
-                    background: equipeMeets
-                      ? "var(--success)"
-                      : "var(--danger)",
-                  }}
-                />
-              </>
-            )}
-          </div>
-        </div>
         )}
       </div>
     );
@@ -475,7 +451,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               ...EXCEL_NUM_CELL,
               ...EXCEL_COL_DIVIDER,
               fontWeight: 600,
-              color: EXCEL_GREEN,
+              color: EXCEL_NEUTRAL,
             }}
           >
             {equipe.retidos}
@@ -485,7 +461,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               ...EXCEL_NUM_CELL,
               ...EXCEL_COL_DIVIDER,
               fontWeight: 600,
-              color: EXCEL_RED,
+              color: EXCEL_NEUTRAL,
             }}
           >
             {equipe.cancelados}
@@ -495,7 +471,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               ...EXCEL_NUM_CELL,
               ...EXCEL_COL_DIVIDER,
               fontWeight: 600,
-              color: EXCEL_AMBER,
+              color: EXCEL_NEUTRAL,
             }}
           >
             {equipe.pedidos}
@@ -504,12 +480,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
             style={{
               ...EXCEL_NUM_CELL,
               fontWeight: 600,
-              color:
-                equipe.txRetencao === null
-                  ? EXCEL_NEUTRAL
-                  : equipeMeets
-                    ? EXCEL_GREEN
-                    : EXCEL_RED,
+              color: EXCEL_NEUTRAL,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

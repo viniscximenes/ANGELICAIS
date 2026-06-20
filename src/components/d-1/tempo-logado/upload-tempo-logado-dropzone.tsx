@@ -113,46 +113,50 @@ export function UploadTempoLogadoDropzone() {
     <>
       <div
         {...getRootProps()}
-        className="relative flex h-full cursor-pointer items-center justify-center rounded-xl border-2 border-dashed transition-all"
+        className="relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed transition-all duration-300 hover:border-primary"
         style={{
           background: isDragActive
-            ? "color-mix(in oklch, var(--primary) 8%, var(--elevation-1-bg))"
-            : "var(--elevation-1-bg)",
+            ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
+            : "var(--card)",
           borderColor: isDragReject
             ? "var(--danger)"
             : isDragActive
               ? "var(--primary)"
               : "var(--border)",
           boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "none",
-          padding: "2rem 1.5rem",
+          padding: "2.5rem 1.5rem",
           opacity: isProcessing ? 0.5 : 1,
           pointerEvents: isProcessing ? "none" : "auto",
-          minHeight: "200px",
+          minHeight: "100%",
         }}
       >
         <input {...getInputProps()} />
 
-        <div className="flex flex-col items-center justify-center gap-3 text-center">
-          {isDragActive ? (
-            <IconFileSpreadsheet
-              size={32}
-              style={{ color: "var(--primary)" }}
-              aria-hidden="true"
-            />
-          ) : (
-            <IconUpload
-              size={32}
-              className="text-muted-foreground"
-              aria-hidden="true"
-            />
-          )}
+        <div className="flex flex-col items-center justify-center gap-4 text-center">
+          <div className="p-4 rounded-full bg-muted border border-border/40 transition-colors hover:bg-muted/80">
+            {isDragActive ? (
+              <IconFileSpreadsheet
+                size={28}
+                style={{ color: "var(--primary)" }}
+                aria-hidden="true"
+              />
+            ) : (
+              <IconUpload
+                size={28}
+                className="text-primary"
+                aria-hidden="true"
+              />
+            )}
+          </div>
 
-          <div className="space-y-1">
-            <p className="ds-small">
-              {isDragActive ? "Solte para enviar" : "Arraste o CSV aqui"}
+          <div className="space-y-1.5">
+            <p className="ds-body font-semibold">
+              {isDragActive
+                ? "Solte para enviar"
+                : "Arraste o CSV aqui ou clique para selecionar"}
             </p>
-            <p className="ds-mono-sm text-muted-foreground">
-              .csv · até 50 mil linhas
+            <p className="ds-small text-muted-foreground">
+              Apenas .csv · até 50 mil linhas
             </p>
           </div>
         </div>
@@ -160,7 +164,7 @@ export function UploadTempoLogadoDropzone() {
         {errorMessage && !isProcessing && (
           <div
             role="alert"
-            className="status-danger ds-mono-sm absolute right-2 bottom-2 left-2 mt-4 flex items-center justify-center gap-2 rounded-md p-2"
+            className="status-danger ds-small mt-4 flex items-center justify-center gap-2 rounded-md p-3"
           >
             {errorMessage}
           </div>

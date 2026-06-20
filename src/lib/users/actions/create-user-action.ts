@@ -67,7 +67,7 @@ export async function createUserAction(
   // o padrão nome.sobrenome). Incluído aqui apenas para o caso de uma criação
   // futura via UI; se isso for desejado, a regex de username precisaria ser
   // flexibilizada para aceitar nomes sem ponto.
-  if (!["OP", "AUX", "ADM", "RELATORIO"].includes(input.role)) {
+  if (!["OP", "AUX", "ADM", "GESTOR", "RELATORIO"].includes(input.role)) {
     return { success: false, error: "Role inválida" };
   }
 

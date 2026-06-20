@@ -6,7 +6,12 @@ import Papa from "papaparse";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
-import { uploadBaseAction } from "@/lib/auth/upload-base-action";
+import {
+  getUltimoReportHoraAction,
+  uploadBaseAction,
+} from "@/lib/auth/upload-base-action";
+import { getTimePartsInBR } from "@/lib/utils/format-datetime-br";
+import { ConfirmRecentReportDialog } from "./confirm-recent-report-dialog";
 import { UploadProgressModal } from "./upload-progress-modal";
 
 export type UploadStep =
@@ -16,10 +21,80 @@ export type UploadStep =
   | "done"
   | null;
 
-export function UploadDropzone() {
+const REPORT_RECENTE_MIN = 30;
+
+/**
+ * Minutos decorridos desde a hora do report "HH:MM" (S2), na hora atual de
+ * Brasília. Retorna null se não houver hora ou se o formato for inválido.
+ * Pode ser negativo (virada de dia) — o caller só age no intervalo [0, 30).
+ */
+function minutosDesdeReport(hora: string | null): number | null {
+  if (!hora) return null;
+  const m = hora.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  const reportMin = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  const { hour, minute } = getTimePartsInBR();
+  return hour * 60 + minute - reportMin;
+}
+
+interface UploadDropzoneProps {
+  /**
+   * Ativa a regra dos 30 min: antes de enviar, lê S2 (último report) e, se
+   * < 30 min, pede confirmação. Usado pelo painel do gestor.
+   */
+  confirmRecentReport?: boolean;
+}
+
+export function UploadDropzone({
+  confirmRecentReport = false,
+}: UploadDropzoneProps) {
   const [step, setStep] = useState<UploadStep>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [rowsWritten, setRowsWritten] = useState<number>(0);
+  // Regra dos 30 min: linhas pendentes aguardando confirmação no dialog.
+  const [pendingRows, setPendingRows] = useState<string[][] | null>(null);
+  const [minutesAgo, setMinutesAgo] = useState(0);
+
+  // Executa o upload de fato (etapas + action + reload). Separado para poder
+  // ser disparado tanto direto quanto após a confirmação do dialog.
+  const processUpload = useCallback(async (rows: string[][]) => {
+    setStep("deleting");
+    await new Promise((r) => setTimeout(r, 400));
+
+    setStep("replacing");
+    const uploadResult = await uploadBaseAction(rows);
+
+    if (!uploadResult.success) {
+      setStep(null);
+      setErrorMessage(uploadResult.error);
+      toast.error("Falha ao atualizar base", {
+        description: uploadResult.error,
+      });
+      return;
+    }
+
+    setRowsWritten(uploadResult.rowsWritten);
+    setStep("done");
+    toast.success("Base atualizada", {
+      description: `${uploadResult.rowsWritten} linhas inseridas`,
+    });
+
+    setTimeout(() => {
+      setStep(null);
+      window.location.reload();
+    }, 3000);
+  }, []);
+
+  const handleConfirmSend = useCallback(() => {
+    const rows = pendingRows;
+    setPendingRows(null);
+    if (rows) void processUpload(rows);
+  }, [pendingRows, processUpload]);
+
+  const handleCancelSend = useCallback(() => {
+    setPendingRows(null);
+    setStep(null);
+  }, []);
 
   const handleFile = useCallback(async (file: File) => {
     setErrorMessage(null);
@@ -71,36 +146,20 @@ export function UploadDropzone() {
           // Delay pra UX mostrar a etapa "ANEXANDO"
           await new Promise((r) => setTimeout(r, 600));
 
-          // Etapa 2 — apagando antiga
-          setStep("deleting");
-          await new Promise((r) => setTimeout(r, 400));
-
-          // Etapa 3 — substituindo
-          setStep("replacing");
-
-          const uploadResult = await uploadBaseAction(rows);
-
-          if (!uploadResult.success) {
-            setStep(null);
-            setErrorMessage(uploadResult.error);
-            toast.error("Falha ao atualizar base", {
-              description: uploadResult.error,
-            });
-            return;
+          // Regra dos 30 min (opt-in): se o último report (S2) foi há menos de
+          // 30 min, pausa e pede confirmação antes de prosseguir.
+          if (confirmRecentReport) {
+            const { hora } = await getUltimoReportHoraAction();
+            const mins = minutosDesdeReport(hora);
+            if (mins !== null && mins >= 0 && mins < REPORT_RECENTE_MIN) {
+              setMinutesAgo(mins);
+              setPendingRows(rows);
+              setStep(null); // esconde o progresso enquanto o dialog decide
+              return;
+            }
           }
 
-          // Etapa 4 — concluído
-          setRowsWritten(uploadResult.rowsWritten);
-          setStep("done");
-          toast.success("Base atualizada", {
-            description: `${uploadResult.rowsWritten} linhas inseridas`,
-          });
-
-          // Após 3s, recarrega a página para mostrar dados novos
-          setTimeout(() => {
-            setStep(null);
-            window.location.reload();
-          }, 3000);
+          await processUpload(rows);
         },
         error: (err: Error) => {
           setStep(null);
@@ -115,7 +174,7 @@ export function UploadDropzone() {
       toast.error("Não foi possível ler o arquivo");
       console.error("[upload] read error:", err);
     }
-  }, []);
+  }, [confirmRecentReport, processUpload]);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -143,18 +202,18 @@ export function UploadDropzone() {
     <>
       <div
         {...getRootProps()}
-        className="relative flex h-full cursor-pointer items-center justify-center rounded-xl border-2 border-dashed transition-all"
+        className="relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed transition-all duration-300 hover:border-primary"
         style={{
           background: isDragActive
-            ? "color-mix(in oklch, var(--primary) 8%, var(--elevation-1-bg))"
-            : "var(--elevation-1-bg)",
+            ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
+            : "var(--card)",
           borderColor: isDragReject
             ? "var(--danger)"
             : isDragActive
               ? "var(--primary)"
               : "var(--border)",
           boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "none",
-          padding: "2rem 1.5rem",
+          padding: "2.5rem 1.5rem",
           opacity: isProcessing ? 0.5 : 1,
           pointerEvents: isProcessing ? "none" : "auto",
           minHeight: "100%",
@@ -162,23 +221,25 @@ export function UploadDropzone() {
       >
         <input {...getInputProps()} />
 
-        <div className="flex flex-col items-center justify-center gap-3 text-center">
-          {isDragActive ? (
-            <IconFileSpreadsheet
-              size={32}
-              style={{ color: "var(--primary)" }}
-              aria-hidden="true"
-            />
-          ) : (
-            <IconUpload
-              size={32}
-              className="text-muted-foreground"
-              aria-hidden="true"
-            />
-          )}
+        <div className="flex flex-col items-center justify-center gap-4 text-center">
+          <div className="p-4 rounded-full bg-muted border border-border/40 transition-colors hover:bg-muted/80">
+            {isDragActive ? (
+              <IconFileSpreadsheet
+                size={28}
+                style={{ color: "var(--primary)" }}
+                aria-hidden="true"
+              />
+            ) : (
+              <IconUpload
+                size={28}
+                className="text-primary"
+                aria-hidden="true"
+              />
+            )}
+          </div>
 
-          <div className="space-y-1">
-            <p className="ds-body">
+          <div className="space-y-1.5">
+            <p className="ds-body font-semibold">
               {isDragActive
                 ? "Solte para enviar"
                 : "Arraste o CSV aqui ou clique para selecionar"}
@@ -200,6 +261,13 @@ export function UploadDropzone() {
       </div>
 
       <UploadProgressModal step={step} rowsWritten={rowsWritten} />
+      <ConfirmRecentReportDialog
+        open={pendingRows !== null}
+        minutesAgo={minutesAgo}
+        onConfirm={handleConfirmSend}
+        onCancel={handleCancelSend}
+      />
+
     </>
   );
 }

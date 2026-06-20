@@ -15,6 +15,7 @@ import {
 } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "framer-motion";
 
+import type { UserRole } from "@/lib/auth/get-current-user";
 import type { Permission } from "@/lib/auth/permissions";
 
 import { ThemeToggle } from "./theme-toggle";
@@ -36,6 +37,12 @@ export type SidebarSection = {
   basePath: string;
   permission: Permission;
   items: { label: string; href: string }[];
+  /**
+   * Restringe a seção a roles específicas (além da permissão). Útil quando
+   * várias roles têm a mesma permissão mas só uma deve ver a seção — ex.: o
+   * ADM tem view_gestor_panel, mas só o GESTOR vê "Painel do Gestor".
+   */
+  onlyRoles?: UserRole[];
 };
 
 const ICONS: Record<

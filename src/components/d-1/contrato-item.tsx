@@ -8,9 +8,16 @@ interface ContratoItemProps {
   cliente: string;
   contrato: string;
   view: "cancelados" | "retidos";
+  /** Opcional — nome do operador dono (usado no painel do gestor). */
+  operador?: string;
 }
 
-export function ContratoItem({ cliente, contrato, view }: ContratoItemProps) {
+export function ContratoItem({
+  cliente,
+  contrato,
+  view,
+  operador,
+}: ContratoItemProps) {
   const [justCopied, setJustCopied] = useState(false);
 
   const accent = view === "cancelados" ? "var(--danger)" : "var(--success)";
@@ -50,6 +57,11 @@ export function ContratoItem({ cliente, contrato, view }: ContratoItemProps) {
       <div className="min-w-0 flex-1 pl-2">
         <p className="ds-body truncate">{cliente}</p>
         <p className="ds-mono-sm text-muted-foreground mt-1">{contrato}</p>
+        {operador && (
+          <p className="ds-small text-muted-foreground mt-0.5 truncate opacity-80">
+            {operador}
+          </p>
+        )}
       </div>
       <div className="ml-4 shrink-0">
         {justCopied ? (

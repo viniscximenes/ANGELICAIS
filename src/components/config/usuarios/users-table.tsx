@@ -35,8 +35,6 @@ export function UsersTable({ users, currentUserId }: Props) {
 
       {users.map((u) => {
         const isMe = u.id === currentUserId;
-        const isGestor = u.role === "GESTOR";
-        const isLocked = isMe || isGestor;
 
         return (
           <div
@@ -60,7 +58,7 @@ export function UsersTable({ users, currentUserId }: Props) {
                     (você)
                   </span>
                 )}
-                {isGestor && (
+                {u.role === "GESTOR" && (
                   <span className="ds-mono-sm text-muted-foreground ml-2">
                     (gestora)
                   </span>
@@ -93,11 +91,7 @@ export function UsersTable({ users, currentUserId }: Props) {
               </span>
             </div>
             <div className="col-span-2 flex justify-end">
-              {isLocked ? (
-                <span className="ds-mono-sm text-muted-foreground">—</span>
-              ) : (
-                <UserActionsMenu user={u} />
-              )}
+              <UserActionsMenu user={u} isSelf={isMe} />
             </div>
           </div>
         );

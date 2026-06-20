@@ -20,3 +20,13 @@ export function resolveGuiaGestor(identificador: string): string | null {
   const chave = identificador.trim().toLowerCase();
   return GUIA_POR_GESTOR[chave] ?? null;
 }
+
+/**
+ * Devolve o nome da guia de tempo logado do gestor ("<GUIA>2").
+ * Deriva da guia de consolidado: "ANA ANGELICA" → "ANA ANGELICA2".
+ * Retorna `null` se o identificador não estiver mapeado.
+ */
+export function resolveGuiaTempoLogado(identificador: string): string | null {
+  const guia = resolveGuiaGestor(identificador);
+  return guia ? `${guia}2` : null;
+}

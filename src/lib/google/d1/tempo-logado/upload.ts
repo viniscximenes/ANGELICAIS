@@ -13,7 +13,6 @@ export type UploadResult =
   | { success: false; error: string };
 
 const BASE_SHEET = "BASE - 2";
-const TEMPO_LOGADO_SHEET = "TEMPO LOGADO";
 const MAX_ROWS = 50000;
 const EXPECTED_COLUMNS = 11; // A até K
 
@@ -77,7 +76,7 @@ export async function uploadBase2ToSheet(
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
-      range: `'${TEMPO_LOGADO_SHEET}'!F2`,
+      range: `'${BASE_SHEET}'!L2`,
       valueInputOption: "USER_ENTERED",
       requestBody: { values: [[hora]] },
     });

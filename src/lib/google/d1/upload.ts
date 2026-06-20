@@ -13,13 +13,29 @@ export type UploadResult =
   | { success: false; error: string };
 
 const BASE_SHEET = "BASE - 1";
-const CONSOLIDADO_SHEET = "CONSOLIDADO";
 const MAX_ROWS = 10000;
 const EXPECTED_COLUMNS = 18; // A até R
 
 /**
+ * Lê a hora do último report gravada em BASE - 1!S2 (formato "HH:MM").
+ * Usada pela regra dos 30 min e para exibir a hora do report no painel.
+ * Retorna null se a célula estiver vazia.
+ */
+export async function fetchUltimoReportHora(): Promise<string | null> {
+  const { sheets, sheetId } = getSheetsClient();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: sheetId,
+    range: `'${BASE_SHEET}'!S2`,
+  });
+  const val = res.data.values?.[0]?.[0];
+  const str = val == null ? "" : String(val).trim();
+  return str || null;
+}
+
+/**
  * Recebe o CSV já parseado como matriz (linha 0 = cabeçalho).
- * Valida estrutura, limpa a BASE - 1, escreve, e grava hora em CONSOLIDADO!L2.
+ * Valida estrutura, limpa a BASE - 1, escreve, e grava a hora do report em
+ * BASE - 1!S2 (e mantém CONSOLIDADO!L2 para o D-1 da empresa).
  */
 export async function uploadBaseToSheet(
   parsedRows: string[][],
@@ -79,17 +95,24 @@ export async function uploadBaseToSheet(
       requestBody: { values: dataRows },
     });
 
-    // GRAVA a hora do report em CONSOLIDADO!L2
+    // GRAVA a hora do report (HH:MM).
+    // - BASE - 1!S2: fonte usada pelas guias de leitura (ex.: painel do gestor)
+    //   e pela regra dos 30 min. Fica FORA da faixa A:R, então nem o clear nem
+    //   a colagem do CSV a tocam.
+    // - CONSOLIDADO!L2: mantida para não quebrar o D-1 da empresa (fluxo atual).
     onProgress?.("stamping");
 
     const { hour, minute } = getTimePartsInBR();
     const hora = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 
-    await sheets.spreadsheets.values.update({
+    await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: sheetId,
-      range: `'${CONSOLIDADO_SHEET}'!L2`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[hora]] },
+      requestBody: {
+        valueInputOption: "USER_ENTERED",
+        data: [
+          { range: `'${BASE_SHEET}'!S2`, values: [[hora]] },
+        ],
+      },
     });
 
     return { success: true, rowsWritten: dataRows.length };

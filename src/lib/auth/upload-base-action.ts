@@ -4,13 +4,36 @@ import { revalidatePath } from "next/cache";
 
 import { saveEvolucaoAction } from "@/lib/d1/evolucao/actions/save-evolucao-action";
 import { fetchConsolidado } from "@/lib/google/d1";
-import { uploadBaseToSheet } from "@/lib/google/d1/upload";
+import {
+  fetchUltimoReportHora,
+  uploadBaseToSheet,
+} from "@/lib/google/d1/upload";
 import { getCurrentUser } from "./get-current-user";
 import { can } from "./permissions";
 
 export type UploadActionResult =
   | { success: true; rowsWritten: number }
   | { success: false; error: string };
+
+/**
+ * Lê a hora do último report (BASE - 1!S2) para a regra dos 30 min no client.
+ * Gated por manage_d1_base. Retorna { hora: null } em qualquer falha (a regra
+ * é apenas um aviso — nunca bloqueia o upload).
+ */
+export async function getUltimoReportHoraAction(): Promise<{
+  hora: string | null;
+}> {
+  const user = await getCurrentUser();
+  if (!user || !can(user.profile.role, "manage_d1_base")) {
+    return { hora: null };
+  }
+  try {
+    return { hora: await fetchUltimoReportHora() };
+  } catch (err) {
+    console.error("[upload-base] erro ao ler hora do report (S2):", err);
+    return { hora: null };
+  }
+}
 
 export async function uploadBaseAction(
   parsedRows: string[][],
@@ -61,4 +84,51 @@ export async function uploadBaseAction(
   }
 
   return result;
+}
+
+export async function clearBaseAction(): Promise<{ success: boolean; error?: string }> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return { success: false, error: "Não autenticado" };
+  }
+
+  if (!can(user.profile.role, "manage_d1_base")) {
+    return { success: false, error: "Sem permissão para limpar a base" };
+  }
+
+  try {
+    const { getSheetsClient } = await import("@/lib/google/sheets-client");
+    const { sheets, sheetId } = getSheetsClient();
+    const BASE_SHEET = "BASE - 1";
+    const CONSOLIDADO_SHEET = "CONSOLIDADO";
+    const MAX_ROWS = 10000;
+
+    // Limpa a tabela BASE - 1 (preservando o cabeçalho)
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: sheetId,
+      range: `'${BASE_SHEET}'!A2:R${MAX_ROWS}`,
+    });
+
+    // Grava "—" (limpo) nos horários de report
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: sheetId,
+      requestBody: {
+        valueInputOption: "USER_ENTERED",
+        data: [
+          { range: `'${BASE_SHEET}'!S2`, values: [["—"]] },
+          { range: `'${CONSOLIDADO_SHEET}'!L2`, values: [["—"]] },
+        ],
+      },
+    });
+
+    revalidatePath("/d-1");
+    return { success: true };
+  } catch (err) {
+    console.error("[clear-base] erro:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Erro ao limpar dados no Sheets",
+    };
+  }
 }

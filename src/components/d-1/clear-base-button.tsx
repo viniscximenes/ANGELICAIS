@@ -18,6 +18,11 @@ export function ClearBaseButton({ action }: Props) {
   const [isPending, startTransition] = useTransition();
 
   function handleClick() {
+    const confirmed = window.confirm(
+      "ATENÇÃO: Você tem certeza que deseja limpar todos os dados da base atual no Google Sheets? Esta ação não pode ser desfeita."
+    );
+    if (!confirmed) return;
+
     startTransition(async () => {
       const r = await action();
       if (r.success) {

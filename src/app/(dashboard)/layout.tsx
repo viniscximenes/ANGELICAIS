@@ -17,17 +17,8 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const isGestor = user.profile.role === "GESTOR";
-
-  if (isGestor) {
-    return (
-      <div className="min-h-screen">
-        <AppHeader />
-        {children}
-      </div>
-    );
-  }
-
+  // O GESTOR também recebe a sidebar — filtrada por permissão, ela mostra só a
+  // seção "Painel do Gestor" (view_gestor_panel), sem D-1/KPI/RV/etc.
   const sections = getSidebarSectionsForRole(user.profile.role);
 
   return (

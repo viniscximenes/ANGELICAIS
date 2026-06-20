@@ -12,7 +12,7 @@ import { filterTempoLogadoByEmail } from "@/lib/d1/tempo-logado/filter-by-user";
 import { getTempoLogadoData } from "@/lib/google/d1/tempo-logado";
 
 export const metadata: Metadata = {
-  title: "Tempo Logado — D-1 ANGELICAIS",
+  title: "Tempo Logado — D-1 ALLOHA FIBRA",
 };
 
 export const revalidate = 300;

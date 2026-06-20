@@ -54,6 +54,7 @@ Quando a página justificar, adicionar:
 - [Evolução](docs/pages/evolucao.md) — painel de evolução mensal do operador (gráfico de linha por KPI + consolidado, guia KPI)
 - [D-1 Relatório por Supervisor](docs/pages/d-1-relatorio-supervisor.md) — exportação do D-1 por supervisor (empresa toda) + usuário relatorio
 - [Painel do Gestor — D-1](docs/pages/gestor-d-1.md) — painel do gestor (equipe própria): D-1 consolidado, motivos, contratos, upload e exportação
+- [Painel do Gestor — Tempo Logado](docs/pages/gestor-tempo-logado.md) — aba de tempo logado do gestor (equipe própria): tabela, meta 06:20:00, hora em BASE - 2!S2
 
 ## Status possíveis
 

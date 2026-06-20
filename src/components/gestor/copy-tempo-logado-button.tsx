@@ -5,15 +5,6 @@ import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
 
-import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
-
-function getHoraReport(equipe: ResumoEquipe): string {
-  if (!equipe.horaReport || equipe.horaReport === "—") return "—";
-  // Se a hora contiver segundos (ex: 15:30:00), corta e deixa apenas HH:MM
-  const match = equipe.horaReport.match(/^(\d{1,2}:\d{2})/);
-  return match ? match[1] : equipe.horaReport;
-}
-
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
@@ -21,24 +12,7 @@ function escapeHtml(str: string): string {
     .replace(/>/g, "&gt;");
 }
 
-function formatReportHtml(hora: string, pngDataUrl: string): string {
-  // Blocos empilhados verticalmente, nesta ordem: título → report → imagem.
-  // O Teams Web strippa font-size de <div>/<span>, mas RESPEITA font-size em
-  // <h2> — por isso o título grande precisa ser <h2> (e o negrito via <b>, que
-  // o Teams nunca remove). O report é um <div> (bloco) com <i> dentro: o div
-  // garante a quebra de linha e o <i> o itálico. A <img> fica em bloco com
-  // display:block (+ <br> de reforço) para não fluir ao lado do texto.
-  const parts: string[] = [
-    `<h2 style="font-size: 24px; margin: 0;"><b>D-1 CONSOLIDADO</b></h2>`,
-    `<div style="margin-top: 4px;"><i>report das ${escapeHtml(hora)}</i></div>`,
-    `<br>`,
-    `<div style="margin-top: 8px;"><img src="${pngDataUrl}" style="display: block; max-width: 1000px; width: 100%;" alt="Tabela consolidado"></div>`,
-  ];
-  return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">${parts.join("")}</div>`;
-}
-
 async function copyFormattedHtml(html: string): Promise<void> {
-  // Tenta execCommand primeiro — preserva estilos inline (sem sanitização)
   try {
     const container = document.createElement("div");
     container.setAttribute("contenteditable", "true");
@@ -63,13 +37,9 @@ async function copyFormattedHtml(html: string): Promise<void> {
       document.body.removeChild(container);
     }
   } catch (e) {
-    console.warn(
-      "[copy-table] execCommand falhou, tentando ClipboardItem:",
-      e,
-    );
+    console.warn("[copy-tempo-logado] execCommand falhou, tentando ClipboardItem:", e);
   }
 
-  // Fallback: ClipboardItem (sem garantia de cores em todos os browsers)
   await navigator.clipboard.write([
     new ClipboardItem({
       "text/html": new Blob([html], { type: "text/html" }),
@@ -77,20 +47,17 @@ async function copyFormattedHtml(html: string): Promise<void> {
   ]);
 }
 
-interface CopyTableButtonProps {
-  // operadores e supervisor continuam aceitos (o caller os passa), mas o texto
-  // copiado não os usa mais — agora é só título + hora do report + imagem.
-  operadores: OperadorConsolidado[];
-  equipe: ResumoEquipe;
-  supervisor?: string;
+interface CopyTempoLogadoButtonProps {
+  horaReport: string;
 }
 
-export function CopyTableButton({ equipe }: CopyTableButtonProps) {
+export function CopyTempoLogadoButton({
+  horaReport,
+}: CopyTempoLogadoButtonProps) {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
 
   async function handleCopy() {
     const target = document.querySelector<HTMLElement>("[data-tabela-png]");
-
     if (!target) {
       toast.error("Tabela não encontrada");
       return;
@@ -100,8 +67,18 @@ export function CopyTableButton({ equipe }: CopyTableButtonProps) {
 
     try {
       const pngDataUrl = await domToPng(target, { scale: 3 });
-      const hora = getHoraReport(equipe);
-      const html = formatReportHtml(hora, pngDataUrl);
+      const hora =
+        horaReport && horaReport !== "—"
+          ? horaReport.match(/^(\d{1,2}:\d{2})/)?.[1] ?? horaReport
+          : "—";
+
+      const html =
+        `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">` +
+        `<h2 style="font-size: 24px; margin: 0;"><b>TEMPO LOGADO</b></h2>` +
+        `<div style="margin-top: 4px;"><i>report das ${escapeHtml(hora)}</i></div>` +
+        `<br>` +
+        `<div style="margin-top: 8px;"><img src="${pngDataUrl}" style="display: block; max-width: 1000px; width: 100%;" alt="Tabela tempo logado"></div>` +
+        `</div>`;
 
       await copyFormattedHtml(html);
 
@@ -110,10 +87,9 @@ export function CopyTableButton({ equipe }: CopyTableButtonProps) {
         description: "Cole no Teams, Slack ou email (Ctrl+V)",
         duration: 2500,
       });
-
       setTimeout(() => setState("idle"), 2000);
     } catch (err) {
-      console.error("[copy-table] erro:", err);
+      console.error("[copy-tempo-logado] erro:", err);
       setState("idle");
       toast.error("Não foi possível copiar", {
         description: "Tente em outro navegador (Chrome/Edge)",
@@ -131,11 +107,7 @@ export function CopyTableButton({ equipe }: CopyTableButtonProps) {
     >
       {state === "copying" && (
         <>
-          <IconLoader2
-            size={14}
-            className="animate-spin"
-            aria-hidden="true"
-          />
+          <IconLoader2 size={14} className="animate-spin" aria-hidden="true" />
           <span className="ds-mono-sm">Gerando...</span>
         </>
       )}

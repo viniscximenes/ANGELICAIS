@@ -12,25 +12,28 @@ import { ToggleActiveButton } from "./toggle-active-button";
 
 interface Props {
   user: UserProfile;
+  isSelf?: boolean;
 }
 
-export function UserActionsMenu({ user }: Props) {
+export function UserActionsMenu({ user, isSelf = false }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
 
   return (
     <>
       <div className="flex flex-wrap items-center justify-end gap-1.5">
-        <button
-          type="button"
-          onClick={() => setEditOpen(true)}
-          className="text-muted-foreground hover:text-foreground elevation-2 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 transition-colors"
-          style={{ border: "1px solid var(--border)", fontSize: "12px" }}
-          aria-label="Editar usuário"
-        >
-          <IconPencil size={14} aria-hidden="true" />
-          <span className="ds-mono-sm">Editar</span>
-        </button>
+        {!isSelf && (
+          <button
+            type="button"
+            onClick={() => setEditOpen(true)}
+            className="text-muted-foreground hover:text-foreground elevation-2 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 transition-colors"
+            style={{ border: "1px solid var(--border)", fontSize: "12px" }}
+            aria-label="Editar usuário"
+          >
+            <IconPencil size={14} aria-hidden="true" />
+            <span className="ds-mono-sm">Editar</span>
+          </button>
+        )}
 
         <button
           type="button"
@@ -43,11 +46,11 @@ export function UserActionsMenu({ user }: Props) {
           <span className="ds-mono-sm">Senha</span>
         </button>
 
-        {(user.role === "OP" || user.role === "AUX") && (
+        {!isSelf && (user.role === "OP" || user.role === "AUX") && (
           <ChangeRoleButton user={user} />
         )}
 
-        <ToggleActiveButton user={user} />
+        {!isSelf && <ToggleActiveButton user={user} />}
       </div>
 
       <EditUserModal

@@ -29,12 +29,8 @@ interface Props {
 function applyThemeToDocument(theme: Theme) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  root.classList.add("theme-transition");
   root.setAttribute("data-theme", theme);
   root.classList.toggle("dark", theme === "dark");
-  window.setTimeout(() => {
-    root.classList.remove("theme-transition");
-  }, 300);
 }
 
 export function ThemeProvider({ initialTheme, children }: Props) {

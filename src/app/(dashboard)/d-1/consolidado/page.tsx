@@ -16,7 +16,7 @@ import { getSupervisoresDistintos } from "@/lib/d1/supervisor";
 import { getD1Data } from "@/lib/google/d1";
 
 export const metadata: Metadata = {
-  title: "Consolidado — D-1 ANGELICAIS",
+  title: "Consolidado — D-1 ALLOHA FIBRA",
 };
 
 export const revalidate = 300;

@@ -1,17 +1,26 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { IconChartBar } from "@tabler/icons-react";
 
+import { GestorContratosSection } from "@/components/gestor/gestor-contratos-section";
+import { GestorEquipeSection } from "@/components/gestor/gestor-equipe-section";
+import { GestorMotivosSection } from "@/components/gestor/gestor-motivos-section";
 import { PageTransition } from "@/components/motion/page-transition";
-import {
-  StaggerContainer,
-  StaggerItem,
-} from "@/components/motion/stagger-container";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { can } from "@/lib/auth/permissions";
+import { getPostLoginPath } from "@/lib/auth/post-login-path";
+import {
+  deriveNomeOperador,
+  formatNomeProprio,
+} from "@/lib/gestor/derive-nome-operador";
+import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
+import { fetchUltimoReportHora } from "@/lib/google/d1/upload";
+import { fetchGestorData, resolveGuiaGestor } from "@/lib/google/gestor";
 
 export const metadata: Metadata = {
-  title: "Gestor D-1 — ANGELICAIS",
+  title: "Consolidado — D-1 ALLOHA FIBRA",
 };
+
+export const revalidate = 300;
 
 export default async function GestorD1Page() {
   const user = await getCurrentUser();
@@ -20,36 +29,92 @@ export default async function GestorD1Page() {
     redirect("/login");
   }
 
-  // Operadores/AUX/ADM voltam pra /d-1 (que é a página deles)
+  // Gate explícito por role: só GESTOR acessa esta tela. O ADM mantém a
+  // permissão view_gestor_panel, mas é redirecionado aqui (não é gestor).
   if (user.profile.role !== "GESTOR") {
-    redirect("/d-1");
+    redirect(getPostLoginPath(user.profile.role));
   }
+
+  // Resolve a guia do gestor logado (Fase 1: mapa fixo por login/email).
+  const guia =
+    resolveGuiaGestor(user.profile.username) ??
+    resolveGuiaGestor(user.profile.emailCorporativo);
+
+  if (!guia) {
+    return (
+      <PageTransition>
+        <div className="flex min-h-[60vh] items-center justify-center px-6">
+          <div
+            className="elevation-1 ds-body text-muted-foreground max-w-md rounded-xl px-6 py-10 text-center"
+            style={{ border: "1px solid var(--border)" }}
+          >
+            Nenhuma equipe vinculada ao seu usuário.
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
+  const [data, horaReport] = await Promise.all([
+    fetchGestorData(guia),
+    fetchUltimoReportHora(), // hora do report (BASE - 1!S2), para o export
+  ]);
+
+  const showUpload = can(user.profile.role, "manage_d1_base");
+
+  // Converte para o formato que a EquipeTable do D-1 já aceita. O rótulo do
+  // operador na tabela vem do campo `email` (via formatOperatorLabel), então
+  // injetamos aqui o nome de exibição derivado do email (coluna A).
+  const operadores: OperadorConsolidado[] = data.operadores.map((op) => ({
+    email: deriveNomeOperador(op.nome),
+    supervisor: op.gestora,
+    retidos: op.retidos,
+    cancelados: op.cancelados,
+    pedidos: op.pedidos,
+    txRetencao: op.txRetencao,
+  }));
+
+  const equipe: ResumoEquipe = {
+    retidos: data.consolidado.retidos,
+    cancelados: data.consolidado.cancelados,
+    pedidos: data.consolidado.pedidos,
+    txRetencao: data.consolidado.txRetencao,
+    horaReport: horaReport ?? "—",
+  };
+
+  const gestora = data.consolidado.gestora
+    ? formatNomeProprio(data.consolidado.gestora)
+    : "Equipe";
 
   return (
     <PageTransition>
-      <div className="flex min-h-screen items-center justify-center px-6">
-        <div className="flex flex-col items-center text-center">
-          <StaggerContainer
-            staggerDelay={0.08}
-            className="flex flex-col items-center"
-          >
-            <StaggerItem>
-              <IconChartBar
-                size={48}
-                className="text-primary"
-                aria-hidden="true"
-              />
-            </StaggerItem>
-            <StaggerItem className="mt-6">
-              <h1 className="ds-h1">Painel do Gestor</h1>
-            </StaggerItem>
-            <StaggerItem className="mt-3">
-              <p className="ds-body text-muted-foreground max-w-md">
-                Sua visão do D-1 está em construção. Em breve você verá os
-                indicadores da equipe aqui.
-              </p>
-            </StaggerItem>
-          </StaggerContainer>
+      <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
+        <div className="mx-auto max-w-7xl space-y-8">
+          <header className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-baseline gap-3">
+              <h1 className="ds-h1">Consolidado</h1>
+              <span className="ds-mono-sm text-muted-foreground">
+                / D-1 · {gestora}
+              </span>
+            </div>
+          </header>
+
+          <div className="space-y-12">
+            <GestorEquipeSection
+              operadores={operadores}
+              equipe={equipe}
+              gestora={gestora}
+              showUpload={showUpload}
+            />
+            <GestorMotivosSection
+              txPorMotivo={data.txPorMotivo}
+              operadores={data.operadores}
+            />
+            <GestorContratosSection
+              contratosRetidos={data.contratosRetidos}
+              contratosCancelados={data.contratosCancelados}
+            />
+          </div>
         </div>
       </div>
     </PageTransition>

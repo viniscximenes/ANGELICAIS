@@ -8,7 +8,6 @@ import { can } from "@/lib/auth/permissions";
 import { getSheetsClient } from "../../sheets-client";
 
 const BASE_SHEET = "BASE - 2";
-const TEMPO_LOGADO_SHEET = "TEMPO LOGADO";
 const MAX_ROWS = 50000;
 
 export type ClearTempoLogadoResult =
@@ -32,7 +31,7 @@ export async function clearTempoLogadoAction(): Promise<ClearTempoLogadoResult> 
 
     await sheets.spreadsheets.values.clear({
       spreadsheetId: sheetId,
-      range: `'${TEMPO_LOGADO_SHEET}'!F2`,
+      range: `'${BASE_SHEET}'!L2`,
     });
 
     revalidatePath("/d-1/tempo-logado");

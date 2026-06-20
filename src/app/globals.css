@@ -175,65 +175,65 @@
 [data-theme="light"] {
     /* ─── Backgrounds com profundidade ─── */
 
-    /* Fundo principal: Branco puro para um visual extremamente clean, moderno e corporativo */
-    --background: oklch(1.00 0.00 0);
+    /* Fundo principal: Cinza sutil para destacar a tabela e cards brancos */
+    --background: oklch(0.975 0.002 240); /* #f3f4f6 */
 
-    /* Cards e áreas de destaque: Cinza sutil para contraste reverso sofisticado */
-    --card: oklch(0.985 0.001 240); /* #f8f9fa */
-    --card-foreground: oklch(0.18 0.002 240); /* #1a1a1a */
-    --popover: oklch(0.985 0.001 240);
-    --popover-foreground: oklch(0.18 0.002 240);
+    /* Cards e áreas de destaque: Branco puro */
+    --card: oklch(1.00 0.00 0); 
+    --card-foreground: oklch(0.15 0.002 240); /* #111111 */
+    --popover: oklch(1.00 0.00 0);
+    --popover-foreground: oklch(0.15 0.002 240);
 
-    /* Muted: cinza leve para áreas secundárias e badges */
-    --muted: oklch(0.95 0.002 240);
-    --muted-foreground: oklch(0.45 0.003 240);
+    /* Muted: cinza médio suave para cabeçalhos da planilha e submenus */
+    --muted: oklch(0.93 0.002 240); /* #e5e7eb */
+    --muted-foreground: oklch(0.40 0.003 240);
 
-    /* Bordas ultrafinas e discretas */
-    --border: oklch(0.94 0.002 240);
+    /* Bordas mais visíveis e limpas, sem ficarem grossas */
+    --border: oklch(0.88 0.003 240); /* #d1d5db */
 
     /* ─── Texto ─── */
 
-    /* Grafite escuro elegante e profissional */
-    --foreground: oklch(0.18 0.002 240);
+    /* Grafite escuro quase preto pra máxima legibilidade */
+    --foreground: oklch(0.15 0.002 240);
 
     /* ─── Brand azul ALLOHA FIBRA ─── */
     --primary: oklch(0.398 0.195 240.0);
     --primary-foreground: oklch(1.00 0.00 0);
 
-    /* ─── Status (bg/border limpos e sem saturação estranha) ─── */
+    /* ─── Status ─── */
     --success: oklch(0.55 0.13 145);
-    --success-bg: oklch(0.96 0.02 145);
-    --success-border: oklch(0.88 0.04 145);
+    --success-bg: oklch(0.94 0.03 145);
+    --success-border: oklch(0.85 0.05 145);
 
     --warning: oklch(0.65 0.11 80);
-    --warning-bg: oklch(0.97 0.02 80);
-    --warning-border: oklch(0.90 0.04 80);
+    --warning-bg: oklch(0.96 0.03 80);
+    --warning-border: oklch(0.88 0.05 80);
 
     --danger: oklch(0.52 0.16 25);
-    --danger-bg: oklch(0.97 0.01 25);
-    --danger-border: oklch(0.89 0.03 25);
+    --danger-bg: oklch(0.95 0.02 25);
+    --danger-border: oklch(0.86 0.04 25);
 
     /* ─── Elevation ─── */
-    --elevation-1-bg: oklch(0.985 0.001 240);
-    --elevation-1-border: oklch(0.94 0.002 240);
+    --elevation-1-bg: oklch(1.00 0.00 0);
+    --elevation-1-border: oklch(0.88 0.002 240);
 
-    --elevation-2-bg: oklch(0.985 0.001 240);
-    --elevation-2-border: oklch(0.92 0.002 240);
+    --elevation-2-bg: oklch(1.00 0.00 0);
+    --elevation-2-border: oklch(0.86 0.002 240);
 
-    --elevation-3-bg: oklch(0.985 0.001 240);
-    --elevation-3-border: oklch(0.90 0.002 240);
+    --elevation-3-bg: oklch(1.00 0.00 0);
+    --elevation-3-border: oklch(0.84 0.002 240);
 
     /* ─── Glow ─── */
-    --glow-accent: oklch(0.398 0.195 240.0 / 0.06);
-    --glow-accent-strong: oklch(0.398 0.195 240.0 / 0.12);
+    --glow-accent: oklch(0.398 0.195 240.0 / 0.05);
+    --glow-accent-strong: oklch(0.398 0.195 240.0 / 0.10);
 
     /* ─── Hover states ─── */
-    --card-hover-bg: oklch(0.97 0.002 240);
-    --muted-hover-bg: oklch(0.92 0.003 240);
-    --border-hover: oklch(0.88 0.004 240);
+    --card-hover-bg: oklch(0.99 0.001 240);
+    --muted-hover-bg: oklch(0.91 0.002 240);
+    --border-hover: oklch(0.80 0.003 240);
 
     /* Linha guia */
-    --row-border: oklch(0.95 0.001 240);
+    --row-border: oklch(0.88 0.002 240);
 }
 
 /* Hover apenas em LINKS com elevation (cards clicáveis).
@@ -572,19 +572,9 @@ a:focus:not(:focus-visible) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Transição suave entre temas
-   A classe `theme-transition` é aplicada no <html> SÓ durante a troca
-   (~300ms) — fora disso, zero transições globais (sem custo de scroll)
+   Transição sutil e contínua de troca de tema
    ═══════════════════════════════════════════════════════════════════ */
 
-html.theme-transition,
-html.theme-transition *,
-html.theme-transition *::before,
-html.theme-transition *::after {
-  transition:
-    background-color 0.25s ease,
-    border-color 0.25s ease,
-    color 0.25s ease,
-    box-shadow 0.25s ease !important;
-  transition-delay: 0s !important;
+html, body, div, header, aside, section, table, thead, tbody, tr, th, td {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease, box-shadow 0.2s ease;
 }
