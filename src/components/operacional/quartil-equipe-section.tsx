@@ -69,17 +69,18 @@ function QuartilCell({ kpi }: { kpi: KpiQuartilSerial }) {
           ? formatKpiValue(kpi.valor, kpi.valueType)
           : "—"}
       </span>
-      <div className="flex items-center gap-1">
-        <span
-          className="rounded px-1.5 py-0.5 text-[9px] font-bold leading-none uppercase tracking-wider"
-          style={{ backgroundColor: bgColor, color: textColor }}
-        >
-          Q{quartil}
-        </span>
-        <span className="tabular-nums text-[9px] text-muted-foreground/50 font-medium">
-          #{rank}/{total}
-        </span>
-      </div>
+      <span
+        className="inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 text-[9px] font-semibold leading-none border"
+        style={{
+          backgroundColor: bgColor,
+          color: textColor,
+          borderColor: `color-mix(in oklch, ${textColor} 20%, transparent)`,
+        }}
+      >
+        <span>Q{quartil}</span>
+        <span className="opacity-30" aria-hidden="true">|</span>
+        <span className="tabular-nums opacity-90">#{rank}/{total}</span>
+      </span>
     </div>
   );
 }
