@@ -21,6 +21,7 @@ export type PausasDetalhe = {
 
 export type GestorIndispLinha = {
   email: string;
+  gestor?: string;
   indisponibilidade: number | null; // % (ex: 12.3), vem direto da coluna I
   cumpriuMeta: boolean;             // indisponibilidade < META_INDISPONIBILIDADE
   nr17Pct: number | null;           // (Pausa10 + Pausa20) / tempoLogado * 100

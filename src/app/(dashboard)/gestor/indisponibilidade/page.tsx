@@ -66,10 +66,8 @@ export default async function GestorIndisponibilidadePage() {
     );
   }
 
-  const nomeGestora =
-    user.profile.username
-      ? formatNomeProprio(user.profile.username.replace(/\./g, " "))
-      : "Equipe";
+  const nomeSupervisor = data.operadores.find((op) => op.gestor)?.gestor ?? "";
+  const nomeGestora = nomeSupervisor ? formatNomeProprio(nomeSupervisor) : "Equipe";
 
   return (
     <PageTransition>

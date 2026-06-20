@@ -135,6 +135,7 @@ export async function fetchGestorIndisponibilidade(
 
       return {
         email,
+        gestor: String(row[1] ?? "").trim(),
         indisponibilidade,
         cumpriuMeta,
         nr17Pct: pctSobre(p10 + p20, tempoLogado),
