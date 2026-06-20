@@ -7,7 +7,7 @@ const ALL_SECTIONS: SidebarSection[] = [
   {
     id: "gestor",
     label: "D-1",
-    iconName: "headset",
+    iconName: "chart",
     basePath: "/gestor",
     permission: "view_gestor_panel",
     // Só o GESTOR vê — o ADM tem a permissão, mas não acessa esta tela.
