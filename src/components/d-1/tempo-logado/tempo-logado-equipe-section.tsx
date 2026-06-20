@@ -43,7 +43,7 @@ export function TempoLogadoEquipeSection({
         <div className="flex items-center justify-between gap-4">
           <div className="shrink-0" style={{ width: "600px" }}>
             <div className="flex items-baseline gap-3">
-              <span className="ds-mono text-muted-foreground">03</span>
+              <span className="ds-mono text-muted-foreground">01</span>
               <span className="ds-mono text-muted-foreground">·</span>
               <h2 className="ds-h2">Equipe</h2>
             </div>
