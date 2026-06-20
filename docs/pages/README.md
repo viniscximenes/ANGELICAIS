@@ -56,6 +56,7 @@ Quando a página justificar, adicionar:
 - [Painel do Gestor — D-1](docs/pages/gestor-d-1.md) — painel do gestor (equipe própria): D-1 consolidado, motivos, contratos, upload e exportação
 - [Painel do Gestor — Tempo Logado](docs/pages/gestor-tempo-logado.md) — aba de tempo logado do gestor (equipe própria): tabela, meta 06:20:00, hora em BASE - 2!S2
 - [Painel do Gestor — Indisponibilidade](docs/pages/gestor-indisponibilidade.md) — aba de indisponibilidade do gestor: tabela com NR17, pausa particular e outras pausas, meta 14,5%
+- [Operacional — KPI da Equipe (gestor)](docs/pages/operacional-kpi-gestor.md) — KPI dos operadores da equipe do gestor: lista de principais + detalhe de secundários, toggle de mês
 
 ## Status possíveis
 

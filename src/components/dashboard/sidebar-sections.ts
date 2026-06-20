@@ -19,6 +19,15 @@ const ALL_SECTIONS: SidebarSection[] = [
     ],
   },
   {
+    id: "operacional",
+    label: "Operacional",
+    iconName: "headset",
+    basePath: "/operacional",
+    permission: "view_gestor_panel",
+    onlyRoles: ["GESTOR"],
+    items: [{ label: "KPI", href: "/operacional/kpi" }],
+  },
+  {
     id: "d-1",
     label: "D-1",
     iconName: "chart",
