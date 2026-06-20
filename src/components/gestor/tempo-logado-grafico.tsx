@@ -168,13 +168,6 @@ export function TempoLogadoGrafico({ operadores }: TempoLogadoGraficoProps) {
               stroke="var(--foreground)"
               strokeDasharray="5 4"
               strokeOpacity={0.4}
-              label={{
-                value: "06:20:00",
-                position: "insideTopRight",
-                fill: "var(--muted-foreground)",
-                fontSize: 10,
-                dy: -4,
-              }}
             />
             <Bar
               dataKey="tempo"
