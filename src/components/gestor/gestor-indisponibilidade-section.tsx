@@ -41,10 +41,10 @@ export function GestorIndisponibilidadeSection({
       transition={{ delay: 0.1, duration: 0.25, ease: EASE_OUT_EXPO }}
       className="space-y-4"
     >
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
-        {/* Coluna da Esquerda: Tabela da Equipe */}
-        <div className="shrink-0 space-y-3" style={{ width: "650px", maxWidth: "100%" }}>
-          <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-4">
+        {/* Row 1: Headers aligned on desktop */}
+        <div className="hidden lg:flex lg:items-end">
+          <div className="shrink-0 flex items-center justify-between gap-4" style={{ width: "650px", paddingRight: "16px" }}>
             <div className="flex items-baseline gap-3">
               <span className="ds-mono text-muted-foreground">01</span>
               <span className="ds-mono text-muted-foreground">·</span>
@@ -58,19 +58,45 @@ export function GestorIndisponibilidadeSection({
             </div>
             <CopyIndisponibilidadeButton horaReport={horaReport} />
           </div>
-
-          <IndisponibilidadeTable operadores={operadores} />
-        </div>
-
-        {/* Coluna da Direita: Visão Rápida (Cards) */}
-        <div className="min-w-0 flex-1 space-y-3">
-          <div className="flex items-baseline gap-3" style={{ height: "32px", display: "flex", alignItems: "center" }}>
+          <div className="min-w-0 flex-1 flex items-baseline gap-3 pb-[8px] pl-2">
             <span className="ds-mono text-muted-foreground">02</span>
             <span className="ds-mono text-muted-foreground">·</span>
             <h2 className="ds-h2">Visão Rápida</h2>
           </div>
+        </div>
 
-          <IndisponibilidadeResumoCards resumo={resumo} />
+        {/* Row 2: Content (Table & Cards side-by-side) */}
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
+          {/* Left Column: Table */}
+          <div className="shrink-0 space-y-3 lg:space-y-0" style={{ width: "650px", maxWidth: "100%" }}>
+            {/* Mobile Header (hidden on desktop) */}
+            <div className="flex items-center justify-between gap-4 lg:hidden">
+              <div className="flex items-baseline gap-3">
+                <span className="ds-mono text-muted-foreground">01</span>
+                <span className="ds-mono text-muted-foreground">·</span>
+                <h2 className="ds-h2">Equipe</h2>
+                {horaReport && horaReport !== "—" && (
+                  <span className="ds-mono-sm text-muted-foreground">
+                    - atualizado às{" "}
+                    {horaReport.match(/^(\d{1,2}:\d{2})/)?.[1] ?? horaReport}
+                  </span>
+                )}
+              </div>
+              <CopyIndisponibilidadeButton horaReport={horaReport} />
+            </div>
+            <IndisponibilidadeTable operadores={operadores} />
+          </div>
+
+          {/* Right Column: Cards */}
+          <div className="min-w-0 flex-1 space-y-3 lg:space-y-0">
+            {/* Mobile Header (hidden on desktop) */}
+            <div className="flex items-baseline gap-3 lg:hidden">
+              <span className="ds-mono text-muted-foreground">02</span>
+              <span className="ds-mono text-muted-foreground">·</span>
+              <h2 className="ds-h2">Visão Rápida</h2>
+            </div>
+            <IndisponibilidadeResumoCards resumo={resumo} />
+          </div>
         </div>
       </div>
 
