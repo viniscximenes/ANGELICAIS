@@ -178,13 +178,6 @@ export function IndisponibilidadeGrafico({
                 stroke="var(--foreground)"
                 strokeDasharray="5 4"
                 strokeOpacity={0.4}
-                label={{
-                  value: `${META_INDISPONIBILIDADE}%`,
-                  position: "insideTopRight",
-                  fill: "var(--muted-foreground)",
-                  fontSize: 10,
-                  dy: -6,
-                }}
               />
               <Bar
                 dataKey="valor"

@@ -104,11 +104,11 @@ export function GestorIndisponibilidadeSection({
 
       <Divider />
 
-      {/* ── 03 Gráfico ───────────────────────────────────────────────── */}
+      {/* ── 03 Visão Detalhada ────────────────────────────────────────── */}
       <div className="flex items-baseline gap-3">
         <span className="ds-mono text-muted-foreground">03</span>
         <span className="ds-mono text-muted-foreground">·</span>
-        <h2 className="ds-h2">Indisponibilidade por Operador</h2>
+        <h2 className="ds-h2">Visão Detalhada</h2>
       </div>
 
       <IndisponibilidadeGrafico operadores={operadores} />
