@@ -62,6 +62,10 @@ export function IndisponibilidadePausasTable({
               fontSize: "10px",
               fontWeight: 600,
               textAlign: "center" as const,
+              position: "sticky",
+              left: 0,
+              zIndex: 10,
+              background: "color-mix(in oklch, var(--muted) 20%, var(--card))",
             }}
             className="border-r border-border/30"
           >
@@ -96,7 +100,6 @@ export function IndisponibilidadePausasTable({
                 display: "grid",
                 gridTemplateColumns: GRID_COLS,
                 borderBottom: isLast ? "none" : "1px solid var(--border)",
-                opacity: semDados ? 0.4 : 1,
                 fontFamily: SANS_STACK,
               }}
             >
@@ -111,7 +114,11 @@ export function IndisponibilidadePausasTable({
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
-                  color: "var(--foreground)",
+                  color: semDados ? "var(--muted-foreground)" : "var(--foreground)",
+                  position: "sticky",
+                  left: 0,
+                  zIndex: 5,
+                  background: "var(--card)",
                 }}
               >
                 {deriveNomeOperador(op.email)}
@@ -128,7 +135,12 @@ export function IndisponibilidadePausasTable({
                       textAlign: "center",
                       fontVariantNumeric: "tabular-nums" as const,
                       borderRight: i < COLUNAS.length - 1 ? "1px solid var(--border)" : undefined,
-                      color: isEmpty ? "var(--muted-foreground)" : "var(--foreground)",
+                      color: semDados
+                        ? "var(--muted-foreground)"
+                        : isEmpty
+                          ? "var(--muted-foreground)"
+                          : "var(--foreground)",
+                      opacity: semDados && !isEmpty ? 0.5 : 1,
                     }}
                   >
                     {val}
