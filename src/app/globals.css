@@ -611,3 +611,17 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield; /* Firefox */
 }
+
+/* Garante que o menu suspenso (select / option) herde as cores escuras do tema */
+select {
+  color-scheme: dark;
+}
+
+[data-theme="light"] select {
+  color-scheme: light;
+}
+
+select option {
+  background-color: var(--card);
+  color: var(--foreground);
+}
