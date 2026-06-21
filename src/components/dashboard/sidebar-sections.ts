@@ -25,7 +25,19 @@ const ALL_SECTIONS: SidebarSection[] = [
     basePath: "/operacional",
     permission: "view_gestor_panel",
     onlyRoles: ["GESTOR"],
-    items: [{ label: "KPI", href: "/operacional/kpi" }],
+    items: [
+      { label: "KPI", href: "/operacional/kpi" },
+      { label: "Quartil", href: "/operacional/quartil" },
+    ],
+  },
+  {
+    id: "feedback",
+    label: "Feedback",
+    iconName: "message",
+    basePath: "/feedback",
+    permission: "view_gestor_panel",
+    onlyRoles: ["GESTOR"],
+    items: [{ label: "Resultado Semanal", href: "/feedback/resultado-semanal" }],
   },
   {
     id: "d-1",
