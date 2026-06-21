@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { IconFileDownload, IconLoader2, IconCalendar, IconUser, IconUserCheck, IconCalculator } from "@tabler/icons-react";
+import { IconFileDownload, IconLoader2, IconCalendar, IconUser, IconUserCheck, IconTable } from "@tabler/icons-react";
 
 import {
   computeSemana,
@@ -59,7 +59,7 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
     if (!segundaFeira) { setErro("Informe a data da segunda-feira do período."); return; }
     if (!dataFeedback) { setErro("Informe a data do feedback."); return; }
     const temDados = diasInputs.some((d) => d.retido !== null || d.cancelado !== null);
-    if (!temDados) { setErro("Preencha pelo menos um dia."); return; }
+    if (!temDados) { setErro("Preencha pelo menos um dia para o relatório."); return; }
 
     setLoading(true);
     try {
@@ -101,24 +101,53 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
   const dataFeedbackFormatada = dataFeedback ? formatDataFeedback(dataFeedback) : "";
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 items-start">
-      {/* Coluna da Esquerda: Inputs (Formulário) */}
-      <div className="lg:col-span-7 space-y-6">
-        {/* Card 1: Dados do Documento */}
-        <div
-          className="elevation-1 rounded-xl p-6 space-y-5 bg-card"
-          style={{ border: "1px solid var(--border)" }}
-        >
-          <div className="flex items-center gap-2 border-b border-border/30 pb-3">
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Container Principal: Estilo Folha de Relatório Centrada */}
+      <div
+        className="elevation-1 rounded-xl p-8 space-y-8 bg-card"
+        style={{ border: "1px solid var(--border)" }}
+      >
+        {/* Seção 1: Cabeçalho do Relatório */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 border-b border-border/40 pb-2">
             <IconCalendar size={18} className="text-primary" />
-            <h2 className="ds-h2 text-base font-semibold">Dados do Documento</h2>
+            <h3 className="ds-h2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              I. Identificação do Relatório
+            </h3>
           </div>
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            {/* Segunda-feira */}
-            <div className="space-y-1.5">
+          
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
               <label className="ds-small text-muted-foreground font-medium block">
-                Segunda-feira do período
+                Nome do Operador
+              </label>
+              <div className="relative">
+                <IconUser size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                <input
+                  type="text"
+                  value={operador}
+                  onChange={(e) => setOperador(e.target.value)}
+                  placeholder="Informe o nome completo"
+                  className="ds-small w-full rounded-md border border-border bg-transparent pl-9 pr-3 py-2 transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="ds-small text-muted-foreground font-medium block">
+                Supervisor Responsável
+              </label>
+              <div className="relative">
+                <IconUserCheck size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/40" />
+                <div className="ds-small flex h-[38px] items-center rounded-md border border-border/50 bg-muted/20 pl-9 pr-3 text-muted-foreground font-medium">
+                  {supervisorName}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="ds-small text-muted-foreground font-medium block">
+                Segunda-feira do Período
               </label>
               <input
                 type="date"
@@ -127,16 +156,15 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
                 className="ds-small w-full rounded-md border border-border bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
               />
               {semana.periodo && (
-                <p className="ds-mono-sm text-muted-foreground text-xs mt-1">
-                  Período: <span className="text-foreground font-medium">{semana.periodo}</span>
+                <p className="ds-mono-sm text-muted-foreground text-[10px] mt-0.5">
+                  Período correspondente: <span className="text-foreground font-semibold">{semana.periodo}</span>
                 </p>
               )}
             </div>
 
-            {/* Data do feedback */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className="ds-small text-muted-foreground font-medium block">
-                Data do feedback
+                Data de Aplicação do Feedback
               </label>
               <input
                 type="date"
@@ -145,61 +173,30 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
                 className="ds-small w-full rounded-md border border-border bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
               />
               {dataFeedbackFormatada && (
-                <p className="ds-mono-sm text-muted-foreground text-xs mt-1">
-                  {dataFeedbackFormatada}
+                <p className="ds-mono-sm text-muted-foreground text-[10px] mt-0.5">
+                  Formatado: <span className="text-foreground font-semibold">{dataFeedbackFormatada}</span>
                 </p>
               )}
-            </div>
-
-            {/* Operador */}
-            <div className="space-y-1.5">
-              <label className="ds-small text-muted-foreground font-medium block">
-                Operador
-              </label>
-              <div className="relative">
-                <IconUser size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-                <input
-                  type="text"
-                  value={operador}
-                  onChange={(e) => setOperador(e.target.value)}
-                  placeholder="Nome completo do operador"
-                  className="ds-small w-full rounded-md border border-border bg-transparent pl-9 pr-3 py-2 placeholder:text-muted-foreground/40 transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                />
-              </div>
-            </div>
-
-            {/* Supervisor */}
-            <div className="space-y-1.5">
-              <label className="ds-small text-muted-foreground font-medium block">
-                Supervisor
-              </label>
-              <div className="relative">
-                <IconUserCheck size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/40" />
-                <div className="ds-small flex h-[38px] items-center rounded-md border border-border/50 bg-muted/20 pl-9 pr-3 text-muted-foreground">
-                  {supervisorName}
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Card 2: Inputs por Dia */}
-        <div
-          className="elevation-1 rounded-xl p-6 space-y-4 bg-card"
-          style={{ border: "1px solid var(--border)" }}
-        >
-          <div className="flex items-center gap-2 border-b border-border/30 pb-3">
-            <IconCalculator size={18} className="text-primary" />
-            <h2 className="ds-h2 text-base font-semibold">Volume Diário</h2>
+        {/* Seção 2: Volume de Contatos da Semana */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+            <IconTable size={18} className="text-primary" />
+            <h3 className="ds-h2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              II. Volume Diário de Contatos
+            </h3>
           </div>
 
-          <div className="overflow-x-auto rounded-lg" style={{ border: "1px solid var(--border)" }}>
+          <div className="overflow-x-auto rounded-lg border border-border/40">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b bg-muted/30" style={{ borderColor: "var(--border)" }}>
-                  <th className="ds-small text-muted-foreground px-4 py-2 text-left font-medium">Dia</th>
-                  <th className="ds-small text-muted-foreground px-3 py-2 text-center font-medium w-32 border-l border-border/20">Retido</th>
-                  <th className="ds-small text-muted-foreground px-3 py-2 text-center font-medium w-32 border-l border-border/20">Cancelado</th>
+                <tr className="border-b bg-muted/20" style={{ borderColor: "var(--border)" }}>
+                  <th className="ds-small text-muted-foreground px-4 py-2 text-left font-semibold">Dia da Semana</th>
+                  <th className="ds-small text-muted-foreground px-3 py-2 text-center font-semibold w-36 border-l border-border/20">Contatos Retidos</th>
+                  <th className="ds-small text-muted-foreground px-3 py-2 text-center font-semibold w-36 border-l border-border/20">Contatos Cancelados</th>
                 </tr>
               </thead>
               <tbody>
@@ -211,27 +208,27 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
                       borderBottom: i < 5 ? "1px solid var(--border)" : undefined,
                     }}
                   >
-                    <td className="ds-small px-4 py-2 text-muted-foreground font-medium">
+                    <td className="ds-small px-4 py-2 text-muted-foreground font-semibold">
                       {semana.diasFormatados[i] ?? dia}
                     </td>
-                    <td className="px-3 py-1.5 text-center border-l border-border/20">
+                    <td className="px-3 py-1 text-center border-l border-border/20">
                       <input
                         type="number"
                         min="0"
                         value={dias[i].retido}
                         onChange={(e) => setDiaField(i, "retido", e.target.value)}
                         placeholder="—"
-                        className="ds-mono-sm w-full rounded-md border border-border bg-transparent px-2 py-1.5 text-center placeholder:text-muted-foreground/30 transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                        className="ds-mono-sm w-full rounded border border-border bg-transparent px-2 py-1 text-center placeholder:text-muted-foreground/30 transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                       />
                     </td>
-                    <td className="px-3 py-1.5 text-center border-l border-border/20">
+                    <td className="px-3 py-1 text-center border-l border-border/20">
                       <input
                         type="number"
                         min="0"
                         value={dias[i].cancelado}
                         onChange={(e) => setDiaField(i, "cancelado", e.target.value)}
                         placeholder="—"
-                        className="ds-mono-sm w-full rounded-md border border-border bg-transparent px-2 py-1.5 text-center placeholder:text-muted-foreground/30 transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                        className="ds-mono-sm w-full rounded border border-border bg-transparent px-2 py-1 text-center placeholder:text-muted-foreground/30 transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                       />
                     </td>
                   </tr>
@@ -240,52 +237,25 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
             </table>
           </div>
         </div>
-      </div>
 
-      {/* Coluna da Direita: Preview (Fixa) */}
-      <div className="lg:col-span-5 lg:sticky lg:top-6 space-y-6">
-        {/* Card de Resumo do KPI Principal */}
-        <div
-          className="elevation-1 rounded-xl p-6 bg-card flex flex-col items-center justify-center text-center space-y-3 relative overflow-hidden"
-          style={{ border: "1px solid var(--border)" }}
-        >
-          {/* Accent decoration line */}
-          <div className="absolute top-0 left-0 w-full h-[4px] bg-primary" />
-          
-          <p className="ds-small text-muted-foreground font-mono tracking-wider uppercase text-[10px]">
-            Taxa Consolidada de Retenção
-          </p>
-          <div className="ds-display font-semibold text-4xl text-foreground">
-            {semana.consolidado.tx || "—"}
+        {/* Seção 3: Tabela Demonstrativa de Resultados (Preview) */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+            <IconFileDownload size={18} className="text-primary" />
+            <h3 className="ds-h2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              III. Demonstrativo de Resultados (Preview)
+            </h3>
           </div>
-          <div className="flex gap-4 text-xs ds-mono-sm text-muted-foreground">
-            <div>
-              Retidos: <span className="text-foreground font-semibold">{semana.consolidado.ret || 0}</span>
-            </div>
-            <div className="opacity-40">|</div>
-            <div>
-              Cancelados: <span className="text-foreground font-semibold">{semana.consolidado.canc || 0}</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Card do Preview Detalhado */}
-        <div
-          className="elevation-1 rounded-xl p-6 space-y-4 bg-card"
-          style={{ border: "1px solid var(--border)" }}
-        >
-          <h3 className="ds-h2 text-sm font-semibold border-b border-border/30 pb-2">
-            Preview dos Resultados
-          </h3>
-
-          <div className="overflow-x-auto rounded-lg" style={{ border: "1px solid var(--border)" }}>
-            <table className="w-full border-collapse text-[11px] sm:text-xs">
+          <div className="overflow-x-auto rounded-lg border border-border/40">
+            <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b bg-muted/30" style={{ borderColor: "var(--border)" }}>
-                  <th className="ds-small text-muted-foreground px-3 py-2 text-left font-medium">Dia</th>
-                  <th className="ds-small text-muted-foreground px-2 py-2 text-center font-medium">Tx</th>
-                  <th className="ds-small text-muted-foreground px-2 py-2 text-center font-medium">Ret</th>
-                  <th className="ds-small text-muted-foreground px-2 py-2 text-center font-medium">Canc</th>
+                <tr className="border-b bg-muted/20" style={{ borderColor: "var(--border)" }}>
+                  <th className="ds-small text-muted-foreground px-4 py-2 text-left font-semibold">Período</th>
+                  <th className="ds-small text-muted-foreground px-3 py-2 text-center font-semibold border-l border-border/20">Tx. Retenção</th>
+                  <th className="ds-small text-muted-foreground px-3 py-2 text-center font-semibold border-l border-border/20">Retidos</th>
+                  <th className="ds-small text-muted-foreground px-3 py-2 text-center font-semibold border-l border-border/20">Cancelados</th>
+                  <th className="ds-small text-muted-foreground px-3 py-2 text-center font-semibold border-l border-border/20">Total Pedidos</th>
                 </tr>
               </thead>
               <tbody>
@@ -295,45 +265,49 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
                     className="hover:bg-muted/5 transition-colors"
                     style={{ borderBottom: "1px solid var(--border)" }}
                   >
-                    <td className="ds-small px-3 py-2 text-muted-foreground font-medium">
-                      {semana.diasFormatados[i]?.split(" ")[0]}
+                    <td className="ds-small px-4 py-2 text-muted-foreground font-medium">
+                      {semana.diasFormatados[i]}
                     </td>
-                    <td className="ds-mono-sm px-2 py-2 text-center text-foreground font-medium">{d.tx}</td>
-                    <td className="ds-mono-sm px-2 py-2 text-center text-muted-foreground">{d.ret}</td>
-                    <td className="ds-mono-sm px-2 py-2 text-center text-muted-foreground">{d.canc}</td>
+                    <td className="ds-mono-sm px-3 py-2 text-center text-foreground font-semibold">{d.tx}</td>
+                    <td className="ds-mono-sm px-3 py-2 text-center text-muted-foreground">{d.ret}</td>
+                    <td className="ds-mono-sm px-3 py-2 text-center text-muted-foreground">{d.canc}</td>
+                    <td className="ds-mono-sm px-3 py-2 text-center text-muted-foreground">{d.ped}</td>
                   </tr>
                 ))}
-                {/* Linha Consolidado */}
-                <tr className="bg-primary/5 font-semibold text-primary">
-                  <td className="ds-small px-3 py-2 font-bold">Total</td>
-                  <td className="ds-mono-sm px-2 py-2 text-center font-bold">{semana.consolidado.tx}</td>
-                  <td className="ds-mono-sm px-2 py-2 text-center">{semana.consolidado.ret}</td>
-                  <td className="ds-mono-sm px-2 py-2 text-center">{semana.consolidado.canc}</td>
+                {/* Linha Consolidada com destaque visual */}
+                <tr className="bg-primary/5 font-semibold text-primary border-t-2 border-primary/20">
+                  <td className="ds-small px-4 py-3 font-bold">CONSOLIDADO DA SEMANA</td>
+                  <td className="ds-mono-sm px-3 py-3 text-center font-bold text-lg">{semana.consolidado.tx}</td>
+                  <td className="ds-mono-sm px-3 py-3 text-center font-bold">{semana.consolidado.ret}</td>
+                  <td className="ds-mono-sm px-3 py-3 text-center font-bold">{semana.consolidado.canc}</td>
+                  <td className="ds-mono-sm px-3 py-3 text-center font-bold">{semana.consolidado.ped}</td>
                 </tr>
               </tbody>
             </table>
           </div>
+        </div>
 
-          {/* Erro e Botão de Ação */}
-          <div className="space-y-3 pt-2">
-            {erro && (
-              <p
-                className="ds-small rounded-md px-3 py-2 text-xs"
-                style={{
-                  background: "color-mix(in oklch, var(--danger) 8%, transparent)",
-                  color: "var(--danger)",
-                  border: "1px solid color-mix(in oklch, var(--danger) 15%, transparent)",
-                }}
-              >
-                {erro}
-              </p>
-            )}
+        {/* Seção 4: Erro e Geração de Arquivo */}
+        <div className="flex flex-col gap-3 pt-2">
+          {erro && (
+            <p
+              className="ds-small rounded-md px-4 py-2 text-xs"
+              style={{
+                background: "color-mix(in oklch, var(--danger) 8%, transparent)",
+                color: "var(--danger)",
+                border: "1px solid color-mix(in oklch, var(--danger) 15%, transparent)",
+              }}
+            >
+              {erro}
+            </p>
+          )}
 
+          <div className="flex justify-end">
             <button
               type="button"
               onClick={handleGerar}
               disabled={loading}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition-all hover:opacity-95 active:scale-[0.99] disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-semibold transition-all hover:opacity-95 active:scale-[0.99] disabled:opacity-60"
               style={{
                 background: "var(--primary)",
                 color: "var(--primary-foreground)",
@@ -344,7 +318,7 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
               ) : (
                 <IconFileDownload size={16} aria-hidden="true" />
               )}
-              {loading ? "Gerando Documento..." : "Gerar Relatório Word"}
+              {loading ? "Exportando..." : "Exportar Relatório Word (.docx)"}
             </button>
           </div>
         </div>
