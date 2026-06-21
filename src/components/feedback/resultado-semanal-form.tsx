@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { IconFileDownload, IconLoader2, IconCalendar, IconUser, IconUserCheck, IconTable } from "@tabler/icons-react";
+import { IconFileDownload, IconLoader2, IconUser, IconUserCheck } from "@tabler/icons-react";
 
 import {
   computeSemana,
@@ -102,16 +102,15 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Container Principal: Estilo Folha de Relatório Centrada */}
+      {/* Container Principal: Estilo Folha de Relatório Centrada e Limpa */}
       <div
-        className="elevation-1 rounded-xl p-8 space-y-8 bg-card"
+        className="elevation-1 rounded-xl p-8 space-y-8 bg-card border-zinc-200 dark:border-zinc-800"
         style={{ border: "1px solid var(--border)" }}
       >
         {/* Seção 1: Cabeçalho do Relatório */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-border/40 pb-2">
-            <IconCalendar size={18} className="text-primary" />
-            <h3 className="ds-h2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="border-b border-border/40 pb-2">
+            <h3 className="ds-h2 text-sm font-bold uppercase tracking-wider text-foreground">
               I. Identificação do Relatório
             </h3>
           </div>
@@ -128,7 +127,7 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
                   value={operador}
                   onChange={(e) => setOperador(e.target.value)}
                   placeholder="Informe o nome completo"
-                  className="ds-small w-full rounded-md border border-border bg-transparent pl-9 pr-3 py-2 transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  className="ds-small w-full rounded-md border border-border bg-transparent pl-9 pr-3 py-2 transition-colors focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
                 />
               </div>
             </div>
@@ -153,7 +152,7 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
                 type="date"
                 value={segundaFeira}
                 onChange={(e) => setSegundaFeira(e.target.value)}
-                className="ds-small w-full rounded-md border border-border bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                className="ds-small w-full rounded-md border border-border bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
               />
               {semana.periodo && (
                 <p className="ds-mono-sm text-muted-foreground text-[10px] mt-0.5">
@@ -170,7 +169,7 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
                 type="date"
                 value={dataFeedback}
                 onChange={(e) => setDataFeedback(e.target.value)}
-                className="ds-small w-full rounded-md border border-border bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                className="ds-small w-full rounded-md border border-border bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
               />
               {dataFeedbackFormatada && (
                 <p className="ds-mono-sm text-muted-foreground text-[10px] mt-0.5">
@@ -183,9 +182,8 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
 
         {/* Seção 2: Volume de Contatos da Semana */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-border/40 pb-2">
-            <IconTable size={18} className="text-primary" />
-            <h3 className="ds-h2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="border-b border-border/40 pb-2">
+            <h3 className="ds-h2 text-sm font-bold uppercase tracking-wider text-foreground">
               II. Volume Diário de Contatos
             </h3>
           </div>
@@ -218,7 +216,7 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
                         value={dias[i].retido}
                         onChange={(e) => setDiaField(i, "retido", e.target.value)}
                         placeholder="—"
-                        className="ds-mono-sm w-full rounded border border-border bg-transparent px-2 py-1 text-center placeholder:text-muted-foreground/30 transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                        className="ds-mono-sm w-full rounded border border-border bg-transparent px-2 py-1 text-center placeholder:text-muted-foreground/30 transition-colors focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
                       />
                     </td>
                     <td className="px-3 py-1 text-center border-l border-border/20">
@@ -228,7 +226,7 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
                         value={dias[i].cancelado}
                         onChange={(e) => setDiaField(i, "cancelado", e.target.value)}
                         placeholder="—"
-                        className="ds-mono-sm w-full rounded border border-border bg-transparent px-2 py-1 text-center placeholder:text-muted-foreground/30 transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                        className="ds-mono-sm w-full rounded border border-border bg-transparent px-2 py-1 text-center placeholder:text-muted-foreground/30 transition-colors focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
                       />
                     </td>
                   </tr>
@@ -240,9 +238,8 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
 
         {/* Seção 3: Tabela Demonstrativa de Resultados (Preview) */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-border/40 pb-2">
-            <IconFileDownload size={18} className="text-primary" />
-            <h3 className="ds-h2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="border-b border-border/40 pb-2">
+            <h3 className="ds-h2 text-sm font-bold uppercase tracking-wider text-foreground">
               III. Demonstrativo de Resultados (Preview)
             </h3>
           </div>
@@ -274,10 +271,10 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
                     <td className="ds-mono-sm px-3 py-2 text-center text-muted-foreground">{d.ped}</td>
                   </tr>
                 ))}
-                {/* Linha Consolidada com destaque visual */}
-                <tr className="bg-primary/5 font-semibold text-primary border-t-2 border-primary/20">
+                {/* Linha Consolidada com destaque visual profissional */}
+                <tr className="bg-muted/50 font-bold text-foreground border-t-2 border-border">
                   <td className="ds-small px-4 py-3 font-bold">CONSOLIDADO DA SEMANA</td>
-                  <td className="ds-mono-sm px-3 py-3 text-center font-bold text-lg">{semana.consolidado.tx}</td>
+                  <td className="ds-mono-sm px-3 py-3 text-center font-bold text-base">{semana.consolidado.tx}</td>
                   <td className="ds-mono-sm px-3 py-3 text-center font-bold">{semana.consolidado.ret}</td>
                   <td className="ds-mono-sm px-3 py-3 text-center font-bold">{semana.consolidado.canc}</td>
                   <td className="ds-mono-sm px-3 py-3 text-center font-bold">{semana.consolidado.ped}</td>
@@ -307,11 +304,7 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
               type="button"
               onClick={handleGerar}
               disabled={loading}
-              className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-semibold transition-all hover:opacity-95 active:scale-[0.99] disabled:opacity-60"
-              style={{
-                background: "var(--primary)",
-                color: "var(--primary-foreground)",
-              }}
+              className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-semibold transition-all bg-zinc-900 text-zinc-50 hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 active:scale-[0.99] disabled:opacity-60"
             >
               {loading ? (
                 <IconLoader2 size={16} className="animate-spin" aria-hidden="true" />
