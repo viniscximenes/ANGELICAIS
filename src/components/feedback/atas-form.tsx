@@ -9,6 +9,9 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconAlertTriangle,
+  IconUser,
+  IconChevronUp,
+  IconChevronDown,
 } from "@tabler/icons-react";
 
 import { MODELOS_ATA } from "@/lib/atas/modelos";
@@ -16,6 +19,7 @@ import { formatDataFeedback } from "@/lib/feedback/compute-semana";
 
 interface AtasFormProps {
   supervisorName: string;
+  defaultQuantidade?: number;
 }
 
 function CustomDatePicker({
@@ -146,12 +150,12 @@ function CustomDatePicker({
   );
 }
 
-export function AtasForm({ supervisorName }: AtasFormProps) {
+export function AtasForm({ supervisorName, defaultQuantidade = 15 }: AtasFormProps) {
   const [modeloIdx, setModeloIdx] = useState<number | "personalizado">(0);
   const [tema, setTema] = useState(MODELOS_ATA[0].tema);
   const [descricao, setDescricao] = useState(MODELOS_ATA[0].descricao);
   const [dataAplicacao, setDataAplicacao] = useState("");
-  const [quantidade, setQuantidade] = useState(15);
+  const [quantidade, setQuantidade] = useState(defaultQuantidade);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -305,14 +309,34 @@ export function AtasForm({ supervisorName }: AtasFormProps) {
               <label className="ds-small text-muted-foreground font-medium block">
                 Qtd. de Operadores
               </label>
-              <input
-                type="number"
-                min={1}
-                max={200}
-                value={quantidade}
-                onChange={(e) => setQuantidade(Math.max(1, Number(e.target.value) || 1))}
-                className="ds-small h-9 w-full rounded-md border border-border bg-transparent px-3 py-2 text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
-              />
+              <div className="relative flex items-center">
+                <input
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={quantidade}
+                  onChange={(e) => setQuantidade(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
+                  className="ds-small h-9 w-full rounded-md border border-border bg-transparent pl-3 pr-8 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex flex-col -space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => setQuantidade((q) => Math.min(200, q + 1))}
+                    className="p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded transition-colors cursor-pointer"
+                    aria-label="Aumentar"
+                  >
+                    <IconChevronUp size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
+                    className="p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded transition-colors cursor-pointer"
+                    aria-label="Diminuir"
+                  >
+                    <IconChevronDown size={13} />
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Supervisor */}
