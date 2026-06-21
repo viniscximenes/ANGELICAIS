@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { IconFileDownload, IconLoader2, IconUser, IconUserCheck } from "@tabler/icons-react";
+import { IconFileDownload, IconLoader2, IconUser, IconUserCheck, IconCalendar } from "@tabler/icons-react";
 
 import {
   computeSemana,
@@ -148,12 +148,16 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
               <label className="ds-small text-muted-foreground font-medium block">
                 Segunda-feira do Período
               </label>
-              <input
-                type="date"
-                value={segundaFeira}
-                onChange={(e) => setSegundaFeira(e.target.value)}
-                className="ds-small w-full rounded-md border border-border bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
-              />
+              <div className="relative">
+                <IconCalendar size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 pointer-events-none" />
+                <input
+                  type="date"
+                  value={segundaFeira}
+                  onChange={(e) => setSegundaFeira(e.target.value)}
+                  onClick={(e) => e.currentTarget.showPicker()}
+                  className="ds-small w-full rounded-md border border-border bg-transparent pl-9 pr-3 py-2 transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
+                />
+              </div>
               {semana.periodo && (
                 <p className="ds-mono-sm text-muted-foreground text-[10px] mt-0.5">
                   Período correspondente: <span className="text-foreground font-semibold">{semana.periodo}</span>
@@ -165,12 +169,16 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
               <label className="ds-small text-muted-foreground font-medium block">
                 Data de Aplicação do Feedback
               </label>
-              <input
-                type="date"
-                value={dataFeedback}
-                onChange={(e) => setDataFeedback(e.target.value)}
-                className="ds-small w-full rounded-md border border-border bg-transparent px-3 py-2 transition-colors focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
-              />
+              <div className="relative">
+                <IconCalendar size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 pointer-events-none" />
+                <input
+                  type="date"
+                  value={dataFeedback}
+                  onChange={(e) => setDataFeedback(e.target.value)}
+                  onClick={(e) => e.currentTarget.showPicker()}
+                  className="ds-small w-full rounded-md border border-border bg-transparent pl-9 pr-3 py-2 transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
+                />
+              </div>
               {dataFeedbackFormatada && (
                 <p className="ds-mono-sm text-muted-foreground text-[10px] mt-0.5">
                   Formatado: <span className="text-foreground font-semibold">{dataFeedbackFormatada}</span>
