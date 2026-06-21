@@ -5,19 +5,13 @@ import { AtasForm } from "@/components/feedback/atas-form";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
-import { getOperadoresDoGestor } from "@/lib/kpi/gestor/get-operadores-do-gestor";
-import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
+import { fetchGestorData, resolveGuiaGestor } from "@/lib/google/gestor";
 
 export const metadata: Metadata = {
   title: "Atas — ALLOHA FIBRA",
 };
 
 export const dynamic = "force-dynamic";
-
-function getCurrentMesRef(): string {
-  const { year, month } = getDatePartsInBR();
-  return `${year}-${String(month).padStart(2, "0")}-01`;
-}
 
 export default async function FeedbackAtasPage() {
   const user = await getCurrentUser();
@@ -28,9 +22,17 @@ export default async function FeedbackAtasPage() {
     redirect(getPostLoginPath(user.profile.role));
   }
 
-  const mesRef = getCurrentMesRef();
-  const operadores = await getOperadoresDoGestor(user.profile.fullName, mesRef);
-  const defaultQuantidade = operadores.length > 0 ? operadores.length : 15;
+  const guia =
+    resolveGuiaGestor(user.profile.username) ??
+    resolveGuiaGestor(user.profile.emailCorporativo);
+
+  let defaultQuantidade = 15;
+  if (guia) {
+    const data = await fetchGestorData(guia);
+    if (data && data.operadores && data.operadores.length > 0) {
+      defaultQuantidade = data.operadores.length;
+    }
+  }
 
   return (
     <PageTransition>
