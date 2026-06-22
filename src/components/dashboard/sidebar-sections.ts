@@ -31,13 +31,25 @@ const ALL_SECTIONS: SidebarSection[] = [
     ],
   },
   {
+    id: "meus-resultados",
+    label: "Meus Resultados",
+    iconName: "target",
+    basePath: "/meus-resultados",
+    permission: "view_gestor_panel",
+    onlyRoles: ["GESTOR"],
+    items: [{ label: "KPI", href: "/meus-resultados/kpi" }],
+  },
+  {
     id: "feedback",
     label: "Feedback",
     iconName: "message",
     basePath: "/feedback",
     permission: "view_gestor_panel",
     onlyRoles: ["GESTOR"],
-    items: [{ label: "Resultado Semanal", href: "/feedback/resultado-semanal" }],
+    items: [
+      { label: "Resultado Semanal", href: "/feedback/resultado-semanal" },
+      { label: "Atas", href: "/feedback/atas" },
+    ],
   },
   {
     id: "d-1",

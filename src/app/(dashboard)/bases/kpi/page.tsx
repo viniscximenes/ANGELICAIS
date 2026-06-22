@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { SnapshotForm } from "@/components/bases-kpi/snapshot-form";
+import { BasesKpiCards } from "@/components/bases-kpi/bases-kpi-cards";
 import { SnapshotsHistory } from "@/components/bases-kpi/snapshots-history";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
@@ -40,7 +40,7 @@ export default async function BasesKpiPage() {
             </p>
           </div>
 
-          <SnapshotForm existingMonths={existingMonths} />
+          <BasesKpiCards existingMonths={existingMonths} />
 
           <SnapshotsHistory snapshots={snapshots} />
         </div>

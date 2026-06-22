@@ -6,6 +6,7 @@ const TABS = [
   { id: "principais", label: "Principais" },
   { id: "secundarios", label: "Secundários" },
   { id: "mapeamento", label: "Mapeamento" },
+  { id: "metas-gestor", label: "Metas de Supervisor" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -14,12 +15,14 @@ interface ConfigKpiTabsProps {
   principais: ReactNode;
   secundarios: ReactNode;
   mapeamento: ReactNode;
+  metasGestor: ReactNode;
 }
 
 export function ConfigKpiTabs({
   principais,
   secundarios,
   mapeamento,
+  metasGestor,
 }: ConfigKpiTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>("principais");
 
@@ -27,6 +30,7 @@ export function ConfigKpiTabs({
     principais,
     secundarios,
     mapeamento,
+    "metas-gestor": metasGestor,
   };
 
   return (

@@ -9,6 +9,7 @@ import {
   IconClipboardCheck,
   IconDatabase,
   IconHeadset,
+  IconMessage2,
   IconSettings,
   IconTargetArrow,
   IconTrendingUp,
@@ -33,7 +34,8 @@ export type SidebarSection = {
     | "database"
     | "settings"
     | "headset"
-    | "trending";
+    | "trending"
+    | "message";
   basePath: string;
   permission: Permission;
   items: { label: string; href: string }[];
@@ -61,6 +63,7 @@ const ICONS: Record<
   settings: IconSettings,
   headset: IconHeadset,
   trending: IconTrendingUp,
+  message: IconMessage2,
 };
 
 interface SidebarProps {

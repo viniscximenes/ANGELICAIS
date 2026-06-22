@@ -2,6 +2,7 @@ import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
 import { enrichWithDefinitions } from "@/lib/kpi/atual/enrich-with-definitions";
 import type { EnrichedKpiValue } from "@/lib/kpi/atual/types";
 import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
+import type { KpiDefinition } from "@/lib/kpi/types";
 import type { NeutralKpiValue } from "@/lib/kpi/passado/types";
 import { resolveKpiEmailsForProfiles } from "@/lib/profile/get-kpi-email-for-profile";
 import { createClient } from "@/lib/supabase/server";
@@ -10,36 +11,25 @@ import { getOperadoresDoGestor } from "./get-operadores-do-gestor";
 import type { KpiEquipeGestorData, OperadorKpiEquipe } from "./types";
 
 /**
- * Busca os KPIs de toda a equipe do gestor em uma query batch.
+ * Busca os KPIs de um conjunto fixo de emails num determinado mês.
  *
- * A query puxa TODOS os slugs do mês (sem filtro por kpi_slug), então tanto
- * os KPIs principais quanto os secundários ficam disponíveis em uma única
- * roundtrip. Os dois grupos são enriquecidos e retornados separados por
- * operador: kpisPrincipal e kpisSecundario.
- *
- * Mês atual: enrich com status/cor (EnrichedKpiValue).
- * Mês passado: modo neutro, sem cor (NeutralKpiValue).
+ * Separado de getKpiEquipeGestor para permitir fixar a composição da equipe
+ * pelo mês atual e reusar a mesma lista nos meses anteriores sem refiltrar
+ * por meta_gestor. Operadores sem dados no mês aparecem com KPIs vazios (—).
  */
-export async function getKpiEquipeGestor(
-  fullName: string,
+export async function getKpiEquipePorEmails(
+  emailsOriginal: string[],
+  definitions: KpiDefinition[],
   mesRef: string,
   isMesPassado: boolean,
 ): Promise<KpiEquipeGestorData> {
-  // 1. Emails da equipe via matching ILIKE
-  const emailsOriginal = await getOperadoresDoGestor(fullName, mesRef);
-
   if (emailsOriginal.length === 0) {
     return { operadores: [], mesRef, isMesPassado, dataCorte: null };
   }
 
-  // 2. Resolver aliases de email (batch)
   const aliasMap = await resolveKpiEmailsForProfiles(emailsOriginal);
   const emailsResolvidos = [...new Set([...aliasMap.values()])];
 
-  // 3. Definições (uma chamada cacheável)
-  const definitions = await getKpiDefinitions();
-
-  // 4. Query batch: todos os slugs de todos os operadores no mês
   const supabase = await createClient();
 
   const { data: rows, error } = await supabase
@@ -49,11 +39,15 @@ export async function getKpiEquipeGestor(
     .in("operator_email", emailsResolvidos);
 
   if (error) {
-    console.error("[getKpiEquipeGestor] erro ao buscar KPIs:", error);
-    return { operadores: [], mesRef, isMesPassado, dataCorte: null };
+    console.error("[getKpiEquipePorEmails] erro ao buscar KPIs:", {
+      mesRef,
+      message: error.message,
+      code: error.code,
+    });
+    // Retornar operadores com KPIs vazios em vez de array vazio — a lista
+    // exibida é sempre a equipe fixa, mesmo sem dados neste mês.
   }
 
-  // Max data_corte do mês — mesmo padrão de get-current-month-snapshot.ts.
   const dataCorte =
     [...(rows ?? [])]
       .map((r) => r.data_corte as string | null)
@@ -61,7 +55,6 @@ export async function getKpiEquipeGestor(
       .sort()
       .reverse()[0] ?? null;
 
-  // 5. Agrupar rows por operator_email
   const rowsByEmail = new Map<
     string,
     { kpi_slug: string; valor_numerico: number | null }[]
@@ -73,7 +66,6 @@ export async function getKpiEquipeGestor(
     rowsByEmail.get(key)!.push(row);
   }
 
-  // 6. Montar OperadorKpiEquipe para cada operador (ambos os grupos)
   const operadores: OperadorKpiEquipe[] = [];
 
   for (const emailOriginal of emailsOriginal) {
@@ -133,4 +125,20 @@ export async function getKpiEquipeGestor(
   operadores.sort((a, b) => a.nome.localeCompare(b.nome));
 
   return { operadores, mesRef, isMesPassado, dataCorte };
+}
+
+/**
+ * Wrapper de conveniência: resolve a equipe do gestor no mês dado e chama
+ * getKpiEquipePorEmails. Usado pelo quartil (que opera só no mês atual).
+ */
+export async function getKpiEquipeGestor(
+  fullName: string,
+  mesRef: string,
+  isMesPassado: boolean,
+): Promise<KpiEquipeGestorData> {
+  const [emailsOriginal, definitions] = await Promise.all([
+    getOperadoresDoGestor(fullName, mesRef),
+    getKpiDefinitions(),
+  ]);
+  return getKpiEquipePorEmails(emailsOriginal, definitions, mesRef, isMesPassado);
 }

@@ -7,7 +7,8 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
-import { getKpiEquipeGestor } from "@/lib/kpi/gestor/get-kpi-equipe-gestor";
+import { getKpiEquipePorEmails } from "@/lib/kpi/gestor/get-kpi-equipe-gestor";
+import { getOperadoresDoGestor } from "@/lib/kpi/gestor/get-operadores-do-gestor";
 import { toKpiEquipeSerial } from "@/lib/kpi/gestor/serial-types";
 import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
 
@@ -30,6 +31,13 @@ function getPreviousMesRef(): string {
   return `${prevYear}-${String(prevMonth).padStart(2, "0")}-01`;
 }
 
+function getMesRetrasadoRef(): string {
+  const { year, month } = getDatePartsInBR();
+  const retMonth = month <= 2 ? month + 10 : month - 2;
+  const retYear = month <= 2 ? year - 1 : year;
+  return `${retYear}-${String(retMonth).padStart(2, "0")}-01`;
+}
+
 export default async function OperacionalKpiPage() {
   const user = await getCurrentUser();
 
@@ -42,15 +50,24 @@ export default async function OperacionalKpiPage() {
   const fullName = user.profile.fullName;
   const mesAtual = getCurrentMesRef();
   const mesPassado = getPreviousMesRef();
+  const mesRetrasado = getMesRetrasadoRef();
 
-  const [definitions, dataAtualRaw, dataPassadoRaw] = await Promise.all([
+  // Equipe fixada pelo mês atual; definitions em paralelo (sem redundância).
+  const [emailsEquipe, definitions] = await Promise.all([
+    getOperadoresDoGestor(fullName, mesAtual),
     getKpiDefinitions(),
-    getKpiEquipeGestor(fullName, mesAtual, false),
-    getKpiEquipeGestor(fullName, mesPassado, true),
+  ]);
+
+  // KPIs dos mesmos operadores nos 3 meses, em paralelo.
+  const [dataAtualRaw, dataPassadoRaw, dataRetrasadoRaw] = await Promise.all([
+    getKpiEquipePorEmails(emailsEquipe, definitions, mesAtual, false),
+    getKpiEquipePorEmails(emailsEquipe, definitions, mesPassado, true),
+    getKpiEquipePorEmails(emailsEquipe, definitions, mesRetrasado, true),
   ]);
 
   const dataAtual = toKpiEquipeSerial(dataAtualRaw, definitions);
   const dataPassado = toKpiEquipeSerial(dataPassadoRaw, definitions);
+  const dataRetrasado = toKpiEquipeSerial(dataRetrasadoRaw, definitions);
 
   const nomeGestora = formatNomeProprio(fullName);
 
@@ -65,7 +82,11 @@ export default async function OperacionalKpiPage() {
             </span>
           </header>
 
-          <KpiEquipeSection dataAtual={dataAtual} dataPassado={dataPassado} />
+          <KpiEquipeSection
+            dataAtual={dataAtual}
+            dataPassado={dataPassado}
+            dataRetrasado={dataRetrasado}
+          />
         </div>
       </div>
     </PageTransition>

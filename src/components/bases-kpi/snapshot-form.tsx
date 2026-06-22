@@ -33,9 +33,10 @@ const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 interface SnapshotFormProps {
   existingMonths: string[];
+  onDateChange?: (mesRef: string, dataCorte: string) => void;
 }
 
-export function SnapshotForm({ existingMonths }: SnapshotFormProps) {
+export function SnapshotForm({ existingMonths, onDateChange }: SnapshotFormProps) {
   const currentMesRef = getCurrentMonthRef();
 
   const [selectedOption, setSelectedOption] = useState<string>(currentMesRef);
@@ -71,6 +72,12 @@ export function SnapshotForm({ existingMonths }: SnapshotFormProps) {
       setDataCorte(getLastDayOfMonth(effectiveMesRef));
     }
   }, [effectiveMesRef, isCurrentMonth]);
+
+  useEffect(() => {
+    if (effectiveMesRef && dataCorte && onDateChange) {
+      onDateChange(effectiveMesRef, dataCorte);
+    }
+  }, [effectiveMesRef, dataCorte, onDateChange]);
 
   const pastMonths = existingMonths.filter((m) => m !== currentMesRef);
 

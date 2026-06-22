@@ -57,6 +57,10 @@ Quando a página justificar, adicionar:
 - [Painel do Gestor — Tempo Logado](docs/pages/gestor-tempo-logado.md) — aba de tempo logado do gestor (equipe própria): tabela, meta 06:20:00, hora em BASE - 2!S2
 - [Painel do Gestor — Indisponibilidade](docs/pages/gestor-indisponibilidade.md) — aba de indisponibilidade do gestor: tabela com NR17, pausa particular e outras pausas, meta 14,5%
 - [Operacional — KPI da Equipe (gestor)](docs/pages/operacional-kpi-gestor.md) — KPI dos operadores da equipe do gestor: lista de principais + detalhe de secundários, toggle de mês
+- [Operacional — Quartil](docs/pages/operacional-quartil.md) — quartil por tópico (Q1-Q4 + rank + valor) dos operadores da equipe, toggle equipe/empresa
+- [Feedback — Resultado Semanal](docs/pages/feedback-resultado-semanal.md) — gerador de Word do feedback semanal (preenche retido/cancelado, calcula o resto, baixa .docx)
+- [Feedback — Atas](docs/pages/feedback-atas.md) — gerador de ata/comunicado interno (tema + descrição-modelo editável, N assinaturas no verso)
+- [KPI do Gestor](docs/pages/kpi-gestor.md) — base própria de KPI dos supervisores, página "Meus Resultados", metas de gestor configuráveis
 
 ## Status possíveis
 

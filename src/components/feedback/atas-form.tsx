@@ -183,7 +183,6 @@ export function AtasForm({ supervisorName, defaultQuantidade = 15 }: AtasFormPro
   }
 
   const dataFormatada = dataAplicacao ? formatDataFeedback(dataAplicacao) : "";
-  const metade = Math.ceil(Math.max(1, quantidade) / 2);
 
   async function handleGerar() {
     setErro(null);
@@ -386,20 +385,24 @@ export function AtasForm({ supervisorName, defaultQuantidade = 15 }: AtasFormPro
             <span className="text-muted-foreground">
               Assinaturas:{" "}
               <span className="font-semibold text-foreground">
-                {quantidade} operador{quantidade !== 1 ? "es" : ""} · {metade} linhas por coluna
+                {quantidade} linha{quantidade !== 1 ? "s" : ""} de assinatura
               </span>
             </span>
           </div>
 
           {descricao.trim() && (
             <div
-              className="rounded-md px-4 py-3 text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap"
+              className="rounded-md px-4 py-3 text-sm text-foreground/80"
               style={{
                 background: "color-mix(in oklch, var(--muted) 30%, transparent)",
                 border: "1px solid var(--border)",
               }}
             >
-              {descricao.trim()}
+              {descricao.trim().split("\n").filter(Boolean).map((para, i) => (
+                <p key={i} className={`leading-relaxed${i > 0 ? " mt-3" : ""}`}>
+                  {para}
+                </p>
+              ))}
             </div>
           )}
         </div>
@@ -415,8 +418,8 @@ export function AtasForm({ supervisorName, defaultQuantidade = 15 }: AtasFormPro
         >
           <IconAlertTriangle size={16} className="mt-0.5 shrink-0" />
           <span>
-            Imprima este documento em frente e verso — a página 1 traz o comunicado e o verso as
-            assinaturas, ocupando uma única folha.
+            Imprima este documento em frente e verso. O cabeçalho aparece apenas na primeira
+            página; as páginas seguintes (assinaturas) saem sem cabeçalho.
           </span>
         </div>
 

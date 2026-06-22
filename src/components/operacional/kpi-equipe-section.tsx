@@ -12,7 +12,7 @@ import type {
 } from "@/lib/kpi/gestor/serial-types";
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 
-type Mes = "atual" | "passado";
+type Mes = "atual" | "passado" | "retrasado";
 type SortDir = "asc" | "desc";
 type SortState = { slug: string; dir: SortDir };
 
@@ -211,18 +211,21 @@ function SortIcon({ slug, sort }: { slug: string; sort: SortState }) {
 interface KpiEquipeSectionProps {
   dataAtual: KpiEquipeSerial;
   dataPassado: KpiEquipeSerial;
+  dataRetrasado: KpiEquipeSerial;
 }
 
 export function KpiEquipeSection({
   dataAtual,
   dataPassado,
+  dataRetrasado,
 }: KpiEquipeSectionProps) {
   const [mes, setMes] = useState<Mes>("atual");
   // Padrão: tx_retencao_bruta desc (maior para menor taxa de retenção).
   const [sort, setSort] = useState<SortState>({ slug: "tx_retencao_bruta", dir: "desc" });
   const [selectedOperator, setSelectedOperator] = useState<OperadorKpiSerial | null>(null);
 
-  const data = mes === "atual" ? dataAtual : dataPassado;
+  const data =
+    mes === "atual" ? dataAtual : mes === "passado" ? dataPassado : dataRetrasado;
 
   // Resetar sort para padrão ao trocar de mês.
   const handleMesChange = (m: Mes) => {
@@ -255,7 +258,7 @@ export function KpiEquipeSection({
         role="tablist"
         className="elevation-1 inline-flex gap-1 rounded-md p-1"
       >
-        {(["atual", "passado"] as Mes[]).map((m) => (
+        {(["atual", "passado", "retrasado"] as Mes[]).map((m) => (
           <button
             key={m}
             role="tab"
@@ -268,7 +271,11 @@ export function KpiEquipeSection({
                 : "text-muted-foreground hover:text-foreground",
             ].join(" ")}
           >
-            {m === "atual" ? "Mês Atual" : "Mês Passado"}
+            {m === "atual"
+              ? "Mês Atual"
+              : m === "passado"
+                ? "Mês Passado"
+                : "Mês Retrasado"}
           </button>
         ))}
       </div>
