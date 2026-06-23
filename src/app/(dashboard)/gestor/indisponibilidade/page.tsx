@@ -6,6 +6,7 @@ import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
+import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import {
   fetchGestorIndisponibilidade,
   resolveGuiaTempoLogado,
@@ -45,7 +46,10 @@ export default async function GestorIndisponibilidadePage() {
     );
   }
 
-  const data = await fetchGestorIndisponibilidade(guia);
+  const [data, nomeFantasiaConfig] = await Promise.all([
+    fetchGestorIndisponibilidade(guia),
+    getNomeFantasiaConfig(user.profile.id),
+  ]);
 
   if (data.operadores.length === 0) {
     return (
@@ -85,6 +89,10 @@ export default async function GestorIndisponibilidadePage() {
           <GestorIndisponibilidadeSection
             operadores={data.operadores}
             horaReport={data.horaReport ?? "—"}
+            nomeFantasia={{
+              ativo: nomeFantasiaConfig.ativo,
+              mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
+            }}
           />
         </div>
       </div>

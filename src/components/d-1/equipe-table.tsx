@@ -100,10 +100,11 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           const semAtendimentos = op.pedidos === 0 || op.txRetencao === null;
           const meetsM = op.txRetencao !== null && meetsMeta(op.txRetencao);
           const belowMeta = !semAtendimentos && !meetsM;
+          const key = (op as any).emailOriginal || op.email;
 
           return (
             <div
-              key={op.email}
+              key={key}
               className="grid grid-cols-12 items-center gap-0"
               style={{
                 background: belowMeta
@@ -331,6 +332,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           const semAtendimentos = op.pedidos === 0 || op.txRetencao === null;
           const meetsM = op.txRetencao !== null && meetsMeta(op.txRetencao);
           const belowMeta = !semAtendimentos && !meetsM;
+          const key = (op as any).emailOriginal || op.email;
 
           // TX < 60%: a LINHA INTEIRA fica vermelho claro (alerta). Os números
           // mantêm a cor por coluna; o nome fica preto para legibilidade.
@@ -343,7 +345,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
 
           return (
             <div
-              key={op.email}
+              key={key}
               style={{
                 display: "grid",
                 gridTemplateColumns: "3fr 2fr 2fr 2fr 3fr",

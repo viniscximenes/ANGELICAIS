@@ -2,15 +2,20 @@
 
 import { forwardRef } from "react";
 
-import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
+import type {
+  NomeFantasiaSerial} from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
+import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import type {
   GestorTempoLogadoLinha,
   StatusPresenca,
 } from "@/lib/google/gestor";
 
+const NO_FANTASIA: NomeFantasiaSerial = { ativo: false, mapa: {} };
+
 interface TempoLogadoTableProps {
   operadores: GestorTempoLogadoLinha[];
   variant?: "screen" | "excel";
+  nomeFantasia?: NomeFantasiaSerial;
 }
 
 function formatLogin(_status: StatusPresenca, horaLogin: string | null): string {
@@ -31,11 +36,12 @@ function formatLogout(
 export const TempoLogadoTable = forwardRef<
   HTMLDivElement,
   TempoLogadoTableProps
->(function TempoLogadoTable({ operadores, variant = "screen" }, ref) {
+>(function TempoLogadoTable({ operadores, variant = "screen", nomeFantasia }, ref) {
+  const cfg = nomeFantasia ?? NO_FANTASIA;
   if (variant === "excel") {
-    return <ExcelTable ref={ref} operadores={operadores} />;
+    return <ExcelTable ref={ref} operadores={operadores} nomeFantasia={cfg} />;
   }
-  return <ScreenTable ref={ref} operadores={operadores} />;
+  return <ScreenTable ref={ref} operadores={operadores} nomeFantasia={cfg} />;
 });
 
 /* ────────────────────────────────────────────────────────────────────
@@ -46,8 +52,8 @@ const GRID_COLS = "2.2fr 2.6fr 2.4fr 1.9fr 1.9fr";
 
 const ScreenTable = forwardRef<
   HTMLDivElement,
-  { operadores: GestorTempoLogadoLinha[] }
->(function ScreenTable({ operadores }, ref) {
+  { operadores: GestorTempoLogadoLinha[]; nomeFantasia: NomeFantasiaSerial }
+>(function ScreenTable({ operadores, nomeFantasia }, ref) {
   return (
     <div
       ref={ref}
@@ -106,7 +112,7 @@ const ScreenTable = forwardRef<
                 color: belowMeta ? "var(--danger)" : "var(--foreground)",
               }}
             >
-              {deriveNomeOperador(op.email)}
+              {resolverNomeExibicao(op.email, nomeFantasia)}
             </div>
             <div
               className="ds-mono-sm px-3 py-2 text-center border-r border-border/30"
@@ -185,8 +191,8 @@ const EXCEL_COL_DIVIDER: React.CSSProperties = {
 
 const ExcelTable = forwardRef<
   HTMLDivElement,
-  { operadores: GestorTempoLogadoLinha[] }
->(function ExcelTable({ operadores }, ref) {
+  { operadores: GestorTempoLogadoLinha[]; nomeFantasia: NomeFantasiaSerial }
+>(function ExcelTable({ operadores, nomeFantasia }, ref) {
   const cols = GRID_COLS;
 
   return (
@@ -251,7 +257,7 @@ const ExcelTable = forwardRef<
                 textOverflow: "ellipsis",
               }}
             >
-              {deriveNomeOperador(op.email)}
+              {resolverNomeExibicao(op.email, nomeFantasia)}
             </div>
             <div
               style={{

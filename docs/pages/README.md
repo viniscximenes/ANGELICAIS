@@ -61,6 +61,7 @@ Quando a página justificar, adicionar:
 - [Feedback — Resultado Semanal](docs/pages/feedback-resultado-semanal.md) — gerador de Word do feedback semanal (preenche retido/cancelado, calcula o resto, baixa .docx)
 - [Feedback — Atas](docs/pages/feedback-atas.md) — gerador de ata/comunicado interno (tema + descrição-modelo editável, N assinaturas no verso)
 - [KPI do Gestor](docs/pages/kpi-gestor.md) — base própria de KPI dos supervisores, página "Meus Resultados", metas de gestor configuráveis
+- [Configurações do Supervisor — Nome Fantasia](docs/pages/config-supervisor-operadores.md) — apelidos dos operadores nas tabelas do painel do gestor (global por supervisor)
 
 ## Status possíveis
 

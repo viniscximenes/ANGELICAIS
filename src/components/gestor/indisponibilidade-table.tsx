@@ -2,10 +2,13 @@
 
 import { forwardRef } from "react";
 
-import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
+import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
+import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import type { GestorIndispLinha } from "@/lib/google/gestor";
 
 const GRID_COLS = "2fr 1.8fr 1.6fr 2fr 1.8fr";
+
+const NO_FANTASIA: NomeFantasiaSerial = { ativo: false, mapa: {} };
 
 function fmtPct(n: number | null): string {
   if (n === null) return "—";
@@ -20,16 +23,18 @@ function fmtPct(n: number | null): string {
 interface IndisponibilidadeTableProps {
   operadores: GestorIndispLinha[];
   variant?: "screen" | "excel";
+  nomeFantasia?: NomeFantasiaSerial;
 }
 
 export const IndisponibilidadeTable = forwardRef<
   HTMLDivElement,
   IndisponibilidadeTableProps
->(function IndisponibilidadeTable({ operadores, variant = "screen" }, ref) {
+>(function IndisponibilidadeTable({ operadores, variant = "screen", nomeFantasia }, ref) {
+  const cfg = nomeFantasia ?? NO_FANTASIA;
   if (variant === "excel") {
-    return <ExcelTable ref={ref} operadores={operadores} />;
+    return <ExcelTable ref={ref} operadores={operadores} nomeFantasia={cfg} />;
   }
-  return <ScreenTable ref={ref} operadores={operadores} />;
+  return <ScreenTable ref={ref} operadores={operadores} nomeFantasia={cfg} />;
 });
 
 /* ────────────────────────────────────────────────────────────────────
@@ -38,8 +43,8 @@ export const IndisponibilidadeTable = forwardRef<
 
 const ScreenTable = forwardRef<
   HTMLDivElement,
-  { operadores: GestorIndispLinha[] }
->(function ScreenTable({ operadores }, ref) {
+  { operadores: GestorIndispLinha[]; nomeFantasia: NomeFantasiaSerial }
+>(function ScreenTable({ operadores, nomeFantasia }, ref) {
   return (
     <div
       ref={ref}
@@ -97,7 +102,7 @@ const ScreenTable = forwardRef<
                 color: acimaMeta ? "var(--danger)" : "var(--foreground)",
               }}
             >
-              {deriveNomeOperador(op.email)}
+              {resolverNomeExibicao(op.email, nomeFantasia)}
             </div>
             <div
               className="ds-mono-sm px-3 py-2 text-center border-r border-border/30"
@@ -172,8 +177,8 @@ const EXCEL_COL_DIVIDER: React.CSSProperties = {
 
 const ExcelTable = forwardRef<
   HTMLDivElement,
-  { operadores: GestorIndispLinha[] }
->(function ExcelTable({ operadores }, ref) {
+  { operadores: GestorIndispLinha[]; nomeFantasia: NomeFantasiaSerial }
+>(function ExcelTable({ operadores, nomeFantasia }, ref) {
   return (
     <div
       ref={ref}
@@ -235,7 +240,7 @@ const ExcelTable = forwardRef<
                 textOverflow: "ellipsis",
               }}
             >
-              {deriveNomeOperador(op.email)}
+              {resolverNomeExibicao(op.email, nomeFantasia)}
             </div>
             <div
               style={{

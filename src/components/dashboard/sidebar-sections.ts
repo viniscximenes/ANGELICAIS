@@ -52,6 +52,15 @@ const ALL_SECTIONS: SidebarSection[] = [
     ],
   },
   {
+    id: "configuracoes-gestor",
+    label: "Configurações",
+    iconName: "settings",
+    basePath: "/configuracoes",
+    permission: "view_gestor_panel",
+    onlyRoles: ["GESTOR"],
+    items: [{ label: "Operadores", href: "/configuracoes/operadores" }],
+  },
+  {
     id: "d-1",
     label: "D-1",
     iconName: "chart",

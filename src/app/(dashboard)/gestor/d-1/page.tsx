@@ -12,6 +12,8 @@ import {
   deriveNomeOperador,
   formatNomeProprio,
 } from "@/lib/gestor/derive-nome-operador";
+import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
+import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
 import { fetchUltimoReportHora } from "@/lib/google/d1/upload";
 import { fetchGestorData, resolveGuiaGestor } from "@/lib/google/gestor";
@@ -55,10 +57,16 @@ export default async function GestorD1Page() {
     );
   }
 
-  const [data, horaReport] = await Promise.all([
+  const [data, horaReport, nomeFantasiaConfig] = await Promise.all([
     fetchGestorData(guia),
     fetchUltimoReportHora(), // hora do report (BASE - 1!S2), para o export
+    getNomeFantasiaConfig(user.profile.id),
   ]);
+
+  const nomeFantasia = {
+    ativo: nomeFantasiaConfig.ativo,
+    mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
+  };
 
   if (data.operadores.length === 0) {
     return (
@@ -81,11 +89,10 @@ export default async function GestorD1Page() {
 
   const showUpload = can(user.profile.role, "manage_d1_base");
 
-  // Converte para o formato que a EquipeTable do D-1 já aceita. O rótulo do
-  // operador na tabela vem do campo `email` (via formatOperatorLabel), então
-  // injetamos aqui o nome de exibição derivado do email (coluna A).
-  const operadores: OperadorConsolidado[] = data.operadores.map((op) => ({
-    email: deriveNomeOperador(op.nome),
+  // Converte para o formato que a EquipeTable do D-1 já aceita.
+  const operadores: (OperadorConsolidado & { emailOriginal: string })[] = data.operadores.map((op) => ({
+    email: resolverNomeExibicao(op.nome.trim().toLowerCase(), nomeFantasia),
+    emailOriginal: op.nome.trim().toLowerCase(),
     supervisor: op.gestora,
     retidos: op.retidos,
     cancelados: op.cancelados,

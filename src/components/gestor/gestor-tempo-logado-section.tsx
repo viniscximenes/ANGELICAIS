@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 
 import { UploadTempoLogadoDropzone } from "@/components/d-1/tempo-logado/upload-tempo-logado-dropzone";
+import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import type { GestorTempoLogadoLinha } from "@/lib/google/gestor/tempo-logado-types";
 import { computeTempoLogadoResumo } from "@/lib/google/gestor/compute-tempo-logado-resumo";
 
@@ -19,12 +20,14 @@ interface GestorTempoLogadoSectionProps {
   operadores: GestorTempoLogadoLinha[];
   horaReport: string;
   showUpload?: boolean;
+  nomeFantasia?: NomeFantasiaSerial;
 }
 
 export function GestorTempoLogadoSection({
   operadores,
   horaReport,
   showUpload = false,
+  nomeFantasia,
 }: GestorTempoLogadoSectionProps) {
   const resumo = computeTempoLogadoResumo(operadores);
 
@@ -61,6 +64,7 @@ export function GestorTempoLogadoSection({
             <TempoLogadoTable
               key="gestor-tempo-logado-visible"
               operadores={operadores}
+              nomeFantasia={nomeFantasia}
             />
           </div>
 
@@ -124,6 +128,7 @@ export function GestorTempoLogadoSection({
             key="gestor-tempo-logado-png"
             operadores={operadores}
             variant="excel"
+            nomeFantasia={nomeFantasia}
           />
         </div>
       </div>

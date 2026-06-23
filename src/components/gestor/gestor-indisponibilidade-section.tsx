@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 
+import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { computeIndispResumo } from "@/lib/google/gestor/compute-indisp-resumo";
 import type { GestorIndispLinha } from "@/lib/google/gestor/indisponibilidade-types";
 
@@ -26,11 +27,13 @@ function Divider() {
 interface GestorIndisponibilidadeSectionProps {
   operadores: GestorIndispLinha[];
   horaReport: string;
+  nomeFantasia?: NomeFantasiaSerial;
 }
 
 export function GestorIndisponibilidadeSection({
   operadores,
   horaReport,
+  nomeFantasia,
 }: GestorIndisponibilidadeSectionProps) {
   const resumo = computeIndispResumo(operadores);
 
@@ -86,7 +89,7 @@ export function GestorIndisponibilidadeSection({
               </div>
               <CopyIndisponibilidadeButton horaReport={horaReport} />
             </div>
-            <IndisponibilidadeTable operadores={operadores} />
+            <IndisponibilidadeTable operadores={operadores} nomeFantasia={nomeFantasia} />
           </div>
 
           {/* Right Column: Cards */}
@@ -135,7 +138,7 @@ export function GestorIndisponibilidadeSection({
         }}
       >
         <div data-indisp-png>
-          <IndisponibilidadeTable operadores={operadores} variant="excel" />
+          <IndisponibilidadeTable operadores={operadores} variant="excel" nomeFantasia={nomeFantasia} />
         </div>
       </div>
     </motion.section>

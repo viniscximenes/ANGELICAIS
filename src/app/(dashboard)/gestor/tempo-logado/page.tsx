@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
+import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import {
   fetchGestorTempoLogado,
   resolveGuiaTempoLogado,
@@ -46,7 +47,10 @@ export default async function GestorTempoLogadoPage() {
     );
   }
 
-  const data = await fetchGestorTempoLogado(guia);
+  const [data, nomeFantasiaConfig] = await Promise.all([
+    fetchGestorTempoLogado(guia),
+    getNomeFantasiaConfig(user.profile.id),
+  ]);
 
   if (data.operadores.length === 0) {
     return (
@@ -87,6 +91,10 @@ export default async function GestorTempoLogadoPage() {
             operadores={data.operadores}
             horaReport={data.horaReport ?? "—"}
             showUpload={can(user.profile.role, "manage_d1_base")}
+            nomeFantasia={{
+              ativo: nomeFantasiaConfig.ativo,
+              mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
+            }}
           />
         </div>
       </div>
