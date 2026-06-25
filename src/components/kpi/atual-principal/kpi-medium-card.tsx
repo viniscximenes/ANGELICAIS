@@ -119,14 +119,16 @@ export function KpiMediumCard({
         duration: 0.25,
         ease: EASE_OUT_EXPO,
       }}
-      className="elevation-1 relative overflow-hidden rounded-lg p-6 border border-border/50 flex flex-col justify-between min-h-[140px] h-full"
+      className="relative overflow-hidden rounded-lg p-6 flex flex-col justify-between min-h-[140px] h-full bg-zinc-800/45 border border-white/10 backdrop-blur-md"
+      style={{
+        boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.3)",
+      }}
     >
       <div
         aria-hidden="true"
         className="absolute top-0 left-0 h-full w-[3px]"
         style={{
-          background:
-            neutral || isVariation ? "var(--muted-foreground)" : color,
+          background: neutral || isVariation ? "var(--muted-foreground)" : color,
         }}
       />
 

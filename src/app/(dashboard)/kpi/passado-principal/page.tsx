@@ -72,7 +72,7 @@ export default async function KpiPassadoPrincipalPage() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
+      <div className="px-6 py-8 lg:px-12 lg:py-12">
         <div className="mx-auto max-w-7xl space-y-8">
           <div className="space-y-2">
             <div className="flex items-baseline gap-3">
