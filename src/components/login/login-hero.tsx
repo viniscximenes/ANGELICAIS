@@ -3,6 +3,7 @@ export function LoginHero() {
     <div className="relative flex h-[40vh] flex-col items-center justify-center lg:h-screen">
       <div className="relative z-10 flex flex-col items-center justify-center -space-y-32 -mt-16">
         <div className="flex items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src="/alloha-fibra.png" 
             alt="Alloha Fibra Logo" 
