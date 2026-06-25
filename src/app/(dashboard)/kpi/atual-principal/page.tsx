@@ -7,6 +7,8 @@ import { KpiTabs } from "@/components/kpi/kpi-tabs";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getCurrentMonthSnapshot } from "@/lib/kpi/atual/get-current-month-snapshot";
+import type { EnrichedKpiValue } from "@/lib/kpi/atual/types";
+import type { NeutralKpiValue } from "@/lib/kpi/passado/types";
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 
 export const metadata: Metadata = {
@@ -48,7 +50,7 @@ export default async function KpiAtualPrincipalPage() {
     : null;
 
   // Converter o Map para objeto plano para passar para o Client Component
-  const kpisObject: Record<string, any> = {};
+  const kpisObject: Record<string, EnrichedKpiValue | NeutralKpiValue> = {};
   snapshot.kpis.forEach((value, key) => {
     kpisObject[key] = value;
   });

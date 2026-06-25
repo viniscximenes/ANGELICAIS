@@ -229,7 +229,7 @@ export function ResultadoSemanalForm({ supervisorName }: ResultadoSemanalFormPro
             key={tab.id}
             role="tab"
             aria-selected={activeTab === tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as "consolidado" | "tempo-logado" | "indisponibilidade")}
             type="button"
             className={[
               "ds-small rounded-md px-4 py-1.5 transition-colors cursor-pointer",
