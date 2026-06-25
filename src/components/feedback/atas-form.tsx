@@ -9,7 +9,6 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconAlertTriangle,
-  IconUser,
   IconChevronUp,
   IconChevronDown,
 } from "@tabler/icons-react";

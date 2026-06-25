@@ -87,7 +87,11 @@ export function KpiMetaGestorCard({ meta }: KpiMetaGestorCardProps) {
           thresholdDiffPercent: parsed,
           coloringType: meta.coloringType,
         });
-        result.success ? toast.success("Salvo") : toast.error(result.error);
+        if (result.success) {
+          toast.success("Salvo");
+        } else {
+          toast.error(result.error);
+        }
         return;
       }
 
@@ -141,7 +145,11 @@ export function KpiMetaGestorCard({ meta }: KpiMetaGestorCardProps) {
         coloringType,
       });
 
-      result.success ? toast.success("Salvo") : toast.error(result.error);
+      if (result.success) {
+        toast.success("Salvo");
+      } else {
+        toast.error(result.error);
+      }
     });
   }
 

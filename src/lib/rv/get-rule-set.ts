@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 
 import type {
   BinaryIndicator,
-  BonusCondition,
   CombinedBonus,
   Comparison,
   DeflatorType,

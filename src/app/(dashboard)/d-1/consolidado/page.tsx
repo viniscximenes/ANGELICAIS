@@ -10,8 +10,6 @@ import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { filterByUserEmail } from "@/lib/d1/filter-by-user";
-import { getEvolucaoTxHoje } from "@/lib/d1/evolucao/get-evolucao-tx-hoje";
-import { getSupervisoresDistintos } from "@/lib/d1/supervisor";
 import { getD1Data } from "@/lib/google/d1";
 
 export const metadata: Metadata = {
@@ -31,14 +29,8 @@ export default async function ConsolidadoPage() {
     redirect("/gestor/d-1");
   }
 
-  const [d1Data, evolucaoSnapshots] = await Promise.all([
-    getD1Data(),
-    getEvolucaoTxHoje(),
-  ]);
+  const d1Data = await getD1Data();
   const userView = filterByUserEmail(d1Data, user.profile.emailCorporativo);
-
-  // Lista de supervisores (coluna B) para o seletor da seção de equipe.
-  const supervisores = getSupervisoresDistintos(d1Data.consolidado.operadores);
 
   const role = user.profile.role;
 

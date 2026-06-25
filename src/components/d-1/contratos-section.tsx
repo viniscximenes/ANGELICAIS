@@ -18,7 +18,7 @@ export function ContratosSection({ contratos }: ContratosSectionProps) {
   const [view, setView] = useState<"cancelados" | "retidos">("cancelados");
   const [search, setSearch] = useState("");
 
-  const list = contratos?.[view] ?? [];
+  const list = useMemo(() => contratos?.[view] ?? [], [contratos, view]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return list;

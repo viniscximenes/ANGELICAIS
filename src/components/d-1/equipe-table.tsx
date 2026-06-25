@@ -57,10 +57,6 @@ export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
    SCREEN — visual padrão do site (tema escuro/claro adaptativo)
    ──────────────────────────────────────────────────────────────────── */
 
-const COL_DIVIDER_SCREEN: React.CSSProperties = {
-  borderRight: "1px solid var(--row-border)",
-};
-
 const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
   function ScreenTable({ operadores, equipe, hideTotais }, ref) {
     const equipeMeets =

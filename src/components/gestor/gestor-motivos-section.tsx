@@ -12,7 +12,6 @@ import {
 } from "recharts";
 
 import type {
-  GestorMotivosConsolidados,
   GestorOperadorLinha,
   TxPorMotivo,
 } from "@/lib/google/gestor";

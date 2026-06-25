@@ -5,20 +5,7 @@ import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
 
-import type {
-  OperadorLoginLogout,
-  OperadorTempoLogado,
-} from "@/lib/google/d1/tempo-logado";
-
-interface CopyTempoLogadoButtonProps {
-  operadores: OperadorTempoLogado[];
-  loginLogout: OperadorLoginLogout[];
-}
-
-export function CopyTempoLogadoButton({
-  operadores: _operadores,
-  loginLogout: _loginLogout,
-}: CopyTempoLogadoButtonProps) {
+export function CopyTempoLogadoButton() {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
 
   async function handleCopy() {

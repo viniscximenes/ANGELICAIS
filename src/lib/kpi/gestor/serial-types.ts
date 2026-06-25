@@ -49,14 +49,6 @@ export type KpiEquipeSerial = {
   dataCorte: string | null;
 };
 
-function serializeCelula(
-  map: ReturnType<typeof Map.prototype.get> extends infer T ? Map<string, NonNullable<T>> : never,
-  def: KpiDefinition,
-): KpiCelulaSerial {
-  // TypeScript workaround: map is typed as Map<string, EnrichedKpiValue | NeutralKpiValue>
-  return {} as KpiCelulaSerial; // placeholder — see below
-}
-
 /**
  * Converte KpiEquipeGestorData (Maps não-serializáveis) para forma plana
  * para cruzar o boundary server → client em Next.js.
@@ -77,7 +69,7 @@ export function toKpiEquipeSerial(
     .filter((d): d is KpiDefinition => d !== undefined);
 
   const toCelula = (
-    map: ReturnType<(typeof data.operadores)[0]["kpisPrincipal"]["get"]> extends infer _ ? (typeof data.operadores)[0]["kpisPrincipal"] : never,
+    map: (typeof data.operadores)[0]["kpisPrincipal"],
     def: KpiDefinition,
   ): KpiCelulaSerial => {
     const kpi = map.get(def.slug);

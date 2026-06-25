@@ -14,7 +14,6 @@ import { IndisponibilidadeFeedbackForm } from "@/components/feedback/indisponibi
 import { TempoLogadoFeedbackForm } from "@/components/feedback/tempo-logado-form";
 import {
   computeSemana,
-  formatDataFeedback,
   type DiaInput,
 } from "@/lib/feedback/compute-semana";
 

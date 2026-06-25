@@ -28,13 +28,6 @@ function parseNum(s: string | null): number | null {
   return isNaN(n) ? null : n;
 }
 
-// Exibe o valor como digitado + "%" ou "—" se vazio.
-function formatDia(s: string | null): string {
-  const v = s?.trim();
-  if (!v) return "—";
-  return v + "%";
-}
-
 // Média dos valores não-nulos, 1 casa decimal, vírgula PT-BR, + "%".
 function mediaColuna(nums: (number | null)[]): string {
   const valores = nums.filter((v): v is number => v !== null);
