@@ -1,5 +1,7 @@
 export type OperadorConsolidado = {
   email: string;
+  /** Email real do operador — usado como React key quando email contém nome fantasia. */
+  emailOriginal?: string;
   supervisor: string;
   retidos: number;
   cancelados: number;

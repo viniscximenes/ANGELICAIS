@@ -10,7 +10,7 @@ export default async function RootPage() {
     redirect("/login");
   }
 
-  // Mesma lógica do pós-login: cada role cai na sua landing por permissão
-  // (RELATORIO em /d-1/consolidado, não em KPI).
+  // Redireciona o usuário para a página padrão de entrada do perfil
+  // (ex.: OP/ADM em /kpi/atual-principal).
   redirect(getPostLoginPath(user.profile.role));
 }

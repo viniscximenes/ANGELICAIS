@@ -122,179 +122,181 @@ export function LoginForm() {
 
   return (
     <div className="flex h-full items-center justify-center px-6 py-12 lg:justify-start lg:px-12">
-      <form onSubmit={handleSubmit} className="w-full max-w-[420px]" noValidate>
-        <StaggerContainer
-          staggerDelay={0.08}
-          initialDelay={0.6}
-          className="flex flex-col"
-        >
-          <StaggerItem>
-            <h1 className="ds-h1">Bem-vindo de volta</h1>
-          </StaggerItem>
+      <div className="w-full max-w-[420px] rounded-2xl border border-white/5 bg-zinc-900/30 backdrop-blur-xl p-8 shadow-2xl shadow-black/40">
+        <form onSubmit={handleSubmit} className="w-full" noValidate>
+          <StaggerContainer
+            staggerDelay={0.08}
+            initialDelay={0.6}
+            className="flex flex-col"
+          >
+            <StaggerItem>
+              <h1 className="ds-h1">Bem-vindo de volta</h1>
+            </StaggerItem>
 
-          <StaggerItem>
-            <p className="ds-body text-muted-foreground mt-2">
-              Acesse seu painel operacional
-            </p>
-          </StaggerItem>
+            <StaggerItem>
+              <p className="ds-body text-muted-foreground mt-2">
+                Acesse seu painel operacional
+              </p>
+            </StaggerItem>
 
-          <StaggerItem className="mt-8">
-            <div className="flex flex-col gap-2">
-              <Label
-                htmlFor="username"
-                className="ds-small text-muted-foreground"
-              >
-                Usuário
-              </Label>
-              <div className="relative">
-                <IconUser
-                  size={16}
-                  aria-hidden="true"
-                  className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
-                />
-                <Input
-                  id="username"
-                  ref={usernameRef}
-                  name="username"
-                  autoFocus
-                  autoComplete="username"
-                  spellCheck={false}
-                  placeholder="nome.sobrenome"
-                  className="h-10 pl-10"
-                  value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value.toLowerCase());
-                    if (usernameError) setUsernameError(null);
-                  }}
-                  onBlur={(e) => {
-                    if (e.target.value) validateUsername(e.target.value);
-                  }}
-                  disabled={isDisabled}
-                  aria-invalid={!!usernameError}
-                  aria-describedby={usernameError ? "username-error" : undefined}
-                />
+            <StaggerItem className="mt-8">
+              <div className="flex flex-col gap-2">
+                <Label
+                  htmlFor="username"
+                  className="ds-small text-muted-foreground"
+                >
+                  Usuário
+                </Label>
+                <div className="relative">
+                  <IconUser
+                    size={16}
+                    aria-hidden="true"
+                    className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
+                  />
+                  <Input
+                    id="username"
+                    ref={usernameRef}
+                    name="username"
+                    autoFocus
+                    autoComplete="username"
+                    spellCheck={false}
+                    placeholder="nome.sobrenome"
+                    className="h-10 pl-10 bg-black/10 border-white/5 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/30"
+                    value={username}
+                    onChange={(e) => {
+                      setUsername(e.target.value.toLowerCase());
+                      if (usernameError) setUsernameError(null);
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value) validateUsername(e.target.value);
+                    }}
+                    disabled={isDisabled}
+                    aria-invalid={!!usernameError}
+                    aria-describedby={usernameError ? "username-error" : undefined}
+                  />
+                </div>
+                {usernameError && (
+                  <p
+                    id="username-error"
+                    role="alert"
+                    className="ds-text-danger ds-small"
+                  >
+                    {usernameError}
+                  </p>
+                )}
               </div>
-              {usernameError && (
-                <p
-                  id="username-error"
-                  role="alert"
-                  className="ds-text-danger ds-small"
-                >
-                  {usernameError}
-                </p>
-              )}
-            </div>
-          </StaggerItem>
+            </StaggerItem>
 
-          <StaggerItem className="mt-4">
-            <div className="flex flex-col gap-2">
-              <Label
-                htmlFor="password"
-                className="ds-small text-muted-foreground"
-              >
-                Senha
-              </Label>
-              <div className="relative">
-                <IconLock
-                  size={16}
-                  aria-hidden="true"
-                  className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
-                />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  className="h-10 pr-10 pl-10"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (passwordError) setPasswordError(null);
-                  }}
-                  onBlur={(e) => {
-                    if (e.target.value || passwordError)
-                      validatePassword(e.target.value);
-                  }}
-                  disabled={isDisabled}
-                  aria-invalid={!!passwordError}
-                  aria-describedby={passwordError ? "password-error" : undefined}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  aria-label={
-                    showPassword ? "Esconder senha" : "Mostrar senha"
-                  }
-                  disabled={isDisabled}
-                  className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 absolute top-1/2 right-3 -translate-y-1/2 rounded-sm transition-colors outline-none focus-visible:ring-3 disabled:opacity-50"
+            <StaggerItem className="mt-4">
+              <div className="flex flex-col gap-2">
+                <Label
+                  htmlFor="password"
+                  className="ds-small text-muted-foreground"
                 >
-                  {showPassword ? (
-                    <IconEyeOff size={16} aria-hidden="true" />
-                  ) : (
-                    <IconEye size={16} aria-hidden="true" />
-                  )}
-                </button>
+                  Senha
+                </Label>
+                <div className="relative">
+                  <IconLock
+                    size={16}
+                    aria-hidden="true"
+                    className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
+                  />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    className="h-10 pr-10 pl-10 bg-black/10 border-white/5 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/30"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (passwordError) setPasswordError(null);
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value || passwordError)
+                        validatePassword(e.target.value);
+                    }}
+                    disabled={isDisabled}
+                    aria-invalid={!!passwordError}
+                    aria-describedby={passwordError ? "password-error" : undefined}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    aria-label={
+                      showPassword ? "Esconder senha" : "Mostrar senha"
+                    }
+                    disabled={isDisabled}
+                    className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 absolute top-1/2 right-3 -translate-y-1/2 rounded-sm transition-colors outline-none focus-visible:ring-3 disabled:opacity-50"
+                  >
+                    {showPassword ? (
+                      <IconEyeOff size={16} aria-hidden="true" />
+                    ) : (
+                      <IconEye size={16} aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
+                {passwordError && (
+                  <p
+                    id="password-error"
+                    role="alert"
+                    className="ds-text-danger ds-small"
+                  >
+                    {passwordError}
+                  </p>
+                )}
               </div>
-              {passwordError && (
-                <p
-                  id="password-error"
+            </StaggerItem>
+
+            <AnimatePresence initial={false}>
+              {errorMessage && (
+                <motion.div
+                  key="error-alert"
                   role="alert"
-                  className="ds-text-danger ds-small"
+                  initial={{ opacity: 0, y: -4, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={{ opacity: 0, y: -4, height: 0 }}
+                  transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
+                  className="status-danger ds-small mt-6 flex items-center gap-2 overflow-hidden rounded-md p-3"
                 >
-                  {passwordError}
-                </p>
+                  <IconAlertCircle
+                    size={16}
+                    aria-hidden="true"
+                    className="shrink-0"
+                  />
+                  <span>{errorMessage}</span>
+                </motion.div>
               )}
-            </div>
-          </StaggerItem>
+            </AnimatePresence>
 
-          <AnimatePresence initial={false}>
-            {errorMessage && (
-              <motion.div
-                key="error-alert"
-                role="alert"
-                initial={{ opacity: 0, y: -4, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                exit={{ opacity: 0, y: -4, height: 0 }}
-                transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
-                className="status-danger ds-small mt-6 flex items-center gap-2 overflow-hidden rounded-md p-3"
+            <StaggerItem className="mt-6">
+              <Button
+                type="submit"
+                size="lg"
+                className="h-11 w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-lg shadow-blue-600/10 active:scale-[0.99] transition-all duration-200"
+                disabled={isDisabled}
               >
-                <IconAlertCircle
-                  size={16}
-                  aria-hidden="true"
-                  className="shrink-0"
-                />
-                <span>{errorMessage}</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                {loading ? (
+                  <IconLoader2
+                    size={16}
+                    className="animate-spin"
+                    aria-hidden="true"
+                  />
+                ) : lockSeconds > 0 ? (
+                  `Aguarde ${lockSeconds}s...`
+                ) : (
+                  "Entrar"
+                )}
+              </Button>
+            </StaggerItem>
 
-          <StaggerItem className="mt-6">
-            <Button
-              type="submit"
-              size="lg"
-              className="h-11 w-full hover:shadow-[0_0_40px_var(--glow-accent)]"
-              disabled={isDisabled}
-            >
-              {loading ? (
-                <IconLoader2
-                  size={16}
-                  className="animate-spin"
-                  aria-hidden="true"
-                />
-              ) : lockSeconds > 0 ? (
-                `Aguarde ${lockSeconds}s...`
-              ) : (
-                "Entrar"
-              )}
-            </Button>
-          </StaggerItem>
-
-          <StaggerItem className="mt-4">
-            <p className="ds-small text-muted-foreground text-center">
-              Esqueceu sua senha? Fale com o administrador.
-            </p>
-          </StaggerItem>
-        </StaggerContainer>
-      </form>
+            <StaggerItem className="mt-4">
+              <p className="ds-small text-muted-foreground text-center">
+                Esqueceu sua senha? Fale com o administrador.
+              </p>
+            </StaggerItem>
+          </StaggerContainer>
+        </form>
+      </div>
 
       <AnimatePresence>
         {lockSeconds > 0 && (

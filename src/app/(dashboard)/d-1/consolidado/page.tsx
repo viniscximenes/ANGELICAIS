@@ -6,7 +6,6 @@ import { D1Header } from "@/components/d-1/d1-header";
 import { D1Tabs } from "@/components/d-1/d1-tabs";
 import { KpiCards } from "@/components/d-1/kpi-cards";
 import { MotivosSection } from "@/components/d-1/motivos-section";
-import { RelatorioSupervisorView } from "@/components/d-1/relatorio/relatorio-supervisor-view";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
@@ -42,9 +41,6 @@ export default async function ConsolidadoPage() {
   const supervisores = getSupervisoresDistintos(d1Data.consolidado.operadores);
 
   const role = user.profile.role;
-  // RELATORIO não tem linha na planilha: a parte pessoal apareceria zerada e
-  // é inútil. Ele vê apenas a seção de equipe (tabela + seletor + export).
-  const isRelatorio = role === "RELATORIO";
 
   return (
     <PageTransition>
@@ -53,7 +49,7 @@ export default async function ConsolidadoPage() {
           <D1Header horaReport={userView.horaReport} subtitle="consolidado" />
           <D1Tabs />
           <div className="space-y-12">
-            {!isRelatorio && can(role, "view_d1_personal") && (
+            {can(role, "view_d1_personal") && (
               <>
                 <KpiCards operador={userView.operador} />
                 <MotivosSection motivos={userView.motivos} />
@@ -61,14 +57,7 @@ export default async function ConsolidadoPage() {
               </>
             )}
 
-            {can(role, "view_d1_team") && (
-              <RelatorioSupervisorView
-                consolidado={d1Data.consolidado}
-                supervisores={supervisores}
-                snapshots={evolucaoSnapshots}
-                showUpload={can(role, "manage_d1_base")}
-              />
-            )}
+            {/* RelatorioSupervisorView has been removed since Supervisor Report was migrated/removed */}
           </div>
         </div>
       </div>

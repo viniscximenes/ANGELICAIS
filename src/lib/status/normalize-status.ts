@@ -7,11 +7,16 @@
  */
 export function normalizeStatus(s: string | null): string {
   if (!s) return "";
-  return s
+  const normalized = s
     .toLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .trim();
+
+  if (normalized === "ativo - treinamento" || normalized === "ativo-treinamento") {
+    return "ativo";
+  }
+  return normalized;
 }
 
 /**

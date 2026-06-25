@@ -100,7 +100,7 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           const semAtendimentos = op.pedidos === 0 || op.txRetencao === null;
           const meetsM = op.txRetencao !== null && meetsMeta(op.txRetencao);
           const belowMeta = !semAtendimentos && !meetsM;
-          const key = (op as any).emailOriginal || op.email;
+          const key = op.emailOriginal ?? op.email;
 
           return (
             <div
@@ -332,7 +332,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           const semAtendimentos = op.pedidos === 0 || op.txRetencao === null;
           const meetsM = op.txRetencao !== null && meetsMeta(op.txRetencao);
           const belowMeta = !semAtendimentos && !meetsM;
-          const key = (op as any).emailOriginal || op.email;
+          const key = op.emailOriginal ?? op.email;
 
           // TX < 60%: a LINHA INTEIRA fica vermelho claro (alerta). Os números
           // mantêm a cor por coluna; o nome fica preto para legibilidade.

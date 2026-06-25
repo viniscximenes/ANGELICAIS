@@ -48,7 +48,6 @@ const ALL_SECTIONS: SidebarSection[] = [
     onlyRoles: ["GESTOR"],
     items: [
       { label: "Resultado Semanal", href: "/feedback/resultado-semanal" },
-      { label: "Atas", href: "/feedback/atas" },
     ],
   },
   {
@@ -58,7 +57,10 @@ const ALL_SECTIONS: SidebarSection[] = [
     basePath: "/configuracoes",
     permission: "view_gestor_panel",
     onlyRoles: ["GESTOR"],
-    items: [{ label: "Operadores", href: "/configuracoes/operadores" }],
+    items: [
+      { label: "Operadores", href: "/configuracoes/operadores" },
+      { label: "Editar D-1", href: "/configuracoes/operadores-d1" },
+    ],
   },
   {
     id: "d-1",

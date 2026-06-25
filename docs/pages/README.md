@@ -62,6 +62,9 @@ Quando a página justificar, adicionar:
 - [Feedback — Atas](docs/pages/feedback-atas.md) — gerador de ata/comunicado interno (tema + descrição-modelo editável, N assinaturas no verso)
 - [KPI do Gestor](docs/pages/kpi-gestor.md) — base própria de KPI dos supervisores, página "Meus Resultados", metas de gestor configuráveis
 - [Configurações do Supervisor — Nome Fantasia](docs/pages/config-supervisor-operadores.md) — apelidos dos operadores nas tabelas do painel do gestor (global por supervisor)
+- [Feedback — Tempo Logado](docs/pages/feedback-tempo-logado.md) — gerador de Word do feedback de tempo logado (médias de tempo/login/deslog com janela de horário)
+- [Feedback — Indisponibilidade](docs/pages/feedback-indisponibilidade.md) — gerador de Word do feedback de indisponibilidade (médias de NR17, particular e outras pausas)
+- [Configurações do Supervisor — Operadores do D-1](docs/pages/config-supervisor-operadores-d1.md) — adicionar/excluir operadores das guias do D-1 (edição direta no Sheets)
 
 ## Status possíveis
 

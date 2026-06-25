@@ -60,13 +60,12 @@ export async function updateUserRoleAction(
 
   if (
     target.role === "GESTOR" ||
-    target.role === "ADM" ||
-    target.role === "RELATORIO"
+    target.role === "ADM"
   ) {
     return {
       success: false,
       error:
-        "Não é possível alterar role de ADM, GESTOR ou RELATORIO pelo painel",
+        "Não é possível alterar role de ADM ou GESTOR pelo painel",
     };
   }
 

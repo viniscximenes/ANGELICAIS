@@ -8,10 +8,7 @@ import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
-import {
-  deriveNomeOperador,
-  formatNomeProprio,
-} from "@/lib/gestor/derive-nome-operador";
+import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
@@ -90,7 +87,7 @@ export default async function GestorD1Page() {
   const showUpload = can(user.profile.role, "manage_d1_base");
 
   // Converte para o formato que a EquipeTable do D-1 já aceita.
-  const operadores: (OperadorConsolidado & { emailOriginal: string })[] = data.operadores.map((op) => ({
+  const operadores: OperadorConsolidado[] = data.operadores.map((op) => ({
     email: resolverNomeExibicao(op.nome.trim().toLowerCase(), nomeFantasia),
     emailOriginal: op.nome.trim().toLowerCase(),
     supervisor: op.gestora,

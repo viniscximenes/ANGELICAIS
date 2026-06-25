@@ -13,7 +13,7 @@ export function LoginHero() {
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, duration: 0.4, ease: EASE_OUT_EXPO }}
-          className="flex items-center justify-center pl-6"
+          className="flex items-center justify-center"
         >
           <Image 
             src="/alloha-fibra.png" 
