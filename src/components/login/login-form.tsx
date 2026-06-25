@@ -14,10 +14,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  StaggerContainer,
-  StaggerItem,
-} from "@/components/motion/stagger-container";
 import { loginAction } from "@/lib/auth/login-action";
 
 const MAX_ATTEMPTS = 5;
@@ -124,22 +120,18 @@ export function LoginForm() {
     <div className="flex h-full items-center justify-center px-6 py-12 lg:justify-start lg:px-12">
       <div className="w-full max-w-[420px] rounded-2xl border border-white/5 bg-zinc-900/30 backdrop-blur-xl p-8 shadow-2xl shadow-black/40">
         <form onSubmit={handleSubmit} className="w-full" noValidate>
-          <StaggerContainer
-            staggerDelay={0.04}
-            initialDelay={0.05}
-            className="flex flex-col"
-          >
-            <StaggerItem>
+          <div className="flex flex-col">
+            <div>
               <h1 className="ds-h1">Bem-vindo de volta</h1>
-            </StaggerItem>
+            </div>
 
-            <StaggerItem>
+            <div>
               <p className="ds-body text-muted-foreground mt-2">
                 Acesse seu painel operacional
               </p>
-            </StaggerItem>
+            </div>
 
-            <StaggerItem className="mt-8">
+            <div className="mt-8">
               <div className="flex flex-col gap-2">
                 <Label
                   htmlFor="username"
@@ -185,9 +177,9 @@ export function LoginForm() {
                   </p>
                 )}
               </div>
-            </StaggerItem>
+            </div>
 
-            <StaggerItem className="mt-4">
+            <div className="mt-4">
               <div className="flex flex-col gap-2">
                 <Label
                   htmlFor="password"
@@ -245,7 +237,7 @@ export function LoginForm() {
                   </p>
                 )}
               </div>
-            </StaggerItem>
+            </div>
 
             <AnimatePresence initial={false}>
               {errorMessage && (
@@ -268,7 +260,7 @@ export function LoginForm() {
               )}
             </AnimatePresence>
 
-            <StaggerItem className="mt-6">
+            <div className="mt-6">
               <Button
                 type="submit"
                 size="lg"
@@ -287,14 +279,14 @@ export function LoginForm() {
                   "Entrar"
                 )}
               </Button>
-            </StaggerItem>
+            </div>
 
-            <StaggerItem className="mt-4">
+            <div className="mt-4">
               <p className="ds-small text-muted-foreground text-center">
                 Esqueceu sua senha? Fale com o administrador.
               </p>
-            </StaggerItem>
-          </StaggerContainer>
+            </div>
+          </div>
         </form>
       </div>
 
