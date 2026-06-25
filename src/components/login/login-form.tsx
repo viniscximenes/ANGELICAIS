@@ -125,8 +125,8 @@ export function LoginForm() {
       <div className="w-full max-w-[420px] rounded-2xl border border-white/5 bg-zinc-900/30 backdrop-blur-xl p-8 shadow-2xl shadow-black/40">
         <form onSubmit={handleSubmit} className="w-full" noValidate>
           <StaggerContainer
-            staggerDelay={0.08}
-            initialDelay={0.6}
+            staggerDelay={0.04}
+            initialDelay={0.05}
             className="flex flex-col"
           >
             <StaggerItem>

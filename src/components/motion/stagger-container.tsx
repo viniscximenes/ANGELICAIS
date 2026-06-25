@@ -8,6 +8,7 @@ interface StaggerContainerProps {
   staggerDelay?: number;
   initialDelay?: number;
   className?: string;
+  viewport?: boolean;
 }
 
 export function StaggerContainer({
@@ -15,6 +16,7 @@ export function StaggerContainer({
   staggerDelay = 0.03,
   initialDelay = 0,
   className,
+  viewport = false,
 }: StaggerContainerProps) {
   const containerVariants: Variants = {
     hidden: {},
@@ -26,11 +28,24 @@ export function StaggerContainer({
     },
   };
 
+  if (viewport) {
+    return (
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+        variants={containerVariants}
+        className={className}
+      >
+        {children}
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-50px" }}
+      animate="visible"
       variants={containerVariants}
       className={className}
     >
