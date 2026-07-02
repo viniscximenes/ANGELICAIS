@@ -95,6 +95,7 @@ export default async function GestorTempoLogadoPage() {
               ativo: nomeFantasiaConfig.ativo,
               mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
             }}
+            olhoInicial={nomeFantasiaConfig.olhoTempoLogado}
           />
         </div>
       </div>

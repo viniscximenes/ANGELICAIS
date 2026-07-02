@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 export type NomeFantasiaConfig = {
   ativo: boolean;
   mapa: Map<string, string>; // operador_email → nome_fantasia
+  olhoConsolidado: boolean;
+  olhoTempoLogado: boolean;
+  olhoIndisponibilidade: boolean;
 };
 
 export async function getNomeFantasiaConfig(
@@ -13,7 +16,7 @@ export async function getNomeFantasiaConfig(
   const [configResult, nomesResult] = await Promise.all([
     supabase
       .from("gestor_config_fantasia")
-      .select("ativo")
+      .select("ativo, olho_consolidado, olho_tempo_logado, olho_indisponibilidade")
       .eq("gestor_id", gestorId)
       .maybeSingle(),
     supabase
@@ -29,7 +32,12 @@ export async function getNomeFantasiaConfig(
     console.error("[getNomeFantasiaConfig] erro nomes:", nomesResult.error);
   }
 
-  const ativo = (configResult.data as { ativo?: boolean } | null)?.ativo ?? false;
+  const cfg = configResult.data as {
+    ativo?: boolean;
+    olho_consolidado?: boolean;
+    olho_tempo_logado?: boolean;
+    olho_indisponibilidade?: boolean;
+  } | null;
 
   const mapa = new Map<string, string>();
   for (const row of (nomesResult.data ?? []) as {
@@ -41,5 +49,11 @@ export async function getNomeFantasiaConfig(
     }
   }
 
-  return { ativo, mapa };
+  return {
+    ativo: cfg?.ativo ?? false,
+    mapa,
+    olhoConsolidado: cfg?.olho_consolidado ?? false,
+    olhoTempoLogado: cfg?.olho_tempo_logado ?? false,
+    olhoIndisponibilidade: cfg?.olho_indisponibilidade ?? false,
+  };
 }

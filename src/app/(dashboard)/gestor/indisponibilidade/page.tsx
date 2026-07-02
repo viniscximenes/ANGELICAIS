@@ -93,6 +93,7 @@ export default async function GestorIndisponibilidadePage() {
               ativo: nomeFantasiaConfig.ativo,
               mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
             }}
+            olhoInicial={nomeFantasiaConfig.olhoIndisponibilidade}
           />
         </div>
       </div>

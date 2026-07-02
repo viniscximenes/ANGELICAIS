@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
+import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import { computeIndispResumo } from "@/lib/google/gestor/compute-indisp-resumo";
 import type { GestorIndispLinha } from "@/lib/google/gestor/indisponibilidade-types";
 
@@ -28,14 +30,23 @@ interface GestorIndisponibilidadeSectionProps {
   operadores: GestorIndispLinha[];
   horaReport: string;
   nomeFantasia?: NomeFantasiaSerial;
+  olhoInicial?: boolean;
 }
 
 export function GestorIndisponibilidadeSection({
   operadores,
   horaReport,
   nomeFantasia,
+  olhoInicial = false,
 }: GestorIndisponibilidadeSectionProps) {
+  const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
   const resumo = computeIndispResumo(operadores);
+
+  function handleToggleOlho() {
+    const novoValor = !olhoAberto;
+    setOlhoAberto(novoValor);
+    void toggleOlhoAction("indisponibilidade", novoValor);
+  }
 
   return (
     <motion.section
@@ -89,7 +100,12 @@ export function GestorIndisponibilidadeSection({
               </div>
               <CopyIndisponibilidadeButton horaReport={horaReport} />
             </div>
-            <IndisponibilidadeTable operadores={operadores} nomeFantasia={nomeFantasia} />
+            <IndisponibilidadeTable
+              operadores={operadores}
+              nomeFantasia={nomeFantasia}
+              olhoAberto={olhoAberto}
+              onToggleOlho={handleToggleOlho}
+            />
           </div>
 
           {/* Right Column: Cards */}

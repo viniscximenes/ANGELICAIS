@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
+import { IconEye, IconEyeOff } from "@tabler/icons-react";
 
 import type {
   NomeFantasiaSerial} from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
@@ -16,6 +17,8 @@ interface TempoLogadoTableProps {
   operadores: GestorTempoLogadoLinha[];
   variant?: "screen" | "excel";
   nomeFantasia?: NomeFantasiaSerial;
+  olhoAberto?: boolean;
+  onToggleOlho?: () => void;
 }
 
 function formatLogin(_status: StatusPresenca, horaLogin: string | null): string {
@@ -36,12 +39,20 @@ function formatLogout(
 export const TempoLogadoTable = forwardRef<
   HTMLDivElement,
   TempoLogadoTableProps
->(function TempoLogadoTable({ operadores, variant = "screen", nomeFantasia }, ref) {
+>(function TempoLogadoTable({ operadores, variant = "screen", nomeFantasia, olhoAberto, onToggleOlho }, ref) {
   const cfg = nomeFantasia ?? NO_FANTASIA;
   if (variant === "excel") {
     return <ExcelTable ref={ref} operadores={operadores} nomeFantasia={cfg} />;
   }
-  return <ScreenTable ref={ref} operadores={operadores} nomeFantasia={cfg} />;
+  return (
+    <ScreenTable
+      ref={ref}
+      operadores={operadores}
+      nomeFantasia={cfg}
+      olhoAberto={olhoAberto}
+      onToggleOlho={onToggleOlho}
+    />
+  );
 });
 
 /* ────────────────────────────────────────────────────────────────────
@@ -52,8 +63,16 @@ const GRID_COLS = "2.2fr 2.6fr 2.4fr 1.9fr 1.9fr";
 
 const ScreenTable = forwardRef<
   HTMLDivElement,
-  { operadores: GestorTempoLogadoLinha[]; nomeFantasia: NomeFantasiaSerial }
->(function ScreenTable({ operadores, nomeFantasia }, ref) {
+  {
+    operadores: GestorTempoLogadoLinha[];
+    nomeFantasia: NomeFantasiaSerial;
+    olhoAberto?: boolean;
+    onToggleOlho?: () => void;
+  }
+>(function ScreenTable({ operadores, nomeFantasia, olhoAberto, onToggleOlho }, ref) {
+  const cfgDisplay: NomeFantasiaSerial =
+    olhoAberto && nomeFantasia.ativo ? { ...nomeFantasia, ativo: false } : nomeFantasia;
+
   return (
     <div
       ref={ref}
@@ -68,8 +87,18 @@ const ScreenTable = forwardRef<
           borderBottom: "1px solid var(--border)",
         }}
       >
-        <div className="px-3 py-2.5 text-center border-r border-border/50 whitespace-nowrap">
+        <div className="px-3 py-2.5 text-center border-r border-border/50 whitespace-nowrap flex items-center justify-center gap-1.5">
           Operador
+          {onToggleOlho && nomeFantasia.ativo && (
+            <button
+              type="button"
+              onClick={onToggleOlho}
+              title={olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"}
+              className="text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            >
+              {olhoAberto ? <IconEye size={12} /> : <IconEyeOff size={12} />}
+            </button>
+          )}
         </div>
         <div className="px-3 py-2.5 text-center border-r border-border/50 whitespace-nowrap">
           Tempo Logado
@@ -112,7 +141,7 @@ const ScreenTable = forwardRef<
                 color: belowMeta ? "var(--danger)" : "var(--foreground)",
               }}
             >
-              {resolverNomeExibicao(op.email, nomeFantasia)}
+              {resolverNomeExibicao(op.email, cfgDisplay)}
             </div>
             <div
               className="ds-mono-sm px-3 py-2 text-center border-r border-border/30"

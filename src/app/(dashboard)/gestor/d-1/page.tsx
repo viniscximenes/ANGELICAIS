@@ -128,6 +128,8 @@ export default async function GestorD1Page() {
               equipe={equipe}
               gestora={gestora}
               showUpload={showUpload}
+              nomeFantasia={nomeFantasia}
+              olhoInicial={nomeFantasiaConfig.olhoConsolidado}
             />
             <GestorMotivosSection
               txPorMotivo={data.txPorMotivo}

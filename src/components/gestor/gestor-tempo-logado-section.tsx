@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 import { UploadTempoLogadoDropzone } from "@/components/d-1/tempo-logado/upload-tempo-logado-dropzone";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
+import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import type { GestorTempoLogadoLinha } from "@/lib/google/gestor/tempo-logado-types";
 import { computeTempoLogadoResumo } from "@/lib/google/gestor/compute-tempo-logado-resumo";
 
@@ -21,6 +23,7 @@ interface GestorTempoLogadoSectionProps {
   horaReport: string;
   showUpload?: boolean;
   nomeFantasia?: NomeFantasiaSerial;
+  olhoInicial?: boolean;
 }
 
 export function GestorTempoLogadoSection({
@@ -28,8 +31,16 @@ export function GestorTempoLogadoSection({
   horaReport,
   showUpload = false,
   nomeFantasia,
+  olhoInicial = false,
 }: GestorTempoLogadoSectionProps) {
+  const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
   const resumo = computeTempoLogadoResumo(operadores);
+
+  function handleToggleOlho() {
+    const novoValor = !olhoAberto;
+    setOlhoAberto(novoValor);
+    void toggleOlhoAction("tempo_logado", novoValor);
+  }
 
   return (
     <motion.section
@@ -65,6 +76,8 @@ export function GestorTempoLogadoSection({
               key="gestor-tempo-logado-visible"
               operadores={operadores}
               nomeFantasia={nomeFantasia}
+              olhoAberto={olhoAberto}
+              onToggleOlho={handleToggleOlho}
             />
           </div>
 
