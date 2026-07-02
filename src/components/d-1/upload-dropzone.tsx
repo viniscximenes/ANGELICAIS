@@ -21,12 +21,12 @@ export type UploadStep =
   | "done"
   | null;
 
-const REPORT_RECENTE_MIN = 30;
+const REPORT_RECENTE_MIN = 5;
 
 /**
  * Minutos decorridos desde a hora do report "HH:MM" (S2), na hora atual de
  * Brasília. Retorna null se não houver hora ou se o formato for inválido.
- * Pode ser negativo (virada de dia) — o caller só age no intervalo [0, 30).
+ * Pode ser negativo (virada de dia) — o caller só age no intervalo [0, 5).
  */
 function minutosDesdeReport(hora: string | null): number | null {
   if (!hora) return null;
@@ -39,8 +39,8 @@ function minutosDesdeReport(hora: string | null): number | null {
 
 interface UploadDropzoneProps {
   /**
-   * Ativa a regra dos 30 min: antes de enviar, lê S2 (último report) e, se
-   * < 30 min, pede confirmação. Usado pelo painel do gestor.
+   * Ativa a regra dos 5 min: antes de enviar, lê S2 (último report) e, se
+   * < 5 min, pede confirmação. Usado pelo painel do gestor.
    */
   confirmRecentReport?: boolean;
 }
@@ -51,9 +51,10 @@ export function UploadDropzone({
   const [step, setStep] = useState<UploadStep>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [rowsWritten, setRowsWritten] = useState<number>(0);
-  // Regra dos 30 min: linhas pendentes aguardando confirmação no dialog.
+  // Regra dos 5 min: linhas pendentes aguardando confirmação no dialog.
   const [pendingRows, setPendingRows] = useState<string[][] | null>(null);
-  const [minutesAgo, setMinutesAgo] = useState(0);
+  const [ultimoReportHora, setUltimoReportHora] = useState("");
+  const [ultimoReportNome, setUltimoReportNome] = useState<string | null>(null);
 
   // Executa o upload de fato (etapas + action + reload). Separado para poder
   // ser disparado tanto direto quanto após a confirmação do dialog.
@@ -146,13 +147,14 @@ export function UploadDropzone({
           // Delay pra UX mostrar a etapa "ANEXANDO"
           await new Promise((r) => setTimeout(r, 600));
 
-          // Regra dos 30 min (opt-in): se o último report (S2) foi há menos de
-          // 30 min, pausa e pede confirmação antes de prosseguir.
+          // Regra dos 5 min (opt-in): se o último report (S2) foi há menos de
+          // 5 min, pausa e pede confirmação antes de prosseguir.
           if (confirmRecentReport) {
-            const { hora } = await getUltimoReportHoraAction();
+            const { hora, nomeSupervisor } = await getUltimoReportHoraAction();
             const mins = minutosDesdeReport(hora);
             if (mins !== null && mins >= 0 && mins < REPORT_RECENTE_MIN) {
-              setMinutesAgo(mins);
+              setUltimoReportHora(hora ?? "");
+              setUltimoReportNome(nomeSupervisor);
               setPendingRows(rows);
               setStep(null); // esconde o progresso enquanto o dialog decide
               return;
@@ -263,7 +265,9 @@ export function UploadDropzone({
       <UploadProgressModal step={step} rowsWritten={rowsWritten} />
       <ConfirmRecentReportDialog
         open={pendingRows !== null}
-        minutesAgo={minutesAgo}
+        limiteMinutos={REPORT_RECENTE_MIN}
+        hora={ultimoReportHora.match(/^(\d{1,2}:\d{2})/)?.[1] ?? ultimoReportHora}
+        nomeSupervisor={ultimoReportNome}
         onConfirm={handleConfirmSend}
         onCancel={handleCancelSend}
       />

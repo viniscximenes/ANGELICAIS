@@ -70,18 +70,21 @@ export async function fetchGestorTempoLogado(
     response = await sheets.spreadsheets.values.batchGet({
       spreadsheetId: sheetId,
       ranges: [
-        "'BASE - 2'!L2",
+        "'BASE - 2'!L2:M2",
         `'${guia}'!A2:G100`,
       ],
     });
   } catch (err) {
     console.error(`[fetchGestorTempoLogado] Erro ao ler guia "${guia}":`, err);
-    return { operadores: [], horaReport: "—" };
+    return { operadores: [], horaReport: "—", nomeSupervisorReport: null };
   }
 
   const valueRanges = response.data.valueRanges ?? [];
-  const horaCell = valueRanges[0]?.values?.[0]?.[0];
+  const reportRow = valueRanges[0]?.values?.[0] ?? [];
+  const horaCell = reportRow[0];
   const horaReport = horaCell ? String(horaCell).trim() : "—";
+  const nomeCell = reportRow[1];
+  const nomeSupervisorReport = nomeCell ? String(nomeCell).trim() || null : null;
   const rows = valueRanges[1]?.values ?? [];
 
   const operadores: GestorTempoLogadoLinha[] = rows
@@ -117,5 +120,5 @@ export async function fetchGestorTempoLogado(
       };
     });
 
-  return { operadores, horaReport };
+  return { operadores, horaReport, nomeSupervisorReport };
 }

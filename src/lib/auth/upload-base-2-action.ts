@@ -37,7 +37,7 @@ export async function uploadBase2Action(
     row.some((cell) => cell !== ""),
   );
 
-  const result = await uploadBase2ToSheet(rows);
+  const result = await uploadBase2ToSheet(rows, user.profile.fullName);
 
   if (result.success) {
     revalidatePath("/d-1/tempo-logado");

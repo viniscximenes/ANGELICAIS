@@ -90,6 +90,7 @@ export default async function GestorTempoLogadoPage() {
           <GestorTempoLogadoSection
             operadores={data.operadores}
             horaReport={data.horaReport ?? "—"}
+            nomeSupervisorReport={data.nomeSupervisorReport ?? null}
             showUpload={can(user.profile.role, "manage_d1_base")}
             nomeFantasia={{
               ativo: nomeFantasiaConfig.ativo,

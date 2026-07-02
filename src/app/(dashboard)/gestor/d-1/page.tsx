@@ -12,7 +12,7 @@ import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
-import { fetchUltimoReportHora } from "@/lib/google/d1/upload";
+import { fetchUltimoReportInfo } from "@/lib/google/d1/upload";
 import { fetchGestorData, resolveGuiaGestor } from "@/lib/google/gestor";
 
 export const metadata: Metadata = {
@@ -54,9 +54,9 @@ export default async function GestorD1Page() {
     );
   }
 
-  const [data, horaReport, nomeFantasiaConfig] = await Promise.all([
+  const [data, reportInfo, nomeFantasiaConfig] = await Promise.all([
     fetchGestorData(guia),
-    fetchUltimoReportHora(), // hora do report (BASE - 1!S2), para o export
+    fetchUltimoReportInfo(), // hora + nome (BASE - 1!S2:T2), para o export
     getNomeFantasiaConfig(user.profile.id),
   ]);
 
@@ -102,7 +102,7 @@ export default async function GestorD1Page() {
     cancelados: data.consolidado.cancelados,
     pedidos: data.consolidado.pedidos,
     txRetencao: data.consolidado.txRetencao,
-    horaReport: horaReport ?? "—",
+    horaReport: reportInfo.hora ?? "—",
   };
 
   const gestora = data.consolidado.gestora
@@ -130,6 +130,7 @@ export default async function GestorD1Page() {
               showUpload={showUpload}
               nomeFantasia={nomeFantasia}
               olhoInicial={nomeFantasiaConfig.olhoConsolidado}
+              nomeSupervisorReport={reportInfo.nomeSupervisor}
             />
             <GestorMotivosSection
               txPorMotivo={data.txPorMotivo}

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { saveEvolucaoAction } from "@/lib/d1/evolucao/actions/save-evolucao-action";
 import { fetchConsolidado } from "@/lib/google/d1";
 import {
-  fetchUltimoReportHora,
+  fetchUltimoReportInfo,
   uploadBaseToSheet,
 } from "@/lib/google/d1/upload";
 import { getCurrentUser } from "./get-current-user";
@@ -16,22 +16,23 @@ export type UploadActionResult =
   | { success: false; error: string };
 
 /**
- * Lê a hora do último report (BASE - 1!S2) para a regra dos 30 min no client.
- * Gated por manage_d1_base. Retorna { hora: null } em qualquer falha (a regra
- * é apenas um aviso — nunca bloqueia o upload).
+ * Lê a hora e o nome do supervisor do último report (BASE - 1!S2:T2) para a
+ * regra dos 5 min no client. Gated por manage_d1_base. Retorna nulls em
+ * qualquer falha (a regra é apenas um aviso — nunca bloqueia o upload).
  */
 export async function getUltimoReportHoraAction(): Promise<{
   hora: string | null;
+  nomeSupervisor: string | null;
 }> {
   const user = await getCurrentUser();
   if (!user || !can(user.profile.role, "manage_d1_base")) {
-    return { hora: null };
+    return { hora: null, nomeSupervisor: null };
   }
   try {
-    return { hora: await fetchUltimoReportHora() };
+    return await fetchUltimoReportInfo();
   } catch (err) {
-    console.error("[upload-base] erro ao ler hora do report (S2):", err);
-    return { hora: null };
+    console.error("[upload-base] erro ao ler hora do report (S2:T2):", err);
+    return { hora: null, nomeSupervisor: null };
   }
 }
 
@@ -48,7 +49,7 @@ export async function uploadBaseAction(
     return { success: false, error: "Sem permissão para atualizar a base" };
   }
 
-  const result = await uploadBaseToSheet(parsedRows);
+  const result = await uploadBaseToSheet(parsedRows, user.profile.fullName);
 
   if (result.success) {
     // Snapshot da evolução da TX (complementar — falha silenciosa não bloqueia upload).

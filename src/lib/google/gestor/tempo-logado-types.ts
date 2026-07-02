@@ -17,6 +17,7 @@ export type GestorTempoLogadoLinha = {
 export type GestorTempoLogadoData = {
   operadores: GestorTempoLogadoLinha[];
   horaReport?: string;
+  nomeSupervisorReport?: string | null;
 };
 
 export type TempoLogadoResumo = {

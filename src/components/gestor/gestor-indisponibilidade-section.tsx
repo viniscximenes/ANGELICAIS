@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
+import { formatReportLabel } from "@/lib/gestor/format-report-label";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
+import { refreshIndisponibilidadeAction } from "@/lib/gestor/refresh/refresh-indisponibilidade-action";
 import { computeIndispResumo } from "@/lib/google/gestor/compute-indisp-resumo";
 import type { GestorIndispLinha } from "@/lib/google/gestor/indisponibilidade-types";
 
@@ -15,6 +17,9 @@ import { IndisponibilidadeResumoCards } from "./indisponibilidade-resumo-cards";
 import { IndisponibilidadeTable } from "./indisponibilidade-table";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+
+// Reconsulta o Google Sheets a cada 30s para refletir a base sem F5.
+const POLL_INTERVAL_MS = 30_000;
 
 function Divider() {
   return (
@@ -29,17 +34,25 @@ function Divider() {
 interface GestorIndisponibilidadeSectionProps {
   operadores: GestorIndispLinha[];
   horaReport: string;
+  /** Nome do supervisor que fez o último report (BASE - 2!M2). */
+  nomeSupervisorReport?: string | null;
   nomeFantasia?: NomeFantasiaSerial;
   olhoInicial?: boolean;
 }
 
 export function GestorIndisponibilidadeSection({
-  operadores,
-  horaReport,
+  operadores: operadoresIniciais,
+  horaReport: horaReportInicial,
+  nomeSupervisorReport: nomeSupervisorReportInicial = null,
   nomeFantasia,
   olhoInicial = false,
 }: GestorIndisponibilidadeSectionProps) {
   const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
+  const [operadores, setOperadores] = useState(operadoresIniciais);
+  const [horaReport, setHoraReport] = useState(horaReportInicial);
+  const [nomeSupervisorReport, setNomeSupervisorReport] = useState(
+    nomeSupervisorReportInicial,
+  );
   const resumo = computeIndispResumo(operadores);
 
   function handleToggleOlho() {
@@ -47,6 +60,20 @@ export function GestorIndisponibilidadeSection({
     setOlhoAberto(novoValor);
     void toggleOlhoAction("indisponibilidade", novoValor);
   }
+
+  // Polling: reconsulta o Sheets a cada 30s (sem F5) e atualiza operadores +
+  // hora/nome do report se houver mudança.
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const result = await refreshIndisponibilidadeAction();
+      if (result.success) {
+        setOperadores(result.operadores);
+        setHoraReport(result.horaReport);
+        setNomeSupervisorReport(result.nomeSupervisorReport);
+      }
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <motion.section
@@ -63,15 +90,17 @@ export function GestorIndisponibilidadeSection({
               <span className="ds-mono text-muted-foreground">01</span>
               <span className="ds-mono text-muted-foreground">·</span>
               <h2 className="ds-h2">Equipe</h2>
-              {horaReport && horaReport !== "—" && (
-                <span className="ds-mono-sm text-muted-foreground">
-                  - atualizado às{" "}
-                  {horaReport.match(/^(\d{1,2}:\d{2})/)?.[1] ?? horaReport}
+              {formatReportLabel(horaReport, nomeSupervisorReport) && (
+                <span className="ds-mono-sm text-foreground/80 font-medium">
+                  - {formatReportLabel(horaReport, nomeSupervisorReport)}
                 </span>
               )}
             </div>
             <div className="self-center translate-y-[2px]">
-              <CopyIndisponibilidadeButton horaReport={horaReport} />
+              <CopyIndisponibilidadeButton
+                horaReport={horaReport}
+                nomeSupervisorReport={nomeSupervisorReport}
+              />
             </div>
           </div>
           <div className="min-w-0 flex-1 flex items-baseline gap-3 pl-2">
@@ -91,14 +120,16 @@ export function GestorIndisponibilidadeSection({
                 <span className="ds-mono text-muted-foreground">01</span>
                 <span className="ds-mono text-muted-foreground">·</span>
                 <h2 className="ds-h2">Equipe</h2>
-                {horaReport && horaReport !== "—" && (
-                  <span className="ds-mono-sm text-muted-foreground">
-                    - atualizado às{" "}
-                    {horaReport.match(/^(\d{1,2}:\d{2})/)?.[1] ?? horaReport}
+                {formatReportLabel(horaReport, nomeSupervisorReport) && (
+                  <span className="ds-mono-sm text-foreground/80 font-medium">
+                    - {formatReportLabel(horaReport, nomeSupervisorReport)}
                   </span>
                 )}
               </div>
-              <CopyIndisponibilidadeButton horaReport={horaReport} />
+              <CopyIndisponibilidadeButton
+                horaReport={horaReport}
+                nomeSupervisorReport={nomeSupervisorReport}
+              />
             </div>
             <IndisponibilidadeTable
               operadores={operadores}

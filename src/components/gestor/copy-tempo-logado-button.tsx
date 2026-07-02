@@ -49,10 +49,13 @@ async function copyFormattedHtml(html: string): Promise<void> {
 
 interface CopyTempoLogadoButtonProps {
   horaReport: string;
+  /** Nome do supervisor que fez o último report (BASE - 2!M2). */
+  nomeSupervisorReport?: string | null;
 }
 
 export function CopyTempoLogadoButton({
   horaReport,
+  nomeSupervisorReport,
 }: CopyTempoLogadoButtonProps) {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
 
@@ -71,11 +74,15 @@ export function CopyTempoLogadoButton({
         horaReport && horaReport !== "—"
           ? horaReport.match(/^(\d{1,2}:\d{2})/)?.[1] ?? horaReport
           : "—";
+      const nome = nomeSupervisorReport?.trim();
+      const textoReport = nome
+        ? `O supervisor <b>${escapeHtml(nome)}</b> fez um report às ${escapeHtml(hora)}`
+        : `report das ${escapeHtml(hora)}`;
 
       const html =
         `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">` +
         `<h2 style="font-size: 24px; margin: 0;"><b>TEMPO LOGADO</b></h2>` +
-        `<div style="margin-top: 4px;"><i>report das ${escapeHtml(hora)}</i></div>` +
+        `<div style="margin-top: 4px;"><i>${textoReport}</i></div>` +
         `<br>` +
         `<div style="margin-top: 8px;"><img src="${pngDataUrl}" style="display: block; max-width: 1000px; width: 100%;" alt="Tabela tempo logado"></div>` +
         `</div>`;

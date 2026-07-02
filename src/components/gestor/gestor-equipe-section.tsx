@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { IconEye, IconEyeOff } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 
@@ -10,11 +10,18 @@ import { UploadDropzone } from "@/components/d-1/upload-dropzone";
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
 import { clearConsolidadoAction } from "@/lib/google/d1/actions/clear-consolidado-action";
 import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
+import { formatReportLabel } from "@/lib/gestor/format-report-label";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
+import { refreshConsolidadoAction } from "@/lib/gestor/refresh/refresh-consolidado-action";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+
+// Intervalo do polling: reconsulta o Google Sheets a cada 30s para refletir
+// a base sem precisar de F5. 30s equilibra atualização rápida com a cota da
+// API do Sheets.
+const POLL_INTERVAL_MS = 30_000;
 
 interface GestorEquipeSectionProps {
   operadores: OperadorConsolidado[];
@@ -25,23 +32,45 @@ interface GestorEquipeSectionProps {
   showUpload?: boolean;
   nomeFantasia?: NomeFantasiaSerial;
   olhoInicial?: boolean;
+  /** Nome do supervisor que fez o último report (BASE - 1!T2). */
+  nomeSupervisorReport?: string | null;
 }
 
 export function GestorEquipeSection({
-  operadores,
-  equipe,
+  operadores: operadoresIniciais,
+  equipe: equipeInicial,
   gestora,
   showUpload = false,
   nomeFantasia,
   olhoInicial = false,
+  nomeSupervisorReport: nomeSupervisorReportInicial = null,
 }: GestorEquipeSectionProps) {
   const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
+  const [operadores, setOperadores] = useState(operadoresIniciais);
+  const [equipe, setEquipe] = useState(equipeInicial);
+  const [nomeSupervisorReport, setNomeSupervisorReport] = useState(
+    nomeSupervisorReportInicial,
+  );
 
   function handleToggleOlho() {
     const novoValor = !olhoAberto;
     setOlhoAberto(novoValor);
     void toggleOlhoAction("consolidado", novoValor);
   }
+
+  // Polling: reconsulta o Sheets a cada 30s (sem F5) e atualiza operadores +
+  // hora/nome do report se houver mudança.
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const result = await refreshConsolidadoAction();
+      if (result.success) {
+        setOperadores(result.operadores);
+        setEquipe(result.equipe);
+        setNomeSupervisorReport(result.nomeSupervisorReport);
+      }
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
 
   // Quando o olho está aberto, revela o nome real derivado do email original.
   // A tabela PNG usa sempre `operadores` (nomes fantasia já resolvidos no server).
@@ -76,9 +105,9 @@ export function GestorEquipeSection({
                 {olhoAberto ? <IconEye size={15} /> : <IconEyeOff size={15} />}
               </button>
             )}
-            {equipe.horaReport && equipe.horaReport !== "—" && (
-              <span className="ds-mono-sm text-muted-foreground">
-                - atualizado às {equipe.horaReport.match(/^(\d{1,2}:\d{2})/)?.[1] ?? equipe.horaReport}
+            {formatReportLabel(equipe.horaReport, nomeSupervisorReport) && (
+              <span className="ds-mono-sm text-foreground/80 font-medium">
+                - {formatReportLabel(equipe.horaReport, nomeSupervisorReport)}
               </span>
             )}
           </div>
@@ -88,6 +117,7 @@ export function GestorEquipeSection({
               operadores={operadores}
               equipe={equipe}
               supervisor={gestora}
+              nomeSupervisorReport={nomeSupervisorReport}
             />
             {showUpload && <ClearBaseButton action={clearConsolidadoAction} />}
           </div>

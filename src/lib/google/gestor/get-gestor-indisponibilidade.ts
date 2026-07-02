@@ -57,7 +57,7 @@ export async function fetchGestorIndisponibilidade(
     response = await sheets.spreadsheets.values.batchGet({
       spreadsheetId: sheetId,
       ranges: [
-        "'BASE - 2'!L2",     // hora do report (compartilhada com Tempo Logado)
+        "'BASE - 2'!L2:M2", // hora + nome do report (compartilhado com Tempo Logado)
         `'${guia}'!A2:AA100`,
       ],
     });
@@ -70,8 +70,11 @@ export async function fetchGestorIndisponibilidade(
   }
 
   const valueRanges = response.data.valueRanges ?? [];
-  const horaCell = valueRanges[0]?.values?.[0]?.[0];
+  const reportRow = valueRanges[0]?.values?.[0] ?? [];
+  const horaCell = reportRow[0];
   const horaReport = horaCell ? String(horaCell).trim() : "—";
+  const nomeCell = reportRow[1];
+  const nomeSupervisorReport = nomeCell ? String(nomeCell).trim() || null : null;
   const rows = valueRanges[1]?.values ?? [];
 
   const operadores: GestorIndispLinha[] = rows
@@ -145,5 +148,5 @@ export async function fetchGestorIndisponibilidade(
       };
     });
 
-  return { operadores, horaReport };
+  return { operadores, horaReport, nomeSupervisorReport };
 }

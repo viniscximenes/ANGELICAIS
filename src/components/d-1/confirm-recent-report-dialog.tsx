@@ -6,19 +6,25 @@ const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 interface ConfirmRecentReportDialogProps {
   open: boolean;
-  /** Minutos desde o último report (S2). */
-  minutesAgo: number;
+  /** Limite (minutos) que disparou o aviso — ex.: 5. */
+  limiteMinutos: number;
+  /** Hora "HH:MM" do último report (S2). */
+  hora: string;
+  /** Nome do supervisor que fez o último report (T2), se gravado. */
+  nomeSupervisor: string | null;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
 /**
- * Pop-up da regra dos 30 min: se a última base foi enviada há menos de 30
+ * Pop-up da regra dos 5 min: se a última base foi enviada há menos de 5
  * minutos, pede confirmação antes de enviar outra. Nunca bloqueia — só avisa.
  */
 export function ConfirmRecentReportDialog({
   open,
-  minutesAgo,
+  limiteMinutos,
+  hora,
+  nomeSupervisor,
   onConfirm,
   onCancel,
 }: ConfirmRecentReportDialogProps) {
@@ -49,9 +55,10 @@ export function ConfirmRecentReportDialog({
           >
             <h3 className="ds-h2 mb-1">Enviar outra base?</h3>
             <p className="ds-small text-muted-foreground mb-8">
-              A última base foi enviada há {minutesAgo}{" "}
-              {minutesAgo === 1 ? "minuto" : "minutos"}. Tem certeza que deseja
-              enviar outra agora?
+              {nomeSupervisor
+                ? `O supervisor ${nomeSupervisor} fez um report há menos de ${limiteMinutos} minutos (às ${hora}).`
+                : `A última base foi enviada há menos de ${limiteMinutos} minutos (às ${hora}).`}{" "}
+              Deseja realmente enviar outro?
             </p>
 
             <div className="flex justify-end gap-2">

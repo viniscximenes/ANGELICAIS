@@ -17,19 +17,26 @@ const MAX_ROWS = 10000;
 const EXPECTED_COLUMNS = 18; // A até R
 
 /**
- * Lê a hora do último report gravada em BASE - 1!S2 (formato "HH:MM").
- * Usada pela regra dos 30 min e para exibir a hora do report no painel.
- * Retorna null se a célula estiver vazia.
+ * Lê a hora (S2) e o nome do supervisor (T2) do último report da BASE - 1.
+ * Usada pela regra dos 5 min e para exibir "quem fez o report" no painel.
+ * Campos retornam null se a célula estiver vazia.
  */
-export async function fetchUltimoReportHora(): Promise<string | null> {
+export async function fetchUltimoReportInfo(): Promise<{
+  hora: string | null;
+  nomeSupervisor: string | null;
+}> {
   const { sheets, sheetId } = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: `'${BASE_SHEET}'!S2`,
+    range: `'${BASE_SHEET}'!S2:T2`,
   });
-  const val = res.data.values?.[0]?.[0];
-  const str = val == null ? "" : String(val).trim();
-  return str || null;
+  const row = res.data.values?.[0] ?? [];
+  const hora = String(row[0] ?? "").trim();
+  const nomeSupervisor = String(row[1] ?? "").trim();
+  return {
+    hora: hora || null,
+    nomeSupervisor: nomeSupervisor || null,
+  };
 }
 
 /**
@@ -39,6 +46,7 @@ export async function fetchUltimoReportHora(): Promise<string | null> {
  */
 export async function uploadBaseToSheet(
   parsedRows: string[][],
+  supervisorNome: string,
   onProgress?: (step: UploadProgress) => void,
 ): Promise<UploadResult> {
   try {
@@ -95,11 +103,11 @@ export async function uploadBaseToSheet(
       requestBody: { values: dataRows },
     });
 
-    // GRAVA a hora do report (HH:MM).
-    // - BASE - 1!S2: fonte usada pelas guias de leitura (ex.: painel do gestor)
-    //   e pela regra dos 30 min. Fica FORA da faixa A:R, então nem o clear nem
-    //   a colagem do CSV a tocam.
-    // - CONSOLIDADO!L2: mantida para não quebrar o D-1 da empresa (fluxo atual).
+    // GRAVA a hora do report (HH:MM) e o nome de quem fez o upload.
+    // - BASE - 1!S2: hora, fonte usada pelas guias de leitura (ex.: painel do
+    //   gestor) e pela regra dos 5 min. Fica FORA da faixa A:R, então nem o
+    //   clear nem a colagem do CSV a tocam.
+    // - BASE - 1!T2: nome do supervisor que fez o upload, mesma lógica.
     onProgress?.("stamping");
 
     const { hour, minute } = getTimePartsInBR();
@@ -111,6 +119,7 @@ export async function uploadBaseToSheet(
         valueInputOption: "USER_ENTERED",
         data: [
           { range: `'${BASE_SHEET}'!S2`, values: [[hora]] },
+          { range: `'${BASE_SHEET}'!T2`, values: [[supervisorNome]] },
         ],
       },
     });

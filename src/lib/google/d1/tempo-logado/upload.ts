@@ -18,11 +18,12 @@ const EXPECTED_COLUMNS = 11; // A até K
 
 /**
  * Recebe o CSV já parseado como matriz (linha 0 = cabeçalho).
- * Valida estrutura, limpa a BASE - 2, escreve, e grava hora em
- * TEMPO LOGADO!F2.
+ * Valida estrutura, limpa a BASE - 2, escreve, e grava hora + nome do
+ * supervisor em BASE - 2!L2:M2.
  */
 export async function uploadBase2ToSheet(
   parsedRows: string[][],
+  supervisorNome: string,
   onProgress?: (step: UploadProgress) => void,
 ): Promise<UploadResult> {
   try {
@@ -68,17 +69,21 @@ export async function uploadBase2ToSheet(
       requestBody: { values: dataRows },
     });
 
-    // STAMP HORA em TEMPO LOGADO!F2
+    // GRAVA a hora do report (L2) e o nome de quem fez o upload (M2).
     onProgress?.("stamping");
 
     const { hour, minute } = getTimePartsInBR();
     const hora = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 
-    await sheets.spreadsheets.values.update({
+    await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: sheetId,
-      range: `'${BASE_SHEET}'!L2`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[hora]] },
+      requestBody: {
+        valueInputOption: "USER_ENTERED",
+        data: [
+          { range: `'${BASE_SHEET}'!L2`, values: [[hora]] },
+          { range: `'${BASE_SHEET}'!M2`, values: [[supervisorNome]] },
+        ],
+      },
     });
 
     return { success: true, rowsWritten: dataRows.length };

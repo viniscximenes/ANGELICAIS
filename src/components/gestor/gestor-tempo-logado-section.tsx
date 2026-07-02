@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 import { UploadTempoLogadoDropzone } from "@/components/d-1/tempo-logado/upload-tempo-logado-dropzone";
+import { formatReportLabel } from "@/lib/gestor/format-report-label";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
+import { refreshTempoLogadoAction } from "@/lib/gestor/refresh/refresh-tempo-logado-action";
 import type { GestorTempoLogadoLinha } from "@/lib/google/gestor/tempo-logado-types";
 import { computeTempoLogadoResumo } from "@/lib/google/gestor/compute-tempo-logado-resumo";
 
@@ -18,22 +20,33 @@ import { TempoLogadoTable } from "./tempo-logado-table";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
+// Reconsulta o Google Sheets a cada 30s para refletir a base sem F5.
+const POLL_INTERVAL_MS = 30_000;
+
 interface GestorTempoLogadoSectionProps {
   operadores: GestorTempoLogadoLinha[];
   horaReport: string;
+  /** Nome do supervisor que fez o último report (BASE - 2!M2). */
+  nomeSupervisorReport?: string | null;
   showUpload?: boolean;
   nomeFantasia?: NomeFantasiaSerial;
   olhoInicial?: boolean;
 }
 
 export function GestorTempoLogadoSection({
-  operadores,
-  horaReport,
+  operadores: operadoresIniciais,
+  horaReport: horaReportInicial,
+  nomeSupervisorReport: nomeSupervisorReportInicial = null,
   showUpload = false,
   nomeFantasia,
   olhoInicial = false,
 }: GestorTempoLogadoSectionProps) {
   const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
+  const [operadores, setOperadores] = useState(operadoresIniciais);
+  const [horaReport, setHoraReport] = useState(horaReportInicial);
+  const [nomeSupervisorReport, setNomeSupervisorReport] = useState(
+    nomeSupervisorReportInicial,
+  );
   const resumo = computeTempoLogadoResumo(operadores);
 
   function handleToggleOlho() {
@@ -41,6 +54,20 @@ export function GestorTempoLogadoSection({
     setOlhoAberto(novoValor);
     void toggleOlhoAction("tempo_logado", novoValor);
   }
+
+  // Polling: reconsulta o Sheets a cada 30s (sem F5) e atualiza operadores +
+  // hora/nome do report se houver mudança.
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const result = await refreshTempoLogadoAction();
+      if (result.success) {
+        setOperadores(result.operadores);
+        setHoraReport(result.horaReport);
+        setNomeSupervisorReport(result.nomeSupervisorReport);
+      }
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <motion.section
@@ -56,15 +83,18 @@ export function GestorTempoLogadoSection({
             <span className="ds-mono text-muted-foreground">01</span>
             <span className="ds-mono text-muted-foreground">·</span>
             <h2 className="ds-h2">Equipe</h2>
-            {horaReport && horaReport !== "—" && (
-              <span className="ds-mono-sm text-muted-foreground">
-                - atualizado às {horaReport.match(/^(\d{1,2}:\d{2})/)?.[1] ?? horaReport}
+            {formatReportLabel(horaReport, nomeSupervisorReport) && (
+              <span className="ds-mono-sm text-foreground/80 font-medium">
+                - {formatReportLabel(horaReport, nomeSupervisorReport)}
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-2">
-            <CopyTempoLogadoButton horaReport={horaReport} />
+            <CopyTempoLogadoButton
+              horaReport={horaReport}
+              nomeSupervisorReport={nomeSupervisorReport}
+            />
             {showUpload && <ClearBaseButton action={clearTempoLogadoAction} />}
           </div>
         </div>

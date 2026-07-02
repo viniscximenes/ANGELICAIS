@@ -89,6 +89,7 @@ export default async function GestorIndisponibilidadePage() {
           <GestorIndisponibilidadeSection
             operadores={data.operadores}
             horaReport={data.horaReport ?? "—"}
+            nomeSupervisorReport={data.nomeSupervisorReport ?? null}
             nomeFantasia={{
               ativo: nomeFantasiaConfig.ativo,
               mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
