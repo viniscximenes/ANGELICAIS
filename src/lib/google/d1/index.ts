@@ -6,6 +6,7 @@ import {
   parseNumber,
   parsePercent,
 } from "./parse";
+import { decodeReportStamp } from "./report-stamp";
 import type {
   D1Data,
   ConsolidadoData,
@@ -58,7 +59,7 @@ export async function getD1Data(): Promise<D1Data> {
 
   const valueRanges = response.data.valueRanges ?? [];
   const horaCell = valueRanges[0]?.values?.[0]?.[0];
-  const horaReport = parseHora(horaCell);
+  const horaReport = parseHora(decodeReportStamp(horaCell).hora);
 
   const consolidadoOperadores: OperadorConsolidado[] = [];
   const totaisPorSupervisor: TotaisSupervisor[] = [];

@@ -10,6 +10,7 @@ interface EquipeTableProps {
   variant?: "screen" | "excel";
   /** Esconde a linha de totais (EQUIPE) — usado na busca de 1 operador. */
   hideTotais?: boolean;
+  headerButton?: React.ReactNode;
 }
 
 const META_TX = 0.6;
@@ -29,7 +30,7 @@ function meetsMeta(tx: number): boolean {
 
 export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
   function EquipeTable(
-    { operadores, equipe, variant = "screen", hideTotais },
+    { operadores, equipe, variant = "screen", hideTotais, headerButton },
     ref,
   ) {
     if (variant === "excel") {
@@ -48,6 +49,7 @@ export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
         operadores={operadores}
         equipe={equipe}
         hideTotais={hideTotais}
+        headerButton={headerButton}
       />
     );
   },
@@ -58,7 +60,7 @@ export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
    ──────────────────────────────────────────────────────────────────── */
 
 const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
-  function ScreenTable({ operadores, equipe, hideTotais }, ref) {
+  function ScreenTable({ operadores, equipe, hideTotais, headerButton }, ref) {
     const equipeMeets =
       equipe.txRetencao !== null && meetsMeta(equipe.txRetencao);
 
@@ -73,8 +75,9 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           className="ds-mono-sm text-muted-foreground grid grid-cols-12 gap-0 font-semibold tracking-wider uppercase bg-muted/40"
           style={{ borderBottom: "1px solid var(--border)" }}
         >
-          <div className="col-span-3 px-3 py-2.5 text-center border-r border-border/50">
-            Operador
+          <div className="col-span-3 px-3 py-2.5 text-center border-r border-border/50 flex items-center justify-center gap-1.5">
+            <span>Operador</span>
+            {headerButton}
           </div>
           <div className="col-span-2 px-3 py-2.5 text-center border-r border-border/50">
             Retidos

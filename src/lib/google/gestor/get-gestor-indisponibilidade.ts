@@ -1,4 +1,5 @@
 import { parsePercent } from "../d1/parse";
+import { decodeReportStamp } from "../d1/report-stamp";
 import { getSheetsClient } from "../sheets-client";
 import {
   META_INDISPONIBILIDADE,
@@ -57,7 +58,7 @@ export async function fetchGestorIndisponibilidade(
     response = await sheets.spreadsheets.values.batchGet({
       spreadsheetId: sheetId,
       ranges: [
-        "'BASE - 2'!L2:M2", // hora + nome do report (compartilhado com Tempo Logado)
+        "'BASE - 2'!L2", // hora + nome do report (compartilhado com Tempo Logado)
         `'${guia}'!A2:AA100`,
       ],
     });
@@ -70,11 +71,10 @@ export async function fetchGestorIndisponibilidade(
   }
 
   const valueRanges = response.data.valueRanges ?? [];
-  const reportRow = valueRanges[0]?.values?.[0] ?? [];
-  const horaCell = reportRow[0];
-  const horaReport = horaCell ? String(horaCell).trim() : "—";
-  const nomeCell = reportRow[1];
-  const nomeSupervisorReport = nomeCell ? String(nomeCell).trim() || null : null;
+  const { hora: horaRaw, nomeSupervisor: nomeSupervisorReport } = decodeReportStamp(
+    valueRanges[0]?.values?.[0]?.[0],
+  );
+  const horaReport = horaRaw ? String(horaRaw).trim() : "—";
   const rows = valueRanges[1]?.values ?? [];
 
   const operadores: GestorIndispLinha[] = rows

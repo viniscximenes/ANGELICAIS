@@ -32,7 +32,7 @@ interface GestorEquipeSectionProps {
   showUpload?: boolean;
   nomeFantasia?: NomeFantasiaSerial;
   olhoInicial?: boolean;
-  /** Nome do supervisor que fez o último report (BASE - 1!T2). */
+  /** Nome do supervisor que fez o último report (BASE - 1!S2, junto com a hora). */
   nomeSupervisorReport?: string | null;
 }
 
@@ -95,16 +95,6 @@ export function GestorEquipeSection({
             <span className="ds-mono text-muted-foreground">01</span>
             <span className="ds-mono text-muted-foreground">·</span>
             <h2 className="ds-h2">Equipe</h2>
-            {nomeFantasia?.ativo && (
-              <button
-                type="button"
-                onClick={handleToggleOlho}
-                title={olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"}
-                className="text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-              >
-                {olhoAberto ? <IconEye size={15} /> : <IconEyeOff size={15} />}
-              </button>
-            )}
             {formatReportLabel(equipe.horaReport, nomeSupervisorReport) && (
               <span className="ds-mono-sm text-foreground/80 font-medium">
                 - {formatReportLabel(equipe.horaReport, nomeSupervisorReport)}
@@ -154,6 +144,18 @@ export function GestorEquipeSection({
               key="gestor-equipe-visible"
               operadores={operadoresParaTela}
               equipe={equipe}
+              headerButton={
+                nomeFantasia?.ativo && (
+                  <button
+                    type="button"
+                    onClick={handleToggleOlho}
+                    title={olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"}
+                    className="text-muted-foreground/60 hover:text-muted-foreground transition-colors inline-flex items-center"
+                  >
+                    {olhoAberto ? <IconEye size={14} /> : <IconEyeOff size={14} />}
+                  </button>
+                )
+              }
             />
           </div>
 

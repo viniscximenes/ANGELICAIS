@@ -1,6 +1,7 @@
 import { getTimePartsInBR } from "@/lib/utils/format-datetime-br";
 
 import { getSheetsClient } from "../sheets-client";
+import { decodeReportStamp, encodeReportStamp } from "./report-stamp";
 
 export type UploadProgress =
   | "validating"
@@ -17,8 +18,9 @@ const MAX_ROWS = 10000;
 const EXPECTED_COLUMNS = 18; // A até R
 
 /**
- * Lê a hora (S2) e o nome do supervisor (T2) do último report da BASE - 1.
- * Usada pela regra dos 5 min e para exibir "quem fez o report" no painel.
+ * Lê a hora e o nome do supervisor do último report da BASE - 1, gravados
+ * juntos em S2 (ver report-stamp.ts — a guia não tem coluna livre depois de
+ * S). Usada pela regra dos 5 min e para exibir "quem fez o report" no painel.
  * Campos retornam null se a célula estiver vazia.
  */
 export async function fetchUltimoReportInfo(): Promise<{
@@ -28,14 +30,15 @@ export async function fetchUltimoReportInfo(): Promise<{
   const { sheets, sheetId } = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: `'${BASE_SHEET}'!S2:T2`,
+    range: `'${BASE_SHEET}'!S2`,
   });
-  const row = res.data.values?.[0] ?? [];
-  const hora = String(row[0] ?? "").trim();
-  const nomeSupervisor = String(row[1] ?? "").trim();
+  const { hora: horaRaw, nomeSupervisor } = decodeReportStamp(
+    res.data.values?.[0]?.[0],
+  );
+  const hora = String(horaRaw ?? "").trim();
   return {
     hora: hora || null,
-    nomeSupervisor: nomeSupervisor || null,
+    nomeSupervisor,
   };
 }
 
@@ -103,25 +106,22 @@ export async function uploadBaseToSheet(
       requestBody: { values: dataRows },
     });
 
-    // GRAVA a hora do report (HH:MM) e o nome de quem fez o upload.
-    // - BASE - 1!S2: hora, fonte usada pelas guias de leitura (ex.: painel do
-    //   gestor) e pela regra dos 5 min. Fica FORA da faixa A:R, então nem o
-    //   clear nem a colagem do CSV a tocam.
-    // - BASE - 1!T2: nome do supervisor que fez o upload, mesma lógica.
+    // GRAVA a hora do report (HH:MM) e o nome de quem fez o upload, juntos
+    // em S2 ("HH:MM|NOME" — ver report-stamp.ts). Fonte usada pelas guias de
+    // leitura (ex.: painel do gestor) e pela regra dos 5 min. Fica FORA da
+    // faixa A:R, então nem o clear nem a colagem do CSV a tocam.
+    // A guia BASE - 1 tem só 19 colunas (até S); gravar o nome à parte em T
+    // (coluna 20) estoura o limite da grade ("exceeds grid limits").
     onProgress?.("stamping");
 
     const { hour, minute } = getTimePartsInBR();
     const hora = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 
-    await sheets.spreadsheets.values.batchUpdate({
+    await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
-      requestBody: {
-        valueInputOption: "USER_ENTERED",
-        data: [
-          { range: `'${BASE_SHEET}'!S2`, values: [[hora]] },
-          { range: `'${BASE_SHEET}'!T2`, values: [[supervisorNome]] },
-        ],
-      },
+      range: `'${BASE_SHEET}'!S2`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [[encodeReportStamp(hora, supervisorNome)]] },
     });
 
     return { success: true, rowsWritten: dataRows.length };

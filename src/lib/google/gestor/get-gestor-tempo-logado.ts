@@ -1,3 +1,4 @@
+import { decodeReportStamp } from "../d1/report-stamp";
 import { getSheetsClient } from "../sheets-client";
 import type {
   GestorTempoLogadoData,
@@ -70,7 +71,7 @@ export async function fetchGestorTempoLogado(
     response = await sheets.spreadsheets.values.batchGet({
       spreadsheetId: sheetId,
       ranges: [
-        "'BASE - 2'!L2:M2",
+        "'BASE - 2'!L2",
         `'${guia}'!A2:G100`,
       ],
     });
@@ -80,11 +81,10 @@ export async function fetchGestorTempoLogado(
   }
 
   const valueRanges = response.data.valueRanges ?? [];
-  const reportRow = valueRanges[0]?.values?.[0] ?? [];
-  const horaCell = reportRow[0];
-  const horaReport = horaCell ? String(horaCell).trim() : "—";
-  const nomeCell = reportRow[1];
-  const nomeSupervisorReport = nomeCell ? String(nomeCell).trim() || null : null;
+  const { hora: horaRaw, nomeSupervisor: nomeSupervisorReport } = decodeReportStamp(
+    valueRanges[0]?.values?.[0]?.[0],
+  );
+  const horaReport = horaRaw ? String(horaRaw).trim() : "—";
   const rows = valueRanges[1]?.values ?? [];
 
   const operadores: GestorTempoLogadoLinha[] = rows

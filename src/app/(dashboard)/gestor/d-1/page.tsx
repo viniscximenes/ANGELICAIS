@@ -56,7 +56,7 @@ export default async function GestorD1Page() {
 
   const [data, reportInfo, nomeFantasiaConfig] = await Promise.all([
     fetchGestorData(guia),
-    fetchUltimoReportInfo(), // hora + nome (BASE - 1!S2:T2), para o export
+    fetchUltimoReportInfo(), // hora + nome (BASE - 1!S2), para o export
     getNomeFantasiaConfig(user.profile.id),
   ]);
 

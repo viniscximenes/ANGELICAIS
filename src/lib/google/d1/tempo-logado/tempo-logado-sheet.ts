@@ -1,5 +1,6 @@
 import { getSheetsClient } from "../../sheets-client";
 import { parseHora } from "../parse";
+import { decodeReportStamp } from "../report-stamp";
 import { parseTimeHHMMSS } from "./parse";
 import type { OperadorTempoLogado } from "./types";
 
@@ -32,7 +33,7 @@ export async function fetchTempoLogado(): Promise<{
 
   const valueRanges = response.data.valueRanges ?? [];
   const horaCell = valueRanges[0]?.values?.[0]?.[0];
-  const horaReport = parseHora(horaCell);
+  const horaReport = parseHora(decodeReportStamp(horaCell).hora);
 
   const operadores: OperadorTempoLogado[] = [];
 

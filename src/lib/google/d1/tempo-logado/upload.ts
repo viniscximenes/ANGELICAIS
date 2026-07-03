@@ -1,6 +1,7 @@
 import { getTimePartsInBR } from "@/lib/utils/format-datetime-br";
 
 import { getSheetsClient } from "../../sheets-client";
+import { encodeReportStamp } from "../report-stamp";
 
 export type UploadProgress =
   | "validating"
@@ -19,7 +20,9 @@ const EXPECTED_COLUMNS = 11; // A até K
 /**
  * Recebe o CSV já parseado como matriz (linha 0 = cabeçalho).
  * Valida estrutura, limpa a BASE - 2, escreve, e grava hora + nome do
- * supervisor em BASE - 2!L2:M2.
+ * supervisor juntos em BASE - 2!L2 ("HH:MM|NOME" — ver report-stamp.ts).
+ * A guia BASE - 2 tem só 12 colunas (até L); gravar o nome à parte em M
+ * (coluna 13) estoura o limite da grade ("exceeds grid limits").
  */
 export async function uploadBase2ToSheet(
   parsedRows: string[][],
@@ -69,21 +72,17 @@ export async function uploadBase2ToSheet(
       requestBody: { values: dataRows },
     });
 
-    // GRAVA a hora do report (L2) e o nome de quem fez o upload (M2).
+    // GRAVA a hora do report e o nome de quem fez o upload, juntos em L2.
     onProgress?.("stamping");
 
     const { hour, minute } = getTimePartsInBR();
     const hora = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 
-    await sheets.spreadsheets.values.batchUpdate({
+    await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
-      requestBody: {
-        valueInputOption: "USER_ENTERED",
-        data: [
-          { range: `'${BASE_SHEET}'!L2`, values: [[hora]] },
-          { range: `'${BASE_SHEET}'!M2`, values: [[supervisorNome]] },
-        ],
-      },
+      range: `'${BASE_SHEET}'!L2`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [[encodeReportStamp(hora, supervisorNome)]] },
     });
 
     return { success: true, rowsWritten: dataRows.length };

@@ -26,7 +26,7 @@ const POLL_INTERVAL_MS = 30_000;
 interface GestorTempoLogadoSectionProps {
   operadores: GestorTempoLogadoLinha[];
   horaReport: string;
-  /** Nome do supervisor que fez o último report (BASE - 2!M2). */
+  /** Nome do supervisor que fez o último report (BASE - 2!L2, junto com a hora). */
   nomeSupervisorReport?: string | null;
   showUpload?: boolean;
   nomeFantasia?: NomeFantasiaSerial;

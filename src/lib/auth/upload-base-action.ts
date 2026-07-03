@@ -16,9 +16,10 @@ export type UploadActionResult =
   | { success: false; error: string };
 
 /**
- * Lê a hora e o nome do supervisor do último report (BASE - 1!S2:T2) para a
- * regra dos 5 min no client. Gated por manage_d1_base. Retorna nulls em
- * qualquer falha (a regra é apenas um aviso — nunca bloqueia o upload).
+ * Lê a hora e o nome do supervisor do último report (BASE - 1!S2, gravados
+ * juntos na mesma célula) para a regra dos 5 min no client. Gated por
+ * manage_d1_base. Retorna nulls em qualquer falha (a regra é apenas um
+ * aviso — nunca bloqueia o upload).
  */
 export async function getUltimoReportHoraAction(): Promise<{
   hora: string | null;
@@ -31,7 +32,7 @@ export async function getUltimoReportHoraAction(): Promise<{
   try {
     return await fetchUltimoReportInfo();
   } catch (err) {
-    console.error("[upload-base] erro ao ler hora do report (S2:T2):", err);
+    console.error("[upload-base] erro ao ler hora do report (S2):", err);
     return { hora: null, nomeSupervisor: null };
   }
 }

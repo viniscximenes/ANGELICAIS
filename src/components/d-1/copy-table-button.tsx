@@ -95,7 +95,7 @@ interface CopyTableButtonProps {
   operadores: OperadorConsolidado[];
   equipe: ResumoEquipe;
   supervisor?: string;
-  /** Nome do supervisor que fez o último report (BASE - 1!T2). */
+  /** Nome do supervisor que fez o último report (BASE - 1!S2, junto com a hora). */
   nomeSupervisorReport?: string | null;
 }
 

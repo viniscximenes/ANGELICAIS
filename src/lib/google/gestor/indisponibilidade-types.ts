@@ -33,7 +33,7 @@ export type GestorIndispLinha = {
 export type GestorIndispData = {
   operadores: GestorIndispLinha[];
   horaReport?: string; // BASE - 2!L2, compartilhada com o Tempo Logado
-  nomeSupervisorReport?: string | null; // BASE - 2!M2, idem
+  nomeSupervisorReport?: string | null; // BASE - 2!L2, junto com a hora
 };
 
 export type IndispResumo = {
