@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { IconEye, IconEyeOff } from "@tabler/icons-react";
+import Link from "next/link";
+import { IconEye, IconEyeOff, IconChartBar } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 
 import { CopyTableButton } from "@/components/d-1/copy-table-button";
@@ -103,6 +104,15 @@ export function GestorEquipeSection({
           </div>
 
           <div className="flex items-center gap-2">
+            <Link
+              href="/analitico/consolidado"
+              className="elevation-2 text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors cursor-pointer"
+              style={{ border: "1px solid var(--border)", fontSize: "12px" }}
+            >
+              <IconChartBar size={14} aria-hidden="true" />
+              <span className="ds-mono-sm">Analítico Consolidado</span>
+            </Link>
+
             <CopyTableButton
               operadores={operadores}
               equipe={equipe}

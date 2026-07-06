@@ -65,6 +65,8 @@ Quando a página justificar, adicionar:
 - [Feedback — Tempo Logado](docs/pages/feedback-tempo-logado.md) — gerador de Word do feedback de tempo logado (médias de tempo/login/deslog com janela de horário)
 - [Feedback — Indisponibilidade](docs/pages/feedback-indisponibilidade.md) — gerador de Word do feedback de indisponibilidade (médias de NR17, particular e outras pausas)
 - [Configurações do Supervisor — Operadores do D-1](docs/pages/config-supervisor-operadores-d1.md) — adicionar/excluir operadores das guias do D-1 (edição direta no Sheets)
+- [Dashboard de Retenção — Fundação](docs/pages/dashboard-retencao-fundacao.md) — importação da base de atendimentos para o banco (fundação do dashboard analítico)
+- [Dashboard de Retenção](docs/pages/dashboard-retencao.md) — painel analítico da base de retenção (equipe/empresa, temas, evolução, alertas, contribuição pra queda)
 
 ## Status possíveis
 

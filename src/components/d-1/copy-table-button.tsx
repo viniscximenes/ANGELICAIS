@@ -21,17 +21,12 @@ function escapeHtml(str: string): string {
     .replace(/>/g, "&gt;");
 }
 
-function formatReportTexto(hora: string, nomeSupervisor?: string | null): string {
-  const nome = nomeSupervisor?.trim();
-  if (nome) {
-    return `O supervisor <b>${escapeHtml(nome)}</b> fez um report às ${escapeHtml(hora)}`;
-  }
-  return `report das ${escapeHtml(hora)}`;
+function formatReportTexto(hora: string): string {
+  return `report às ${escapeHtml(hora)}`;
 }
 
 function formatReportHtml(
   hora: string,
-  nomeSupervisor: string | null | undefined,
   pngDataUrl: string,
 ): string {
   // Blocos empilhados verticalmente, nesta ordem: título → report → imagem.
@@ -41,8 +36,8 @@ function formatReportHtml(
   // garante a quebra de linha e o <i> o itálico. A <img> fica em bloco com
   // display:block (+ <br> de reforço) para não fluir ao lado do texto.
   const parts: string[] = [
-    `<h2 style="font-size: 24px; margin: 0;"><b>D-1 CONSOLIDADO</b></h2>`,
-    `<div style="margin-top: 4px;"><i>${formatReportTexto(hora, nomeSupervisor)}</i></div>`,
+    `<h2 style="font-size: 16px; margin: 0;"><b>D-1 CONSOLIDADO</b></h2>`,
+    `<div style="margin-top: 4px;"><i>${formatReportTexto(hora)}</i></div>`,
     `<br>`,
     `<div style="margin-top: 8px;"><img src="${pngDataUrl}" style="display: block; max-width: 1000px; width: 100%;" alt="Tabela consolidado"></div>`,
   ];
@@ -99,7 +94,7 @@ interface CopyTableButtonProps {
   nomeSupervisorReport?: string | null;
 }
 
-export function CopyTableButton({ equipe, nomeSupervisorReport }: CopyTableButtonProps) {
+export function CopyTableButton({ equipe }: CopyTableButtonProps) {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
 
   async function handleCopy() {
@@ -115,7 +110,7 @@ export function CopyTableButton({ equipe, nomeSupervisorReport }: CopyTableButto
     try {
       const pngDataUrl = await domToPng(target, { scale: 3 });
       const hora = getHoraReport(equipe);
-      const html = formatReportHtml(hora, nomeSupervisorReport, pngDataUrl);
+      const html = formatReportHtml(hora, pngDataUrl);
 
       await copyFormattedHtml(html);
 

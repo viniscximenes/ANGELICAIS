@@ -110,7 +110,7 @@ export function CopyIndisponibilidadeButton({
       onClick={handleCopy}
       disabled={state === "copying"}
       className="elevation-2 text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors"
-      style={{ border: "1px solid var(--border)", fontSize: "12px" }}
+      style={{ border: "1px solid var(--border)", fontSize: "12px", whiteSpace: "nowrap" }}
     >
       {state === "copying" && (
         <>

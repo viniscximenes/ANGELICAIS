@@ -53,17 +53,18 @@ export function UploadDropzone({
   const [rowsWritten, setRowsWritten] = useState<number>(0);
   // Regra dos 5 min: linhas pendentes aguardando confirmação no dialog.
   const [pendingRows, setPendingRows] = useState<string[][] | null>(null);
+  const [pendingCsvText, setPendingCsvText] = useState<string>("");
   const [ultimoReportHora, setUltimoReportHora] = useState("");
   const [ultimoReportNome, setUltimoReportNome] = useState<string | null>(null);
 
   // Executa o upload de fato (etapas + action + reload). Separado para poder
   // ser disparado tanto direto quanto após a confirmação do dialog.
-  const processUpload = useCallback(async (rows: string[][]) => {
+  const processUpload = useCallback(async (rows: string[][], csvText?: string) => {
     setStep("deleting");
     await new Promise((r) => setTimeout(r, 400));
 
     setStep("replacing");
-    const uploadResult = await uploadBaseAction(rows);
+    const uploadResult = await uploadBaseAction(rows, csvText);
 
     if (!uploadResult.success) {
       setStep(null);
@@ -76,7 +77,7 @@ export function UploadDropzone({
 
     setRowsWritten(uploadResult.rowsWritten);
     setStep("done");
-    toast.success("Base atualizada", {
+    toast.success("Base updated", {
       description: `${uploadResult.rowsWritten} linhas inseridas`,
     });
 
@@ -88,12 +89,15 @@ export function UploadDropzone({
 
   const handleConfirmSend = useCallback(() => {
     const rows = pendingRows;
+    const csv = pendingCsvText;
     setPendingRows(null);
-    if (rows) void processUpload(rows);
-  }, [pendingRows, processUpload]);
+    setPendingCsvText("");
+    if (rows) void processUpload(rows, csv);
+  }, [pendingRows, pendingCsvText, processUpload]);
 
   const handleCancelSend = useCallback(() => {
     setPendingRows(null);
+    setPendingCsvText("");
     setStep(null);
   }, []);
 
@@ -156,12 +160,13 @@ export function UploadDropzone({
               setUltimoReportHora(hora ?? "");
               setUltimoReportNome(nomeSupervisor);
               setPendingRows(rows);
+              setPendingCsvText(csvText);
               setStep(null); // esconde o progresso enquanto o dialog decide
               return;
             }
           }
 
-          await processUpload(rows);
+          await processUpload(rows, csvText);
         },
         error: (err: Error) => {
           setStep(null);

@@ -2,12 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 
+import Papa from "papaparse";
+
 import { saveEvolucaoAction } from "@/lib/d1/evolucao/actions/save-evolucao-action";
 import { fetchConsolidado } from "@/lib/google/d1";
 import {
   fetchUltimoReportInfo,
   uploadBaseToSheet,
 } from "@/lib/google/d1/upload";
+import { parseBaseRetencao } from "@/lib/retencao/parse-base-retencao";
+import { salvarBaseRetencao } from "@/lib/retencao/salvar-base-retencao";
 import { getCurrentUser } from "./get-current-user";
 import { can } from "./permissions";
 
@@ -39,6 +43,7 @@ export async function getUltimoReportHoraAction(): Promise<{
 
 export async function uploadBaseAction(
   parsedRows: string[][],
+  csvText?: string,
 ): Promise<UploadActionResult> {
   const user = await getCurrentUser();
 
@@ -53,7 +58,38 @@ export async function uploadBaseAction(
   const result = await uploadBaseToSheet(parsedRows, user.profile.fullName);
 
   if (result.success) {
-    // Snapshot da evolução da TX (complementar — falha silenciosa não bloqueia upload).
+    // 1. IMPORTAÇÃO NO BANCO DE DADOS DE RETENÇÃO (Fase 1 - Parte 2)
+    // Feito de forma isolada para que falhas no Supabase não quebrem o fluxo do Sheets (D-1).
+    try {
+      const content = csvText || Papa.unparse(parsedRows);
+      const parseResult = parseBaseRetencao(content);
+      
+      console.info(
+        `[upload-base-banco] parse concluído. Lidas: ${parseResult.lidas}, válidas: ${parseResult.validas}, puladas: ${parseResult.puladas}`,
+      );
+
+      if (parseResult.linhas.length > 0) {
+        const dbResult = await salvarBaseRetencao(parseResult.linhas);
+        if (dbResult.success) {
+          console.info(
+            `[upload-base-banco] persistência concluída com sucesso: ${dbResult.rowsWritten} linhas gravadas no Supabase.`,
+          );
+        } else {
+          console.error(
+            `[upload-base-banco] falha ao gravar no banco: ${dbResult.error}`,
+          );
+        }
+      } else {
+        console.warn("[upload-base-banco] aviso: nenhuma linha válida de retenção encontrada para gravação.");
+      }
+    } catch (dbErr) {
+      console.error(
+        "[upload-base-banco] erro inesperado no fluxo de salvamento do banco de dados:",
+        dbErr,
+      );
+    }
+
+    // 2. Snapshot da evolução da TX (complementar — falha silenciosa não bloqueia upload).
     try {
       const consolidado = await fetchConsolidado();
       // FASE 1: a estrutura nova não tem mais um total único de equipe. Como

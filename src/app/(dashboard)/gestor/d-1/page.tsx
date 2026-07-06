@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { GestorContratosSection } from "@/components/gestor/gestor-contratos-section";
 import { GestorEquipeSection } from "@/components/gestor/gestor-equipe-section";
-import { GestorMotivosSection } from "@/components/gestor/gestor-motivos-section";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
@@ -112,6 +110,7 @@ export default async function GestorD1Page() {
   return (
     <PageTransition>
       <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
+        <style dangerouslySetInnerHTML={{ __html: `body { overflow: hidden !important; }` }} />
         <div className="mx-auto max-w-7xl space-y-8">
           <header className="flex flex-col gap-2">
             <div className="flex flex-wrap items-baseline gap-3">
@@ -131,14 +130,6 @@ export default async function GestorD1Page() {
               nomeFantasia={nomeFantasia}
               olhoInicial={nomeFantasiaConfig.olhoConsolidado}
               nomeSupervisorReport={reportInfo.nomeSupervisor}
-            />
-            <GestorMotivosSection
-              txPorMotivo={data.txPorMotivo}
-              operadores={data.operadores}
-            />
-            <GestorContratosSection
-              contratosRetidos={data.contratosRetidos}
-              contratosCancelados={data.contratosCancelados}
             />
           </div>
         </div>
