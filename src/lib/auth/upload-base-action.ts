@@ -42,8 +42,7 @@ export async function getUltimoReportHoraAction(): Promise<{
 }
 
 export async function uploadBaseAction(
-  parsedRows: string[][],
-  csvText?: string,
+  csvText: string,
 ): Promise<UploadActionResult> {
   const user = await getCurrentUser();
 
@@ -55,21 +54,40 @@ export async function uploadBaseAction(
     return { success: false, error: "Sem permissão para atualizar a base" };
   }
 
+  // Parse CSV no servidor para evitar estouro de limite de aninhamento
+  const parsed = Papa.parse<string[]>(csvText, {
+    skipEmptyLines: true,
+  });
+
+  if (parsed.errors.length > 0) {
+    console.error("[upload-base-action] erro no Papa.parse do servidor:", parsed.errors);
+    return { success: false, error: "Erro ao analisar o CSV no servidor." };
+  }
+
+  const parsedRows = parsed.data.filter((row) =>
+    row.some((cell) => cell !== ""),
+  );
+
   const result = await uploadBaseToSheet(parsedRows, user.profile.fullName);
 
   if (result.success) {
     // 1. IMPORTAÇÃO NO BANCO DE DADOS DE RETENÇÃO (Fase 1 - Parte 2)
-    // Feito de forma isolada para que falhas no Supabase não quebrem o fluxo do Sheets (D-1).
+    // Feito de forma isolada e protegida por timeout (4s) para evitar que instabilidades no Supabase travem a Vercel
     try {
-      const content = csvText || Papa.unparse(parsedRows);
-      const parseResult = parseBaseRetencao(content);
+      const parseResult = parseBaseRetencao(csvText);
       
       console.info(
         `[upload-base-banco] parse concluído. Lidas: ${parseResult.lidas}, válidas: ${parseResult.validas}, puladas: ${parseResult.puladas}`,
       );
 
       if (parseResult.linhas.length > 0) {
-        const dbResult = await salvarBaseRetencao(parseResult.linhas);
+        const dbPromise = salvarBaseRetencao(parseResult.linhas);
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout de 4s excedido ao tentar salvar no banco de dados")), 4000)
+        );
+        
+        const dbResult = await Promise.race([dbPromise, timeoutPromise]);
+        
         if (dbResult.success) {
           console.info(
             `[upload-base-banco] persistência concluída com sucesso: ${dbResult.rowsWritten} linhas gravadas no Supabase.`,
@@ -84,18 +102,14 @@ export async function uploadBaseAction(
       }
     } catch (dbErr) {
       console.error(
-        "[upload-base-banco] erro inesperado no fluxo de salvamento do banco de dados:",
+        "[upload-base-banco] erro inesperado no fluxo de salvamento do banco de dados (isolado):",
         dbErr,
       );
     }
 
-    // 2. Snapshot da evolução da TX (complementar — falha silenciosa não bloqueia upload).
+    // 2. Snapshot da evolução da TX (complementar — falha silenciosa e com timeout de 2s não bloqueia upload).
     try {
       const consolidado = await fetchConsolidado();
-      // FASE 1: a estrutura nova não tem mais um total único de equipe. Como
-      // stopgap, usa a TX agregada da empresa (Σ retidos / Σ pedidos sobre
-      // todos os operadores). Revisitar na Fase 2 quando houver seleção de
-      // supervisor / definição de qual TX registrar.
       const totalRetidos = consolidado.operadores.reduce(
         (acc, op) => acc + op.retidos,
         0,
@@ -106,7 +120,13 @@ export async function uploadBaseAction(
       );
       const tx = totalPedidos > 0 ? totalRetidos / totalPedidos : null;
       if (tx !== null && !isNaN(tx)) {
-        const snapshotResult = await saveEvolucaoAction(tx * 100);
+        const savePromise = saveEvolucaoAction(tx * 100);
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout de 2s excedido ao tentar salvar snapshot de evolução")), 2000)
+        );
+
+        const snapshotResult = await Promise.race([savePromise, timeoutPromise]);
+        
         if (!snapshotResult.success) {
           console.error(
             "[upload-base] falha ao salvar snapshot evolução:",
@@ -115,7 +135,7 @@ export async function uploadBaseAction(
         }
       }
     } catch (err) {
-      console.error("[upload-base] erro ao processar snapshot:", err);
+      console.error("[upload-base] erro ao processar snapshot (isolado):", err);
     }
 
     revalidatePath("/d-1");

@@ -57,14 +57,13 @@ export function UploadDropzone({
   const [ultimoReportHora, setUltimoReportHora] = useState("");
   const [ultimoReportNome, setUltimoReportNome] = useState<string | null>(null);
 
-  // Executa o upload de fato (etapas + action + reload). Separado para poder
-  // ser disparado tanto direto quanto após a confirmação do dialog.
-  const processUpload = useCallback(async (rows: string[][], csvText?: string) => {
+  // Executa o upload de fato (etapas + action + reload).
+  const processUpload = useCallback(async (csvText: string) => {
     setStep("deleting");
     await new Promise((r) => setTimeout(r, 400));
 
     setStep("replacing");
-    const uploadResult = await uploadBaseAction(rows, csvText);
+    const uploadResult = await uploadBaseAction(csvText);
 
     if (!uploadResult.success) {
       setStep(null);
@@ -88,12 +87,11 @@ export function UploadDropzone({
   }, []);
 
   const handleConfirmSend = useCallback(() => {
-    const rows = pendingRows;
     const csv = pendingCsvText;
     setPendingRows(null);
     setPendingCsvText("");
-    if (rows) void processUpload(rows, csv);
-  }, [pendingRows, pendingCsvText, processUpload]);
+    if (csv) void processUpload(csv);
+  }, [pendingCsvText, processUpload]);
 
   const handleCancelSend = useCallback(() => {
     setPendingRows(null);
@@ -166,7 +164,7 @@ export function UploadDropzone({
             }
           }
 
-          await processUpload(rows, csvText);
+          await processUpload(csvText);
         },
         error: (err: Error) => {
           setStep(null);
