@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { LoginBackground } from "@/components/login/login-background";
+import { LoginFloatingBackground } from "@/components/login/login-floating-background";
 import { LoginForm } from "@/components/login/login-form";
 import { LoginHero } from "@/components/login/login-hero";
 import { PageTransition } from "@/components/motion/page-transition";
@@ -23,8 +23,7 @@ export default async function LoginPage() {
 
   return (
     <PageTransition className="min-h-screen relative overflow-hidden bg-background">
-      {/* Background Video (Seamless loops & clean opacity) */}
-      <LoginBackground />
+      <LoginFloatingBackground />
 
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2 relative z-10">
         <LoginHero />
