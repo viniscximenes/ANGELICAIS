@@ -6,6 +6,7 @@ import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
+import { getConfigTabela } from "@/lib/gestor/config-tabela/get-config-tabela";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
@@ -52,10 +53,11 @@ export default async function GestorD1Page() {
     );
   }
 
-  const [data, reportInfo, nomeFantasiaConfig] = await Promise.all([
+  const [data, reportInfo, nomeFantasiaConfig, configTabela] = await Promise.all([
     fetchGestorData(guia),
     fetchUltimoReportInfo(), // hora + nome (BASE - 1!S2), para o export
     getNomeFantasiaConfig(user.profile.id),
+    getConfigTabela(user.profile.id),
   ]);
 
   const nomeFantasia = {
@@ -110,9 +112,35 @@ export default async function GestorD1Page() {
   return (
     <PageTransition>
       <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
-        <style dangerouslySetInnerHTML={{ __html: `body { overflow: hidden !important; }` }} />
-        <div className="mx-auto max-w-7xl space-y-8">
-          <header className="flex flex-col gap-2">
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              html, body {
+                scrollbar-width: thin !important;
+                scrollbar-color: var(--border) transparent !important;
+              }
+              html::-webkit-scrollbar, body::-webkit-scrollbar {
+                width: 8px !important;
+                height: 8px !important;
+              }
+              html::-webkit-scrollbar-track, body::-webkit-scrollbar-track {
+                background: transparent !important;
+              }
+              html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+                background: var(--border) !important;
+                border-radius: 4px !important;
+              }
+              html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
+                background: var(--muted-foreground) !important;
+              }
+            `,
+          }}
+        />
+        <div className="mx-auto max-w-7xl">
+          <header className="border-border flex flex-col gap-2 border-b border-dashed pb-4">
+            <span className="text-muted-foreground text-xs tracking-wide uppercase">
+              Painel do Gestor
+            </span>
             <div className="flex flex-wrap items-baseline gap-3">
               <h1 className="ds-h1">Consolidado</h1>
               <span className="ds-mono-sm text-muted-foreground">
@@ -121,17 +149,17 @@ export default async function GestorD1Page() {
             </div>
           </header>
 
-          <div className="space-y-12">
-            <GestorEquipeSection
-              operadores={operadores}
-              equipe={equipe}
-              gestora={gestora}
-              showUpload={showUpload}
-              nomeFantasia={nomeFantasia}
-              olhoInicial={nomeFantasiaConfig.olhoConsolidado}
-              nomeSupervisorReport={reportInfo.nomeSupervisor}
-            />
-          </div>
+          <GestorEquipeSection
+            operadores={operadores}
+            equipe={equipe}
+            gestora={gestora}
+            showUpload={showUpload}
+            nomeFantasia={nomeFantasia}
+            olhoInicial={nomeFantasiaConfig.olhoConsolidado}
+            nomeSupervisorReport={reportInfo.nomeSupervisor}
+            metaTxInicial={configTabela.metaTxRetencao}
+            ordemTabelaInicial={configTabela.ordemTabela}
+          />
         </div>
       </div>
     </PageTransition>

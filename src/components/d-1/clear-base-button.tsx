@@ -38,9 +38,8 @@ export function ClearBaseButton({ action }: Props) {
     <button
       type="button"
       onClick={handleClick}
-      disabled={isPending}
-      className="elevation-2 text-muted-foreground hover:text-danger flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors"
-      style={{ border: "1px solid var(--border)", fontSize: "12px" }}
+      className="bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-opacity cursor-pointer shadow-sm disabled:opacity-50"
+      style={{ fontSize: "12px" }}
     >
       {isPending ? (
         <IconLoader2 size={14} className="animate-spin" aria-hidden="true" />

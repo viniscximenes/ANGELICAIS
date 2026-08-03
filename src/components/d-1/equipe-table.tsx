@@ -11,9 +11,15 @@ interface EquipeTableProps {
   /** Esconde a linha de totais (EQUIPE) — usado na busca de 1 operador. */
   hideTotais?: boolean;
   headerButton?: React.ReactNode;
+  /**
+   * Meta de TX (fração 0-1, ex: 0.6 = 60%) usada para colorir verde/vermelho.
+   * Opcional — quando omitida, mantém o comportamento histórico (60%) usado
+   * pelo D-1 do operador. O painel do gestor passa a meta configurável dele.
+   */
+  metaTx?: number;
 }
 
-const META_TX = 0.6;
+const META_TX_PADRAO = 0.6;
 
 function formatOperatorLabel(email: string): string {
   return email.split("@")[0] || email;
@@ -24,13 +30,13 @@ function formatTx(tx: number | null): string {
   return `${(tx * 100).toFixed(1)}%`;
 }
 
-function meetsMeta(tx: number): boolean {
-  return Math.round(tx * 1000) >= Math.round(META_TX * 1000);
+function meetsMeta(tx: number, meta: number = META_TX_PADRAO): boolean {
+  return Math.round(tx * 1000) >= Math.round(meta * 1000);
 }
 
 export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
   function EquipeTable(
-    { operadores, equipe, variant = "screen", hideTotais, headerButton },
+    { operadores, equipe, variant = "screen", hideTotais, headerButton, metaTx },
     ref,
   ) {
     if (variant === "excel") {
@@ -40,6 +46,7 @@ export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           operadores={operadores}
           equipe={equipe}
           hideTotais={hideTotais}
+          metaTx={metaTx}
         />
       );
     }
@@ -50,6 +57,7 @@ export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
         equipe={equipe}
         hideTotais={hideTotais}
         headerButton={headerButton}
+        metaTx={metaTx}
       />
     );
   },
@@ -60,9 +68,12 @@ export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
    ──────────────────────────────────────────────────────────────────── */
 
 const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
-  function ScreenTable({ operadores, equipe, hideTotais, headerButton }, ref) {
+  function ScreenTable(
+    { operadores, equipe, hideTotais, headerButton, metaTx },
+    ref,
+  ) {
     const equipeMeets =
-      equipe.txRetencao !== null && meetsMeta(equipe.txRetencao);
+      equipe.txRetencao !== null && meetsMeta(equipe.txRetencao, metaTx);
 
     return (
       <div
@@ -97,7 +108,7 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
         {operadores.map((op, idx) => {
           const isLast = idx === operadores.length - 1;
           const semAtendimentos = op.pedidos === 0 || op.txRetencao === null;
-          const meetsM = op.txRetencao !== null && meetsMeta(op.txRetencao);
+          const meetsM = op.txRetencao !== null && meetsMeta(op.txRetencao, metaTx);
           const belowMeta = !semAtendimentos && !meetsM;
           const key = op.emailOriginal ?? op.email;
 
@@ -286,9 +297,9 @@ const EXCEL_NUM_CELL: React.CSSProperties = {
 };
 
 const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
-  function ExcelTable({ operadores, equipe, hideTotais }, ref) {
+  function ExcelTable({ operadores, equipe, hideTotais, metaTx }, ref) {
     const equipeMeets =
-      equipe.txRetencao !== null && meetsMeta(equipe.txRetencao);
+      equipe.txRetencao !== null && meetsMeta(equipe.txRetencao, metaTx);
 
     return (
       <div
@@ -329,11 +340,11 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
         {operadores.map((op, idx) => {
           const isLast = idx === operadores.length - 1;
           const semAtendimentos = op.pedidos === 0 || op.txRetencao === null;
-          const meetsM = op.txRetencao !== null && meetsMeta(op.txRetencao);
+          const meetsM = op.txRetencao !== null && meetsMeta(op.txRetencao, metaTx);
           const belowMeta = !semAtendimentos && !meetsM;
           const key = op.emailOriginal ?? op.email;
 
-          // TX < 60%: a LINHA INTEIRA fica vermelho claro (alerta). Os números
+          // TX < meta: a LINHA INTEIRA fica vermelho claro (alerta). Os números
           // mantêm a cor por coluna; o nome fica preto para legibilidade.
           const rowBg = belowMeta ? EXCEL_RED_BG : "#ffffff";
           const txColor = semAtendimentos

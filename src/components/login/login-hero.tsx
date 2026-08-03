@@ -13,11 +13,6 @@ export function LoginHero() {
           />
         </div>
 
-        <div className="text-center">
-          <p className="ds-body text-muted-foreground font-mono tracking-widest uppercase text-[10px] opacity-80">
-            Sistema de gestão operacional
-          </p>
-        </div>
       </div>
     </div>
   );

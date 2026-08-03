@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { IconFileSpreadsheet, IconUpload } from "@tabler/icons-react";
+import { IconCloudUpload, IconFileSpreadsheet } from "@tabler/icons-react";
 import Papa from "papaparse";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
@@ -226,31 +226,29 @@ export function UploadDropzone({
       >
         <input {...getInputProps()} />
 
-        <div className="flex flex-col items-center justify-center gap-4 text-center">
-          <div className="p-4 rounded-full bg-muted border border-border/40 transition-colors hover:bg-muted/80">
+        <div className="flex flex-col items-center justify-center gap-3 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border/80 bg-muted/40 text-muted-foreground">
             {isDragActive ? (
-              <IconFileSpreadsheet
-                size={28}
-                style={{ color: "var(--primary)" }}
+              <IconCloudUpload
+                size={26}
                 aria-hidden="true"
               />
             ) : (
-              <IconUpload
-                size={28}
-                className="text-primary"
+              <IconFileSpreadsheet
+                size={26}
                 aria-hidden="true"
               />
             )}
           </div>
 
-          <div className="space-y-1.5">
-            <p className="ds-body font-semibold">
+          <div className="space-y-1">
+            <p className="ds-body text-foreground font-semibold">
               {isDragActive
-                ? "Solte para enviar"
-                : "Arraste o CSV aqui ou clique para selecionar"}
+                ? "Solte o arquivo para enviar"
+                : "Arraste o arquivo CSV aqui ou clique para selecionar"}
             </p>
-            <p className="ds-small text-muted-foreground">
-              Apenas .csv · até 10 mil linhas
+            <p className="ds-mono-sm text-muted-foreground/80 text-[11px]">
+              Apenas arquivos .csv · limite de 10.000 linhas
             </p>
           </div>
         </div>

@@ -67,6 +67,7 @@ Quando a página justificar, adicionar:
 - [Configurações do Supervisor — Operadores do D-1](docs/pages/config-supervisor-operadores-d1.md) — adicionar/excluir operadores das guias do D-1 (edição direta no Sheets)
 - [Dashboard de Retenção — Fundação](docs/pages/dashboard-retencao-fundacao.md) — importação da base de atendimentos para o banco (fundação do dashboard analítico)
 - [Dashboard de Retenção](docs/pages/dashboard-retencao.md) — painel analítico da base de retenção (equipe/empresa, temas, evolução, alertas, contribuição pra queda)
+- [Diário de Bordo (DB)](docs/pages/diario-de-bordo.md) — registro de pausas atípicas e tempo logado insuficiente, com geração de texto por tema
 
 ## Status possíveis
 
