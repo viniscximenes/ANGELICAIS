@@ -6,13 +6,12 @@ import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
+import { getGestorConsolidado } from "@/lib/d1-db/get-gestor-consolidado";
+import type { OperadorConsolidado, ResumoEquipe } from "@/lib/d1-db/types";
 import { getConfigTabela } from "@/lib/gestor/config-tabela/get-config-tabela";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
-import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
-import { fetchUltimoReportInfo } from "@/lib/google/d1/upload";
-import { fetchGestorData, resolveGuiaGestor } from "@/lib/google/gestor";
 
 export const metadata: Metadata = {
   title: "Consolidado — D-1 ALLOHA FIBRA",
@@ -33,32 +32,12 @@ export default async function GestorD1Page() {
     redirect(getPostLoginPath(user.profile.role));
   }
 
-  // Resolve a guia do gestor logado (Fase 1: mapa fixo por login/email).
-  const guia =
-    resolveGuiaGestor(user.profile.username) ??
-    resolveGuiaGestor(user.profile.emailCorporativo);
-
-  if (!guia) {
-    return (
-      <PageTransition>
-        <div className="flex min-h-[60vh] items-center justify-center px-6">
-          <div
-            className="elevation-1 ds-body text-muted-foreground max-w-md rounded-xl px-6 py-10 text-center"
-            style={{ border: "1px solid var(--border)" }}
-          >
-            Nenhuma equipe vinculada ao seu usuário.
-          </div>
-        </div>
-      </PageTransition>
-    );
-  }
-
-  const [data, reportInfo, nomeFantasiaConfig, configTabela] = await Promise.all([
-    fetchGestorData(guia),
-    fetchUltimoReportInfo(), // hora + nome (BASE - 1!S2), para o export
-    getNomeFantasiaConfig(user.profile.id),
-    getConfigTabela(user.profile.id),
-  ]);
+  const [{ data, reportHora, reportNomeSupervisor }, nomeFantasiaConfig, configTabela] =
+    await Promise.all([
+      getGestorConsolidado(user.profile.id),
+      getNomeFantasiaConfig(user.profile.id),
+      getConfigTabela(user.profile.id),
+    ]);
 
   const nomeFantasia = {
     ativo: nomeFantasiaConfig.ativo,
@@ -76,7 +55,8 @@ export default async function GestorD1Page() {
             Não foi possível carregar os dados da equipe.
             <br />
             <span className="ds-mono-sm" style={{ color: "var(--muted-foreground)" }}>
-              Verifique se a guia &ldquo;{guia}&rdquo; existe na planilha.
+              Verifique se há operadores cadastrados na sua equipe (Configurações
+              &rarr; Operadores do D-1) e se a base do dia já foi atualizada.
             </span>
           </div>
         </div>
@@ -102,7 +82,7 @@ export default async function GestorD1Page() {
     cancelados: data.consolidado.cancelados,
     pedidos: data.consolidado.pedidos,
     txRetencao: data.consolidado.txRetencao,
-    horaReport: reportInfo.hora ?? "—",
+    horaReport: reportHora ?? "—",
   };
 
   const gestora = data.consolidado.gestora
@@ -156,7 +136,7 @@ export default async function GestorD1Page() {
             showUpload={showUpload}
             nomeFantasia={nomeFantasia}
             olhoInicial={nomeFantasiaConfig.olhoConsolidado}
-            nomeSupervisorReport={reportInfo.nomeSupervisor}
+            nomeSupervisorReport={reportNomeSupervisor}
             metaTxInicial={configTabela.metaTxRetencao}
             ordemTabelaInicial={configTabela.ordemTabela}
           />

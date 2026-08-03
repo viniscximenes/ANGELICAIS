@@ -1,6 +1,6 @@
 import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
 import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
-import { resolveKpiEmailsForProfiles } from "@/lib/profile/get-kpi-email-for-profile";
+import { resolveKpiEmailCandidatesForProfiles } from "@/lib/profile/get-kpi-email-for-profile";
 import { createClient } from "@/lib/supabase/server";
 
 import {
@@ -28,21 +28,25 @@ export async function getQuartilEquipe(
     return { operadores: [], mesRef, ranqueableSlugs };
   }
 
-  const aliasMap = await resolveKpiEmailsForProfiles(emailsOriginal);
-  const emailsResolvidos = [...new Set([...aliasMap.values()])];
-
-  // Mapa inverso kpiEmail → emailOriginal
-  const kpiToOriginal = new Map<string, string>();
-  for (const [orig, kpi] of aliasMap.entries()) {
-    if (!kpiToOriginal.has(kpi)) kpiToOriginal.set(kpi, orig);
-  }
+  // Candidatos por operador (email + variantes de domínio + alias de KPI +
+  // variantes do alias) — mesma lógica de getKpiEquipePorEmails: consulta
+  // TODOS de uma vez em vez de tentar adivinhar de antemão qual email "é o
+  // certo" pra este mês.
+  const candidatosMap = await resolveKpiEmailCandidatesForProfiles(emailsOriginal);
+  const todosCandidatos = [
+    ...new Set(
+      emailsOriginal.flatMap(
+        (e) => candidatosMap.get(e.trim().toLowerCase()) ?? [e.trim().toLowerCase()],
+      ),
+    ),
+  ];
 
   const supabase = await createClient();
   const { data: rows, error } = await supabase
     .from("kpi_monthly_snapshots")
     .select("operator_email, kpi_slug, valor_numerico, data_corte")
     .eq("mes_ref", mesRef)
-    .in("operator_email", emailsResolvidos)
+    .in("operator_email", todosCandidatos)
     .in("kpi_slug", ranqueableSlugs);
 
   if (error) {
@@ -60,18 +64,33 @@ export async function getQuartilEquipe(
       .sort()
       .reverse()[0] ?? null;
 
-  // Agrupar por emailOriginal
-  const valoresPorEmail = new Map<string, Map<string, number | null>>();
-  for (const email of emailsOriginal) {
-    valoresPorEmail.set(email, new Map(ranqueableSlugs.map((s) => [s, null])));
+  // Agrupar por emailOriginal — cada linha vem com o email de algum
+  // candidato (principal, alias, ou variante de domínio de qualquer um);
+  // rowsByCandidato guarda por esse email bruto, e cada operador consolida
+  // as linhas de TODOS os seus candidatos.
+  const rowsByCandidato = new Map<
+    string,
+    { kpi_slug: string; valor_numerico: number | null }[]
+  >();
+  for (const row of rows ?? []) {
+    const key = row.operator_email.toLowerCase();
+    if (!rowsByCandidato.has(key)) rowsByCandidato.set(key, []);
+    rowsByCandidato.get(key)!.push(row);
   }
 
-  for (const row of rows ?? []) {
-    const emailKpi = row.operator_email.toLowerCase();
-    const emailOrig = kpiToOriginal.get(emailKpi) ?? emailKpi;
-    if (valoresPorEmail.has(emailOrig) && row.valor_numerico !== null) {
-      valoresPorEmail.get(emailOrig)!.set(row.kpi_slug, Number(row.valor_numerico));
+  const valoresPorEmail = new Map<string, Map<string, number | null>>();
+  for (const emailOriginal of emailsOriginal) {
+    const emailNorm = emailOriginal.trim().toLowerCase();
+    const candidatos = candidatosMap.get(emailNorm) ?? [emailNorm];
+    const valores = new Map(ranqueableSlugs.map((s) => [s, null as number | null]));
+    for (const candidato of candidatos) {
+      for (const row of rowsByCandidato.get(candidato) ?? []) {
+        if (row.valor_numerico !== null) {
+          valores.set(row.kpi_slug, Number(row.valor_numerico));
+        }
+      }
     }
+    valoresPorEmail.set(emailOriginal, valores);
   }
 
   const operadoresParaQuartil = emailsOriginal.map((email) => ({

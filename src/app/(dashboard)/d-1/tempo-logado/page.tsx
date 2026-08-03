@@ -8,8 +8,7 @@ import { TempoLogadoEquipeSection } from "@/components/d-1/tempo-logado/tempo-lo
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
-import { filterTempoLogadoByEmail } from "@/lib/d1/tempo-logado/filter-by-user";
-import { getTempoLogadoData } from "@/lib/google/d1/tempo-logado";
+import { getOperadorTempoLogado } from "@/lib/d1-db/get-operador-tempo-logado";
 
 export const metadata: Metadata = {
   title: "Tempo Logado — D-1 ALLOHA FIBRA",
@@ -29,8 +28,7 @@ export default async function TempoLogadoPage() {
     redirect("/gestor/d-1");
   }
 
-  const data = await getTempoLogadoData();
-  const userView = filterTempoLogadoByEmail(data, user.profile.emailCorporativo);
+  const userView = await getOperadorTempoLogado(user.profile.emailCorporativo);
 
   const role = user.profile.role;
 
@@ -50,8 +48,8 @@ export default async function TempoLogadoPage() {
 
             {can(role, "view_d1_team") && (
               <TempoLogadoEquipeSection
-                operadores={data.operadores}
-                loginLogout={data.loginLogout}
+                operadores={[]}
+                loginLogout={[]}
                 showUpload={can(role, "manage_d1_base")}
               />
             )}

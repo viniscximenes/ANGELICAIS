@@ -279,6 +279,7 @@ const EXCEL_HEADER_CELL: React.CSSProperties = {
   letterSpacing: "0.5px",
   color: "#ffffff",
   textAlign: "center",
+  whiteSpace: "nowrap",
 };
 
 const EXCEL_TEXT_CELL: React.CSSProperties = {

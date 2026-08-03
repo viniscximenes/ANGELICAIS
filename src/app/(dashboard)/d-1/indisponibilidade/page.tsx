@@ -9,8 +9,8 @@ import { IndispPausasSection } from "@/components/d-1/indisponibilidade/indisp-p
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
-import { filterIndispByEmail } from "@/lib/d1/indisponibilidade/filter-by-user";
-import { getIndisponibilidadeData } from "@/lib/google/d1/indisponibilidade";
+import { getOperadorIndisponibilidade } from "@/lib/d1-db/get-operador-indisponibilidade";
+import { getTodosOperadoresIndisponibilidade } from "@/lib/d1-db/get-todos-indisponibilidade";
 
 export const metadata: Metadata = {
   title: "Indisponibilidade — D-1 ALLOHA FIBRA",
@@ -29,8 +29,10 @@ export default async function IndisponibilidadePage() {
     redirect("/gestor/d-1");
   }
 
-  const data = await getIndisponibilidadeData();
-  const userView = filterIndispByEmail(data, user.profile.emailCorporativo);
+  const [userView, data] = await Promise.all([
+    getOperadorIndisponibilidade(user.profile.emailCorporativo),
+    getTodosOperadoresIndisponibilidade(),
+  ]);
 
   const role = user.profile.role;
 

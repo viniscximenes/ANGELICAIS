@@ -8,8 +8,8 @@ import { toast } from "sonner";
 
 import {
   getUltimoReportHoraAction,
-  uploadBaseAction,
-} from "@/lib/auth/upload-base-action";
+  uploadConsolidadoAction,
+} from "@/lib/d1-db/actions/upload-consolidado-action";
 import { getTimePartsInBR } from "@/lib/utils/format-datetime-br";
 import { ConfirmRecentReportDialog } from "./confirm-recent-report-dialog";
 import { UploadProgressModal } from "./upload-progress-modal";
@@ -63,7 +63,7 @@ export function UploadDropzone({
     await new Promise((r) => setTimeout(r, 400));
 
     setStep("replacing");
-    const uploadResult = await uploadBaseAction(csvText);
+    const uploadResult = await uploadConsolidadoAction(csvText);
 
     if (!uploadResult.success) {
       setStep(null);

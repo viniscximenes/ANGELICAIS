@@ -6,10 +6,15 @@ import { KpiEquipeSection } from "@/components/operacional/kpi-equipe-section";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
+import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
+import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
+import { getKpiColunasConfig } from "@/lib/kpi/gestor/get-kpi-colunas-config";
 import { getKpiEquipePorEmails } from "@/lib/kpi/gestor/get-kpi-equipe-gestor";
 import { getOperadoresDoGestor } from "@/lib/kpi/gestor/get-operadores-do-gestor";
-import { toKpiEquipeSerial } from "@/lib/kpi/gestor/serial-types";
+import { KPI_COLUNAS_ORDER } from "@/lib/kpi/gestor/kpi-colunas-config";
+import { toKpiEquipeSerial, type KpiEquipeSerial } from "@/lib/kpi/gestor/serial-types";
+import { stripUnitSuffix } from "@/lib/kpi/strip-unit-suffix";
 import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
 
 export const metadata: Metadata = {
@@ -52,11 +57,20 @@ export default async function OperacionalKpiPage() {
   const mesPassado = getPreviousMesRef();
   const mesRetrasado = getMesRetrasadoRef();
 
-  // Equipe fixada pelo mês atual; definitions em paralelo (sem redundância).
-  const [emailsEquipe, definitions] = await Promise.all([
-    getOperadoresDoGestor(fullName, mesAtual),
-    getKpiDefinitions(),
-  ]);
+  // Equipe fixada pelo mês atual; definitions + config de nome fantasia em
+  // paralelo (sem redundância).
+  const [emailsEquipe, definitions, nomeFantasiaConfig, kpiColunasVisiveis] =
+    await Promise.all([
+      getOperadoresDoGestor(fullName, mesAtual),
+      getKpiDefinitions(),
+      getNomeFantasiaConfig(user.profile.id),
+      getKpiColunasConfig(user.profile.id),
+    ]);
+
+  const colunasDisponiveis = KPI_COLUNAS_ORDER.map((slug) => {
+    const def = definitions.find((d) => d.slug === slug);
+    return { slug, label: def ? stripUnitSuffix(def.displayName) : slug };
+  });
 
   // KPIs dos mesmos operadores nos 3 meses, em paralelo.
   const [dataAtualRaw, dataPassadoRaw, dataRetrasadoRaw] = await Promise.all([
@@ -65,27 +79,77 @@ export default async function OperacionalKpiPage() {
     getKpiEquipePorEmails(emailsEquipe, definitions, mesRetrasado, true),
   ]);
 
-  const dataAtual = toKpiEquipeSerial(dataAtualRaw, definitions);
-  const dataPassado = toKpiEquipeSerial(dataPassadoRaw, definitions);
-  const dataRetrasado = toKpiEquipeSerial(dataRetrasadoRaw, definitions);
+  const nomeFantasia = {
+    ativo: nomeFantasiaConfig.ativo,
+    mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
+  };
+
+  // Resolve nome fantasia (ou nome real derivado, se não configurado) —
+  // mesma função usada pelo D-1 Consolidado (resolverNomeExibicao).
+  function comNomeFantasia(serial: KpiEquipeSerial): KpiEquipeSerial {
+    return {
+      ...serial,
+      operadores: serial.operadores.map((op) => ({
+        ...op,
+        nome: resolverNomeExibicao(op.email, nomeFantasia),
+      })),
+    };
+  }
+
+  const dataAtual = comNomeFantasia(toKpiEquipeSerial(dataAtualRaw, definitions));
+  const dataPassado = comNomeFantasia(toKpiEquipeSerial(dataPassadoRaw, definitions));
+  const dataRetrasado = comNomeFantasia(toKpiEquipeSerial(dataRetrasadoRaw, definitions));
 
   const nomeGestora = formatNomeProprio(fullName);
 
   return (
     <PageTransition>
       <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
-        <div className="mx-auto max-w-7xl space-y-8">
-          <header className="flex flex-wrap items-baseline gap-3">
-            <h1 className="ds-h1">KPI</h1>
-            <span className="ds-mono-sm text-muted-foreground">
-              / Operacional · {nomeGestora}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              html, body {
+                scrollbar-width: thin !important;
+                scrollbar-color: var(--border) transparent !important;
+              }
+              html::-webkit-scrollbar, body::-webkit-scrollbar {
+                width: 8px !important;
+                height: 8px !important;
+              }
+              html::-webkit-scrollbar-track, body::-webkit-scrollbar-track {
+                background: transparent !important;
+              }
+              html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+                background: var(--border) !important;
+                border-radius: 4px !important;
+              }
+              html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
+                background: var(--muted-foreground) !important;
+              }
+            `,
+          }}
+        />
+        <div className="mx-auto max-w-7xl">
+          <header className="border-border flex flex-col gap-2 border-b border-dashed pb-4">
+            <span className="text-muted-foreground text-xs tracking-wide uppercase">
+              Painel do Gestor
             </span>
+            <div className="flex flex-wrap items-baseline gap-3">
+              <h1 className="ds-h1">KPI</h1>
+              <span className="ds-mono-sm text-muted-foreground">
+                / Operacional · {nomeGestora}
+              </span>
+            </div>
           </header>
 
           <KpiEquipeSection
             dataAtual={dataAtual}
             dataPassado={dataPassado}
             dataRetrasado={dataRetrasado}
+            nomeFantasia={nomeFantasia}
+            olhoInicial={nomeFantasiaConfig.olhoOperacional}
+            colunasDisponiveis={colunasDisponiveis}
+            colunasVisiveisIniciais={kpiColunasVisiveis}
           />
         </div>
       </div>

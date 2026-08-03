@@ -13,6 +13,8 @@ import {
 } from "@/lib/kpi/bases/format-date";
 import type { MonthSummary } from "@/lib/kpi/bases/get-snapshots-summary";
 
+import { ClearCurrentMonthButton } from "./clear-current-month-button";
+
 interface SnapshotsHistoryProps {
   snapshots: MonthSummary[];
 }
@@ -102,7 +104,9 @@ export function SnapshotsHistory({ snapshots }: SnapshotsHistoryProps) {
                     {s.totalOperators} op{s.totalOperators === 1 ? "" : "s"}
                   </span>
 
-                  {!isCurrent && (
+                  {isCurrent ? (
+                    <ClearCurrentMonthButton />
+                  ) : (
                     <button
                       type="button"
                       onClick={() => handleDelete(s.mesRef)}

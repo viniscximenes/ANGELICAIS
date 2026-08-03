@@ -16,7 +16,9 @@ import { UploadDropzone } from "@/components/d-1/upload-dropzone";
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
 import { ConfigTabelaPopover } from "@/components/gestor/config-tabela-popover";
 import { StyledCard } from "@/components/gestor/styled-card";
-import { clearConsolidadoAction } from "@/lib/google/d1/actions/clear-consolidado-action";
+import { clearConsolidadoAction } from "@/lib/d1-db/actions/clear-consolidado-action";
+import { refreshConsolidadoAction } from "@/lib/d1-db/actions/refresh-consolidado-action";
+import type { OperadorConsolidado, ResumoEquipe } from "@/lib/d1-db/types";
 import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
 import { formatReportLabel } from "@/lib/gestor/format-report-label";
 import {
@@ -27,15 +29,12 @@ import {
 import { ordenarOperadores } from "@/lib/gestor/config-tabela/ordenar-operadores";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
-import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
-import { refreshConsolidadoAction } from "@/lib/gestor/refresh/refresh-consolidado-action";
 import { cn } from "@/lib/utils";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
-// Intervalo do polling: reconsulta o Google Sheets a cada 30s para refletir
-// a base sem precisar de F5. 30s equilibra atualização rápida com a cota da
-// API do Sheets.
+// Intervalo do polling: reconsulta a base a cada 30s para refletir mudanças
+// sem precisar de F5.
 const POLL_INTERVAL_MS = 30_000;
 
 interface GestorEquipeSectionProps {
@@ -172,7 +171,7 @@ export function GestorEquipeSection({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
             <Link
               href="/analitico/consolidado"
               className="bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-opacity cursor-pointer shadow-sm"

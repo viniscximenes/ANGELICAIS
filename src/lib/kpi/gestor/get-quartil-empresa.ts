@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
 import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
-import { resolveKpiEmailsForProfiles } from "@/lib/profile/get-kpi-email-for-profile";
+import { resolveKpiEmailCandidatesForProfiles } from "@/lib/profile/get-kpi-email-for-profile";
 import { createClient } from "@/lib/supabase/server";
 
 import {
@@ -85,9 +85,10 @@ export async function getQuartilEmpresa(
 
   const supabase = await createClient();
 
-  // Alias resolution e fetch paginado em paralelo (independentes)
-  const [aliasMap, allRows] = await Promise.all([
-    resolveKpiEmailsForProfiles(emailsEquipe),
+  // Candidatos (email + variantes + alias de KPI) e fetch paginado em
+  // paralelo (independentes) — mesma lógica de getKpiEquipePorEmails.
+  const [candidatosMap, allRows] = await Promise.all([
+    resolveKpiEmailCandidatesForProfiles(emailsEquipe),
     fetchTodasAsLinhasRanqueaveis(supabase, mesRef, ranqueableSlugs),
   ]);
 
@@ -118,18 +119,23 @@ export async function getQuartilEmpresa(
 
   const quartisMap = computeQuartis(operadoresParaQuartil, definitions);
 
-  // Retornar só os operadores DA EQUIPE, com quartil/rank no universo empresa
+  // Retornar só os operadores DA EQUIPE, com quartil/rank no universo
+  // empresa. valoresPorEmail/quartisMap já vêm da busca da empresa toda
+  // (sem filtro de candidatos); aqui só decidimos QUAL das chaves
+  // (candidatos do operador: email + variantes + alias) tem dado neste mês.
   const operadores = emailsEquipe
     .map((emailOrig) => {
-      const emailKpi = aliasMap.get(emailOrig) ?? emailOrig;
+      const emailNorm = emailOrig.trim().toLowerCase();
+      const candidatos = candidatosMap.get(emailNorm) ?? [emailNorm];
+      const emailComDados = candidatos.find((c) => valoresPorEmail.has(c)) ?? emailNorm;
       const valoresEquipe = new Map<string, number | null>(
-        ranqueableSlugs.map((s) => [s, valoresPorEmail.get(emailKpi)?.get(s) ?? null]),
+        ranqueableSlugs.map((s) => [s, valoresPorEmail.get(emailComDados)?.get(s) ?? null]),
       );
       return {
         email: emailOrig,
         nome: deriveNomeOperador(emailOrig),
         valores: valoresEquipe,
-        quartis: quartisMap.get(emailKpi) ?? new Map(),
+        quartis: quartisMap.get(emailComDados) ?? new Map(),
       };
     })
     .sort((a, b) => a.nome.localeCompare(b.nome));

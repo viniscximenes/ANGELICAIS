@@ -5,6 +5,8 @@ import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
 
+import { buildClipboardReportHtml } from "@/lib/gestor/build-clipboard-report-html";
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
@@ -55,7 +57,6 @@ interface CopyIndisponibilidadeButtonProps {
 
 export function CopyIndisponibilidadeButton({
   horaReport,
-  nomeSupervisorReport,
 }: CopyIndisponibilidadeButtonProps) {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
 
@@ -74,18 +75,15 @@ export function CopyIndisponibilidadeButton({
         horaReport && horaReport !== "—"
           ? horaReport.match(/^(\d{1,2}:\d{2})/)?.[1] ?? horaReport
           : "—";
-      const nome = nomeSupervisorReport?.trim();
-      const textoReport = nome
-        ? `O supervisor <b>${escapeHtml(nome)}</b> fez um report às ${escapeHtml(hora)}`
-        : `report das ${escapeHtml(hora)}`;
+      // Mesmo padrão do Consolidado: sem nome de supervisor no texto, só a hora.
+      const textoReport = `report às ${escapeHtml(hora)}`;
 
-      const html =
-        `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">` +
-        `<h2 style="font-size: 24px; margin: 0;"><b>INDISPONIBILIDADE</b></h2>` +
-        `<div style="margin-top: 4px;"><i>${textoReport}</i></div>` +
-        `<br>` +
-        `<div style="margin-top: 8px;"><img src="${pngDataUrl}" style="display: block; max-width: 1000px; width: 100%;" alt="Tabela indisponibilidade"></div>` +
-        `</div>`;
+      const html = buildClipboardReportHtml({
+        titulo: "D-1 INDISPONIBILIDADE",
+        subtitulo: textoReport,
+        pngDataUrl,
+        altText: "Tabela indisponibilidade",
+      });
 
       await copyFormattedHtml(html);
 
@@ -109,8 +107,8 @@ export function CopyIndisponibilidadeButton({
       type="button"
       onClick={handleCopy}
       disabled={state === "copying"}
-      className="elevation-2 text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors"
-      style={{ border: "1px solid var(--border)", fontSize: "12px", whiteSpace: "nowrap" }}
+      className="bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-opacity cursor-pointer shadow-sm disabled:opacity-50"
+      style={{ fontSize: "12px", whiteSpace: "nowrap" }}
     >
       {state === "copying" && (
         <>
@@ -131,7 +129,7 @@ export function CopyIndisponibilidadeButton({
       {state === "idle" && (
         <>
           <IconCamera size={14} aria-hidden="true" />
-          <span className="ds-mono-sm">Copiar como imagem</span>
+          <span className="ds-mono-sm">Copiar como imagem (Indisponibilidade)</span>
         </>
       )}
     </button>

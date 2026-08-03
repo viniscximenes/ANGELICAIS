@@ -1,3 +1,5 @@
+import { getEmailVariants } from "@/lib/utils/email-variants";
+
 export type EscopoFiltroParams = {
   escopo: "equipe" | "empresa";
   emailsEquipe: string[];
@@ -23,7 +25,10 @@ export function aplicarFiltroEscopo(query: any, params: EscopoFiltroParams) {
 
   if (params.escopo === "equipe") {
     if (params.emailsEquipe.length > 0) {
-      q = q.in("usuario_login", params.emailsEquipe);
+      // Operadores antigos podem aparecer com @sumicity.net.br nesta base
+      // (importada de fora), mesmo que emailsEquipe venha em @alloha.com
+      // (Sheets/profiles) — expande pra cobrir ambos os domínios.
+      q = q.in("usuario_login", params.emailsEquipe.flatMap(getEmailVariants));
     } else {
       // Garante retorno vazio se a equipe do gestor estiver sem membros
       q = q.eq("usuario_login", "__sem_operadores_na_equipe__");

@@ -5,7 +5,7 @@ import { OperadoresD1Form } from "@/components/gestor/operadores-d1-form";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
-import { listarOperadoresAction } from "@/lib/google/gestor/operadores-d1/actions";
+import { listarOperadoresAction } from "@/lib/d1-db/actions/operadores-gestor-actions";
 
 export const metadata: Metadata = {
   title: "Configurações — Operadores do D-1",
@@ -34,9 +34,9 @@ export default async function ConfigOperadoresD1Page() {
               </span>
             </div>
             <p className="ds-small text-muted-foreground">
-              Gerencie os operadores das guias do D-1. Adicionar escreve o email
-              nas duas guias (principal + tempo logado); excluir limpa as colunas
-              A e B preservando as fórmulas.
+              Gerencie os operadores da sua equipe no D-1. Só operadores
+              cadastrados aqui aparecem nas tabelas de Consolidado, Tempo
+              Logado e Indisponibilidade da sua equipe.
             </p>
 
             {!result.ok && (

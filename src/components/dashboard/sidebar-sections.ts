@@ -14,42 +14,43 @@ const ALL_SECTIONS: SidebarSection[] = [
     onlyRoles: ["GESTOR"],
     items: [
       { label: "Consolidado", href: "/gestor/d-1" },
-      { label: "Tempo Logado", href: "/gestor/tempo-logado" },
-      { label: "Indisponibilidade", href: "/gestor/indisponibilidade" },
+      { label: "Tempo Logado & Indisp.", href: "/gestor/tempo-logado" },
     ],
   },
-  {
-    id: "operacional",
-    label: "Operacional",
-    iconName: "headset",
-    basePath: "/operacional",
-    permission: "view_gestor_panel",
-    onlyRoles: ["GESTOR"],
-    items: [
-      { label: "KPI", href: "/operacional/kpi" },
-      { label: "Quartil", href: "/operacional/quartil" },
-    ],
-  },
-  {
-    id: "meus-resultados",
-    label: "Meus Resultados",
-    iconName: "target",
-    basePath: "/meus-resultados",
-    permission: "view_gestor_panel",
-    onlyRoles: ["GESTOR"],
-    items: [{ label: "KPI", href: "/meus-resultados/kpi" }],
-  },
-  {
-    id: "feedback",
-    label: "Feedback",
-    iconName: "message",
-    basePath: "/feedback",
-    permission: "view_gestor_panel",
-    onlyRoles: ["GESTOR"],
-    items: [
-      { label: "Resultado Semanal", href: "/feedback/resultado-semanal" },
-    ],
-  },
+  // TEMP: oculto — seção removida da sidebar. As rotas continuam acessíveis via URL direta.
+  // {
+  //   id: "operacional",
+  //   label: "KPI",
+  //   iconName: "headset",
+  //   basePath: "/operacional",
+  //   permission: "view_gestor_panel",
+  //   onlyRoles: ["GESTOR"],
+  //   items: [
+  //     { label: "Operadores", href: "/operacional/kpi" },
+  //   ],
+  // },
+  // TEMP: oculto — seção removida da sidebar. As rotas continuam acessíveis via URL direta.
+  // {
+  //   id: "meus-resultados",
+  //   label: "Meus Resultados",
+  //   iconName: "target",
+  //   basePath: "/meus-resultados",
+  //   permission: "view_gestor_panel",
+  //   onlyRoles: ["GESTOR"],
+  //   items: [{ label: "KPI", href: "/meus-resultados/kpi" }],
+  // },
+  // TEMP: oculto — seção removida da sidebar. As rotas continuam acessíveis via URL direta.
+  // {
+  //   id: "feedback",
+  //   label: "Feedback",
+  //   iconName: "message",
+  //   basePath: "/feedback",
+  //   permission: "view_gestor_panel",
+  //   onlyRoles: ["GESTOR"],
+  //   items: [
+  //     { label: "Resultado Semanal", href: "/feedback/resultado-semanal" },
+  //   ],
+  // },
   {
     id: "configuracoes-gestor",
     label: "Configurações",

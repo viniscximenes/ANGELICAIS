@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 
 import type { EvolucaoSnapshot } from "@/lib/d1/evolucao/types";
-import { clearConsolidadoAction } from "@/lib/google/d1/actions/clear-consolidado-action";
+import { clearConsolidadoAction } from "@/lib/d1-db/actions/clear-consolidado-action";
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
 import { ClearBaseButton } from "./clear-base-button";
 import { CopyGraficoButton } from "./copy-grafico-button";

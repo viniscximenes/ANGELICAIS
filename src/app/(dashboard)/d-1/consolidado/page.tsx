@@ -9,8 +9,7 @@ import { MotivosSection } from "@/components/d-1/motivos-section";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
-import { filterByUserEmail } from "@/lib/d1/filter-by-user";
-import { getD1Data } from "@/lib/google/d1";
+import { getOperadorConsolidado } from "@/lib/d1-db/get-operador-consolidado";
 
 export const metadata: Metadata = {
   title: "Consolidado — D-1 ALLOHA FIBRA",
@@ -29,8 +28,7 @@ export default async function ConsolidadoPage() {
     redirect("/gestor/d-1");
   }
 
-  const d1Data = await getD1Data();
-  const userView = filterByUserEmail(d1Data, user.profile.emailCorporativo);
+  const userView = await getOperadorConsolidado(user.profile.emailCorporativo);
 
   const role = user.profile.role;
 

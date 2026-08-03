@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getEmailPrefix } from "@/lib/utils/email-variants";
 import { aplicarFiltroEscopo } from "./escopo";
 
 export type OperadorItem = {
@@ -55,11 +56,18 @@ export async function getPorOperador(
 
   const list = allData;
 
-  const operators: Record<string, { nome: string; total: number; retidos: number; cancelados: number }> = {};
+  const operators: Record<
+    string,
+    { login: string; nome: string; total: number; retidos: number; cancelados: number }
+  > = {};
 
   for (const item of list) {
     const login = (item.usuario_login || "desconhecido").trim().toLowerCase();
-    
+    // Agrupa por PREFIXO (sem domínio) — operadores antigos aparecem com
+    // @alloha.com e @sumicity.net.br na mesma base; sem isso, a mesma pessoa
+    // vira duas linhas separadas na tabela.
+    const chave = getEmailPrefix(login);
+
     // Normaliza o nome: prioriza usuario_nome, senão pega a parte antes do @ no login
     let nome = item.usuario_nome ? item.usuario_nome.trim() : "";
     if (!nome) {
@@ -68,23 +76,25 @@ export async function getPorOperador(
 
     const isCancel = item.foi_cancelamento === true;
 
-    if (!operators[login]) {
-      operators[login] = { nome, total: 0, retidos: 0, cancelados: 0 };
+    if (!operators[chave]) {
+      // login: guarda a primeira variante encontrada — usada depois como
+      // filtro (getContratosFiltrados já expande pras duas variantes).
+      operators[chave] = { login, nome, total: 0, retidos: 0, cancelados: 0 };
     }
 
-    operators[login].total += 1;
+    operators[chave].total += 1;
     if (isCancel) {
-      operators[login].cancelados += 1;
+      operators[chave].cancelados += 1;
     } else {
-      operators[login].retidos += 1;
+      operators[chave].retidos += 1;
     }
   }
 
-  const result = Object.entries(operators).map(([login, vals]) => {
+  const result = Object.values(operators).map((vals) => {
     const denom = vals.retidos + vals.cancelados;
     const tx = denom > 0 ? vals.retidos / denom : null;
     return {
-      login,
+      login: vals.login,
       nome: vals.nome,
       total: vals.total,
       retidos: vals.retidos,

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 
-import { clearTempoLogadoAction } from "@/lib/google/d1/actions/clear-tempo-logado-action";
+import { clearTempoLogadoAction } from "@/lib/d1-db/actions/clear-tempo-logado-action";
 import type {
   OperadorLoginLogout,
   OperadorTempoLogado,

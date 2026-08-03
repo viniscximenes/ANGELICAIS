@@ -217,6 +217,7 @@ const EXCEL_HEADER_CELL: React.CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: "0.5px",
   color: "#ffffff",
+  whiteSpace: "nowrap",
 };
 
 const EXCEL_TEXT_CELL: React.CSSProperties = {

@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getEmailVariants } from "@/lib/utils/email-variants";
 import { aplicarFiltroEscopo } from "./escopo";
 
 export type FiltroContratos = {
@@ -22,9 +23,10 @@ export async function getContratosFiltrados(filtros: FiltroContratos): Promise<s
     periodo: filtros.periodo,
   });
 
-  // Filtro por Operador Específico (quando selecionado)
+  // Filtro por Operador Específico (quando selecionado) — cobre as duas
+  // variantes de domínio do mesmo operador.
   if (filtros.operador) {
-    query = query.eq("usuario_login", filtros.operador);
+    query = query.in("usuario_login", getEmailVariants(filtros.operador));
   }
 
   // Filtro de Status

@@ -1,4 +1,5 @@
-import { fetchGestorData, resolveGuiaGestor } from "@/lib/google/gestor";
+import { resolveGestorId } from "@/lib/d1-db/resolve-gestor-id";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type OperadorParaConfig = {
   email: string;
@@ -14,24 +15,29 @@ function emailToNomeReal(email: string): string {
 }
 
 /**
- * Retorna a lista de operadores da equipe do gestor a partir da planilha do D-1.
+ * Retorna a lista de operadores da equipe do gestor (d1_operadores_gestor).
  * Usa os mesmos emails que alimentam as tabelas do painel do gestor.
  */
 export async function getOperadoresParaConfig(
   username: string,
   emailCorporativo: string,
 ): Promise<OperadorParaConfig[]> {
-  const guia =
-    resolveGuiaGestor(username) ?? resolveGuiaGestor(emailCorporativo);
+  const gestorId = (await resolveGestorId(username)) ?? (await resolveGestorId(emailCorporativo));
+  if (!gestorId) return [];
 
-  if (!guia) return [];
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("d1_operadores_gestor")
+    .select("operador_email")
+    .eq("gestor_id", gestorId);
 
-  const data = await fetchGestorData(guia);
+  if (error) {
+    console.error("[getOperadoresParaConfig] erro ao buscar operadores do gestor:", error.message);
+    return [];
+  }
 
-  return data.operadores
-    .filter((op) => op.nome.trim())
-    .map((op) => {
-      const email = op.nome.trim().toLowerCase();
-      return { email, nomeReal: emailToNomeReal(email) };
-    });
+  return (data ?? [])
+    .map((row) => row.operador_email.trim().toLowerCase())
+    .filter(Boolean)
+    .map((email) => ({ email, nomeReal: emailToNomeReal(email) }));
 }

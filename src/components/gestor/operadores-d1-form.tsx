@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import {
   adicionarOperadorAction,
   excluirOperadorAction,
-} from "@/lib/google/gestor/operadores-d1/actions";
-import type { OperadorD1 } from "@/lib/google/gestor/operadores-d1/listar";
+} from "@/lib/d1-db/actions/operadores-gestor-actions";
+import type { OperadorD1 } from "@/lib/d1-db/types";
 
 // Mesma regex do servidor — dar feedback rápido no client sem roundtrip.
 const EMAIL_REGEX = /^[a-z0-9][a-z0-9._-]*\.[a-z0-9][a-z0-9._-]*@alloha\.com$/i;
@@ -60,10 +60,7 @@ export function OperadoresD1Form({ operadoresIniciais }: Props) {
         toast.error(result.error);
         return;
       }
-      setOperadores((prev) => [
-        ...prev,
-        { email: emailNorm, linha: result.data.linha },
-      ]);
+      setOperadores((prev) => [...prev, { email: emailNorm }]);
       setEmailInput("");
       toast.success(`${emailParaNome(emailNorm)} adicionado à equipe.`);
     } catch {
@@ -76,9 +73,7 @@ export function OperadoresD1Form({ operadoresIniciais }: Props) {
   async function handleExcluir(email: string) {
     const nome = emailParaNome(email);
     if (
-      !window.confirm(
-        `Remover ${nome} da equipe do D-1?\n\nEssa ação altera a planilha de produção e não pode ser desfeita por aqui.`,
-      )
+      !window.confirm(`Remover ${nome} da equipe do D-1?`)
     ) {
       return;
     }

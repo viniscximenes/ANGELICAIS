@@ -1,7 +1,6 @@
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { filterByUserEmail } from "@/lib/d1/filter-by-user";
+import { getOperadorConsolidado } from "@/lib/d1-db/get-operador-consolidado";
 import { getCurrentMonthSnapshot } from "@/lib/kpi/atual/get-current-month-snapshot";
-import { getD1Data } from "@/lib/google/d1";
 
 import type { PerformanceOperador } from "./types";
 
@@ -28,12 +27,12 @@ export async function getPerformanceOperador(): Promise<PerformanceOperador | nu
   try {
     const email = user.profile.emailCorporativo;
 
-    const [d1Data, kpiAtual] = await Promise.all([
-      getD1Data(),
+    const [userView, kpiAtual] = await Promise.all([
+      getOperadorConsolidado(email),
       getCurrentMonthSnapshot(email),
     ]);
 
-    const operador = filterByUserEmail(d1Data, email).operador;
+    const operador = userView.operador;
 
     const kpiPedidos = kpiAtual.kpis.get("pedidos")?.valor ?? 0;
     const kpiCancelados = kpiAtual.kpis.get("churn")?.valor ?? 0;

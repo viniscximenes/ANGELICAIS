@@ -4,7 +4,7 @@ import type { EnrichedKpiValue } from "@/lib/kpi/atual/types";
 import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
 import type { KpiDefinition } from "@/lib/kpi/types";
 import type { NeutralKpiValue } from "@/lib/kpi/passado/types";
-import { resolveKpiEmailsForProfiles } from "@/lib/profile/get-kpi-email-for-profile";
+import { resolveKpiEmailCandidatesForProfiles } from "@/lib/profile/get-kpi-email-for-profile";
 import { createClient } from "@/lib/supabase/server";
 
 import { getOperadoresDoGestor } from "./get-operadores-do-gestor";
@@ -27,8 +27,18 @@ export async function getKpiEquipePorEmails(
     return { operadores: [], mesRef, isMesPassado, dataCorte: null };
   }
 
-  const aliasMap = await resolveKpiEmailsForProfiles(emailsOriginal);
-  const emailsResolvidos = [...new Set([...aliasMap.values()])];
+  // Candidatos por operador (email + variantes de domínio + alias de KPI +
+  // variantes do alias) — consultamos TODOS de uma vez e consolidamos pelo
+  // que vier, em vez de tentar adivinhar de antemão qual email "é o certo"
+  // pra este mês (ver resolveKpiEmailCandidatesForProfiles).
+  const candidatosMap = await resolveKpiEmailCandidatesForProfiles(emailsOriginal);
+  const todosCandidatos = [
+    ...new Set(
+      emailsOriginal.flatMap(
+        (e) => candidatosMap.get(e.trim().toLowerCase()) ?? [e.trim().toLowerCase()],
+      ),
+    ),
+  ];
 
   const supabase = await createClient();
 
@@ -36,7 +46,7 @@ export async function getKpiEquipePorEmails(
     .from("kpi_monthly_snapshots")
     .select("operator_email, kpi_slug, valor_numerico, data_corte")
     .eq("mes_ref", mesRef)
-    .in("operator_email", emailsResolvidos);
+    .in("operator_email", todosCandidatos);
 
   if (error) {
     console.error("[getKpiEquipePorEmails] erro ao buscar KPIs:", {
@@ -69,8 +79,15 @@ export async function getKpiEquipePorEmails(
   const operadores: OperadorKpiEquipe[] = [];
 
   for (const emailOriginal of emailsOriginal) {
-    const emailKpi = aliasMap.get(emailOriginal) ?? emailOriginal;
-    const opRows = rowsByEmail.get(emailKpi) ?? [];
+    const emailNorm = emailOriginal.trim().toLowerCase();
+    const candidatos = candidatosMap.get(emailNorm) ?? [emailNorm];
+    // Consolida linhas de TODOS os candidatos do operador — normalmente só
+    // um deles tem dado neste mês específico (o outro pode ter dado em
+    // outro mês, ou nenhum).
+    const opRows = candidatos.flatMap((c) => rowsByEmail.get(c) ?? []);
+    // Só informativo (não consumido fora deste módulo): qual candidato de
+    // fato tinha dado neste mês.
+    const emailKpi = candidatos.find((c) => (rowsByEmail.get(c)?.length ?? 0) > 0) ?? emailNorm;
 
     const valuesBySlug = new Map<string, number | null>();
     for (const row of opRows) {

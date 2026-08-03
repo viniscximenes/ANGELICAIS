@@ -6,7 +6,7 @@ import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
 import { UploadProgressModal } from "@/components/d-1/upload-progress-modal";
-import { uploadBase2Action } from "@/lib/auth/upload-base-2-action";
+import { uploadTempoLogadoAction } from "@/lib/d1-db/actions/upload-tempo-logado-action";
 
 export type UploadStep =
   | "attaching"
@@ -15,7 +15,12 @@ export type UploadStep =
   | "done"
   | null;
 
-export function UploadTempoLogadoDropzone() {
+interface UploadTempoLogadoDropzoneProps {
+  /** Visual compacto (barra horizontal fina) — usado na página unificada do gestor. Default: card grande vertical. */
+  compact?: boolean;
+}
+
+export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogadoDropzoneProps = {}) {
   const [step, setStep] = useState<UploadStep>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [rowsWritten, setRowsWritten] = useState<number>(0);
@@ -58,7 +63,7 @@ export function UploadTempoLogadoDropzone() {
 
       setStep("replacing");
 
-      const uploadResult = await uploadBase2Action(csvText);
+      const uploadResult = await uploadTempoLogadoAction(csvText);
 
       if (!uploadResult.success) {
         setStep(null);
@@ -109,6 +114,53 @@ export function UploadTempoLogadoDropzone() {
 
   const isProcessing = step !== null && step !== "done";
 
+  if (compact) {
+    return (
+      <>
+        <div
+          {...getRootProps()}
+          className="flex shrink-0 cursor-pointer items-center gap-2 rounded-md border border-dashed transition-colors duration-200 hover:border-primary"
+          style={{
+            background: isDragActive
+              ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
+              : "var(--card)",
+            borderColor: isDragReject
+              ? "var(--danger)"
+              : isDragActive
+                ? "var(--primary)"
+                : "var(--border)",
+            padding: "6px 12px",
+            opacity: isProcessing ? 0.5 : 1,
+            pointerEvents: isProcessing ? "none" : "auto",
+            fontSize: "12px",
+          }}
+        >
+          <input {...getInputProps()} />
+          {isDragActive ? (
+            <IconFileSpreadsheet
+              size={14}
+              style={{ color: "var(--primary)" }}
+              aria-hidden="true"
+            />
+          ) : (
+            <IconUpload size={14} className="text-primary" aria-hidden="true" />
+          )}
+          <span className="ds-mono-sm text-muted-foreground whitespace-nowrap">
+            {isDragActive ? "Solte para enviar" : "Enviar CSV"}
+          </span>
+        </div>
+
+        {errorMessage && !isProcessing && (
+          <span role="alert" className="status-danger ds-small rounded-md px-2 py-1">
+            {errorMessage}
+          </span>
+        )}
+
+        <UploadProgressModal step={step} rowsWritten={rowsWritten} />
+      </>
+    );
+  }
+
   return (
     <>
       <div
@@ -124,41 +176,23 @@ export function UploadTempoLogadoDropzone() {
               ? "var(--primary)"
               : "var(--border)",
           boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "none",
-          padding: "2.5rem 1.5rem",
+          padding: "1rem 1.25rem",
           opacity: isProcessing ? 0.5 : 1,
           pointerEvents: isProcessing ? "none" : "auto",
-          minHeight: "100%",
+          minHeight: "90px",
         }}
       >
         <input {...getInputProps()} />
 
-        <div className="flex flex-col items-center justify-center gap-4 text-center">
-          <div className="p-4 rounded-full bg-muted border border-border/40 transition-colors hover:bg-muted/80">
-            {isDragActive ? (
-              <IconFileSpreadsheet
-                size={28}
-                style={{ color: "var(--primary)" }}
-                aria-hidden="true"
-              />
-            ) : (
-              <IconUpload
-                size={28}
-                className="text-primary"
-                aria-hidden="true"
-              />
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <p className="ds-body font-semibold">
-              {isDragActive
-                ? "Solte para enviar"
-                : "Arraste o CSV aqui ou clique para selecionar"}
-            </p>
-            <p className="ds-small text-muted-foreground">
-              Apenas .csv · até 50 mil linhas
-            </p>
-          </div>
+        <div className="flex flex-col items-center justify-center gap-1 text-center">
+          <p className="ds-body text-foreground font-semibold">
+            {isDragActive
+              ? "Solte o arquivo para enviar"
+              : "Arraste o arquivo CSV aqui ou clique para selecionar"}
+          </p>
+          <p className="ds-mono-sm text-muted-foreground/80 text-[11px]">
+            Apenas arquivos .csv · limite de 50.000 linhas
+          </p>
         </div>
 
         {errorMessage && !isProcessing && (
