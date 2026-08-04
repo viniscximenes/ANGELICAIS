@@ -1,3 +1,4 @@
+import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
 import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
 import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
 import { resolveKpiEmailCandidatesForProfiles } from "@/lib/profile/get-kpi-email-for-profile";
@@ -8,22 +9,24 @@ import {
   getRanqueableSlugs,
 } from "./compute-quartis";
 import type { QuartilData } from "./compute-quartis";
-import { getOperadoresDoGestor } from "./get-operadores-do-gestor";
 
 /**
  * Quartil da equipe: calcula rank e quartil de cada operador DENTRO
  * do universo da própria equipe do gestor.
  *
+ * Equipe = roster cadastrado em d1_operadores_gestor (Configurações →
+ * Operadores do D-1), não mais o meta_gestor do KPI.
+ *
  * Query: só a equipe × só os slugs ranqueáveis — bem abaixo do teto de 1000.
  */
 export async function getQuartilEquipe(
-  fullName: string,
+  gestorId: string,
   mesRef: string,
 ): Promise<QuartilData> {
   const definitions = await getKpiDefinitions();
   const ranqueableSlugs = getRanqueableSlugs(definitions);
 
-  const emailsOriginal = await getOperadoresDoGestor(fullName, mesRef);
+  const emailsOriginal = await getRosterOperadoresGestor(gestorId);
   if (emailsOriginal.length === 0) {
     return { operadores: [], mesRef, ranqueableSlugs };
   }

@@ -45,12 +45,18 @@ const PAUSAS_ZERADAS: PausasDetalhe = {
  * retorna `operadores: []` quando o roster está vazio.
  *
  * NR17%/Particular%/Outras% são percentuais ABSOLUTOS — cada um é o tempo
- * daquela pausa ÷ tempo de JORNADA (tempo logado + tempo indisponível), não
- * ÷ tempo indisponível (isso daria a proporção relativa dentro da
- * indisponibilidade, ex: NR17 aparecendo como 100% quando na verdade é só
- * 10% da jornada). A soma dos três fica ≈ indisponibilidade total (a menos
- * de arredondamento). pausa15/pausa40/operacional/pausaSemMotivo não têm
- * coluna no schema novo (ver PausasDetalhe) — ficam sempre "00:00:00".
+ * daquela pausa ÷ tempo logado, não ÷ tempo indisponível (isso daria a
+ * proporção relativa dentro da indisponibilidade, ex: NR17 aparecendo como
+ * 100% quando na verdade é só 10% da jornada). A soma dos três fica ≈
+ * indisponibilidade total (a menos de arredondamento).
+ *
+ * O denominador é só tempo_logado (SEM somar tempo_indisponivel de novo):
+ * o "tempo logado" já é o span completo da sessão (login → logout) no CSV
+ * de origem — as pausas são sub-intervalos DENTRO desse span, não períodos
+ * adicionais fora dele. Somar os dois dobraria a contagem das pausas.
+ *
+ * pausa15/pausa40/operacional/pausaSemMotivo não têm coluna no schema novo
+ * (ver PausasDetalhe) — ficam sempre "00:00:00".
  */
 export async function getGestorIndisponibilidade(gestorId: string): Promise<GestorIndispData> {
   const admin = createAdminClient();
@@ -105,9 +111,7 @@ export async function getGestorIndisponibilidade(gestorId: string): Promise<Gest
         pausas: PAUSAS_ZERADAS,
       };
     }
-    const tempoIndispSeg = horaParaSegundos(row.tempo_indisponivel);
     const tempoLogadoSeg = tempoLogadoSegPorPrefixo.get(getEmailPrefix(email)) ?? 0;
-    const tempoJornadaSeg = tempoLogadoSeg + tempoIndispSeg;
     const pausa10Seg = horaParaSegundos(row.pausa10);
     const pausa20Seg = horaParaSegundos(row.pausa20);
     const particularSeg = horaParaSegundos(row.pausa_particular);
@@ -148,9 +152,9 @@ export async function getGestorIndisponibilidade(gestorId: string): Promise<Gest
       gestor: nomeGestor,
       indisponibilidade: row.indisp_percent,
       cumpriuMeta: row.indisp_percent !== null && row.indisp_percent < META_INDISPONIBILIDADE,
-      nr17Pct: pct(pausa10Seg + pausa20Seg, tempoJornadaSeg),
-      pausaParticularPct: pct(particularSeg, tempoJornadaSeg),
-      outrasPausasPct: pct(outrasSeg, tempoJornadaSeg),
+      nr17Pct: pct(pausa10Seg + pausa20Seg, tempoLogadoSeg),
+      pausaParticularPct: pct(particularSeg, tempoLogadoSeg),
+      outrasPausasPct: pct(outrasSeg, tempoLogadoSeg),
       pausas,
     };
   });

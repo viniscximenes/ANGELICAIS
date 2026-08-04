@@ -83,17 +83,21 @@ export function GestorEquipeSection({
     void toggleOlhoAction("consolidado", novoValor);
   }
 
-  // Polling: reconsulta o Sheets a cada 30s (sem F5) e atualiza operadores +
+  // Refetch usado tanto pelo polling quanto (imediatamente, sem esperar os
+  // 30s) pelo ClearBaseButton — mesma fonte, dois gatilhos.
+  async function refetchConsolidado() {
+    const result = await refreshConsolidadoAction();
+    if (result.success) {
+      setOperadores(result.operadores);
+      setEquipe(result.equipe);
+      setNomeSupervisorReport(result.nomeSupervisorReport);
+    }
+  }
+
+  // Polling: reconsulta a base a cada 30s (sem F5) e atualiza operadores +
   // hora/nome do report se houver mudança.
   useEffect(() => {
-    const interval = setInterval(async () => {
-      const result = await refreshConsolidadoAction();
-      if (result.success) {
-        setOperadores(result.operadores);
-        setEquipe(result.equipe);
-        setNomeSupervisorReport(result.nomeSupervisorReport);
-      }
-    }, POLL_INTERVAL_MS);
+    const interval = setInterval(refetchConsolidado, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, []);
 
@@ -187,7 +191,9 @@ export function GestorEquipeSection({
               supervisor={gestora}
               nomeSupervisorReport={nomeSupervisorReport}
             />
-            {showUpload && <ClearBaseButton action={clearConsolidadoAction} />}
+            {showUpload && (
+              <ClearBaseButton action={clearConsolidadoAction} onCleared={refetchConsolidado} />
+            )}
             <ConfigTabelaPopover
               metaTxInicial={metaTxRetencao}
               ordemInicial={ordemTabela}

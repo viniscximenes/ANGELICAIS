@@ -91,6 +91,9 @@ function SecondaryKpiCard({ kpi, isMesPassado }: { kpi: KpiCelulaSerial; isMesPa
   );
 }
 
+// Não renderizado atualmente (nome do operador não é mais clicável) —
+// mantido de propósito para uma eventual reativação futura.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function OperatorDetailModal({
   operador,
   isMesPassado,
@@ -386,7 +389,6 @@ export function KpiEquipeSection({
 }: KpiEquipeSectionProps) {
   const [mes, setMes] = useState<Mes>("atual");
   const [sort, setSort] = useState<SortState>({ slug: "tx_retencao_bruta", dir: "desc" });
-  const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
   const [colunasVisiveis, setColunasVisiveis] = useState<string[]>(colunasVisiveisIniciais);
   // Espelha o open/close do ConfigKpiPopover só pra elevar a tabela acima do
@@ -474,10 +476,6 @@ export function KpiEquipeSection({
     [operadoresParaTabela, sort],
   );
 
-  const selectedOperator: OperadorKpiSerial | null = selectedEmail
-    ? (sortedOps.find((op) => op.email === selectedEmail) ?? null)
-    : null;
-
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
@@ -555,8 +553,15 @@ export function KpiEquipeSection({
               </p>
             </StyledCard>
           ) : (
-            <StyledCard withGradient className="p-3">
-              <div className="elevation-1 overflow-x-auto rounded-xl border border-border/80 scrollbar-tema">
+            <>
+              {data.dataCorte === null && (
+                <p className="ds-small text-muted-foreground mb-3">
+                  Nenhum dado importado para {formatMesRef(data.mesRef)} ainda — a
+                  equipe abaixo é a mesma do último mês com dados.
+                </p>
+              )}
+              <StyledCard withGradient className="p-3">
+                <div className="elevation-1 overflow-x-auto rounded-xl border border-border/80 scrollbar-tema">
                 <table
                   className="w-full border-collapse text-sm"
                   style={{ minWidth: 860 }}
@@ -613,18 +618,7 @@ export function KpiEquipeSection({
                               : undefined,
                         }}
                       >
-                        <td
-                          className="ds-body sticky left-0 z-10 bg-card group-hover:bg-muted/20 px-4 py-2 text-center align-middle font-medium border-r border-border/30 cursor-pointer hover:bg-muted/30 hover:text-primary transition-colors shadow-sm"
-                          onClick={() => setSelectedEmail(op.email)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              setSelectedEmail(op.email);
-                            }
-                          }}
-                        >
+                        <td className="ds-body sticky left-0 z-10 bg-card px-4 py-2 text-center align-middle font-medium border-r border-border/30 shadow-sm">
                           {op.nome}
                         </td>
                         {op.kpis.map((kpi, idx) => {
@@ -662,18 +656,14 @@ export function KpiEquipeSection({
                   </tbody>
                 </table>
               </div>
-            </StyledCard>
+              </StyledCard>
+            </>
           )}
         </div>
       </div>
 
-      {selectedOperator && (
-        <OperatorDetailModal
-          operador={selectedOperator}
-          isMesPassado={data.isMesPassado}
-          onClose={() => setSelectedEmail(null)}
-        />
-      )}
+      {/* OperatorDetailModal não é mais renderizado (nome do operador não é
+          mais clicável) — componente mantido no arquivo, só não é chamado. */}
 
       {/*
         Wrapper INVISÍVEL usado SÓ pela captura do PNG (CopyKpiButton).

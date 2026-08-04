@@ -197,13 +197,16 @@ export async function uploadTempoLogadoAction(
 
     // Tempo indisponível total = soma de todas as pausas mapeadas (definição
     // auto-consistente: NR17% + Particular% + Outras% = 100% desse total).
-    // A "Indisponibilidade %" (indisp_percent) em si não vem mais de uma
-    // fórmula do Sheets (invisível/indisponível) — aqui é derivada como
-    // tempo indisponível ÷ (tempo logado + tempo indisponível). Ver relatório
-    // final da migração pra mais detalhes dessa aproximação.
+    // Indisponibilidade % = tempo indisponível ÷ tempo logado. O "tempo
+    // logado" (LOGIN TIME da linha "Login" do CSV) já é o span completo da
+    // sessão (login → logout) — as pausas são sub-intervalos DENTRO desse
+    // span, não períodos adicionais fora dele (confirmado inspecionando o
+    // CSV bruto: a linha "Login" cobre o mesmo intervalo de tempo que as
+    // linhas de pausa nela contidas). Por isso o denominador NÃO soma tempo
+    // indisponível de novo — tempoLogadoSeg já o inclui.
     const tempoIndisponivelSeg = COLUNAS_PAUSA.reduce((acc, col) => acc + agg.pausas[col], 0);
-    const denomIndisp = agg.tempoLogadoSeg + tempoIndisponivelSeg;
-    const indispPercent = denomIndisp > 0 ? (tempoIndisponivelSeg / denomIndisp) * 100 : null;
+    const indispPercent =
+      agg.tempoLogadoSeg > 0 ? (tempoIndisponivelSeg / agg.tempoLogadoSeg) * 100 : null;
 
     const pausasFormatadas: Record<string, string> = {};
     for (const col of COLUNAS_PAUSA) {

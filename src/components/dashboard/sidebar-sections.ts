@@ -12,23 +12,25 @@ const ALL_SECTIONS: SidebarSection[] = [
     permission: "view_gestor_panel",
     // Só o GESTOR vê — o ADM tem a permissão, mas não acessa esta tela.
     onlyRoles: ["GESTOR"],
+    // Divisória "Minha Equipe" acima do grupo D-1 — só aparece pro GESTOR
+    // porque esta seção já é onlyRoles: ["GESTOR"].
+    divider: "Minha Equipe",
     items: [
       { label: "Consolidado", href: "/gestor/d-1" },
       { label: "Tempo Logado & Indisp.", href: "/gestor/tempo-logado" },
     ],
   },
-  // TEMP: oculto — seção removida da sidebar. As rotas continuam acessíveis via URL direta.
-  // {
-  //   id: "operacional",
-  //   label: "KPI",
-  //   iconName: "headset",
-  //   basePath: "/operacional",
-  //   permission: "view_gestor_panel",
-  //   onlyRoles: ["GESTOR"],
-  //   items: [
-  //     { label: "Operadores", href: "/operacional/kpi" },
-  //   ],
-  // },
+  {
+    id: "operacional",
+    label: "KPI",
+    iconName: "headset",
+    basePath: "/operacional",
+    permission: "view_gestor_panel",
+    onlyRoles: ["GESTOR"],
+    items: [
+      { label: "Operadores", href: "/operacional/kpi" },
+    ],
+  },
   // TEMP: oculto — seção removida da sidebar. As rotas continuam acessíveis via URL direta.
   // {
   //   id: "meus-resultados",
@@ -53,7 +55,7 @@ const ALL_SECTIONS: SidebarSection[] = [
   // },
   {
     id: "configuracoes-gestor",
-    label: "Configurações",
+    label: "CONFIGURAÇÕES",
     iconName: "settings",
     basePath: "/configuracoes",
     permission: "view_gestor_panel",

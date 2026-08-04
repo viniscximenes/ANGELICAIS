@@ -69,22 +69,26 @@ export function GestorTempoLogadoIndispSection({
     void toggleOlhoAction("indisponibilidade", novoValor);
   }
 
+  // Refetch usado tanto pelo polling quanto (imediatamente, sem esperar os
+  // 30s) pelo ClearBaseButton — mesma fonte, dois gatilhos.
+  async function refetchTempoLogadoEIndisp() {
+    const [tlResult, indispResult] = await Promise.all([
+      refreshTempoLogadoAction(),
+      refreshIndisponibilidadeAction(),
+    ]);
+    if (tlResult.success) {
+      setOperadoresTL(tlResult.operadores);
+      setHoraReport(tlResult.horaReport);
+      setNomeSupervisorReport(tlResult.nomeSupervisorReport);
+    }
+    if (indispResult.success) {
+      setOperadoresIndisp(indispResult.operadores);
+    }
+  }
+
   // Polling: reconsulta os dois datasets a cada 30s (sem F5)
   useEffect(() => {
-    const interval = setInterval(async () => {
-      const [tlResult, indispResult] = await Promise.all([
-        refreshTempoLogadoAction(),
-        refreshIndisponibilidadeAction(),
-      ]);
-      if (tlResult.success) {
-        setOperadoresTL(tlResult.operadores);
-        setHoraReport(tlResult.horaReport);
-        setNomeSupervisorReport(tlResult.nomeSupervisorReport);
-      }
-      if (indispResult.success) {
-        setOperadoresIndisp(indispResult.operadores);
-      }
-    }, POLL_INTERVAL_MS);
+    const interval = setInterval(refetchTempoLogadoEIndisp, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, []);
 
@@ -146,7 +150,12 @@ export function GestorTempoLogadoIndispSection({
               horaReport={horaReport}
               nomeSupervisorReport={nomeSupervisorReport}
             />
-            {showUpload && <ClearBaseButton action={clearTempoLogadoAction} />}
+            {showUpload && (
+              <ClearBaseButton
+                action={clearTempoLogadoAction}
+                onCleared={refetchTempoLogadoEIndisp}
+              />
+            )}
           </div>
         </div>
 

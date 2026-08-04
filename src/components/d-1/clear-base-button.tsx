@@ -11,22 +11,28 @@ type ClearActionResult =
 
 interface Props {
   action: () => Promise<ClearActionResult>;
+  /**
+   * Chamado após um clear bem-sucedido, ANTES do router.refresh(). Os
+   * componentes que renderizam este botão guardam os dados da tabela em
+   * useState (inicializado só uma vez a partir das props) pro polling de
+   * 30s funcionar — router.refresh() sozinho não re-sincroniza esse estado
+   * (React não rereseta useState quando as props do componente mudam), daí
+   * a tela ficar com dado antigo até o próximo poll ou um F5. onCleared
+   * deixa o componente pai refazer o mesmo refetch do polling na hora.
+   */
+  onCleared?: () => void | Promise<void>;
 }
 
-export function ClearBaseButton({ action }: Props) {
+export function ClearBaseButton({ action, onCleared }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   function handleClick() {
-    const confirmed = window.confirm(
-      "ATENÇÃO: Você tem certeza que deseja limpar todos os dados da base atual no Google Sheets? Esta ação não pode ser desfeita."
-    );
-    if (!confirmed) return;
-
     startTransition(async () => {
       const r = await action();
       if (r.success) {
         toast.success("Base limpa");
+        await onCleared?.();
         router.refresh();
       } else {
         toast.error(r.error);

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
 import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
 import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
 import { resolveKpiEmailCandidatesForProfiles } from "@/lib/profile/get-kpi-email-for-profile";
@@ -10,7 +11,6 @@ import {
   getRanqueableSlugs,
 } from "./compute-quartis";
 import type { QuartilData } from "./compute-quartis";
-import { getOperadoresDoGestor } from "./get-operadores-do-gestor";
 
 const PAGE_SIZE = 1000;
 
@@ -68,17 +68,20 @@ async function fetchTodasAsLinhasRanqueaveis(
  * Quartil empresa: calcula rank e quartil de cada operador da equipe dentro
  * do universo da EMPRESA TODA (todos os operadores do mês).
  *
+ * Equipe = roster cadastrado em d1_operadores_gestor (Configurações →
+ * Operadores do D-1), não mais o meta_gestor do KPI.
+ *
  * Outros operadores entram no cálculo mas não aparecem na saída — só os da
  * equipe do gestor são retornados.
  */
 export async function getQuartilEmpresa(
-  fullName: string,
+  gestorId: string,
   mesRef: string,
 ): Promise<QuartilData> {
   const definitions = await getKpiDefinitions();
   const ranqueableSlugs = getRanqueableSlugs(definitions);
 
-  const emailsEquipe = await getOperadoresDoGestor(fullName, mesRef);
+  const emailsEquipe = await getRosterOperadoresGestor(gestorId);
   if (emailsEquipe.length === 0) {
     return { operadores: [], mesRef, ranqueableSlugs };
   }

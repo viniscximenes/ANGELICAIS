@@ -5,13 +5,13 @@ import { PageTransition } from "@/components/motion/page-transition";
 import { KpiEquipeSection } from "@/components/operacional/kpi-equipe-section";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
+import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
 import { getKpiColunasConfig } from "@/lib/kpi/gestor/get-kpi-colunas-config";
 import { getKpiEquipePorEmails } from "@/lib/kpi/gestor/get-kpi-equipe-gestor";
-import { getOperadoresDoGestor } from "@/lib/kpi/gestor/get-operadores-do-gestor";
 import { KPI_COLUNAS_ORDER } from "@/lib/kpi/gestor/kpi-colunas-config";
 import { toKpiEquipeSerial, type KpiEquipeSerial } from "@/lib/kpi/gestor/serial-types";
 import { stripUnitSuffix } from "@/lib/kpi/strip-unit-suffix";
@@ -57,11 +57,15 @@ export default async function OperacionalKpiPage() {
   const mesPassado = getPreviousMesRef();
   const mesRetrasado = getMesRetrasadoRef();
 
-  // Equipe fixada pelo mês atual; definitions + config de nome fantasia em
-  // paralelo (sem redundância).
+  // Equipe = roster cadastrado pelo gestor em Configurações → Operadores do
+  // D-1 (d1_operadores_gestor), não mais o meta_gestor do KPI — evita puxar
+  // operadores que já saíram do time ou de outro gestor com nome parecido.
+  // Independe de mês, então os 3 toggles (atual/passado/retrasado) sempre
+  // usam a mesma lista. Roda em paralelo com definitions/config de nome
+  // fantasia (independentes).
   const [emailsEquipe, definitions, nomeFantasiaConfig, kpiColunasVisiveis] =
     await Promise.all([
-      getOperadoresDoGestor(fullName, mesAtual),
+      getRosterOperadoresGestor(user.profile.id),
       getKpiDefinitions(),
       getNomeFantasiaConfig(user.profile.id),
       getKpiColunasConfig(user.profile.id),

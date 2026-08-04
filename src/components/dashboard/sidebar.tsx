@@ -45,6 +45,11 @@ export type SidebarSection = {
    * ADM tem view_gestor_panel, mas só o GESTOR vê "Painel do Gestor".
    */
   onlyRoles?: UserRole[];
+  /**
+   * Label de divisória exibido ACIMA desta seção — puramente visual, não é
+   * um grupo colapsável nem afeta a filtragem por permissão/role.
+   */
+  divider?: string;
 };
 
 const ICONS: Record<
@@ -91,6 +96,17 @@ export function Sidebar({ sections }: SidebarProps) {
 
           return (
             <div key={section.id}>
+              {section.divider && (
+                <div
+                  aria-hidden="true"
+                  className="mb-3 pt-3"
+                  style={{ borderTop: "1px solid var(--border)" }}
+                >
+                  <span className="px-3 text-xs tracking-wider text-muted-foreground uppercase">
+                    {section.divider}
+                  </span>
+                </div>
+              )}
               <Link
                 href={firstHref}
                 aria-expanded={isActiveSection}
