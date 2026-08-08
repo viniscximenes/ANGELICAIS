@@ -177,7 +177,7 @@ export function GestorEquipeSection({
 
           <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
             <Link
-              href="/analitico/consolidado"
+              href="/reports/consolidado/analitico"
               className="bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-opacity cursor-pointer shadow-sm"
               style={{ fontSize: "12px" }}
             >

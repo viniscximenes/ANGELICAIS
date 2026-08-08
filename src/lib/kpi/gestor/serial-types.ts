@@ -1,11 +1,22 @@
 import type { EnrichedKpiValue } from "@/lib/kpi/atual/types";
 import type { KpiDefinition, KpiValueType } from "@/lib/kpi/types";
 
+import {
+  computeRetidosBrutos,
+  RETIDOS_BRUTOS_SLUG,
+  VIRTUAL_KPI_LABELS,
+} from "./retidos-brutos";
 import type { KpiEquipeGestorData } from "./types";
 
-/** Ordem de exibição das colunas na tabela (KPIs principais). */
+/**
+ * Ordem de exibição das colunas na tabela (KPIs principais).
+ *
+ * `retidos_brutos` é virtual (pedidos − churn) e não tem linha em
+ * kpi_definitions — é montado à parte em toKpiEquipeSerial.
+ */
 export const PRINCIPAL_SLUGS_ORDER = [
   "tx_retencao_bruta",
+  RETIDOS_BRUTOS_SLUG,
   "indisp_total",
   "tma",
   "abs",
@@ -60,10 +71,6 @@ export function toKpiEquipeSerial(
   const principalDefs = definitions.filter((d) => d.groupType === "principal");
   const secundarioDefs = definitions.filter((d) => d.groupType === "secundario");
 
-  const orderedPrincipal = PRINCIPAL_SLUGS_ORDER
-    .map((slug) => principalDefs.find((d) => d.slug === slug))
-    .filter((d): d is KpiDefinition => d !== undefined);
-
   const orderedSecundario = SECUNDARIO_SLUGS_ORDER
     .map((slug) => secundarioDefs.find((d) => d.slug === slug))
     .filter((d): d is KpiDefinition => d !== undefined);
@@ -84,6 +91,44 @@ export function toKpiEquipeSerial(
     };
   };
 
+  /**
+   * Célula do KPI virtual "Retidos Brutos" (pedidos − churn). Sem linha em
+   * kpi_definitions não há meta nem faixa de cor, então o status é sempre
+   * "neutral" — a coluna mostra o número, não o semáforo.
+   */
+  const toCelulaRetidosBrutos = (
+    map: (typeof data.operadores)[0]["kpisPrincipal"],
+  ): KpiCelulaSerial => ({
+    slug: RETIDOS_BRUTOS_SLUG,
+    displayName: VIRTUAL_KPI_LABELS[RETIDOS_BRUTOS_SLUG],
+    valor: computeRetidosBrutos(
+      map.get("pedidos")?.valor,
+      map.get("churn")?.valor,
+    ),
+    valueType: "number",
+    status: "neutral",
+  });
+
+  /**
+   * Monta as células principais seguindo PRINCIPAL_SLUGS_ORDER, tratando o
+   * slug virtual à parte. Slugs sem definição no banco são pulados (mesmo
+   * comportamento de antes).
+   */
+  const buildPrincipais = (
+    map: (typeof data.operadores)[0]["kpisPrincipal"],
+  ): KpiCelulaSerial[] => {
+    const cells: KpiCelulaSerial[] = [];
+    for (const slug of PRINCIPAL_SLUGS_ORDER) {
+      if (slug === RETIDOS_BRUTOS_SLUG) {
+        cells.push(toCelulaRetidosBrutos(map));
+        continue;
+      }
+      const def = principalDefs.find((d) => d.slug === slug);
+      if (def) cells.push(toCelula(map, def));
+    }
+    return cells;
+  };
+
   return {
     mesRef: data.mesRef,
     isMesPassado: data.isMesPassado,
@@ -91,7 +136,7 @@ export function toKpiEquipeSerial(
     operadores: data.operadores.map((op) => ({
       email: op.email,
       nome: op.nome,
-      kpis: orderedPrincipal.map((def) => toCelula(op.kpisPrincipal, def)),
+      kpis: buildPrincipais(op.kpisPrincipal),
       secundarios: orderedSecundario.map((def) => toCelula(op.kpisSecundario, def)),
     })),
   };

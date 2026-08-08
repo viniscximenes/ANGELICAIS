@@ -42,6 +42,7 @@ export async function clearTempoLogadoAction(): Promise<ClearTempoLogadoResult> 
     revalidatePath("/d-1/tempo-logado");
     revalidatePath("/d-1/indisponibilidade");
     revalidatePath("/gestor/tempo-logado");
+    revalidatePath("/reports/tempo-indisponibilidade");
     return { success: true };
   } catch (err) {
     console.error("[clear-tempo-logado] erro:", err);

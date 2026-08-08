@@ -1,57 +1,84 @@
-import { IconLogout, IconUser } from "@tabler/icons-react";
+"use client";
 
-import { logoutAction } from "@/lib/auth/logout-action";
-import { createClient } from "@/lib/supabase/server";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { IconMenu2 } from "@tabler/icons-react";
 
-export async function AppHeader() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import type { UserRole } from "@/lib/auth/get-current-user";
+import type { SidebarSection, SidebarUser } from "./sidebar";
+import { SidebarNav } from "./sidebar";
+import { ThemeToggle } from "./theme-toggle";
 
-  if (!user) return null;
+const ROLE_LABEL: Record<UserRole, string> = {
+  GESTOR: "GESTOR",
+  ADM: "ADMINISTRADOR",
+  AUX: "AUXILIAR",
+  OP: "OPERADOR",
+};
 
-  // Extrai username do email interno
-  const username = user.email?.split("@")[0] || "";
+interface AppHeaderProps {
+  user: SidebarUser;
+  sections: SidebarSection[];
+}
+
+export function AppHeader({ user, sections }: AppHeaderProps) {
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Fecha o drawer ao navegar (o clique no link já dispara onNavigate, mas
+  // isto cobre navegação por voltar/avançar do navegador).
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   return (
-    <header
-      className="sticky top-0 z-40 backdrop-blur-md"
-      style={{
-        background: "color-mix(in oklch, var(--background) 80%, transparent)",
-        borderBottom: "1px solid var(--border)",
-      }}
-    >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3 lg:px-12">
-        {/* Logo / nome do sistema */}
-        <div className="flex items-baseline gap-3">
-          <span className="ds-mono font-semibold tracking-wider">
-            ALLOHA FIBRA
-          </span>
-          <span className="ds-mono-sm text-muted-foreground hidden sm:inline">
-            / gestão operacional
-          </span>
+    <header className="border-border/50 bg-background/80 sticky top-0 z-30 h-[60px] border-b backdrop-blur-md">
+      <div className="flex h-[60px] items-center justify-between gap-4 px-6">
+        {/* ── Esquerda: hamburger (mobile) + branding ────────── */}
+        <div className="flex min-w-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Abrir navegação"
+            className="text-muted-foreground hover:bg-muted/50 hover:text-foreground flex size-9 shrink-0 items-center justify-center rounded-md transition-colors duration-150 lg:hidden"
+          >
+            <IconMenu2 size={20} aria-hidden="true" />
+          </button>
+
+          <div className="flex min-w-0 flex-col justify-center">
+            <span className="text-muted-foreground text-lg leading-tight font-bold tracking-wider cursor-default">
+              ANGELICAIS
+            </span>
+            <span className="text-muted-foreground/70 text-xs leading-tight tracking-wide">
+              {ROLE_LABEL[user.role]}
+            </span>
+          </div>
         </div>
 
-        {/* Usuário + logout */}
-        <div className="flex items-center gap-3">
-          <div className="ds-mono-sm text-muted-foreground flex items-center gap-2">
-            <IconUser size={14} aria-hidden="true" />
-            <span>{username}</span>
+        {/* ── Direita: tema ──────────────────────────────────── */}
+        <div className="flex shrink-0 items-center gap-3">
+          {/* ThemeToggle é full-width com label; aqui ele vira só ícone. */}
+          <div className="[&>button]:w-auto [&>button]:justify-center [&>button]:px-2 [&_span]:hidden">
+            <ThemeToggle />
           </div>
-
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="ds-small flex items-center gap-2 rounded-md px-3 py-1.5 transition-colors hover:bg-[var(--elevation-2-bg)]"
-              style={{ color: "var(--muted-foreground)" }}
-            >
-              <IconLogout size={14} aria-hidden="true" />
-              <span>Sair</span>
-            </button>
-          </form>
         </div>
       </div>
+
+      {/* ── Drawer mobile: mesma navegação da sidebar ───────── */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent
+          side="left"
+          className="w-[280px] bg-zinc-50 px-4 py-6 sm:max-w-[280px] dark:bg-zinc-950"
+        >
+          <SheetTitle className="sr-only">Navegação principal</SheetTitle>
+          <SidebarNav
+            sections={sections}
+            user={user}
+            onNavigate={() => setMobileOpen(false)}
+          />
+        </SheetContent>
+      </Sheet>
     </header>
   );
 }

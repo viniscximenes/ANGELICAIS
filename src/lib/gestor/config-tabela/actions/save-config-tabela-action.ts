@@ -52,6 +52,7 @@ export async function saveConfigTabelaAction(
   }
 
   revalidatePath("/gestor/d-1");
+  revalidatePath("/reports/consolidado");
 
   return { success: true };
 }

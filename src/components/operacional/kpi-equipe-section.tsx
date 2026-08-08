@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   IconX,
@@ -20,6 +20,7 @@ import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fant
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import { KPI_COLUNAS_ORDER } from "@/lib/kpi/gestor/kpi-colunas-config";
+import { saveKpiColunasAction } from "@/lib/kpi/gestor/save-kpi-colunas-action";
 import type {
   KpiCelulaSerial,
   KpiEquipeSerial,
@@ -439,16 +440,76 @@ export function KpiEquipeSection({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Colunas visíveis (config do gestor) — filtra + ordena KPI_COLUNAS_ORDER
-  // pela seleção salva, resolvendo o label a partir de colunasDisponiveis
-  // (já vem com displayName real do banco, sufixo de unidade removido).
+  // Colunas visíveis (config do gestor). A ORDEM vem de colunasVisiveis —
+  // é ela que o gestor reordena arrastando os headers e que fica salva em
+  // gestor_config_fantasia.kpi_colunas_visiveis. KPI_COLUNAS_ORDER serve só
+  // para descartar slug desconhecido. O label vem de colunasDisponiveis (já
+  // com displayName real do banco, sufixo de unidade removido).
   const headers = useMemo(
     () =>
-      KPI_COLUNAS_ORDER.filter((slug) => colunasVisiveis.includes(slug)).map((slug) => ({
-        slug,
-        displayName: colunasDisponiveis.find((c) => c.slug === slug)?.label ?? slug,
-      })),
+      colunasVisiveis
+        .filter((slug) => (KPI_COLUNAS_ORDER as readonly string[]).includes(slug))
+        .map((slug) => ({
+          slug,
+          displayName: colunasDisponiveis.find((c) => c.slug === slug)?.label ?? slug,
+        })),
     [colunasVisiveis, colunasDisponiveis],
+  );
+
+  // Lista do popover na ordem atual: as visíveis primeiro (na ordem que o
+  // gestor arrastou), depois as ocultas na ordem canônica.
+  const colunasDisponiveisOrdenadas = useMemo(() => {
+    const porSlug = new Map(colunasDisponiveis.map((c) => [c.slug, c]));
+    const visiveis = colunasVisiveis
+      .map((slug) => porSlug.get(slug))
+      .filter((c): c is ColunaKpiDisponivel => c !== undefined);
+    const ocultas = colunasDisponiveis.filter((c) => !colunasVisiveis.includes(c.slug));
+    return [...visiveis, ...ocultas];
+  }, [colunasDisponiveis, colunasVisiveis]);
+
+  // ── Drag & drop dos headers (HTML5 nativo, sem lib) ──────────────
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounce de 500ms: num arrasto rápido de várias colunas só a ordem
+  // final vai pro banco. Sem toast — o feedback já é o próprio movimento.
+  const salvarOrdem = useCallback((ordem: string[]) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      void saveKpiColunasAction(ordem).then((r) => {
+        if (!r.success) console.error("[kpi-colunas] falha ao salvar ordem:", r.error);
+      });
+    }, 500);
+  }, []);
+
+  const limparDrag = useCallback(() => {
+    setDragIndex(null);
+    setDragOverIndex(null);
+  }, []);
+
+  // Índices são relativos a `headers` (só colunas de KPI) — a coluna
+  // "Operador" é um <th> separado e nunca entra no drag.
+  const handleReorder = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return;
+      const ordemAtual = headers.map((h) => h.slug);
+      if (
+        Number.isNaN(fromIndex) ||
+        fromIndex < 0 ||
+        fromIndex >= ordemAtual.length ||
+        toIndex < 0 ||
+        toIndex >= ordemAtual.length
+      ) {
+        return;
+      }
+      const nova = [...ordemAtual];
+      const [movido] = nova.splice(fromIndex, 1);
+      nova.splice(toIndex, 0, movido);
+      setColunasVisiveis(nova);
+      salvarOrdem(nova);
+    },
+    [headers, salvarOrdem],
   );
 
   const operadoresParaTela = useMemo(() => {
@@ -530,7 +591,7 @@ export function KpiEquipeSection({
             <div className="ml-auto flex items-center gap-2">
               <CopyKpiButton dataCorte={data.dataCorte} />
               <ConfigKpiPopover
-                colunasDisponiveis={colunasDisponiveis}
+                colunasDisponiveis={colunasDisponiveisOrdenadas}
                 colunasIniciais={colunasVisiveis}
                 onSaved={setColunasVisiveis}
                 onOpenChange={setConfigPopoverOpen}
@@ -594,10 +655,45 @@ export function KpiEquipeSection({
                       {headers.map((h, idx) => (
                         <th
                           key={h.slug}
-                          className={[
-                            "ds-mono-sm text-muted-foreground px-3 py-2.5 text-center font-semibold tracking-wider uppercase whitespace-nowrap cursor-pointer select-none hover:text-foreground transition-colors",
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData("text/plain", String(idx));
+                            e.dataTransfer.effectAllowed = "move";
+                            setDragIndex(idx);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = "move";
+                          }}
+                          onDragEnter={() => setDragOverIndex(idx)}
+                          onDragLeave={(e) => {
+                            // dragleave também dispara ao passar sobre filhos
+                            // (span/ícone) — só limpa se saiu mesmo do <th>.
+                            if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                            setDragOverIndex((atual) => (atual === idx ? null : atual));
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const fromIndex = parseInt(
+                              e.dataTransfer.getData("text/plain"),
+                              10,
+                            );
+                            handleReorder(fromIndex, idx);
+                            limparDrag();
+                          }}
+                          onDragEnd={limparDrag}
+                          title="Arraste para reordenar · clique para ordenar"
+                          className={cn(
+                            "ds-mono-sm text-muted-foreground px-3 py-2.5 text-center font-semibold tracking-wider uppercase whitespace-nowrap select-none hover:text-foreground transition-colors cursor-grab active:cursor-grabbing",
                             idx < headers.length - 1 ? "border-r border-border/50" : "",
-                          ].join(" ")}
+                            dragIndex === idx && "opacity-50",
+                            dragOverIndex !== null &&
+                              dragOverIndex === idx &&
+                              dragIndex !== idx &&
+                              (dragIndex !== null && dragIndex < idx
+                                ? "border-r-2 border-r-primary"
+                                : "border-l-2 border-l-primary"),
+                          )}
                           onClick={() => handleSort(h.slug)}
                         >
                           {h.displayName}

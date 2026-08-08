@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
 import { AppHeader } from "@/components/dashboard/app-header";
-import { Sidebar } from "@/components/dashboard/sidebar";
+import { Sidebar, type SidebarUser } from "@/components/dashboard/sidebar";
 import { getSidebarSectionsForRole } from "@/components/dashboard/sidebar-sections";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 
@@ -21,11 +21,19 @@ export default async function DashboardLayout({
   // seção "Painel do Gestor" (view_gestor_panel), sem D-1/KPI/RV/etc.
   const sections = getSidebarSectionsForRole(user.profile.role);
 
+  // Header e sidebar compartilham o mesmo usuário resolvido aqui — o header
+  // não faz mais a própria chamada de auth (era uma segunda ida ao Supabase
+  // por request, e sem acesso a full_name/role).
+  const sidebarUser: SidebarUser = {
+    fullName: user.profile.fullName,
+    role: user.profile.role,
+  };
+
   return (
     <div className="min-h-screen">
-      <AppHeader />
+      <AppHeader user={sidebarUser} sections={sections} />
       <div className="flex">
-        <Sidebar sections={sections} />
+        <Sidebar sections={sections} user={sidebarUser} />
         <main className="min-w-0 flex-1">{children}</main>
       </div>
     </div>

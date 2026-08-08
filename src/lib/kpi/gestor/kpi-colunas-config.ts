@@ -20,7 +20,18 @@ export function isKpiColunaSlug(value: string): value is KpiColunaSlug {
 
 /**
  * Default quando gestor_config_fantasia.kpi_colunas_visiveis está vazio
- * ([]) — as 7 colunas principais que já apareciam antes dessa configuração
- * existir.
+ * ([]) — as colunas principais, MENOS "churn". Como deriva de
+ * PRINCIPAL_SLUGS_ORDER, já inclui o KPI virtual "retidos_brutos"
+ * (pedidos − churn), logo após tx_retencao_bruta.
+ *
+ * Churn continua em PRINCIPAL_SLUGS_ORDER (segue sendo serializado e
+ * aparecendo no seletor de colunas); ele só deixou de vir marcado por
+ * padrão. Gestores que já salvaram uma configuração própria não são
+ * afetados — getKpiColunasConfig só cai neste default quando a lista salva
+ * está vazia ou inválida.
  */
-export const DEFAULT_KPI_COLUNAS_VISIVEIS: string[] = [...PRINCIPAL_SLUGS_ORDER];
+const DEFAULT_OCULTAS = ["churn"];
+
+export const DEFAULT_KPI_COLUNAS_VISIVEIS: string[] = PRINCIPAL_SLUGS_ORDER.filter(
+  (slug) => !DEFAULT_OCULTAS.includes(slug),
+);

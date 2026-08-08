@@ -9,19 +9,19 @@ function CardDecorator() {
     <>
       <span
         aria-hidden="true"
-        className="border-primary absolute -top-px -left-px block size-2 border-t-2 border-l-2"
+        className="border-primary absolute top-0 left-0 block size-2.5 border-t-2 border-l-2 pointer-events-none z-10 !m-0"
       />
       <span
         aria-hidden="true"
-        className="border-primary absolute -top-px -right-px block size-2 border-t-2 border-r-2"
+        className="border-primary absolute top-0 right-0 block size-2.5 border-t-2 border-r-2 pointer-events-none z-10 !m-0"
       />
       <span
         aria-hidden="true"
-        className="border-primary absolute -bottom-px -left-px block size-2 border-b-2 border-l-2"
+        className="border-primary absolute bottom-0 left-0 block size-2.5 border-b-2 border-l-2 pointer-events-none z-10 !m-0"
       />
       <span
         aria-hidden="true"
-        className="border-primary absolute -bottom-px -right-px block size-2 border-b-2 border-r-2"
+        className="border-primary absolute bottom-0 right-0 block size-2.5 border-b-2 border-r-2 pointer-events-none z-10 !m-0"
       />
     </>
   );
@@ -51,7 +51,7 @@ export function StyledCard({
   return (
     <Card
       className={cn(
-        "group relative gap-0 rounded-none bg-transparent p-6 shadow-zinc-950/5",
+        "group relative gap-0 rounded-none bg-transparent p-6 shadow-zinc-950/5 overflow-visible border border-border/80 ring-0",
         className,
       )}
       style={

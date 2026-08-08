@@ -17,7 +17,7 @@ export default async function D1Layout({
 
   // GESTOR não acessa nenhuma sub-rota de /d-1
   if (user.profile.role === "GESTOR") {
-    redirect("/gestor/d-1");
+    redirect("/reports/consolidado");
   }
 
   return (

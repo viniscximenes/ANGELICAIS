@@ -9,6 +9,7 @@ import {
   IconClipboardCheck,
   IconDatabase,
   IconHeadset,
+  IconLogout,
   IconMessage2,
   IconSettings,
   IconTargetArrow,
@@ -16,10 +17,16 @@ import {
 } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { BlurFade } from "@/components/ui/blur-fade";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { UserRole } from "@/lib/auth/get-current-user";
+import { logoutAction } from "@/lib/auth/logout-action";
 import type { Permission } from "@/lib/auth/permissions";
-
-import { ThemeToggle } from "./theme-toggle";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
@@ -52,6 +59,12 @@ export type SidebarSection = {
   divider?: string;
 };
 
+/** Dados do usuário exibidos no branding e no rodapé da navegação. */
+export type SidebarUser = {
+  fullName: string;
+  role: UserRole;
+};
+
 const ICONS: Record<
   SidebarSection["iconName"],
   ComponentType<{
@@ -71,56 +84,57 @@ const ICONS: Record<
   message: IconMessage2,
 };
 
-interface SidebarProps {
+interface SidebarNavProps {
   sections: SidebarSection[];
+  user: SidebarUser;
+  /** Chamado ao clicar num link — usado pelo drawer mobile para fechar. */
+  onNavigate?: () => void;
 }
 
-export function Sidebar({ sections }: SidebarProps) {
+/**
+ * Conteúdo da navegação (branding + seções + rodapé). Compartilhado entre a
+ * sidebar fixa do desktop e o drawer mobile do header, para que os dois nunca
+ * saiam de sincronia.
+ */
+export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
 
   return (
-    <nav
-      aria-label="Navegação principal"
-      className="sticky top-[60px] flex h-[calc(100vh-60px)] flex-col overflow-y-auto px-4 py-6"
-      style={{
-        width: "240px",
-        borderRight: "1px solid var(--border)",
-        background: "var(--background)",
-      }}
-    >
-      <div className="space-y-1">
-        {sections.map((section) => {
+    <div className="flex h-full flex-col">
+      {/* ── Seções ───────────────────────────────────────────── */}
+      <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
+        {sections.map((section, index) => {
           const Icon = ICONS[section.iconName];
           const isActiveSection = pathname.startsWith(section.basePath);
           const firstHref = section.items[0]?.href ?? section.basePath;
 
           return (
-            <div key={section.id}>
+            <BlurFade key={section.id} delay={0.05 * index} inView>
               {section.divider && (
                 <div
                   aria-hidden="true"
-                  className="mb-3 pt-3"
-                  style={{ borderTop: "1px solid var(--border)" }}
+                  className={`border-muted-foreground/20 mb-1.5 border-t border-dashed px-3 pt-2 ${
+                    // Sem branding acima, a divisória da 1ª seção não precisa
+                    // de respiro no topo — senão sobra um vão morto.
+                    index === 0 ? "mt-0 border-t-0 pt-0" : "mt-4"
+                  }`}
                 >
-                  <span className="px-3 text-xs tracking-wider text-muted-foreground uppercase">
+                  <span className="text-muted-foreground/50 text-[10px] font-semibold tracking-[0.2em] uppercase">
                     {section.divider}
                   </span>
                 </div>
               )}
+
               <Link
                 href={firstHref}
+                onClick={onNavigate}
                 aria-expanded={isActiveSection}
                 aria-current={isActiveSection ? "page" : undefined}
-                className="flex items-center gap-3 rounded-md transition-colors"
-                style={{
-                  padding: "10px 12px",
-                  background: isActiveSection
-                    ? "var(--elevation-1-bg)"
-                    : "transparent",
-                  color: isActiveSection
-                    ? "var(--foreground)"
-                    : "var(--muted-foreground)",
-                }}
+                className={`hover:bg-muted/50 flex items-center gap-3 rounded-md border-l-2 px-3 py-2 transition-colors duration-150 ${
+                  isActiveSection
+                    ? "border-primary bg-[var(--elevation-1-bg)] text-foreground"
+                    : "text-muted-foreground border-transparent"
+                }`}
               >
                 <Icon size={18} aria-hidden="true" />
                 <span className="ds-body font-medium">{section.label}</span>
@@ -135,32 +149,25 @@ export function Sidebar({ sections }: SidebarProps) {
                     transition={{ duration: 0.25, ease: EASE_OUT_EXPO }}
                     style={{ overflow: "hidden" }}
                   >
-                    <div className="mt-1 space-y-0.5">
+                    <div className="mt-0.5 space-y-0.5">
                       {section.items.map((item) => {
                         const isActiveItem = pathname === item.href;
                         return (
                           <Link
                             key={item.href}
                             href={item.href}
+                            onClick={onNavigate}
                             aria-current={isActiveItem ? "page" : undefined}
-                            className="relative flex items-center rounded-md transition-colors"
-                            style={{
-                              padding: "8px 12px 8px 36px",
-                              color: isActiveItem
-                                ? "var(--foreground)"
-                                : "var(--muted-foreground)",
-                            }}
+                            className={`hover:bg-muted/50 relative flex items-center rounded-md py-1.5 pr-3 pl-9 transition-colors duration-150 ${
+                              isActiveItem
+                                ? "text-foreground"
+                                : "text-muted-foreground"
+                            }`}
                           >
                             {isActiveItem && (
-                              <div
+                              <span
                                 aria-hidden="true"
-                                className="absolute top-1/2 left-[24px] -translate-y-1/2"
-                                style={{
-                                  width: "2px",
-                                  height: "16px",
-                                  background: "var(--primary)",
-                                  borderRadius: "1px",
-                                }}
+                                className="absolute top-1/2 left-[24px] h-4 w-[3px] -translate-y-1/2 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-700"
                               />
                             )}
                             <span className="ds-small">{item.label}</span>
@@ -171,17 +178,57 @@ export function Sidebar({ sections }: SidebarProps) {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </BlurFade>
           );
         })}
       </div>
 
-      <div
-        className="mt-auto space-y-1 pt-3"
-        style={{ borderTop: "1px solid var(--border)" }}
-      >
-        <ThemeToggle />
+      {/* ── Rodapé: usuário + logout ─────────────────────────── */}
+      <div className="border-border mt-auto flex items-center justify-between gap-2 border-t pt-3">
+        <span
+          className="ds-small text-muted-foreground min-w-0 flex-1 truncate px-1"
+          title={user.fullName}
+        >
+          {user.fullName}
+        </span>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <form action={logoutAction} className="shrink-0">
+                <button
+                  type="submit"
+                  aria-label="Sair"
+                  className="text-muted-foreground hover:bg-muted/50 hover:text-foreground flex size-8 items-center justify-center rounded-md transition-colors duration-150"
+                >
+                  <IconLogout size={16} aria-hidden="true" />
+                </button>
+              </form>
+            </TooltipTrigger>
+            <TooltipContent side="top">Sair</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
+    </div>
+  );
+}
+
+interface SidebarProps {
+  sections: SidebarSection[];
+  user: SidebarUser;
+}
+
+/**
+ * Sidebar fixa do desktop. Abaixo de `lg` ela some — a mesma navegação é
+ * servida pelo drawer do header (ver app-header.tsx).
+ */
+export function Sidebar({ sections, user }: SidebarProps) {
+  return (
+    <nav
+      aria-label="Navegação principal"
+      className="sticky top-[60px] hidden h-[calc(100vh-60px)] w-[240px] shrink-0 flex-col bg-zinc-50 px-4 pt-3 pb-4 shadow-[1px_0_0_0_rgba(0,0,0,0.05)] lg:flex dark:bg-zinc-950 dark:shadow-[1px_0_0_0_rgba(255,255,255,0.05)]"
+    >
+      <SidebarNav sections={sections} user={user} />
     </nav>
   );
 }

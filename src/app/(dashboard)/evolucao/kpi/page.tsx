@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default async function EvolucaoKpiPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.profile.role === "GESTOR") redirect("/gestor/d-1");
+  if (user.profile.role === "GESTOR") redirect("/reports/consolidado");
 
   const data = await getEvolucaoOperador();
 

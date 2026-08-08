@@ -16,6 +16,6 @@ export function getPostLoginPath(role: UserRole): string {
   if (can(role, "view_d1_personal") || can(role, "view_d1_team")) {
     return "/d-1/consolidado";
   }
-  if (can(role, "view_gestor_panel")) return "/gestor/d-1";
+  if (can(role, "view_gestor_panel")) return "/reports/consolidado";
   return "/d-1/consolidado";
 }

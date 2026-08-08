@@ -26,7 +26,7 @@ export default async function IndisponibilidadePage() {
   }
 
   if (user.profile.role === "GESTOR") {
-    redirect("/gestor/d-1");
+    redirect("/reports/consolidado");
   }
 
   const [userView, data] = await Promise.all([

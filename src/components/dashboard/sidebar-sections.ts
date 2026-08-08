@@ -6,29 +6,29 @@ import type { SidebarSection } from "./sidebar";
 const ALL_SECTIONS: SidebarSection[] = [
   {
     id: "gestor",
-    label: "D-1",
+    label: "Reports",
     iconName: "chart",
-    basePath: "/gestor",
+    basePath: "/reports",
     permission: "view_gestor_panel",
     // Só o GESTOR vê — o ADM tem a permissão, mas não acessa esta tela.
     onlyRoles: ["GESTOR"],
-    // Divisória "Minha Equipe" acima do grupo D-1 — só aparece pro GESTOR
+    // Divisória "Minha Equipe" acima do grupo Reports — só aparece pro GESTOR
     // porque esta seção já é onlyRoles: ["GESTOR"].
     divider: "Minha Equipe",
     items: [
-      { label: "Consolidado", href: "/gestor/d-1" },
-      { label: "Tempo Logado & Indisp.", href: "/gestor/tempo-logado" },
+      { label: "Consolidado", href: "/reports/consolidado" },
+      { label: "Tempo Logado & Indisp.", href: "/reports/tempo-indisponibilidade" },
     ],
   },
   {
     id: "operacional",
     label: "KPI",
     iconName: "headset",
-    basePath: "/operacional",
+    basePath: "/kpi/operadores",
     permission: "view_gestor_panel",
     onlyRoles: ["GESTOR"],
     items: [
-      { label: "Operadores", href: "/operacional/kpi" },
+      { label: "Operadores", href: "/kpi/operadores" },
     ],
   },
   // TEMP: oculto — seção removida da sidebar. As rotas continuam acessíveis via URL direta.
@@ -61,13 +61,12 @@ const ALL_SECTIONS: SidebarSection[] = [
     permission: "view_gestor_panel",
     onlyRoles: ["GESTOR"],
     items: [
-      { label: "Operadores", href: "/configuracoes/operadores" },
-      { label: "Editar D-1", href: "/configuracoes/operadores-d1" },
+      { label: "Equipe", href: "/configuracoes/equipe" },
     ],
   },
   {
     id: "d-1",
-    label: "D-1",
+    label: "Reports",
     iconName: "chart",
     basePath: "/d-1",
     permission: "view_d1_personal",
@@ -139,6 +138,7 @@ const ALL_SECTIONS: SidebarSection[] = [
       { label: "KPI", href: "/config/kpi" },
       { label: "RV", href: "/config/rv" },
       { label: "Usuários", href: "/config/usuarios" },
+      { label: "Diário de Bordo", href: "/config/db" },
     ],
   },
 ];

@@ -9,6 +9,17 @@ export type SalvarCsvPausasResult = {
 
 const CHUNK_SIZE = 500;
 
+// O motor de detecção (detectar-registros.ts) só usa linhas de "Not Ready"
+// (pausas — o reason_code identifica o tipo) e "Login" (soma do tempo
+// logado). Os demais states do CSV ("Talking", "Work", "Ready", "Logout",
+// "Wrap Up" etc.) nunca entram nas regras — descartados aqui pra reduzir o
+// volume salvo em db_pausas_diario.
+const STATES_RELEVANTES = new Set(["not ready", "login"]);
+
+function isLinhaRelevante(linha: PausaCsvRow): boolean {
+  return STATES_RELEVANTES.has(linha.state.trim().toLowerCase());
+}
+
 /**
  * Persiste as linhas do CSV em db_pausas_diario, por dia (data_ref), usando
  * a mesma Abordagem de Sobrescrita Segura de salvarBaseRetencao: insere o
@@ -17,8 +28,10 @@ const CHUNK_SIZE = 500;
  * nunca fica vazio no meio do caminho. Dias diferentes coexistem.
  */
 export async function salvarCsvPausas(
-  linhas: PausaCsvRow[],
+  linhasBrutas: PausaCsvRow[],
 ): Promise<SalvarCsvPausasResult> {
+  const linhas = linhasBrutas.filter(isLinhaRelevante);
+
   if (linhas.length === 0) {
     return { success: true, rowsWritten: 0 };
   }

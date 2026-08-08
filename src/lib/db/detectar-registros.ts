@@ -45,6 +45,11 @@ const LIMIAR_PAUSA_20_SEG = 25 * 60; // > 25 min
 const LIMIAR_PAUSA_10_SEG = 25 * 60; // > 25 min
 export const TEMPO_LOGADO_MINIMO_SEG = 6 * 3600 + 20 * 60; // 06:20:00 = 22800
 
+// PostgREST/Supabase limita SELECTs a 1000 linhas por padrão quando não se
+// passa .range() — um dia cheio de db_pausas_diario passa fácil disso.
+// Usado só nas queries de leitura desse arquivo, não afeta as regras.
+export const MAX_PAUSAS_ROWS = 50_000;
+
 function normalizarReason(r: string | null): string {
   return (r ?? "").trim().toLowerCase();
 }
@@ -156,7 +161,8 @@ export async function detectarRegistros(
     .select(
       "agent_user, agent_name, state, reason_code, login_time_seg, agent_state_time_seg",
     )
-    .eq("data_ref", dataRef);
+    .eq("data_ref", dataRef)
+    .range(0, MAX_PAUSAS_ROWS - 1);
 
   if (error) {
     throw new Error(
@@ -165,4 +171,52 @@ export async function detectarRegistros(
   }
 
   return aplicarRegrasDetecao(dataRef, data ?? []);
+}
+
+export type ContagemPorDia = {
+  dataRef: string;
+  totalRegistros: number;
+};
+
+/**
+ * Lê TODA a db_pausas_diario de uma vez (já é pequena — só linhas "Not
+ * Ready"/"Login" retidas por 2 meses), agrupa por dia e roda as regras em
+ * cada grupo. Evita 1 query por dia só pra popular o seletor de dia do
+ * supervisor com "(X registros detectados)".
+ */
+export async function contarRegistrosPorDia(): Promise<ContagemPorDia[]> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from("db_pausas_diario")
+    .select(
+      "data_ref, agent_user, agent_name, state, reason_code, login_time_seg, agent_state_time_seg",
+    )
+    .range(0, MAX_PAUSAS_ROWS - 1);
+
+  if (error) {
+    throw new Error(
+      `[contar-registros-por-dia] erro ao ler db_pausas_diario: ${error.message}`,
+    );
+  }
+
+  const porDia = new Map<string, LinhaPausaDiario[]>();
+  for (const row of data ?? []) {
+    const grupo = porDia.get(row.data_ref);
+    if (grupo) {
+      grupo.push(row);
+    } else {
+      porDia.set(row.data_ref, [row]);
+    }
+  }
+
+  const resultado: ContagemPorDia[] = [];
+  for (const [dataRef, linhas] of porDia) {
+    resultado.push({
+      dataRef,
+      totalRegistros: aplicarRegrasDetecao(dataRef, linhas).length,
+    });
+  }
+
+  return resultado.sort((a, b) => (a.dataRef < b.dataRef ? 1 : -1));
 }

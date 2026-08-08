@@ -41,6 +41,7 @@ export async function clearConsolidadoAction(): Promise<ClearConsolidadoResult> 
 
     revalidatePath("/d-1");
     revalidatePath("/gestor/d-1");
+    revalidatePath("/reports/consolidado");
     return { success: true };
   } catch (err) {
     console.error("[clear-consolidado] erro:", err);

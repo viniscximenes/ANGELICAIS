@@ -20,7 +20,7 @@ export default async function ConfigKpiPage() {
   if (!user) redirect("/login");
 
   if (user.profile.role === "GESTOR") {
-    redirect("/gestor/d-1");
+    redirect("/reports/consolidado");
   }
 
   if (!can(user.profile.role, "manage_system")) {

@@ -49,7 +49,7 @@ export default async function KpiPassadoSecundarioPage() {
   if (!user) redirect("/login");
 
   if (user.profile.role === "GESTOR") {
-    redirect("/gestor/d-1");
+    redirect("/reports/consolidado");
   }
 
   const snapshot = await getPreviousMonthSecundario(

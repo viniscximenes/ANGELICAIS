@@ -44,7 +44,7 @@ function formatMonthLabel(mesRef: string): string {
 export default async function RvAtualPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.profile.role === "GESTOR") redirect("/gestor/d-1");
+  if (user.profile.role === "GESTOR") redirect("/reports/consolidado");
 
   const mesRef = getCurrentMesRef();
   const monthLabel = formatMonthLabel(mesRef);

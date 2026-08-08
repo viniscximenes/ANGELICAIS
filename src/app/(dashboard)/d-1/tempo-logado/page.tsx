@@ -25,7 +25,7 @@ export default async function TempoLogadoPage() {
 
   // GESTOR já é redirecionado pelo layout, mas double-check pra segurança
   if (user.profile.role === "GESTOR") {
-    redirect("/gestor/d-1");
+    redirect("/reports/consolidado");
   }
 
   const userView = await getOperadorTempoLogado(user.profile.emailCorporativo);

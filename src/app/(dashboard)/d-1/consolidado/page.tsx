@@ -25,7 +25,7 @@ export default async function ConsolidadoPage() {
   }
 
   if (user.profile.role === "GESTOR") {
-    redirect("/gestor/d-1");
+    redirect("/reports/consolidado");
   }
 
   const userView = await getOperadorConsolidado(user.profile.emailCorporativo);

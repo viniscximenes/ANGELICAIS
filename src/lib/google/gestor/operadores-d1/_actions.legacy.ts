@@ -1,3 +1,18 @@
+/**
+ * ⚠️ LEGADO — NÃO IMPORTAR. Versão Google Sheets do CRUD de operadores do
+ * gestor, morta desde a migração do D-1 para o Supabase. Nada no app importa
+ * este arquivo.
+ *
+ * Renomeado para `_actions.legacy.ts` porque exportava
+ * `listarOperadoresAction` / `adicionarOperadorAction` / `excluirOperadorAction`
+ * com exatamente os mesmos nomes das ações vivas — o auto-import do editor
+ * podia puxar estas por engano, sem erro de tipo, e gravar na planilha.
+ *
+ * As ações vivas estão em:
+ *   - src/lib/gestor/equipe/actions.ts        (página unificada /configuracoes/equipe)
+ *   - src/lib/d1-db/actions/operadores-gestor-actions.ts (fluxo antigo, ainda usado
+ *     pelo componente operadores-d1-form.tsx mantido como referência)
+ */
 "use server";
 
 import { getCurrentUser } from "@/lib/auth/get-current-user";

@@ -264,6 +264,7 @@ export async function uploadTempoLogadoAction(
   revalidatePath("/d-1/tempo-logado");
   revalidatePath("/d-1/indisponibilidade");
   revalidatePath("/gestor/tempo-logado");
+  revalidatePath("/reports/tempo-indisponibilidade");
 
   return {
     success: true,

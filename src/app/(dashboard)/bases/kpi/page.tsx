@@ -16,7 +16,7 @@ export default async function BasesKpiPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  if (user.profile.role === "GESTOR") redirect("/gestor/d-1");
+  if (user.profile.role === "GESTOR") redirect("/reports/consolidado");
 
   if (!can(user.profile.role, "manage_base")) {
     redirect("/d-1");

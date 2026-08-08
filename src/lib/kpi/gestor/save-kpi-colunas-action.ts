@@ -50,6 +50,7 @@ export async function saveKpiColunasAction(
   }
 
   revalidatePath("/operacional/kpi");
+  revalidatePath("/kpi/operadores");
 
   return { success: true };
 }
