@@ -1,9 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getEmailVariants } from "@/lib/utils/email-variants";
+import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
 import { aplicarFiltroEscopo } from "./escopo";
 
 export type FiltroContratos = {
-  escopo: "equipe" | "empresa";
   emailsEquipe: string[];
   operador: string | null; // usuario_login
   status: "retido" | "cancelado" | "todos";
@@ -12,13 +12,23 @@ export type FiltroContratos = {
   submotivo: string | null;
 };
 
-export async function getContratosFiltrados(filtros: FiltroContratos): Promise<string[]> {
+export type ContratoFiltradoItem = {
+  usuarioLogin: string;
+  nomeSobrenome: string;
+  status: "RETIDO" | "CANCELADO";
+  motivo: string;
+  codAir: string;
+  linhaFormatada: string; // ex: "igor.souza - RETIDO - Mud. Endereço - 503351"
+};
+
+export async function getContratosFiltrados(filtros: FiltroContratos): Promise<ContratoFiltradoItem[]> {
   const supabase = createAdminClient();
-  let query = supabase.from("retencao_atendimentos").select("cod_air");
+  let query = supabase
+    .from("retencao_atendimentos")
+    .select("usuario_login, foi_cancelamento, motivo, cod_air");
 
   // Filtro de Escopo e Horas (Reuso)
   query = aplicarFiltroEscopo(query, {
-    escopo: filtros.escopo,
     emailsEquipe: filtros.emailsEquipe,
     periodo: filtros.periodo,
   });
@@ -76,8 +86,6 @@ export async function getContratosFiltrados(filtros: FiltroContratos): Promise<s
 
   // Filtro de Submotivo
   if (filtros.submotivo) {
-    // Note that submotivos in db are unmodified (e.g. "Mud. Endereço Inviabilidade"). 
-    // We filter by their original name in the database.
     query = query.eq("submotivo", filtros.submotivo);
   }
 
@@ -87,7 +95,27 @@ export async function getContratosFiltrados(filtros: FiltroContratos): Promise<s
     throw new Error(error.message);
   }
 
-  return (data || [])
-    .map((r) => r.cod_air)
-    .filter((c): c is string => typeof c === "string" && c.trim() !== "");
+  const rawRows = (data || []).filter(
+    (r): r is { usuario_login: string | null; foi_cancelamento: boolean | null; motivo: string | null; cod_air: string } =>
+      typeof r.cod_air === "string" && r.cod_air.trim() !== ""
+  );
+
+  return rawRows.map((r) => {
+    const usuarioLogin = r.usuario_login || "";
+    const nomeSobrenome = formatNomeDotSobrenome(usuarioLogin);
+    const statusStr: "RETIDO" | "CANCELADO" = r.foi_cancelamento ? "CANCELADO" : "RETIDO";
+    const motivoStr = r.motivo?.trim() || "Outros";
+    const codAirStr = r.cod_air.trim();
+
+    const linhaFormatada = `${nomeSobrenome} - ${statusStr} - ${motivoStr} - ${codAirStr}`;
+
+    return {
+      usuarioLogin,
+      nomeSobrenome,
+      status: statusStr,
+      motivo: motivoStr,
+      codAir: codAirStr,
+      linhaFormatada,
+    };
+  });
 }

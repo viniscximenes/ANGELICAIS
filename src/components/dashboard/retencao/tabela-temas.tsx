@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo, Fragment } from "react";
-import { IconChevronDown, IconChevronRight, IconSelector, IconChevronUp, IconTags } from "@tabler/icons-react";
+import { IconChevronDown, IconChevronRight, IconTags } from "@tabler/icons-react";
+import { StyledCard } from "@/components/gestor/styled-card";
 import type { TemaData } from "@/lib/retencao/get-por-tema";
 
 interface TabelaTemasProps {
@@ -10,13 +11,8 @@ interface TabelaTemasProps {
   themeMetas: Record<string, number>;
 }
 
-type SortField = "motivo" | "total" | "retidos" | "cancelados" | "tx";
-type SortOrder = "asc" | "desc";
-
 export function TabelaTemas({ temas, metaGlobal, themeMetas }: TabelaTemasProps) {
   const [expandedMotivos, setExpandedMotivos] = useState<Record<string, boolean>>({});
-  const [sortBy, setSortBy] = useState<SortField>("tx");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   function toggleExpand(motivo: string) {
     setExpandedMotivos((prev) => ({
@@ -25,49 +21,15 @@ export function TabelaTemas({ temas, metaGlobal, themeMetas }: TabelaTemasProps)
     }));
   }
 
-  const handleSort = (field: SortField) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setSortOrder("desc"); // default desc ao mudar de campo
-    }
-  };
-
-  // Processamento de ordenação nos motivos principais
+  // Ordena automaticamente os motivos da maior para a menor taxa de retenção (tx desc)
   const sortedTemas = useMemo(() => {
-    const data = [...temas];
-
-    data.sort((a, b) => {
-      let valA = a[sortBy === "tx" ? "tx" : sortBy] as string | number | null;
-      let valB = b[sortBy === "tx" ? "tx" : sortBy] as string | number | null;
-
-      if (sortBy === "motivo") {
-        valA = a.motivo.toLowerCase();
-        valB = b.motivo.toLowerCase();
-      }
-
-      if (valA === null || valA === undefined) return 1;
-      if (valB === null || valB === undefined) return -1;
-
-      if (valA < valB) return sortOrder === "asc" ? -1 : 1;
-      if (valA > valB) return sortOrder === "asc" ? 1 : -1;
-      return 0;
+    return [...temas].sort((a, b) => {
+      if (a.tx === null && b.tx === null) return 0;
+      if (a.tx === null) return 1;
+      if (b.tx === null) return -1;
+      return b.tx - a.tx;
     });
-
-    return data;
-  }, [temas, sortBy, sortOrder]);
-
-  const renderSortIcon = (field: SortField) => {
-    if (sortBy !== field) {
-      return <IconSelector size={13} className="text-muted-foreground/30 group-hover:text-muted-foreground/80 transition-colors shrink-0" />;
-    }
-    return sortOrder === "asc" ? (
-      <IconChevronUp size={13} className="text-primary shrink-0 font-bold" />
-    ) : (
-      <IconChevronDown size={13} className="text-primary shrink-0 font-bold" />
-    );
-  };
+  }, [temas]);
 
   const getTxColor = (tx: number | null, motivo?: string) => {
     if (tx === null) return "text-muted-foreground";
@@ -76,102 +38,40 @@ export function TabelaTemas({ temas, metaGlobal, themeMetas }: TabelaTemasProps)
     return tx < themeMeta / 100 ? "text-danger font-medium" : "text-success font-medium";
   };
 
-  /**
-   * Limpa o nome do submotivo para não repetir redundantemente o termo do motivo pai
-   */
-  function getCleanSubmotivo(subName: string, parentName: string): string {
-    let clean = subName.trim();
-    const parentTerms = [
-      parentName,
-      "Mud. Endereço",
-      "Mudança de Endereço",
-      "Problemas",
-      "Insatisfação com o",
-      "Insatisfação com",
-      "Mudança de Provedor",
-      "Mud. Provedora",
-      "Mot. Financeiro",
-      "Insatisfação Geral",
-      "Ins. Atendimento",
-      "Ins. Serviço"
-    ];
-
-    for (const term of parentTerms) {
-      const escapedTerm = term.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
-      const regex = new RegExp(`^${escapedTerm}\\s*[-/:]?\\s*`, "i");
-      if (regex.test(clean)) {
-        clean = clean.replace(regex, "");
-      }
-    }
-
-    if (!clean) return "Sem Submotivo";
-    return clean.charAt(0).toUpperCase() + clean.slice(1);
-  }
-
   return (
-    <div className="elevation-1 border border-border/60 bg-card rounded-xl overflow-hidden">
+    <div className="space-y-3">
       <div>
-        <div className="p-5 border-b border-border/40">
-          <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-            <IconTags size={20} className="text-foreground" />
-            Retenção por Tema
-          </h3>
-          <p className="ds-small text-muted-foreground mt-1">
-            Clique nos motivos para expandir e verificar os submotivos correspondentes.
-          </p>
-        </div>
+        <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
+          <IconTags size={20} className="text-foreground" />
+          Retenção por Tema
+        </h3>
+        <p className="ds-small text-muted-foreground mt-1">
+          Clique nos motivos para expandir e verificar os submotivos correspondentes.
+        </p>
+      </div>
 
+      <StyledCard className="p-0 overflow-hidden" withGradient corners="all">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-             <tr className="ds-mono-sm text-muted-foreground uppercase tracking-wider text-[11px] select-none border-b border-border/40">
-              <th className="py-2.5 px-4 text-center w-[40px] whitespace-nowrap"></th>
-              <th 
-                className={[
-                  "py-2.5 px-4 font-semibold cursor-pointer transition-colors group whitespace-nowrap",
-                  sortBy === "motivo" ? "text-foreground font-bold" : "hover:text-foreground",
-                ].join(" ")}
-                onClick={() => handleSort("motivo")}
-              >
-                <div className="flex items-center gap-1.5">Motivo {renderSortIcon("motivo")}</div>
-              </th>
-              <th 
-                className={[
-                  "py-2.5 px-4 font-semibold cursor-pointer text-center transition-colors w-[110px] group whitespace-nowrap",
-                  sortBy === "total" ? "text-foreground font-bold" : "hover:text-foreground",
-                ].join(" ")}
-                onClick={() => handleSort("total")}
-              >
-                <div className="flex items-center justify-center gap-1.5">Total {renderSortIcon("total")}</div>
-              </th>
-              <th 
-                className={[
-                  "py-2.5 px-4 font-semibold cursor-pointer text-center transition-colors w-[110px] group whitespace-nowrap",
-                  sortBy === "retidos" ? "text-foreground font-bold" : "hover:text-foreground",
-                ].join(" ")}
-                onClick={() => handleSort("retidos")}
-              >
-                <div className="flex items-center justify-center gap-1.5">Retidos {renderSortIcon("retidos")}</div>
-              </th>
-              <th 
-                className={[
-                  "py-2.5 px-4 font-semibold cursor-pointer text-center transition-colors w-[110px] group whitespace-nowrap",
-                  sortBy === "cancelados" ? "text-foreground font-bold" : "hover:text-foreground",
-                ].join(" ")}
-                onClick={() => handleSort("cancelados")}
-              >
-                <div className="flex items-center justify-center gap-1.5">Cancelados {renderSortIcon("cancelados")}</div>
-              </th>
-              <th 
-                className={[
-                  "py-2.5 px-4 font-semibold cursor-pointer text-center transition-colors w-[130px] group whitespace-nowrap",
-                  sortBy === "tx" ? "text-foreground font-bold" : "hover:text-foreground",
-                ].join(" ")}
-                onClick={() => handleSort("tx")}
-              >
-                <div className="flex items-center justify-center gap-1.5">Tx Retenção {renderSortIcon("tx")}</div>
-              </th>
-            </tr>
+              <tr className="ds-mono-sm text-muted-foreground uppercase tracking-wider text-[11px] select-none border-b border-border/40 bg-muted/40">
+                <th className="py-2.5 px-4 text-center w-[40px] whitespace-nowrap"></th>
+                <th className="py-2.5 px-4 font-semibold whitespace-nowrap">
+                  Motivo
+                </th>
+                <th className="py-2.5 px-4 font-semibold text-center w-[110px] whitespace-nowrap">
+                  Total
+                </th>
+                <th className="py-2.5 px-4 font-semibold text-center w-[110px] whitespace-nowrap">
+                  Retidos
+                </th>
+                <th className="py-2.5 px-4 font-semibold text-center w-[110px] whitespace-nowrap">
+                  Cancelados
+                </th>
+                <th className="py-2.5 px-4 font-semibold text-center w-[130px] whitespace-nowrap">
+                  Tx Retenção
+                </th>
+              </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
               {sortedTemas.map((tema) => {
@@ -210,14 +110,13 @@ export function TabelaTemas({ temas, metaGlobal, themeMetas }: TabelaTemasProps)
                     {/* Submotivos em Drill-down */}
                     {isExpanded && tema.submotivos.map((sub) => {
                       const subTxFormatted = sub.tx !== null ? `${(sub.tx * 100).toFixed(1)}%` : "—";
-                      const displaySubName = getCleanSubmotivo(sub.submotivo, tema.motivo);
 
                       return (
                         <tr key={sub.submotivo} className="bg-black/5 hover:bg-muted/10 border-b border-border/10 transition-colors">
                           <td className="py-2.5 px-4"></td>
                           <td className="py-2.5 px-4 pl-8 text-muted-foreground text-xs flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
-                            <span>{displaySubName}</span>
+                            <span>{sub.submotivo}</span>
                           </td>
                           <td className="py-2.5 px-4 text-center font-mono-sm text-muted-foreground text-xs">
                             {sub.total.toLocaleString("pt-BR")}
@@ -240,7 +139,7 @@ export function TabelaTemas({ temas, metaGlobal, themeMetas }: TabelaTemasProps)
             </tbody>
           </table>
         </div>
-      </div>
+      </StyledCard>
     </div>
   );
 }

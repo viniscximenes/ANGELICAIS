@@ -39,9 +39,32 @@ export async function clearConsolidadoAction(): Promise<ClearConsolidadoResult> 
       console.error("[clear-consolidado] erro ao limpar histórico:", e);
     }
 
+    // Limpa a base do Analítico, alimentada pelo MESMO upload do consolidado
+    // (uploadConsolidadoAction grava nas duas). Sem isso, /reports/consolidado
+    // ficaria vazio e o analítico seguiria mostrando os dados antigos.
+    //
+    // Apaga tudo (não só data_ref de hoje): salvarBaseRetencao já mantém
+    // apenas o último lote, então "tudo" e "o lote do dia" são a mesma coisa.
+    // O Supabase client não faz DELETE sem filtro — o neq no id pega todas.
+    //
+    // Falha aqui não derruba a limpeza do consolidado, que já foi concluída;
+    // fica registrada no log.
+    const { error: erroRetencao } = await admin
+      .from("retencao_atendimentos")
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+
+    if (erroRetencao) {
+      console.error(
+        "[clear-consolidado] erro ao limpar retencao_atendimentos:",
+        erroRetencao.message,
+      );
+    }
+
     revalidatePath("/d-1");
     revalidatePath("/gestor/d-1");
     revalidatePath("/reports/consolidado");
+    revalidatePath("/reports/consolidado/analitico");
     return { success: true };
   } catch (err) {
     console.error("[clear-consolidado] erro:", err);

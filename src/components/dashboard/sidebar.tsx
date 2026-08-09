@@ -30,6 +30,20 @@ import type { Permission } from "@/lib/auth/permissions";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
+/**
+ * Sub-itens de 3º nível, indexados pelo href do item pai. Só aparecem
+ * enquanto a própria rota está aberta — ao sair dela o item some da sidebar
+ * e o pai volta a ser um item simples.
+ *
+ * Fica aqui (e não em sidebar-sections.ts) porque depende do pathname, que
+ * só existe no client.
+ */
+const SUBITENS_CONTEXTUAIS: Record<string, { label: string; href: string }[]> = {
+  "/reports/consolidado": [
+    { label: "Analítico", href: "/reports/consolidado/analitico" },
+  ],
+};
+
 export type SidebarSection = {
   id: string;
   label: string;
@@ -152,26 +166,77 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                     <div className="mt-0.5 space-y-0.5">
                       {section.items.map((item) => {
                         const isActiveItem = pathname === item.href;
+                        const subsContextuais = (
+                          SUBITENS_CONTEXTUAIS[item.href] ?? []
+                        ).filter((sub) => pathname.startsWith(sub.href));
+
                         return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={onNavigate}
-                            aria-current={isActiveItem ? "page" : undefined}
-                            className={`hover:bg-muted/50 relative flex items-center rounded-md py-1.5 pr-3 pl-9 transition-colors duration-150 ${
-                              isActiveItem
-                                ? "text-foreground"
-                                : "text-muted-foreground"
-                            }`}
-                          >
-                            {isActiveItem && (
-                              <span
-                                aria-hidden="true"
-                                className="absolute top-1/2 left-[24px] h-4 w-[3px] -translate-y-1/2 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-700"
-                              />
-                            )}
-                            <span className="ds-small">{item.label}</span>
-                          </Link>
+                          <div key={item.href}>
+                            <Link
+                              href={item.href}
+                              onClick={onNavigate}
+                              aria-current={isActiveItem ? "page" : undefined}
+                              className={`hover:bg-muted/50 relative flex items-center rounded-md py-1.5 pr-3 pl-9 transition-colors duration-150 ${
+                                isActiveItem
+                                  ? "text-foreground"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              {isActiveItem && (
+                                <span
+                                  aria-hidden="true"
+                                  className="absolute top-1/2 left-[24px] h-4 w-[3px] -translate-y-1/2 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-700"
+                                />
+                              )}
+                              <span className="ds-small">{item.label}</span>
+                            </Link>
+
+                            <AnimatePresence initial={false}>
+                              {subsContextuais.length > 0 && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{
+                                    duration: 0.25,
+                                    ease: EASE_OUT_EXPO,
+                                  }}
+                                  style={{ overflow: "hidden" }}
+                                >
+                                  <div className="mt-0.5 space-y-0.5">
+                                    {subsContextuais.map((sub) => {
+                                      const isActiveSub = pathname === sub.href;
+                                      return (
+                                        <Link
+                                          key={sub.href}
+                                          href={sub.href}
+                                          onClick={onNavigate}
+                                          aria-current={
+                                            isActiveSub ? "page" : undefined
+                                          }
+                                          className={`hover:bg-muted/50 relative flex items-center rounded-md py-1.5 pr-3 pl-14 transition-colors duration-150 ${
+                                            isActiveSub
+                                              ? "text-foreground"
+                                              : "text-muted-foreground"
+                                          }`}
+                                        >
+                                          {isActiveSub && (
+                                            <span
+                                              aria-hidden="true"
+                                              className="absolute top-1/2 left-[44px] h-4 w-[3px] -translate-y-1/2 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-700"
+                                            />
+                                          )}
+                                          <span className="ds-small">
+                                            {sub.label}
+                                          </span>
+                                        </Link>
+                                      );
+                                    })}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         );
                       })}
                     </div>

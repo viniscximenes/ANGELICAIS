@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { IconAlertTriangle, IconTrendingDown, IconCircleCheck, IconX } from "@tabler/icons-react";
 import type { QuedaComContribuicao } from "@/lib/retencao/actions";
+import type { ContribItem } from "@/lib/retencao/get-contribuicao-queda";
 
 interface ListaQuedasProps {
   quedas: QuedaComContribuicao[];
@@ -29,7 +30,7 @@ export function ListaQuedas({ quedas }: ListaQuedasProps) {
         <div className="flex items-center gap-3 border border-success/30 bg-success/5 rounded-lg p-4">
           <IconCircleCheck size={20} className="text-success shrink-0" />
           <p className="ds-small text-muted-foreground text-xs">
-            Nenhuma queda de taxa de retenção superior a <strong>2%</strong> foi identificada de uma hora para a outra neste turno.
+            Nenhuma queda de taxa de retenção superior a <strong>2%</strong> foi identificada de uma hora para a outra no dia.
           </p>
         </div>
       ) : (
@@ -97,7 +98,7 @@ export function ListaQuedas({ quedas }: ListaQuedasProps) {
                   <p className="text-muted-foreground text-[11px] italic py-2">Sem motivos específicos registrados.</p>
                 ) : (
                   <div className="space-y-2">
-                    {selectedQueda.porMotivo.map((item) => (
+                    {selectedQueda.porMotivo.map((item: ContribItem) => (
                       <div 
                         key={item.nome} 
                         className="bg-zinc-950/40 border border-white/5 rounded-lg p-3 flex justify-between items-center transition-all hover:bg-zinc-950/60"
@@ -126,7 +127,7 @@ export function ListaQuedas({ quedas }: ListaQuedasProps) {
                   <p className="text-muted-foreground text-[11px] italic py-2">Sem operadores específicos registrados.</p>
                 ) : (
                   <div className="space-y-2">
-                    {selectedQueda.porOperador.map((item) => (
+                    {selectedQueda.porOperador.map((item: ContribItem) => (
                       <div 
                         key={item.nome} 
                         className="bg-zinc-950/40 border border-white/5 rounded-lg p-3 flex justify-between items-center transition-all hover:bg-zinc-950/60"

@@ -48,7 +48,7 @@ export function AppHeader({ user, sections }: AppHeaderProps) {
 
           <div className="flex min-w-0 flex-col justify-center">
             <span className="text-muted-foreground text-lg leading-tight font-bold tracking-wider cursor-default">
-              ANGELICAIS
+              CRM
             </span>
             <span className="text-muted-foreground/70 text-xs leading-tight tracking-wide">
               {ROLE_LABEL[user.role]}

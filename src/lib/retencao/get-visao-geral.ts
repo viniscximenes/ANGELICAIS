@@ -12,9 +12,7 @@ export type VisaoGeralData = {
  * Consulta a tabela retencao_atendimentos aplicando os filtros e retorna as métricas consolidadas.
  */
 export async function getVisaoGeral(
-  escopo: "equipe" | "empresa",
   emailsEquipe: string[],
-  periodo: { horaInicio: number; horaFim: number } | null,
 ): Promise<VisaoGeralData> {
   const supabase = createAdminClient();
   let allData: { foi_cancelamento: boolean | null }[] = [];
@@ -31,7 +29,7 @@ export async function getVisaoGeral(
       .select("foi_cancelamento")
       .range(from, to);
 
-    query = aplicarFiltroEscopo(query, { escopo, emailsEquipe, periodo });
+    query = aplicarFiltroEscopo(query, { emailsEquipe });
 
     const { data, error } = await query;
     if (error) {

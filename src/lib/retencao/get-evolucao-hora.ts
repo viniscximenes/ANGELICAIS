@@ -2,8 +2,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { aplicarFiltroEscopo } from "./escopo";
 
 export type HoraEvolucaoData = {
-  hora: number; // 0-23
-  label: string; // "08:00"
+  /** Chave do bucket. 7 = "< 08", 8..19 = a própria hora, 20 = "≥ 20". */
+  hora: number;
+  label: string; // "< 08" · "08:00" · "≥ 20"
   total: number;
   retidos: number;
   cancelados: number;
@@ -11,100 +12,55 @@ export type HoraEvolucaoData = {
 };
 
 /**
- * Consulta a evolução da taxa de retenção e volume hora a hora (ou minuto a minuto de 10 em 10 min se uma hora única estiver filtrada) para o turno selecionado.
+ * Horas de operação (08h–19h). Usado pelos alertas para varrer hora a hora.
+ */
+export const HORAS_OPERACAO = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+
+const BUCKET_ANTES = 7;
+const BUCKET_DEPOIS = 20;
+
+/**
+ * Os 14 buckets do gráfico: tudo antes das 08h num só, cada hora cheia entre
+ * 08h e 19h, e tudo a partir das 20h num só. Assim nenhum atendimento fica de
+ * fora do gráfico, mesmo os registrados fora da janela de operação.
+ */
+export const BUCKETS: { hora: number; label: string }[] = [
+  { hora: BUCKET_ANTES, label: "< 08" },
+  ...HORAS_OPERACAO.map((h) => ({
+    hora: h,
+    label: `${String(h).padStart(2, "0")}:00`,
+  })),
+  { hora: BUCKET_DEPOIS, label: "≥ 20" },
+];
+
+/**
+ * Encaixa uma hora_bucket crua no bucket correspondente. Exportada para que a
+ * análise individual por operador use exatamente a mesma régua do gráfico
+ * geral — se os buckets mudarem aqui, mudam nos dois lugares.
+ */
+export function bucketDe(hora: number): number {
+  if (hora < 8) return BUCKET_ANTES;
+  if (hora >= 20) return BUCKET_DEPOIS;
+  return hora;
+}
+
+/**
+ * Evolução da taxa de retenção e volume por bucket de hora, no dia inteiro,
+ * para a equipe do gestor. A agregação acontece aqui (não no componente).
  */
 export async function getEvolucaoHora(
-  escopo: "equipe" | "empresa",
   emailsEquipe: string[],
-  turno: "manha" | "tarde",
-  periodo: { horaInicio: number; horaFim: number } | null,
 ): Promise<HoraEvolucaoData[]> {
   const supabase = createAdminClient();
 
-  const isSingleHour = periodo !== null && periodo.horaInicio === periodo.horaFim;
-
-  if (isSingleHour) {
-    const H = periodo.horaInicio;
-    const minuteBuckets = [0, 10, 20, 30, 40, 50, 59];
-
-    let query = supabase
-      .from("retencao_atendimentos")
-      .select("status_hora, foi_cancelamento")
-      .range(0, 9999);
-
-    query = aplicarFiltroEscopo(query, {
-      escopo,
-      emailsEquipe,
-      periodo,
-    });
-
-    const { data, error } = await query;
-    if (error) {
-      console.error("[getEvolucaoHora] erro ao buscar evolução por minuto:", error.message);
-      throw new Error(error.message);
-    }
-
-    const list = data || [];
-    const map: Record<number, { total: number; retidos: number; cancelados: number }> = {};
-    for (const m of minuteBuckets) {
-      map[m] = { total: 0, retidos: 0, cancelados: 0 };
-    }
-
-    for (const item of list) {
-      if (!item.status_hora) continue;
-      const tParts = item.status_hora.split("T");
-      if (tParts.length < 2) continue;
-      const timePart = tParts[1];
-      const timeSubParts = timePart.split(":");
-      if (timeSubParts.length < 2) continue;
-      const m = parseInt(timeSubParts[1], 10);
-
-      let bucket = 59;
-      if (m >= 0 && m < 10) bucket = 0;
-      else if (m >= 10 && m < 20) bucket = 10;
-      else if (m >= 20 && m < 30) bucket = 20;
-      else if (m >= 30 && m < 40) bucket = 30;
-      else if (m >= 40 && m < 50) bucket = 40;
-      else if (m >= 50 && m < 59) bucket = 50;
-
-      const isCancel = item.foi_cancelamento === true;
-      map[bucket].total++;
-      if (isCancel) {
-        map[bucket].cancelados++;
-      } else {
-        map[bucket].retidos++;
-      }
-    }
-
-    const H_str = String(H).padStart(2, "0");
-    return minuteBuckets.map((m) => {
-      const obj = map[m];
-      const tx = obj.total > 0 ? obj.retidos / obj.total : null;
-      return {
-        hora: H,
-        label: `${H_str}:${String(m).padStart(2, "0")}`,
-        total: obj.total,
-        retidos: obj.retidos,
-        cancelados: obj.cancelados,
-        tx,
-      };
-    });
-  }
-
-  const horasTurno = turno === "manha" ? [8, 9, 10, 11, 12, 13] : [14, 15, 16, 17, 18, 19];
-  const horaInicio = horasTurno[0];
-  const horaFim = horasTurno[horasTurno.length - 1];
-
+  // Sem recorte de horas: os buckets das pontas ("< 08" e "≥ 20") precisam
+  // enxergar os atendimentos fora da janela de operação.
   let query = supabase
     .from("retencao_atendimentos")
     .select("hora_bucket, foi_cancelamento")
     .range(0, 9999);
 
-  query = aplicarFiltroEscopo(query, {
-    escopo,
-    emailsEquipe,
-    periodo: { horaInicio, horaFim },
-  });
+  query = aplicarFiltroEscopo(query, { emailsEquipe });
 
   const { data, error } = await query;
   if (error) {
@@ -112,44 +68,36 @@ export async function getEvolucaoHora(
     throw new Error(error.message);
   }
 
-  const list = data || [];
-
-  const map: Record<number, Omit<HoraEvolucaoData, "label" | "hora">> = {};
-  for (const h of horasTurno) {
-    map[h] = {
-      total: 0,
-      retidos: 0,
-      cancelados: 0,
-      tx: null,
-    };
+  const map = new Map<number, { total: number; retidos: number; cancelados: number }>();
+  for (const b of BUCKETS) {
+    map.set(b.hora, { total: 0, retidos: 0, cancelados: 0 });
   }
 
-  for (const item of list) {
+  for (const item of data ?? []) {
     const h = item.hora_bucket;
-    if (h !== null && h !== undefined && map[h] !== undefined) {
-      const isCancel = item.foi_cancelamento === true;
-      const hObj = map[h];
-      hObj.total++;
-      if (isCancel) {
-        hObj.cancelados++;
-      } else {
-        hObj.retidos++;
-      }
+    // Sem hora não dá pra posicionar no eixo — fica fora do gráfico.
+    if (h === null || h === undefined) continue;
+
+    const alvo = map.get(bucketDe(h));
+    if (!alvo) continue;
+
+    alvo.total++;
+    if (item.foi_cancelamento === true) {
+      alvo.cancelados++;
+    } else {
+      alvo.retidos++;
     }
   }
 
-  const result: HoraEvolucaoData[] = horasTurno.map((h) => {
-    const hObj = map[h];
-    const tx = hObj.total > 0 ? hObj.retidos / hObj.total : null;
+  return BUCKETS.map((b) => {
+    const agg = map.get(b.hora)!;
     return {
-      hora: h,
-      label: `${String(h).padStart(2, "0")}:00`,
-      total: hObj.total,
-      retidos: hObj.retidos,
-      cancelados: hObj.cancelados,
-      tx,
+      hora: b.hora,
+      label: b.label,
+      total: agg.total,
+      retidos: agg.retidos,
+      cancelados: agg.cancelados,
+      tx: agg.total > 0 ? agg.retidos / agg.total : null,
     };
   });
-
-  return result;
 }

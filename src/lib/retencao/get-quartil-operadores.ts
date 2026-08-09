@@ -24,9 +24,8 @@ export const QUARTIL_VOLUME_MINIMO = 0;
 export async function getQuartilOperadores(
   escopo: "equipe" | "empresa",
   emailsEquipe: string[],
-  periodo: { horaInicio: number; horaFim: number } | null,
 ): Promise<OperadorQuartilItem[]> {
-  const operadores = await getPorOperador(escopo, emailsEquipe, periodo);
+  const operadores = await getPorOperador(escopo, emailsEquipe);
 
   // Filtra apenas operadores que atingiram o volume mínimo
   const qualificados = operadores.filter((op) => op.total >= QUARTIL_VOLUME_MINIMO);

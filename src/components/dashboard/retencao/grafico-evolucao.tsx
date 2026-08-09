@@ -12,15 +12,19 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
+import { StyledCard } from "@/components/gestor/styled-card";
 import type { HoraEvolucaoData } from "@/lib/retencao/get-evolucao-hora";
+import type { ReactNode } from "react";
 import { IconChartLine } from "@tabler/icons-react";
+
 interface GraficoEvolucaoProps {
   dados: HoraEvolucaoData[];
-  horaSelecionada: "total" | number;
   meta: number; // Meta de 0 a 100
+  /** Slot à direita do título (ex.: engrenagem de configuração de metas). */
+  acoes?: ReactNode;
 }
 
-export function GraficoEvolucao({ dados, horaSelecionada, meta }: GraficoEvolucaoProps) {
+export function GraficoEvolucao({ dados, meta, acoes }: GraficoEvolucaoProps) {
   const chartData = dados.map((d) => ({
     ...d,
     txDisplay: d.tx !== null ? parseFloat((d.tx * 100).toFixed(1)) : null,
@@ -40,27 +44,25 @@ export function GraficoEvolucao({ dados, horaSelecionada, meta }: GraficoEvoluca
     gradientOffset = (dataMax - meta) / (dataMax - dataMin);
   }
 
-
-
-  // Define se uma hora específica deve ser destacada verticalmente
-  const horaDestacadaLabel =
-    horaSelecionada !== "total"
-      ? `${String(horaSelecionada).padStart(2, "0")}:00`
-      : null;
-
   return (
-    <div className="elevation-1 border border-border/60 bg-card rounded-xl p-5 space-y-4">
-      <div>
-        <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-          <IconChartLine size={20} className="text-foreground" />
-          Evolução e Pedidos do Turno
-        </h3>
-        <p className="ds-small text-muted-foreground mt-1">
-          Acompanhe a taxa de retenção (linha) e o volume de atendimentos (barras) ao longo das horas.
-        </p>
+    <div className="space-y-3">
+      {/* ── Título fora do card ─────────────────────────────────── */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
+            <IconChartLine size={20} className="text-foreground" />
+            Evolução de Taxa e Pedidos da Equipe
+          </h3>
+          <p className="ds-small text-muted-foreground mt-1">
+            Acompanhe a taxa de retenção (linha) e o volume de atendimentos (barras) ao longo das horas. (das 09:00 as 09:59 seria referente as 09:00)
+          </p>
+        </div>
+        {acoes && <div className="shrink-0">{acoes}</div>}
       </div>
 
-      <div className="w-full h-[280px] pt-4">
+      {/* ── Card com cantos azuis (StyledCard) e fundo escurecido ──── */}
+      <StyledCard className="p-5" withGradient>
+        <div className="w-full h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}
@@ -111,11 +113,11 @@ export function GraficoEvolucao({ dados, horaSelecionada, meta }: GraficoEvoluca
                 if (!active || !payload || !payload.length) return null;
                 const info = payload[0].payload as typeof chartData[0];
                 return (
-                  <div className="bg-zinc-900 border border-white/10 rounded-lg p-3 shadow-xl space-y-1.5 font-sans">
+                  <div className="bg-popover border border-border/80 rounded-lg p-3 shadow-md space-y-1.5 font-sans">
                     <p className="text-[11px] font-semibold text-foreground uppercase tracking-wider">
                       Hora: {info.label}
                     </p>
-                    <div className="h-px bg-white/10 my-1" />
+                    <div className="h-px bg-border/60 my-1" />
                     <p className="text-xs text-muted-foreground">
                       Retenção:{" "}
                       <strong className={info.txDisplay !== null && info.txDisplay < meta ? "text-danger" : "text-success"}>
@@ -162,8 +164,8 @@ export function GraficoEvolucao({ dados, horaSelecionada, meta }: GraficoEvoluca
             <ReferenceLine
               yAxisId="left"
               y={meta}
-              stroke="rgba(255, 255, 255, 0.3)"
-              strokeDasharray="3 3"
+              stroke="var(--border)"
+              strokeDasharray="4 4"
               strokeOpacity={0.8}
               label={{
                 value: `Meta: ${meta.toFixed(0)}%`,
@@ -174,23 +176,6 @@ export function GraficoEvolucao({ dados, horaSelecionada, meta }: GraficoEvoluca
                 offset: 5,
               }}
             />
-
-            {/* Linha de Destaque Vertical para a Hora Ativa no filtro */}
-            {horaDestacadaLabel && (
-              <ReferenceLine
-                x={horaDestacadaLabel}
-                stroke="var(--primary)"
-                strokeDasharray="4 4"
-                strokeWidth={1.5}
-                label={{
-                  value: "Filtro ativo",
-                  position: "top",
-                  fill: "var(--primary)",
-                  fontSize: 10,
-                  fontWeight: 600,
-                }}
-              />
-            )}
 
             {/* Linha da Retenção */}
             <Line
@@ -240,6 +225,7 @@ export function GraficoEvolucao({ dados, horaSelecionada, meta }: GraficoEvoluca
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+    </StyledCard>
     </div>
   );
 }

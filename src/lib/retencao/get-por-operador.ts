@@ -19,7 +19,6 @@ export type OperadorItem = {
 export async function getPorOperador(
   escopo: "equipe" | "empresa",
   emailsEquipe: string[],
-  periodo: { horaInicio: number; horaFim: number } | null,
 ): Promise<OperadorItem[]> {
   const supabase = createAdminClient();
   let allData: { usuario_login: string | null; usuario_nome: string | null; foi_cancelamento: boolean | null }[] = [];
@@ -36,7 +35,7 @@ export async function getPorOperador(
       .select("usuario_login, usuario_nome, foi_cancelamento")
       .range(from, to);
 
-    query = aplicarFiltroEscopo(query, { escopo, emailsEquipe, periodo });
+    query = aplicarFiltroEscopo(query, { escopo, emailsEquipe });
 
     const { data, error } = await query;
     if (error) {

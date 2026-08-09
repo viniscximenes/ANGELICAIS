@@ -21,9 +21,7 @@ export type SegmentoResult = {
  * Ordenação padrão: Volume de atendimentos decrescente (total DESC).
  */
 export async function getPorSegmento(
-  escopo: "equipe" | "empresa",
   emailsEquipe: string[],
-  periodo: { horaInicio: number; horaFim: number } | null,
 ): Promise<SegmentoResult> {
   const supabase = createAdminClient();
   let allData: { marca: string | null; unidade_nome: string | null; ult_equipe: string | null; foi_cancelamento: boolean | null }[] = [];
@@ -40,7 +38,7 @@ export async function getPorSegmento(
       .select("marca, unidade_nome, ult_equipe, foi_cancelamento")
       .range(from, to);
 
-    query = aplicarFiltroEscopo(query, { escopo, emailsEquipe, periodo });
+    query = aplicarFiltroEscopo(query, { emailsEquipe });
 
     const { data, error } = await query;
     if (error) {

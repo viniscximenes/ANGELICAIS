@@ -543,17 +543,18 @@
   }
 
   .scrollbar-tema::-webkit-scrollbar {
-    height: 8px;
-    width: 8px;
+    height: 6px;
+    width: 6px;
   }
 
   .scrollbar-tema::-webkit-scrollbar-track {
     background: transparent;
+    border-radius: 9999px;
   }
 
   .scrollbar-tema::-webkit-scrollbar-thumb {
     background: var(--border);
-    border-radius: 4px;
+    border-radius: 9999px;
   }
 
   .scrollbar-tema::-webkit-scrollbar-thumb:hover {

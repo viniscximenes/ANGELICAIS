@@ -72,7 +72,7 @@ export function PainelAlertas({ alertas }: PainelAlertasProps) {
             <div className="flex items-center gap-3 border border-success/30 bg-success/5 rounded-lg p-4 animate-in fade-in duration-200">
               <IconCircleCheck size={20} className="text-success shrink-0" />
               <p className="ds-small text-muted-foreground text-xs">
-                Nenhuma anomalia crítica foi identificada nos dados analíticos sob o escopo selecionado. Operação estável.
+                Nenhuma anomalia crítica foi identificada nos dados analíticos da equipe. Operação estável.
               </p>
             </div>
           ) : (

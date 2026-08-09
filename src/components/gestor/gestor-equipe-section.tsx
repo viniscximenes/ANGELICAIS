@@ -182,7 +182,7 @@ export function GestorEquipeSection({
               style={{ fontSize: "12px" }}
             >
               <IconChartBar size={14} aria-hidden="true" />
-              <span className="ds-mono-sm font-medium">Analítico Consolidado</span>
+              <span className="ds-mono-sm font-medium">Analítico</span>
             </Link>
 
             <CopyTableButton

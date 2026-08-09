@@ -4,17 +4,34 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getEmailsEquipe } from "./get-emails-equipe";
 import { getVisaoGeral, type VisaoGeralData } from "./get-visao-geral";
 import { getEvolucaoHora, type HoraEvolucaoData } from "./get-evolucao-hora";
-import { getQuedas } from "./get-quedas";
 import { getPorTema, type TemaData } from "./get-por-tema";
-import { getContribuicaoQueda, type ContribItem } from "./get-contribuicao-queda";
-import { getPorOperador, type OperadorItem } from "./get-por-operador";
 import { getPorSegmento, type SegmentoResult } from "./get-por-segmento";
 import { getQuartilOperadores, type OperadorQuartilItem } from "./get-quartil-operadores";
+import {
+  montarQuartilPorOperador,
+  type QuartilOperador,
+} from "./get-quartil-operador";
 import { getMatrizVolumeTaxa, type MatrizResult } from "./get-matriz-volume-taxa";
-import { getAlertas, type AlertaItem } from "./get-alertas";
 import { getMetaTxRetencao, salvarMetaTxRetencao } from "./meta";
-import { getContratosFiltrados, type FiltroContratos } from "./get-contratos-filtrados";
+import {
+  getContratosFiltrados,
+  type FiltroContratos,
+  type ContratoFiltradoItem,
+} from "./get-contratos-filtrados";
+import {
+  getPorOperadorIndividual,
+  type OperadorIndividual,
+} from "./get-por-operador-individual";
+import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
+import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
+import type { ContribItem } from "./get-contribuicao-queda";
+import { getGestorConsolidado } from "@/lib/d1-db/get-gestor-consolidado";
 
+/**
+ * Shape do bloco "Histórico De Quedas". O bloco foi retirado da tela, então
+ * a action não busca mais esses dados — o tipo continua exportado porque
+ * `lista-quedas.tsx` foi mantido como referência e ainda o consome.
+ */
 export type QuedaComContribuicao = {
   horaAnterior: number;
   hora: number;
@@ -31,32 +48,36 @@ export type DashboardRetencaoResult = {
   success: boolean;
   data?: {
     visaoGeral: VisaoGeralData;
-    visaoGeralTotal: VisaoGeralData;
-    visaoGeralManha: VisaoGeralData;
-    visaoGeralTarde: VisaoGeralData;
     porTema: TemaData[];
     evolucaoHora: HoraEvolucaoData[];
-    quedas: QuedaComContribuicao[];
     porSegmento: SegmentoResult;
-    porOperador: OperadorItem[];
     quartilOperadores: OperadorQuartilItem[];
     quartilPolo: OperadorQuartilItem[];
     matriz: MatrizResult;
-    alertas: AlertaItem[];
+    /** Análise individual por operador (lista + detalhe do popup). */
+    operadoresIndividual: OperadorIndividual[];
+    /** Quartil de cada operador (equipe e empresa), indexado por prefixo do email. */
+    quartilPorOperador: Record<string, QuartilOperador>;
+    /** Config de apelidos do gestor, para resolver o nome exibido. */
+    nomeFantasia: NomeFantasiaSerial;
     meta: number; // Meta de 0 a 100
     emailsEquipe: string[];
+    reportHora?: string | null;
   };
   error?: string;
 };
 
 /**
- * Server Action para buscar os dados consolidados do dashboard.
+ * Dados consolidados do dashboard de retenção.
+ *
+ * Sempre no escopo da EQUIPE do gestor e sempre no DIA INTEIRO — os toggles
+ * de Equipe/Polo e de turno/hora foram removidos da tela.
+ *
+ * A única consulta que ainda roda no escopo do polo é `quartilPolo`: ela
+ * posiciona os operadores da equipe dentro do ranking do polo inteiro, que é
+ * o que o bloco de Distribuição por Quartil compara.
  */
-export async function fetchDashboardRetencaoAction(
-  escopo: "equipe" | "empresa",
-  periodo: { horaInicio: number; horaFim: number } | null,
-  turno: "manha" | "tarde",
-): Promise<DashboardRetencaoResult> {
+export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoResult> {
   const user = await getCurrentUser();
   if (!user || user.profile.role !== "GESTOR") {
     return { success: false, error: "Acesso não autorizado." };
@@ -68,83 +89,63 @@ export async function fetchDashboardRetencaoAction(
 
     // Carrega a meta customizada do gestor logado
     const meta = await getMetaTxRetencao(user.profile.id);
-    const metaFracao = meta / 100;
-
-    const isSingleHour = periodo !== null && periodo.horaInicio === periodo.horaFim;
-    const visaoGeralPeriod = (escopo === "equipe" && !isSingleHour)
-      ? { horaInicio: 0, horaFim: 23 }
-      : periodo;
 
     const [
       visaoGeral,
-      visaoGeralTotal,
-      visaoGeralManha,
-      visaoGeralTarde,
       porTema,
       evolucaoHora,
       porSegmento,
-      porOperador,
       quartilOperadores,
       quartilPoloAll,
       matriz,
-      alertas,
+      operadoresIndividual,
+      nomeFantasiaConfig,
+      gestorConsolidado,
     ] = await Promise.all([
-      getVisaoGeral(escopo, emailsEquipe, visaoGeralPeriod),
-      getVisaoGeral(escopo, emailsEquipe, { horaInicio: 0, horaFim: 23 }),
-      getVisaoGeral(escopo, emailsEquipe, { horaInicio: 8, horaFim: 13 }),
-      getVisaoGeral(escopo, emailsEquipe, { horaInicio: 14, horaFim: 19 }),
-      getPorTema(escopo, emailsEquipe, periodo),
-      getEvolucaoHora(escopo, emailsEquipe, turno, periodo),
-      getPorSegmento(escopo, emailsEquipe, periodo),
-      getPorOperador(escopo, emailsEquipe, { horaInicio: 0, horaFim: 23 }),
-      getQuartilOperadores(escopo, emailsEquipe, { horaInicio: 0, horaFim: 23 }),
-      getQuartilOperadores("empresa", [], { horaInicio: 0, horaFim: 23 }),
-      getMatrizVolumeTaxa(escopo, emailsEquipe, periodo),
-      getAlertas(escopo, emailsEquipe, periodo, turno, metaFracao),
+      getVisaoGeral(emailsEquipe),
+      getPorTema(emailsEquipe),
+      getEvolucaoHora(emailsEquipe),
+      getPorSegmento(emailsEquipe),
+      getQuartilOperadores("equipe", emailsEquipe),
+      getQuartilOperadores("empresa", []),
+      getMatrizVolumeTaxa(emailsEquipe),
+      getPorOperadorIndividual(emailsEquipe),
+      getNomeFantasiaConfig(user.profile.id),
+      getGestorConsolidado(user.profile.id),
     ]);
 
-    const teamEmailsLower = emailsEquipe.map(e => e.toLowerCase().trim());
-    const quartilPolo = escopo === "equipe"
-      ? quartilPoloAll.filter((op) =>
-          teamEmailsLower.includes(op.login.toLowerCase().trim())
-        )
-      : quartilPoloAll;
+    // Operadores da equipe, mas com o rank/quartil calculado sobre o polo.
+    const teamEmailsLower = emailsEquipe.map((e) => e.toLowerCase().trim());
+    // Antes de recortar o polo para a equipe: o card de quartil precisa do
+    // ranking COMPLETO da empresa para mostrar "45/142".
+    const quartilPorOperador = montarQuartilPorOperador(
+      quartilOperadores,
+      quartilPoloAll,
+    );
 
-    const quedasRaw = getQuedas(evolucaoHora, turno === "tarde" ? visaoGeralManha.tx : null);
-    const quedas = await Promise.all(
-      quedasRaw.map(async (q) => {
-        const contrib = await getContribuicaoQueda(
-          escopo,
-          emailsEquipe,
-          q.horaAnterior,
-          q.hora,
-        );
-        return {
-          ...q,
-          porMotivo: contrib.porMotivo,
-          porOperador: contrib.porOperador,
-        };
-      }),
+    const quartilPolo = quartilPoloAll.filter((op: OperadorQuartilItem) =>
+      teamEmailsLower.includes(op.login.toLowerCase().trim()),
     );
 
     return {
       success: true,
       data: {
         visaoGeral,
-        visaoGeralTotal,
-        visaoGeralManha,
-        visaoGeralTarde,
         porTema,
         evolucaoHora,
-        quedas,
         porSegmento,
-        porOperador,
         quartilOperadores,
         quartilPolo,
         matriz,
-        alertas,
+        operadoresIndividual,
+        quartilPorOperador,
+        nomeFantasia: {
+          ativo: nomeFantasiaConfig.ativo,
+          mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
+        },
         meta,
         emailsEquipe,
+        reportHora: gestorConsolidado.reportHora,
       },
     };
   } catch (err) {
@@ -177,7 +178,7 @@ export async function saveMetaAction(
 
 export async function fetchContratosFiltradosAction(
   filtros: Omit<FiltroContratos, "emailsEquipe">
-): Promise<{ success: boolean; data?: string[]; error?: string }> {
+): Promise<{ success: boolean; data?: ContratoFiltradoItem[]; error?: string }> {
   const user = await getCurrentUser();
   if (!user || user.profile.role !== "GESTOR") {
     return { success: false, error: "Acesso não autorizado." };

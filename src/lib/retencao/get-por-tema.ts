@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { aplicarFiltroEscopo } from "./escopo";
+import { normalizarTema } from "./normalizar-tema";
 
 export type SubmotivoData = {
   submotivo: string;
@@ -24,9 +25,7 @@ export type TemaData = {
  * Ordenação padrão: por total decrescente (mais atendimentos primeiro).
  */
 export async function getPorTema(
-  escopo: "equipe" | "empresa",
   emailsEquipe: string[],
-  periodo: { horaInicio: number; horaFim: number } | null,
 ): Promise<TemaData[]> {
   const supabase = createAdminClient();
   let allData: { motivo: string | null; submotivo: string | null; foi_cancelamento: boolean | null }[] = [];
@@ -43,7 +42,7 @@ export async function getPorTema(
       .select("motivo, submotivo, foi_cancelamento")
       .range(from, to);
 
-    query = aplicarFiltroEscopo(query, { escopo, emailsEquipe, periodo });
+    query = aplicarFiltroEscopo(query, { emailsEquipe });
 
     const { data, error } = await query;
     if (error) {
@@ -77,44 +76,19 @@ export async function getPorTema(
   }> = {};
 
   for (const item of list) {
-    let mot = (item.motivo || "Sem Motivo").trim();
-    if (
-      mot === "Mud. Endereço Inviabilidade" ||
-      mot === "Mud. Endereço Viabilidade / Parcial" ||
-      mot === "Mudança de Endereço"
-    ) {
-      mot = "Mud. Endereço";
-    } else if (
-      mot === "Problemas Financeiros" ||
-      mot === "Problemas Faturamento" ||
-      mot === "Reajuste de valor / NCC"
-    ) {
-      mot = "Mot. Financeiro";
-    } else if (mot === "Insatisfação com o Atendimento") {
-      mot = "Ins. Atendimento";
-    } else if (
-      mot === "Insatisfação com o Serviço" ||
-      mot === "Insatisfação com o Produto"
-    ) {
-      mot = "Ins. Serviço";
-    } else if (
-      mot === "Mudança de Provedor - Qualidade" ||
-      mot === "Mudança de Provedor - Preço" ||
-      mot === "Mudança de Provedor -Preço"
-    ) {
-      mot = "Mud. Provedora";
-    } else if (
-      mot === "Óbito do Titular" ||
-      mot === "Cliente diz já ter cancelado" ||
-      mot === "Fraude Contratual" ||
-      mot === "Área de Risco" ||
-      mot === "Cliente fez novo Plano com a Giga+" ||
-      mot === "Cliente fez novo plano com a Giga+"
-    ) {
-      mot = "Outros";
+    const mot = normalizarTema(item.motivo);
+
+    const rawMot = (item.motivo || "Outros").trim();
+    const rawSub = (item.submotivo || "Sem Submotivo").trim();
+
+    // Formata o submotivo no padrão real do banco: "Tema principal real / Tema secundario real"
+    let sub = rawSub;
+    if (rawSub === "Sem Submotivo" || rawSub.toLowerCase() === rawMot.toLowerCase()) {
+      sub = `${rawMot} / Sem Submotivo`;
+    } else if (!rawSub.includes("/")) {
+      sub = `${rawMot} / ${rawSub}`;
     }
 
-    const sub = (item.submotivo || "Sem Submotivo").trim();
     const isCancel = item.foi_cancelamento === true;
 
     if (!map[mot]) {

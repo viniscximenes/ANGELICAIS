@@ -3,31 +3,46 @@ import type { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-/** Marcas nos 4 vértices do card, na cor primária — identidade visual do painel do gestor. */
-function CardDecorator() {
+export type CardCorners = "all" | "left" | "right" | "none";
+
+/** Marcas nos vértices do card, na cor primária — identidade visual do painel do gestor. */
+function CardDecorator({ corners = "all" }: { corners?: CardCorners }) {
+  if (corners === "none") return null;
+
+  const showLeft = corners === "all" || corners === "left";
+  const showRight = corners === "all" || corners === "right";
+
   return (
     <>
-      <span
-        aria-hidden="true"
-        className="border-primary absolute top-0 left-0 block size-2.5 border-t-2 border-l-2 pointer-events-none z-10 !m-0"
-      />
-      <span
-        aria-hidden="true"
-        className="border-primary absolute top-0 right-0 block size-2.5 border-t-2 border-r-2 pointer-events-none z-10 !m-0"
-      />
-      <span
-        aria-hidden="true"
-        className="border-primary absolute bottom-0 left-0 block size-2.5 border-b-2 border-l-2 pointer-events-none z-10 !m-0"
-      />
-      <span
-        aria-hidden="true"
-        className="border-primary absolute bottom-0 right-0 block size-2.5 border-b-2 border-r-2 pointer-events-none z-10 !m-0"
-      />
+      {showLeft && (
+        <span
+          aria-hidden="true"
+          className="border-primary absolute top-0 left-0 block size-2.5 border-t-2 border-l-2 pointer-events-none z-10 !m-0"
+        />
+      )}
+      {showRight && (
+        <span
+          aria-hidden="true"
+          className="border-primary absolute top-0 right-0 block size-2.5 border-t-2 border-r-2 pointer-events-none z-10 !m-0"
+        />
+      )}
+      {showLeft && (
+        <span
+          aria-hidden="true"
+          className="border-primary absolute bottom-0 left-0 block size-2.5 border-b-2 border-l-2 pointer-events-none z-10 !m-0"
+        />
+      )}
+      {showRight && (
+        <span
+          aria-hidden="true"
+          className="border-primary absolute bottom-0 right-0 block size-2.5 border-b-2 border-r-2 pointer-events-none z-10 !m-0"
+        />
+      )}
     </>
   );
 }
 
-interface StyledCardProps {
+export interface StyledCardProps {
   children: ReactNode;
   className?: string;
   /**
@@ -36,6 +51,14 @@ interface StyledCardProps {
    * precisar de override específico.
    */
   withGradient?: boolean;
+  /**
+   * Posição das cantoneiras azuis nos vértices.
+   * - `all`: todos os 4 vértices (padrão)
+   * - `left`: apenas vértices da esquerda (top-left & bottom-left)
+   * - `right`: apenas vértices da direita (top-right & bottom-right)
+   * - `none`: nenhuma cantoneira
+   */
+  corners?: CardCorners;
 }
 
 /**
@@ -47,6 +70,7 @@ export function StyledCard({
   children,
   className,
   withGradient = true,
+  corners = "all",
 }: StyledCardProps) {
   return (
     <Card
@@ -64,7 +88,7 @@ export function StyledCard({
           : undefined
       }
     >
-      <CardDecorator />
+      <CardDecorator corners={corners} />
       {children}
     </Card>
   );

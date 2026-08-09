@@ -31,11 +31,9 @@ function calculateMedian(arr: number[]): number {
  * Calcula o impacto absoluto e divide os motivos nos 4 quadrantes analíticos baseados nas medianas.
  */
 export async function getMatrizVolumeTaxa(
-  escopo: "equipe" | "empresa",
   emailsEquipe: string[],
-  periodo: { horaInicio: number; horaFim: number } | null,
 ): Promise<MatrizResult> {
-  const temas = await getPorTema(escopo, emailsEquipe, periodo);
+  const temas = await getPorTema(emailsEquipe);
 
   const rawItems = temas.map((t) => {
     const txVal = t.tx !== null ? t.tx : 0;

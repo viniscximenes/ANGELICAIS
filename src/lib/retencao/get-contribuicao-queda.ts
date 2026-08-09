@@ -17,7 +17,6 @@ export type ContribQuedaResult = {
  * trazendo a taxa de retenção e a quantidade absoluta de cancelamentos de cada um.
  */
 export async function getContribuicaoQueda(
-  escopo: "equipe" | "empresa",
   emailsEquipe: string[],
   horaAnterior: number,
   horaAtual: number,
@@ -30,7 +29,7 @@ export async function getContribuicaoQueda(
     .select("motivo, usuario_login, usuario_nome, foi_cancelamento")
     .eq("hora_bucket", horaAtual);
 
-  query = aplicarFiltroEscopo(query, { escopo, emailsEquipe });
+  query = aplicarFiltroEscopo(query, { emailsEquipe });
 
   const { data, error } = await query;
   if (error) {

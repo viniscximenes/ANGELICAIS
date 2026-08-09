@@ -1,7 +1,7 @@
 import { getPorOperador } from "./get-por-operador";
 import { getPorTema } from "./get-por-tema";
 import { getQuedas } from "./get-quedas";
-import { getEvolucaoHora } from "./get-evolucao-hora";
+import { getEvolucaoHora, HORAS_OPERACAO } from "./get-evolucao-hora";
 import { getVisaoGeral } from "./get-visao-geral";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { aplicarFiltroEscopo } from "./escopo";
@@ -17,44 +17,39 @@ export type AlertaItem = {
 };
 
 // Limiares centrais de configuração
-export const ALERTA_MOTIVO_DIFF_CORTE = 0.15; // 15% abaixo da média do turno
+export const ALERTA_MOTIVO_DIFF_CORTE = 0.15; // 15% abaixo da média do dia
 export const ALERTA_VOLUME_MINIMO = 5;
 
 /**
- * Analisa os dados operacionais do turno e gera alertas preventivos de desvio de padrão.
+ * Analisa os dados operacionais do dia e gera alertas preventivos de desvio de padrão.
  */
 export async function getAlertas(
-  escopo: "equipe" | "empresa",
   emailsEquipe: string[],
-  periodo: { horaInicio: number; horaFim: number } | null,
-  turno: "manha" | "tarde",
   metaTxRetencao: number, // Meta na escala 0-1 (ex: 0.60)
 ): Promise<AlertaItem[]> {
   const [operadores, temas, visaoGeral, evolucaoHora] = await Promise.all([
-    getPorOperador(escopo, emailsEquipe, periodo),
-    getPorTema(escopo, emailsEquipe, periodo),
-    getVisaoGeral(escopo, emailsEquipe, periodo),
-    getEvolucaoHora(escopo, emailsEquipe, turno, periodo),
+    getPorOperador("equipe", emailsEquipe),
+    getPorTema(emailsEquipe),
+    getVisaoGeral(emailsEquipe),
+    getEvolucaoHora(emailsEquipe),
   ]);
 
   const alertas: AlertaItem[] = [];
 
   const mediaGeralTx = visaoGeral.tx !== null ? visaoGeral.tx : 0;
 
-  // 1. Alertas de Operadores (Taxa de retenção abaixo da meta) - Apenas se escopo for "equipe"
-  if (escopo === "equipe") {
-    for (const op of operadores) {
-      if (op.total >= ALERTA_VOLUME_MINIMO && op.tx !== null && op.tx < metaTxRetencao) {
-        const diffMeta = Math.round((metaTxRetencao - op.tx) * 100);
-        const loginPrefix = op.login.includes("@") ? op.login.split("@")[0] : op.login;
-        alertas.push({
-          id: `op-${op.login}`,
-          tipo: "operador",
-          titulo: `Operador abaixo da meta`,
-          descricao: `Operador ${loginPrefix} esta com a taxa de ${(op.tx * 100).toFixed(0)}% (${diffMeta}% a menos da meta do polo) com ${op.total} pedidos.`,
-          severidade: "critical",
-        });
-      }
+  // 1. Alertas de Operadores (Taxa de retenção abaixo da meta)
+  for (const op of operadores) {
+    if (op.total >= ALERTA_VOLUME_MINIMO && op.tx !== null && op.tx < metaTxRetencao) {
+      const diffMeta = Math.round((metaTxRetencao - op.tx) * 100);
+      const loginPrefix = op.login.includes("@") ? op.login.split("@")[0] : op.login;
+      alertas.push({
+        id: `op-${op.login}`,
+        tipo: "operador",
+        titulo: `Operador abaixo da meta`,
+        descricao: `Operador ${loginPrefix} esta com a taxa de ${(op.tx * 100).toFixed(0)}% (${diffMeta}% a menos da meta do polo) com ${op.total} pedidos.`,
+        severidade: "critical",
+      });
     }
   }
 
@@ -72,26 +67,13 @@ export async function getAlertas(
     }
   }
 
-  // 4. Alertas de Quedas de Turno
-  let txAcumuladaManha: number | null = null;
-  if (turno === "tarde") {
-    try {
-      const vgManha = await getVisaoGeral(escopo, emailsEquipe, { horaInicio: 8, horaFim: 13 });
-      txAcumuladaManha = vgManha.tx;
-    } catch (e) {
-      console.error("[getAlertas] erro ao obter média da manhã para queda 14h:", e);
-    }
-  }
-  const quedas = getQuedas(evolucaoHora, txAcumuladaManha);
+  // 4. Alertas de Quedas hora a hora
+  const quedas = getQuedas(evolucaoHora);
   for (const q of quedas) {
-    if (periodo && q.hora > periodo.horaFim) {
-      continue;
-    }
     const quedaFormatted = String(q.quedaPontos).replace(".", ",");
     const txAnteriorFormatted = String((q.txAnterior * 100).toFixed(1)).replace(".", ",");
-    const isTransitionFromMorning = q.horaAnterior === 13 && q.labelAnterior === "Acumulado Manhã";
-    const refText = isTransitionFromMorning ? "ao acumulado do turno da manhã" : "à hora anterior";
-    const pastText = isTransitionFromMorning ? "O turno da manhã fechou com" : "Na hora passada estava com";
+    const refText = "à hora anterior";
+    const pastText = "Na hora passada estava com";
 
     alertas.push({
       id: `queda-${q.hora}`,
@@ -103,13 +85,12 @@ export async function getAlertas(
   }
 
   // 5. Alertas de Quedas em Temas de Retenção (ex: caiu de 80% para 70%)
-  const horasTurno = turno === "manha" ? [8, 9, 10, 11, 12, 13] : [14, 15, 16, 17, 18, 19];
   const supabase = createAdminClient();
   let queryAtendimentos = supabase
     .from("retencao_atendimentos")
     .select("motivo, hora, foi_cancelamento");
-  queryAtendimentos = aplicarFiltroEscopo(queryAtendimentos, { escopo, emailsEquipe, periodo: null });
-  queryAtendimentos = queryAtendimentos.in("hora", horasTurno);
+  queryAtendimentos = aplicarFiltroEscopo(queryAtendimentos, { emailsEquipe });
+  queryAtendimentos = queryAtendimentos.in("hora", HORAS_OPERACAO);
 
   const { data: rawAtendimentos } = await queryAtendimentos;
   if (rawAtendimentos && rawAtendimentos.length > 0) {
@@ -129,13 +110,9 @@ export async function getAlertas(
     }
 
     for (const [motivo, hoursMap] of Object.entries(themeHourlyStats)) {
-      for (let i = 1; i < horasTurno.length; i++) {
-        const hAnterior = horasTurno[i - 1];
-        const hAtual = horasTurno[i];
-
-        if (periodo && hAtual > periodo.horaFim) {
-          continue;
-        }
+      for (let i = 1; i < HORAS_OPERACAO.length; i++) {
+        const hAnterior = HORAS_OPERACAO[i - 1];
+        const hAtual = HORAS_OPERACAO[i];
 
         const statsAnterior = hoursMap[hAnterior];
         const statsAtual = hoursMap[hAtual];
@@ -198,9 +175,6 @@ export async function getAlertas(
   aumentos.sort((a, b) => b.aumentoPontos - a.aumentoPontos);
 
   for (const a of aumentos) {
-    if (periodo && a.hora > periodo.horaFim) {
-      continue;
-    }
     const aumentoFormatted = String(a.aumentoPontos).replace(".", ",");
     const txAnteriorFormatted = String((a.txAnterior * 100).toFixed(1)).replace(".", ",");
     alertas.push({

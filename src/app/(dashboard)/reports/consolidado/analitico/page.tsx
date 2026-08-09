@@ -4,10 +4,12 @@ import { redirect } from "next/navigation";
 import { DashboardRetencaoSkeleton } from "@/components/dashboard/retencao/dashboard-retencao-skeleton";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
+import { getGestorConsolidado } from "@/lib/d1-db/get-gestor-consolidado";
+import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getEmailsEquipe } from "@/lib/retencao/get-emails-equipe";
 
 export const metadata: Metadata = {
-  title: "Analítico Consolidado — ALLOHA FIBRA",
+  title: "Analítico — Consolidado ALLOHA FIBRA",
 };
 
 export default async function AnaliticoConsolidadoPage() {
@@ -23,7 +25,21 @@ export default async function AnaliticoConsolidadoPage() {
   }
 
   const id = user.profile.username || user.profile.emailCorporativo;
-  const emailsEquipe = await getEmailsEquipe(id);
+  const gestora = user.profile.fullName
+    ? formatNomeProprio(user.profile.fullName)
+    : "Equipe";
 
-  return <DashboardRetencaoSkeleton emailsEquipe={emailsEquipe} userKey={id} />;
+  const [{ reportHora }, emailsEquipe] = await Promise.all([
+    getGestorConsolidado(user.profile.id),
+    getEmailsEquipe(id),
+  ]);
+
+  return (
+    <DashboardRetencaoSkeleton
+      emailsEquipe={emailsEquipe}
+      userKey={id}
+      gestora={gestora}
+      reportHora={reportHora}
+    />
+  );
 }
