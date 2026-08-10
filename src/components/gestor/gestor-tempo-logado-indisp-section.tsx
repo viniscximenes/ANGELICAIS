@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { IconClock, IconUsersGroup } from "@tabler/icons-react";
+import Link from "next/link";
+import { IconChartBar, IconUsersGroup } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 
 import { UploadTempoLogadoDropzone } from "@/components/d-1/tempo-logado/upload-tempo-logado-dropzone";
@@ -17,7 +18,6 @@ import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action"
 
 import { CopyIndisponibilidadeButton } from "./copy-indisponibilidade-button";
 import { CopyTempoLogadoButton } from "./copy-tempo-logado-button";
-import { IndisponibilidadePausasTable } from "./indisponibilidade-pausas-table";
 import { IndisponibilidadeTable } from "./indisponibilidade-table";
 import { TempoLogadoTable } from "./tempo-logado-table";
 
@@ -142,6 +142,15 @@ export function GestorTempoLogadoIndispSection({
           </div>
 
           <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            <Link
+              href="/reports/tempo-indisponibilidade/analitico"
+              className="bg-primary text-primary-foreground hover:opacity-90 flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 shadow-sm transition-opacity"
+              style={{ fontSize: "12px" }}
+            >
+              <IconChartBar size={14} aria-hidden="true" />
+              <span className="ds-mono-sm font-medium">Analítico</span>
+            </Link>
+
             <CopyTempoLogadoButton
               horaReport={horaReport}
               nomeSupervisorReport={nomeSupervisorReport}
@@ -207,24 +216,7 @@ export function GestorTempoLogadoIndispSection({
           </div>
         </div>
 
-        {/* Bloco Tabela de Pausas Detalhadas */}
-        <div className="mt-8">
-          <div className="flex items-center gap-3 py-4">
-            <h2 className="ds-h2 flex items-center gap-2">
-              <IconClock
-                className="text-muted-foreground size-4"
-                aria-hidden="true"
-              />
-              Tabela de Pausas Detalhadas
-            </h2>
-          </div>
 
-          <div className="border-t border-dashed border-border pt-4">
-            <StyledCard withGradient className="p-3">
-              <IndisponibilidadePausasTable operadores={operadoresIndisp} />
-            </StyledCard>
-          </div>
-        </div>
       </div>
 
       {/*

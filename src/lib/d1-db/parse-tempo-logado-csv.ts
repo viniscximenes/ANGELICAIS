@@ -22,6 +22,13 @@ export type TempoLogadoCsvRow = {
   login_timestamp_hora: string | null;
   /** idem — null se a sessão de login ainda está aberta (sem logout registrado). */
   logout_timestamp_hora: string | null;
+  /**
+   * Hora em que ESTA linha começou, "HH:MM:SS" — de TIMESTAMP (com HOUR como
+   * fallback de resolução de 1h). null em linhas "login" (usam login/logout
+   * timestamp acima) ou quando o CSV não traz a coluna. É o dado que a
+   * aderência de pausas usa pra comparar horário real vs. programado.
+   */
+  hora_inicio: string | null;
 };
 
 export type ParseTempoLogadoCsvResult = {
@@ -64,6 +71,24 @@ function extrairHoraDoTimestamp(val: string | undefined | null): string | null {
   const m = cleaned.match(/(\d{1,2}):(\d{2}):(\d{2})\s*$/);
   if (!m) return null;
   return `${m[1].padStart(2, "0")}:${m[2]}:${m[3]}`;
+}
+
+/**
+ * Último recurso quando não há TIMESTAMP: a coluna HOUR, só a hora cheia
+ * ("9", "09" ou às vezes "09:00"). Resolução de 1 hora.
+ */
+function extrairHoraDaColunaHour(val: string | undefined | null): string | null {
+  if (!val) return null;
+  const cleaned = val.trim();
+  if (!cleaned) return null;
+
+  const m = cleaned.match(/^(\d{1,2})(?::(\d{2}))?/);
+  if (!m) return null;
+
+  const h = parseInt(m[1], 10);
+  if (Number.isNaN(h) || h < 0 || h > 23) return null;
+
+  return `${String(h).padStart(2, "0")}:${m[2] ?? "00"}:00`;
 }
 
 /** DATE aceita AAAA/MM/DD ou DD/MM/AAAA (com "/" ou "-"), detectado pelo segmento de 4 dígitos. */
@@ -126,6 +151,12 @@ export function parseTempoLogadoCsv(csvText: string): ParseTempoLogadoCsvResult 
   const idxLoginTimestamp = colIndex("LOGIN TIMESTAMP");
   const idxLogoutTimestamp = colIndex("LOGOUT TIMESTAMP");
 
+  // Colunas de horário da pausa — deliberadamente FORA de REQUIRED_COLUMNS:
+  // um export antigo sem elas continua sendo aceito (hora_inicio fica null)
+  // em vez de derrubar o upload inteiro.
+  const idxTimestamp = colIndex("TIMESTAMP");
+  const idxHour = colIndex("HOUR");
+
   const linhas: TempoLogadoCsvRow[] = [];
   let lidas = 0;
   let validas = 0;
@@ -154,6 +185,13 @@ export function parseTempoLogadoCsv(csvText: string): ParseTempoLogadoCsvResult 
     const reasonCodeRaw = (row[idxReasonCode] ?? "").trim();
     const isLogin = state.toLowerCase() === "login";
 
+    // Nas linhas de pausa, TIMESTAMP é o início do estado (HOUR como
+    // fallback de resolução de 1h). Login/logout usam as colunas dedicadas
+    // acima, não esta.
+    const horaInicio = isLogin
+      ? null
+      : (extrairHoraDoTimestamp(row[idxTimestamp]) ?? extrairHoraDaColunaHour(row[idxHour]));
+
     linhas.push({
       agent_user: agentUser,
       agent_email: agentEmail,
@@ -165,6 +203,7 @@ export function parseTempoLogadoCsv(csvText: string): ParseTempoLogadoCsvResult 
       agent_state_time_seg: parseHoraParaSegundos(row[idxAgentStateTime]),
       login_timestamp_hora: isLogin ? extrairHoraDoTimestamp(row[idxLoginTimestamp]) : null,
       logout_timestamp_hora: isLogin ? extrairHoraDoTimestamp(row[idxLogoutTimestamp]) : null,
+      hora_inicio: horaInicio,
     });
     validas++;
   }

@@ -42,6 +42,9 @@ const SUBITENS_CONTEXTUAIS: Record<string, { label: string; href: string }[]> = 
   "/reports/consolidado": [
     { label: "Analítico", href: "/reports/consolidado/analitico" },
   ],
+  "/reports/tempo-indisponibilidade": [
+    { label: "Analítico", href: "/reports/tempo-indisponibilidade/analitico" },
+  ],
 };
 
 export type SidebarSection = {

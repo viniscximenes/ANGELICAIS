@@ -67,7 +67,7 @@ export async function getGestorIndisponibilidade(gestorId: string): Promise<Gest
       admin
         .from("d1_indisponibilidade")
         .select(
-          "operator_email, indisp_percent, tempo_indisponivel, pausa10, pausa20, pausa_particular, pausa_mon_taref, pausa_treinamento, pausa_feedback, pausa_pre_pausa, pausa_ativo, pausa_take_blip, pausa_email, pausa_indisponivel, pausa_sistema, report_hora, report_nome_supervisor",
+          "operator_email, indisp_percent, tempo_indisponivel, pausa10, pausa20, pausa_particular, pausa_mon_taref, pausa_treinamento, pausa_feedback, pausa_pre_pausa, pausa_ativo, pausa_take_blip, pausa_email, pausa_indisponivel, pausa_sistema, pausa10_1_hora_inicio, pausa10_2_hora_inicio, pausa20_hora_inicio, report_hora, report_nome_supervisor",
         )
         .eq("gestor_id", gestorId)
         .eq("data_ref", dataRefHojeBR()),
@@ -109,6 +109,9 @@ export async function getGestorIndisponibilidade(gestorId: string): Promise<Gest
         pausaParticularPct: null,
         outrasPausasPct: null,
         pausas: PAUSAS_ZERADAS,
+        pausa10PrimeiraHora: null,
+        pausa10SegundaHora: null,
+        pausa20Hora: null,
       };
     }
     const tempoLogadoSeg = tempoLogadoSegPorPrefixo.get(getEmailPrefix(email)) ?? 0;
@@ -156,12 +159,20 @@ export async function getGestorIndisponibilidade(gestorId: string): Promise<Gest
       pausaParticularPct: pct(particularSeg, tempoLogadoSeg),
       outrasPausasPct: pct(outrasSeg, tempoLogadoSeg),
       pausas,
+      pausa10PrimeiraHora: row.pausa10_1_hora_inicio ?? null,
+      pausa10SegundaHora: row.pausa10_2_hora_inicio ?? null,
+      pausa20Hora: row.pausa20_hora_inicio ?? null,
     };
   });
 
+  const rowComHora = rows.find(
+    (r) => r.report_hora && r.report_hora !== "00:00:00" && r.report_hora !== "00:00",
+  );
+
   return {
     operadores,
-    horaReport: rows[0]?.report_hora ?? undefined,
-    nomeSupervisorReport: rows[0]?.report_nome_supervisor ?? null,
+    horaReport: rowComHora?.report_hora ?? rows[0]?.report_hora ?? undefined,
+    nomeSupervisorReport:
+      rowComHora?.report_nome_supervisor ?? rows[0]?.report_nome_supervisor ?? null,
   };
 }

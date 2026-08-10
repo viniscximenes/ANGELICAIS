@@ -9,6 +9,15 @@ export type PausaCsvRow = {
   reason_code: string | null;
   login_time_seg: number | null;
   agent_state_time_seg: number | null;
+  /**
+   * Hora em que o evento começou, "HH:MM:SS". Vem de LOGIN TIMESTAMP nas
+   * linhas de state "Login" e de TIMESTAMP nas demais (as pausas). É o dado
+   * que a aderência de pausas usa pra comparar horário real vs. esperado.
+   *
+   * null quando o CSV não traz a coluna (exports antigos) ou o valor não é
+   * parseável — o resto da linha continua válido.
+   */
+  hora_inicio: string | null;
 };
 
 export type EncodingDetectado =
@@ -134,6 +143,52 @@ function parseHoraParaSegundos(val: string | undefined | null): number | null {
 }
 
 /**
+ * Extrai o "HH:MM:SS" de um timestamp completo do CSV
+ * (ex: "Tue, 26 May 2026 14:04:52" -> "14:04:52"). Mesma abordagem do
+ * parser da BASE - 2 (src/lib/d1-db/parse-tempo-logado-csv.ts): regex no
+ * texto cru, sem `new Date()` — o timestamp não traz timezone e deixar o
+ * runtime interpretá-lo deslocaria a hora conforme o fuso do servidor.
+ *
+ * Aceita também timestamp sem segundos ("... 14:04" -> "14:04:00").
+ */
+function extrairHoraDoTimestamp(val: string | undefined | null): string | null {
+  if (!val) return null;
+  const cleaned = val.trim();
+  if (!cleaned) return null;
+
+  const comSegundos = cleaned.match(/(\d{1,2}):(\d{2}):(\d{2})\s*$/);
+  if (comSegundos) {
+    return `${comSegundos[1].padStart(2, "0")}:${comSegundos[2]}:${comSegundos[3]}`;
+  }
+
+  const semSegundos = cleaned.match(/(\d{1,2}):(\d{2})\s*$/);
+  if (semSegundos) {
+    return `${semSegundos[1].padStart(2, "0")}:${semSegundos[2]}:00`;
+  }
+
+  return null;
+}
+
+/**
+ * Último recurso quando não há TIMESTAMP: a coluna HOUR, que é só a hora
+ * cheia ("9", "09" ou às vezes "09:00"). Resolução de 1 hora — serve pra
+ * saber em que hora a pausa caiu, não o minuto exato.
+ */
+function extrairHoraDaColunaHour(val: string | undefined | null): string | null {
+  if (!val) return null;
+  const cleaned = val.trim();
+  if (!cleaned) return null;
+
+  const m = cleaned.match(/^(\d{1,2})(?::(\d{2}))?/);
+  if (!m) return null;
+
+  const h = parseInt(m[1], 10);
+  if (Number.isNaN(h) || h < 0 || h > 23) return null;
+
+  return `${String(h).padStart(2, "0")}:${m[2] ?? "00"}:00`;
+}
+
+/**
  * Converte a coluna DATE para YYYY-MM-DD. Aceita tanto DD/MM/AAAA quanto
  * AAAA/MM/DD (ou com "-"), detectando pelo segmento de 4 dígitos — o CSV
  * real fornecido usa AAAA/MM/DD, mas exports diferentes podem variar.
@@ -211,6 +266,13 @@ export function parseCsvPausas(
   const idxReasonCode = colIndex("REASON CODE");
   const idxState = colIndex("STATE");
 
+  // Colunas de horário — deliberadamente FORA de REQUIRED_COLUMNS: um export
+  // antigo sem elas continua sendo aceito (hora_inicio fica null) em vez de
+  // derrubar o upload inteiro.
+  const idxTimestamp = colIndex("TIMESTAMP");
+  const idxLoginTimestamp = colIndex("LOGIN TIMESTAMP");
+  const idxHour = colIndex("HOUR");
+
   const linhas: PausaCsvRow[] = [];
   let lidas = 0;
   let validas = 0;
@@ -238,6 +300,18 @@ export function parseCsvPausas(
 
     const reasonCodeRaw = (row[idxReasonCode] ?? "").trim();
 
+    // Numa linha "Login" o TIMESTAMP marca o instante em que a linha foi
+    // gerada, não o início da sessão — quem dá a hora do login é LOGIN
+    // TIMESTAMP. Nas linhas de pausa é o contrário: TIMESTAMP é o início do
+    // estado. HOUR entra só como fallback (resolução de 1 hora).
+    const isLogin = state.toLowerCase() === "login";
+    const horaInicio = isLogin
+      ? (extrairHoraDoTimestamp(row[idxLoginTimestamp]) ??
+        extrairHoraDoTimestamp(row[idxTimestamp]) ??
+        extrairHoraDaColunaHour(row[idxHour]))
+      : (extrairHoraDoTimestamp(row[idxTimestamp]) ??
+        extrairHoraDaColunaHour(row[idxHour]));
+
     linhas.push({
       agent_name: agentName,
       agent_email: agentEmail,
@@ -247,6 +321,7 @@ export function parseCsvPausas(
       reason_code: reasonCodeRaw || null,
       login_time_seg: parseHoraParaSegundos(row[idxLoginTime]),
       agent_state_time_seg: parseHoraParaSegundos(row[idxAgentStateTime]),
+      hora_inicio: horaInicio,
     });
     validas++;
   }

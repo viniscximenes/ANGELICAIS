@@ -13,6 +13,7 @@ import {
   somarHoraMaisSegundos,
 } from "../parse";
 import { parseTempoLogadoCsv, type TempoLogadoCsvRow } from "../parse-tempo-logado-csv";
+import { COLUNAS_PAUSA, REASON_TO_COLUNA } from "../reason-codes-indisp";
 import { META_TEMPO_LOGADO_SEGUNDOS } from "../types";
 
 export type UploadTempoLogadoResult =
@@ -24,29 +25,6 @@ export type UploadTempoLogadoResult =
     }
   | { success: false; error: string };
 
-/**
- * Mapa REASON CODE (normalizado) -> coluna de pausa em d1_indisponibilidade.
- * Pausa 15, Pausa 40, Operacional e Pausa Sem Motivo NÃO têm coluna própria
- * no schema novo (existiam no Sheets antigo) — ficam de fora da soma
- * (gap conhecido, documentado em d1-db/types.ts).
- */
-const REASON_TO_COLUNA: Record<string, string> = {
-  "pausa 10": "pausa10",
-  "pausa 20": "pausa20",
-  "pausa particular": "pausa_particular",
-  "monitoramento ou tarefa": "pausa_mon_taref",
-  "treinamento ou reunião": "pausa_treinamento",
-  "feedback": "pausa_feedback",
-  "pré pausa": "pausa_pre_pausa",
-  "ativo": "pausa_ativo",
-  "take blip": "pausa_take_blip",
-  "e-mail": "pausa_email",
-  "indisp.": "pausa_indisponivel",
-  "system": "pausa_sistema",
-};
-
-const COLUNAS_PAUSA = Array.from(new Set(Object.values(REASON_TO_COLUNA)));
-
 type Agregado = {
   email: string;
   operatorName: string;
@@ -55,6 +33,8 @@ type Agregado = {
   loginHoras: string[]; // "HH:MM:SS" de cada sessão de login iniciada
   logoutHoras: string[]; // "HH:MM:SS" de sessões de login já fechadas
   sessaoAberta: boolean; // teve pelo menos uma linha "login" sem logout registrado
+  pausa10Horas: string[]; // "HH:MM:SS" de início de cada ocorrência de Pausa 10 no dia
+  pausa20Horas: string[]; // idem para Pausa 20
 };
 
 function novoAgregado(email: string, nome: string): Agregado {
@@ -68,6 +48,8 @@ function novoAgregado(email: string, nome: string): Agregado {
     loginHoras: [],
     logoutHoras: [],
     sessaoAberta: false,
+    pausa10Horas: [],
+    pausa20Horas: [],
   };
 }
 
@@ -86,6 +68,14 @@ function aplicarLinha(agg: Agregado, linha: TempoLogadoCsvRow) {
   const coluna = REASON_TO_COLUNA[reason];
   if (coluna) {
     agg.pausas[coluna] += linha.agent_state_time_seg ?? 0;
+  }
+
+  // Hora de início de cada ocorrência — usada pra aderência (1ª/2ª Pausa 10,
+  // Pausa 20). Um operador pode tirar Pausa 10 duas vezes no dia; a ordem
+  // cronológica (min/max) é resolvida depois de coletar todas.
+  if (linha.hora_inicio) {
+    if (coluna === "pausa10") agg.pausa10Horas.push(linha.hora_inicio);
+    else if (coluna === "pausa20") agg.pausa20Horas.push(linha.hora_inicio);
   }
 }
 
@@ -213,6 +203,11 @@ export async function uploadTempoLogadoAction(
       pausasFormatadas[col] = formatSegundosParaHora(agg.pausas[col]);
     }
 
+    // 1ª/2ª ocorrência por ordem cronológica de início no dia — Pausa 20
+    // some entre elas, então a mais cedo é a 1ª Pausa 10 e a mais tarde a 2ª.
+    const pausa10HorasOrdenadas = [...agg.pausa10Horas].sort();
+    const pausa20HorasOrdenadas = [...agg.pausa20Horas].sort();
+
     rowsIndisp.push({
       data_ref: dataRef,
       gestor_id: gestorId,
@@ -221,6 +216,9 @@ export async function uploadTempoLogadoAction(
       indisp_percent: indispPercent !== null ? Math.round(indispPercent * 100) / 100 : null,
       tempo_indisponivel: formatSegundosParaHora(tempoIndisponivelSeg),
       ...pausasFormatadas,
+      pausa10_1_hora_inicio: pausa10HorasOrdenadas[0] ?? null,
+      pausa10_2_hora_inicio: pausa10HorasOrdenadas[1] ?? null,
+      pausa20_hora_inicio: pausa20HorasOrdenadas[0] ?? null,
       report_hora: reportHora,
       report_nome_supervisor: user.profile.fullName,
     });

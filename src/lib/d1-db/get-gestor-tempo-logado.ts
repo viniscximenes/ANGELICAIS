@@ -83,9 +83,14 @@ export async function getGestorTempoLogado(gestorId: string): Promise<GestorTemp
     };
   });
 
+  const rowComHora = rows.find(
+    (r) => r.report_hora && r.report_hora !== "00:00:00" && r.report_hora !== "00:00",
+  );
+
   return {
     operadores,
-    horaReport: rows[0]?.report_hora ?? undefined,
-    nomeSupervisorReport: rows[0]?.report_nome_supervisor ?? null,
+    horaReport: rowComHora?.report_hora ?? rows[0]?.report_hora ?? undefined,
+    nomeSupervisorReport:
+      rowComHora?.report_nome_supervisor ?? rows[0]?.report_nome_supervisor ?? null,
   };
 }

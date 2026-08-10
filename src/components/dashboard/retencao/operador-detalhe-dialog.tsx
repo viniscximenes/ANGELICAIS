@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import {
   ComposedChart,
   Line,
@@ -18,9 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ExportPopupPngButton } from "@/components/dashboard/export-popup-png-button";
+import { getDataPngHoje } from "@/components/dashboard/export-popup-png-theme";
 import { StyledCard } from "@/components/gestor/styled-card";
 import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
 import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
+
+import { OperadorDetalhePngContent } from "./operador-detalhe-png-content";
 
 interface Props {
   operador: OperadorIndividual | null;
@@ -44,7 +49,13 @@ export function OperadorDetalheDialog({
   meta = 65,
   quartil = null,
 }: Props) {
+  const pngRef = useRef<HTMLDivElement>(null);
+
   if (!operador) return null;
+
+  // Nome real (login antes do @) — sempre este no PNG, nunca nome fantasia.
+  const nomeReal = operador.login.split("@")[0] || operador.login;
+  const { header: dataHeader, file: dataFile } = getDataPngHoje();
 
   const resumo = [
     { label: "TX Retenção", valor: formatTx(operador.tx) },
@@ -74,6 +85,27 @@ export function OperadorDetalheDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-4xl bg-background border-border/80 p-6 shadow-2xl">
+        <ExportPopupPngButton
+          contentRef={pngRef}
+          filename={`${nomeReal}_${dataFile}.png`}
+          className="absolute top-2 right-10"
+        />
+
+        {/* Wrapper offscreen (tema claro forçado) — só existe pra captura do PNG */}
+        <div
+          aria-hidden="true"
+          style={{ position: "fixed", top: "-99999px", left: "-99999px", pointerEvents: "none" }}
+        >
+          <OperadorDetalhePngContent
+            ref={pngRef}
+            operador={operador}
+            nomeReal={nomeReal}
+            dataHeader={dataHeader}
+            meta={meta}
+            quartil={quartil}
+          />
+        </div>
+
         {/* Cabeçalho */}
         <DialogHeader className="border-b border-dashed border-border/60 pb-3 space-y-1.5">
           <DialogTitle className="ds-h3 text-foreground font-semibold tracking-tight text-xl">

@@ -126,7 +126,10 @@ const ALL_SECTIONS: SidebarSection[] = [
     iconName: "database",
     basePath: "/bases",
     permission: "manage_base",
-    items: [{ label: "KPI", href: "/bases/kpi" }],
+    items: [
+      { label: "KPI", href: "/bases/kpi" },
+      { label: "Pausas Programadas", href: "/bases/pausas" },
+    ],
   },
   {
     id: "config",

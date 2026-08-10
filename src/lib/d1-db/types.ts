@@ -229,6 +229,15 @@ export type GestorIndispLinha = {
   pausaParticularPct: number | null;
   outrasPausasPct: number | null;
   pausas: PausasDetalhe;
+  /**
+   * Hora real de início de cada pausa, "HH:MM:SS" — de d1_indisponibilidade
+   * (colunas pausa10_1_hora_inicio/pausa10_2_hora_inicio/pausa20_hora_inicio,
+   * capturadas do CSV a partir do upload que adicionou esse dado; uploads
+   * anteriores ficam null). Usado só pela aderência de Tempo/Indisp.
+   */
+  pausa10PrimeiraHora: string | null;
+  pausa10SegundaHora: string | null;
+  pausa20Hora: string | null;
 };
 
 export type GestorIndispData = {

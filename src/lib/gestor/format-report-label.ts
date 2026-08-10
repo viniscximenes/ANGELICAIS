@@ -7,7 +7,7 @@ export function formatReportLabel(
   hora: string | null | undefined,
   nomeSupervisor: string | null | undefined,
 ): string | null {
-  if (!hora || hora === "—") return null;
+  if (!hora || hora === "—" || hora === "00:00" || hora === "00:00:00") return null;
   const horaCurta = hora.match(/^(\d{1,2}:\d{2})/)?.[1] ?? hora;
   const nome = nomeSupervisor?.trim();
   if (nome) {
