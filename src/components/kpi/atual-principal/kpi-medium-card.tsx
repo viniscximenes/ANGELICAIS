@@ -66,7 +66,7 @@ function DefasadosTooltipContent({
   return (
     <div className="flex flex-col gap-1 py-0.5" style={{ minWidth: "160px", maxWidth: "220px" }}>
       {defasados.defasados.length === 0 ? (
-        <span className="text-xs" style={{ color: "var(--success)" }}>
+        <span className="text-xs text-muted-foreground">
           Nenhum operador defasado
         </span>
       ) : (
@@ -82,7 +82,7 @@ function DefasadosTooltipContent({
               <span key={op.user} className="font-mono text-xs leading-snug text-foreground">
                 {op.user}
                 <span className="opacity-60"> · </span>
-                <span style={{ color: "var(--danger)" }}>{op.valor}</span>
+                <span className="text-foreground">{op.valor}</span>
               </span>
             ))}
           </div>
@@ -149,11 +149,7 @@ export function KpiMediumCard({
       </div>
 
       {metaLabel && (
-        <div className="mt-3 flex items-center gap-1.5">
-          <span
-            className="w-1.5 h-1.5 rounded-full inline-block"
-            style={{ backgroundColor: color }}
-          />
+        <div className="mt-3 flex items-center">
           <p className="ds-small text-muted-foreground">{metaLabel}</p>
         </div>
       )}

@@ -9,6 +9,7 @@ import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
+import { getSnapshotsSummary } from "@/lib/kpi/bases/get-snapshots-summary";
 import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
 import { getKpiColunasConfig } from "@/lib/kpi/gestor/get-kpi-colunas-config";
 import { getKpiEquipePorEmails } from "@/lib/kpi/gestor/get-kpi-equipe-gestor";
@@ -64,13 +65,24 @@ export default async function KpiOperadoresPage() {
   // Independe de mês, então os 3 toggles (atual/passado/retrasado) sempre
   // usam a mesma lista. Roda em paralelo com definitions/config de nome
   // fantasia (independentes).
-  const [emailsEquipe, definitions, nomeFantasiaConfig, kpiColunasVisiveis] =
+  const [emailsEquipe, definitions, nomeFantasiaConfig, kpiColunasVisiveis, snapshotsSummary] =
     await Promise.all([
       getRosterOperadoresGestor(user.profile.id),
       getKpiDefinitions(),
       getNomeFantasiaConfig(user.profile.id),
       getKpiColunasConfig(user.profile.id),
+      getSnapshotsSummary(),
     ]);
+
+  // Toggles de mês: os 3 recentes (atual/passado/retrasado) já vêm
+  // pré-carregados abaixo; o resto (histórico) é buscado sob demanda ao
+  // clicar (getKpiMesHistoricoAction) — evitaria N queries desnecessárias
+  // no carregamento da página com muitos meses de histórico.
+  const mesesRecentes = [mesAtual, mesPassado, mesRetrasado];
+  const mesesHistoricos = snapshotsSummary
+    .map((s) => s.mesRef)
+    .filter((m) => !mesesRecentes.includes(m))
+    .filter((m) => m >= "2026-01-01"); // só 2026 em diante
 
   // KPIs virtuais (ex.: retidos_brutos) não têm linha em kpi_definitions —
   // o label vem de VIRTUAL_KPI_LABELS.
@@ -152,6 +164,7 @@ export default async function KpiOperadoresPage() {
             dataAtual={dataAtual}
             dataPassado={dataPassado}
             dataRetrasado={dataRetrasado}
+            mesesHistoricos={mesesHistoricos}
             nomeFantasia={nomeFantasia}
             olhoInicial={nomeFantasiaConfig.olhoOperacional}
             colunasDisponiveis={colunasDisponiveis}

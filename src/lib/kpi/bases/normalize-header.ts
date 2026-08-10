@@ -6,6 +6,7 @@ export function normalizeHeader(text: string): string {
   return text
     .replace(/[\r\n]+/g, " ")
     .replace(/\s+/g, " ")
+    .replace(/[“”]/g, '"')
     .trim()
     .toLowerCase();
 }

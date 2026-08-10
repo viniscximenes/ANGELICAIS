@@ -9,8 +9,10 @@ import {
   IconChevronDown,
   IconEye,
   IconEyeOff,
+  IconLoader2,
   IconUsersGroup,
 } from "@tabler/icons-react";
+import { toast } from "sonner";
 
 import { ConfigKpiPopover, type ColunaKpiDisponivel } from "@/components/gestor/config-kpi-popover";
 import { StyledCard } from "@/components/gestor/styled-card";
@@ -19,6 +21,7 @@ import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
+import { getKpiMesHistoricoAction } from "@/lib/kpi/gestor/get-kpi-mes-historico-action";
 import { KPI_COLUNAS_ORDER } from "@/lib/kpi/gestor/kpi-colunas-config";
 import { saveKpiColunasAction } from "@/lib/kpi/gestor/save-kpi-colunas-action";
 import type {
@@ -29,7 +32,6 @@ import type {
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 import { cn } from "@/lib/utils";
 
-type Mes = "atual" | "passado" | "retrasado";
 type SortDir = "asc" | "desc";
 type SortState = { slug: string; dir: SortDir };
 
@@ -41,6 +43,21 @@ const MESES_PT = [
 function formatMesRef(mesRef: string): string {
   const [year, month] = mesRef.split("-");
   return `${MESES_PT[Number(month) - 1]}/${year}`;
+}
+
+/** Label curto pros toggles de mês histórico: "2026-05-01" → "05/26". */
+function formatMesLabel(mesRef: string): string {
+  const [year, month] = mesRef.split("-");
+  return `${month}/${year.slice(2)}`;
+}
+
+function toggleBtnClass(active: boolean): string {
+  return [
+    "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium cursor-pointer shadow-sm transition-opacity",
+    active
+      ? "bg-primary text-primary-foreground hover:opacity-90"
+      : "bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70 border border-border/60",
+  ].join(" ");
 }
 
 interface OperatorDetailModalProps {
@@ -83,7 +100,7 @@ function SecondaryKpiCard({ kpi, isMesPassado }: { kpi: KpiCelulaSerial; isMesPa
         }}
       >
         {kpi.valor === null ? (
-          <span className="text-muted-foreground">—</span>
+          <span className="text-muted-foreground">N/D</span>
         ) : (
           formatKpiValue(kpi.valor, kpi.valueType)
         )}
@@ -359,7 +376,7 @@ function KpiTablePng({
                   borderRight: kIdx < op.kpis.length - 1 ? `1px solid ${PNG_BORDER}` : undefined,
                 }}
               >
-                {kpi.valor === null ? "—" : formatKpiValue(kpi.valor, kpi.valueType)}
+                {kpi.valor === null ? "N/D" : formatKpiValue(kpi.valor, kpi.valueType)}
               </td>
             ))}
           </tr>
@@ -373,6 +390,8 @@ interface KpiEquipeSectionProps {
   dataAtual: KpiEquipeSerial;
   dataPassado: KpiEquipeSerial;
   dataRetrasado: KpiEquipeSerial;
+  /** mes_ref (desc) dos meses fora dos 3 recentes — buscados sob demanda. */
+  mesesHistoricos: string[];
   nomeFantasia?: NomeFantasiaSerial;
   olhoInicial?: boolean;
   colunasDisponiveis: ColunaKpiDisponivel[];
@@ -383,12 +402,17 @@ export function KpiEquipeSection({
   dataAtual,
   dataPassado,
   dataRetrasado,
+  mesesHistoricos,
   nomeFantasia,
   olhoInicial = false,
   colunasDisponiveis,
   colunasVisiveisIniciais,
 }: KpiEquipeSectionProps) {
-  const [mes, setMes] = useState<Mes>("atual");
+  const [mesSelecionado, setMesSelecionado] = useState<string>(dataAtual.mesRef);
+  // Cache dos meses históricos já buscados (getKpiMesHistoricoAction) — evita
+  // rebuscar ao alternar de volta pra um mês já visitado nesta sessão.
+  const [historicoCache, setHistoricoCache] = useState<Record<string, KpiEquipeSerial>>({});
+  const [carregandoMes, setCarregandoMes] = useState<string | null>(null);
   const [sort, setSort] = useState<SortState>({ slug: "tx_retencao_bruta", dir: "desc" });
   const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
   const [colunasVisiveis, setColunasVisiveis] = useState<string[]>(colunasVisiveisIniciais);
@@ -396,8 +420,14 @@ export function KpiEquipeSection({
   // overlay de blur (z-40) enquanto o popover está aberto.
   const [configPopoverOpen, setConfigPopoverOpen] = useState(false);
 
-  const data =
-    mes === "atual" ? dataAtual : mes === "passado" ? dataPassado : dataRetrasado;
+  const data: KpiEquipeSerial | null =
+    mesSelecionado === dataAtual.mesRef
+      ? dataAtual
+      : mesSelecionado === dataPassado.mesRef
+        ? dataPassado
+        : mesSelecionado === dataRetrasado.mesRef
+          ? dataRetrasado
+          : (historicoCache[mesSelecionado] ?? null);
 
   function handleToggleOlho() {
     const novoValor = !olhoAberto;
@@ -405,10 +435,30 @@ export function KpiEquipeSection({
     void toggleOlhoAction("operacional", novoValor);
   }
 
-  const handleMesChange = (m: Mes) => {
-    setMes(m);
-    setSort({ slug: "tx_retencao_bruta", dir: "desc" });
-  };
+  const handleMesChange = useCallback(
+    (mesRef: string) => {
+      setMesSelecionado(mesRef);
+      setSort({ slug: "tx_retencao_bruta", dir: "desc" });
+
+      const jaDisponivel =
+        mesRef === dataAtual.mesRef ||
+        mesRef === dataPassado.mesRef ||
+        mesRef === dataRetrasado.mesRef ||
+        mesRef in historicoCache;
+      if (jaDisponivel) return;
+
+      setCarregandoMes(mesRef);
+      void getKpiMesHistoricoAction(mesRef).then((result) => {
+        setCarregandoMes((atual) => (atual === mesRef ? null : atual));
+        if (result.success) {
+          setHistoricoCache((prev) => ({ ...prev, [mesRef]: result.data }));
+        } else {
+          toast.error(result.error);
+        }
+      });
+    },
+    [dataAtual.mesRef, dataPassado.mesRef, dataRetrasado.mesRef, historicoCache],
+  );
 
   const handleSort = (slug: string) => {
     setSort((prev) => ({
@@ -513,12 +563,13 @@ export function KpiEquipeSection({
   );
 
   const operadoresParaTela = useMemo(() => {
-    if (!nomeFantasia?.ativo || !olhoAberto) return data.operadores;
-    return data.operadores.map((op) => ({
+    const operadores = data?.operadores ?? [];
+    if (!nomeFantasia?.ativo || !olhoAberto) return operadores;
+    return operadores.map((op) => ({
       ...op,
       nome: deriveNomeOperador(op.email),
     }));
-  }, [data.operadores, nomeFantasia, olhoAberto]);
+  }, [data, nomeFantasia, olhoAberto]);
 
   // op.kpis passa a ser SÓ as colunas visíveis (combinando principais +
   // secundárias) — tabela na tela e exportação PNG usam a mesma seleção.
@@ -528,8 +579,8 @@ export function KpiEquipeSection({
   );
 
   const operadoresParaExport = useMemo(
-    () => aplicarColunasVisiveis(data.operadores, headers),
-    [data.operadores, headers],
+    () => aplicarColunasVisiveis(data?.operadores ?? [], headers),
+    [data, headers],
   );
 
   const sortedOps = useMemo(
@@ -556,39 +607,65 @@ export function KpiEquipeSection({
               Equipe
             </h2>
             <span className="ds-mono-sm text-foreground/80 font-medium">
-              - {formatMesRef(data.mesRef)}
-              {data.dataCorte && ` · Dados até ${formatDateBR(data.dataCorte)}`}
+              - {formatMesRef(data?.mesRef ?? mesSelecionado)}
+              {data?.dataCorte && ` · Dados até ${formatDateBR(data.dataCorte)}`}
             </span>
           </div>
         </div>
 
         {/* Linha abaixo do título: Toggles de mês na ESQUERDA e Copiar como Imagem na EXTREMIDADE DIREITA */}
         <div className="flex flex-wrap items-center justify-between gap-4 pb-4">
-          <div className="flex flex-wrap items-center gap-2">
-            {(["atual", "passado", "retrasado"] as Mes[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => handleMesChange(m)}
-                className={[
-                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium cursor-pointer shadow-sm transition-opacity",
-                  mes === m
-                    ? "bg-primary text-primary-foreground hover:opacity-90"
-                    : "bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70 border border-border/60",
-                ].join(" ")}
-                style={{ fontSize: "12px" }}
-              >
-                {m === "atual"
-                  ? "Mês Atual"
-                  : m === "passado"
-                    ? "Mês Passado"
-                    : "Mês Retrasado"}
-              </button>
-            ))}
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleMesChange(dataAtual.mesRef)}
+              className={toggleBtnClass(mesSelecionado === dataAtual.mesRef)}
+              style={{ fontSize: "12px" }}
+            >
+              Mês Atual
+            </button>
+            <button
+              type="button"
+              onClick={() => handleMesChange(dataPassado.mesRef)}
+              className={toggleBtnClass(mesSelecionado === dataPassado.mesRef)}
+              style={{ fontSize: "12px" }}
+            >
+              Mês Passado
+            </button>
+            <button
+              type="button"
+              onClick={() => handleMesChange(dataRetrasado.mesRef)}
+              className={toggleBtnClass(mesSelecionado === dataRetrasado.mesRef)}
+              style={{ fontSize: "12px" }}
+            >
+              Mês Retrasado
+            </button>
+
+            {mesesHistoricos.length > 0 && (
+              <>
+                <div className="h-6 w-px shrink-0 bg-border mx-1" aria-hidden="true" />
+                <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+                  {mesesHistoricos.map((mesRef) => (
+                    <button
+                      key={mesRef}
+                      type="button"
+                      onClick={() => handleMesChange(mesRef)}
+                      className={toggleBtnClass(mesSelecionado === mesRef)}
+                      style={{ fontSize: "12px" }}
+                    >
+                      {carregandoMes === mesRef && (
+                        <IconLoader2 size={12} className="animate-spin" aria-hidden="true" />
+                      )}
+                      {formatMesLabel(mesRef)}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
-          {data.operadores.length > 0 && (
-            <div className="ml-auto flex items-center gap-2">
+          {data && data.operadores.length > 0 && (
+            <div className="ml-auto flex shrink-0 items-center gap-2">
               <CopyKpiButton dataCorte={data.dataCorte} />
               <ConfigKpiPopover
                 colunasDisponiveis={colunasDisponiveisOrdenadas}
@@ -607,10 +684,17 @@ export function KpiEquipeSection({
             configPopoverOpen && "z-[45]",
           )}
         >
-          {data.operadores.length === 0 ? (
+          {carregandoMes === mesSelecionado ? (
+            <StyledCard withGradient className="p-8 text-center flex items-center justify-center gap-2">
+              <IconLoader2 size={16} className="animate-spin text-muted-foreground" aria-hidden="true" />
+              <p className="ds-body text-muted-foreground">
+                Carregando {formatMesRef(mesSelecionado)}...
+              </p>
+            </StyledCard>
+          ) : !data || data.operadores.length === 0 ? (
             <StyledCard withGradient className="p-8 text-center">
               <p className="ds-body text-muted-foreground">
-                Nenhum dado encontrado para {formatMesRef(data.mesRef)}.
+                Nenhum dado encontrado para {formatMesRef(mesSelecionado)}.
               </p>
             </StyledCard>
           ) : (
@@ -729,7 +813,7 @@ export function KpiEquipeSection({
                               style={celulaStyle(kpi, data.isMesPassado)}
                             >
                               {kpi.valor === null ? (
-                                <span className="text-muted-foreground">—</span>
+                                <span className="text-muted-foreground">N/D</span>
                               ) : (
                                 <span className="inline-flex items-center justify-center gap-1.5">
                                   <span style={{ fontVariantNumeric: "tabular-nums" }}>

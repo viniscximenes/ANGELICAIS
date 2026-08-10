@@ -24,11 +24,15 @@ const ALL_SECTIONS: SidebarSection[] = [
     id: "operacional",
     label: "KPI",
     iconName: "headset",
-    basePath: "/kpi/operadores",
+    // Amplo o suficiente pra cobrir /kpi/operadores e /kpi/gestor (só o
+    // GESTOR vê esta seção — nenhuma outra rota /kpi/* é alcançável por ele,
+    // então não há risco de ativar a seção errada).
+    basePath: "/kpi",
     permission: "view_gestor_panel",
     onlyRoles: ["GESTOR"],
     items: [
       { label: "Operadores", href: "/kpi/operadores" },
+      { label: "Gestor", href: "/kpi/gestor" },
     ],
   },
   // TEMP: oculto — seção removida da sidebar. As rotas continuam acessíveis via URL direta.
@@ -55,7 +59,7 @@ const ALL_SECTIONS: SidebarSection[] = [
   // },
   {
     id: "configuracoes-gestor",
-    label: "CONFIGURAÇÕES",
+    label: "Configurações",
     iconName: "settings",
     basePath: "/configuracoes",
     permission: "view_gestor_panel",
@@ -133,7 +137,7 @@ const ALL_SECTIONS: SidebarSection[] = [
   },
   {
     id: "config",
-    label: "CONFIGURAÇÕES",
+    label: "Configurações",
     iconName: "settings",
     basePath: "/config",
     permission: "manage_system",
