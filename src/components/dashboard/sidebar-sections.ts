@@ -45,18 +45,17 @@ const ALL_SECTIONS: SidebarSection[] = [
   //   onlyRoles: ["GESTOR"],
   //   items: [{ label: "KPI", href: "/meus-resultados/kpi" }],
   // },
-  // TEMP: oculto — seção removida da sidebar. As rotas continuam acessíveis via URL direta.
-  // {
-  //   id: "feedback",
-  //   label: "Feedback",
-  //   iconName: "message",
-  //   basePath: "/feedback",
-  //   permission: "view_gestor_panel",
-  //   onlyRoles: ["GESTOR"],
-  //   items: [
-  //     { label: "Resultado Semanal", href: "/feedback/resultado-semanal" },
-  //   ],
-  // },
+  {
+    id: "feedback",
+    label: "Feedback",
+    iconName: "message",
+    basePath: "/feedback",
+    permission: "view_gestor_panel",
+    onlyRoles: ["GESTOR"],
+    items: [
+      { label: "Resultado Semanal", href: "/feedback/resultado-semanal" },
+    ],
+  },
   {
     id: "configuracoes-gestor",
     label: "Configurações",
