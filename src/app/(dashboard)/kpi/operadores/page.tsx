@@ -106,12 +106,14 @@ export default async function KpiOperadoresPage() {
 
   // Resolve nome fantasia (ou nome real derivado, se não configurado) —
   // mesma função usada pelo D-1 Consolidado (resolverNomeExibicao).
+  // Escreve em .nome (campo do OperadorKpiSerial) para que o cliente
+  // receba o nome correto sem precisar de lógica adicional.
   function comNomeFantasia(serial: KpiEquipeSerial): KpiEquipeSerial {
     return {
       ...serial,
       operadores: serial.operadores.map((op) => ({
         ...op,
-        nomeExibicao: resolverNomeExibicao(op.email, nomeFantasia),
+        nome: resolverNomeExibicao(op.email, nomeFantasia),
       })),
     };
   }

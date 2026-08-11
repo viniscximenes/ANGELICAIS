@@ -5,7 +5,8 @@ import { ResultadoSemanalForm } from "@/components/feedback/resultado-semanal-fo
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
-import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
+import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
+import { formatNomeDotSobrenome, formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 
 export const metadata: Metadata = {
   title: "Feedback Resultado Semanal — ALLOHA FIBRA",
@@ -23,6 +24,18 @@ export default async function FeedbackResultadoSemanalPage() {
   }
 
   const supervisorName = formatNomeProprio(user.profile.fullName);
+  // Slug nome.sobrenome para exibição no card do formulário
+  const supervisorSlug = formatNomeDotSobrenome(user.profile.fullName);
+
+  // Busca roster da equipe do gestor — emails ordenados alfabeticamente
+  const emailsEquipe = await getRosterOperadoresGestor(user.profile.id);
+
+  // Deriva nomes de exibição a partir dos emails (parte antes do @)
+  // ex: "joao.silva@alloha.com" → "joao.silva"
+  const operadores = emailsEquipe
+    .map((email) => email.split("@")[0])
+    .filter(Boolean)
+    .sort();
 
   return (
     <PageTransition>
@@ -35,7 +48,10 @@ export default async function FeedbackResultadoSemanalPage() {
             </span>
           </header>
 
-          <ResultadoSemanalForm supervisorName={user.profile.fullName} />
+          <ResultadoSemanalForm
+            supervisorName={supervisorSlug}
+            operadores={operadores}
+          />
         </div>
       </div>
     </PageTransition>

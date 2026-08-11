@@ -1,19 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import {
-  IconFileDownload,
-  IconLoader2,
-  IconTrash,
-  IconUser,
-  IconUserCheck,
-} from "@tabler/icons-react";
+import { forwardRef, useImperativeHandle, useMemo, useState } from "react";
+import { IconTrash } from "@tabler/icons-react";
 
 import {
   computeIndisponibilidade,
   type DiaInputIndisp,
 } from "@/lib/feedback/compute-indisponibilidade";
-import { CustomDatePicker } from "@/components/feedback/custom-date-picker";
 
 const DIAS_LABELS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"] as const;
 const FIELDS = ["nr17", "part", "outras"] as const;
@@ -34,76 +27,46 @@ function filtrarNumerico(val: string): string {
   return val.replace(/[^0-9,]/g, "");
 }
 
+export type IndisponibilidadeFormHandle = {
+  getDias(): DiaInputIndisp[];
+  hasData(): boolean;
+  limpar(): void;
+};
+
 interface IndisponibilidadeFeedbackFormProps {
-  supervisorName: string;
+  segundaFeira: string;
 }
 
-export function IndisponibilidadeFeedbackForm({
-  supervisorName,
-}: IndisponibilidadeFeedbackFormProps) {
-  const [segundaFeira, setSegundaFeira] = useState("");
-  const [dataFeedback, setDataFeedback] = useState("");
-  const [operador, setOperador] = useState("");
+export const IndisponibilidadeFeedbackForm = forwardRef<
+  IndisponibilidadeFormHandle,
+  IndisponibilidadeFeedbackFormProps
+>(function IndisponibilidadeFeedbackForm({ segundaFeira }, ref) {
   const [dias, setDias] = useState<DiaFormIndisp[]>(
     Array.from({ length: 6 }, () => ({ nr17: "", part: "", outras: "" })),
   );
-  const [loading, setLoading] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedSegunda = localStorage.getItem("indisp_segunda");
-      const savedFeedback = localStorage.getItem("indisp_data_feedback");
-      if (savedSegunda) setSegundaFeira(savedSegunda);
-      if (savedFeedback) setDataFeedback(savedFeedback);
-    }
-  }, []);
-
-  const handleSegundaFeiraChange = (val: string) => {
-    setSegundaFeira(val);
-    if (typeof window !== "undefined") {
-      if (val) {
-        localStorage.setItem("indisp_segunda", val);
-      } else {
-        localStorage.removeItem("indisp_segunda");
-      }
-    }
-  };
-
-  const handleDataFeedbackChange = (val: string) => {
-    setDataFeedback(val);
-    if (typeof window !== "undefined") {
-      if (val) {
-        localStorage.setItem("indisp_data_feedback", val);
-      } else {
-        localStorage.removeItem("indisp_data_feedback");
-      }
-    }
-  };
-
-  const handleLimpar = () => {
-    setOperador("");
-    setDias(
-      Array.from({ length: 6 }, () => ({ nr17: "", part: "", outras: "" })),
-    );
-    setErro(null);
-  };
-
-  const diasInputs: DiaInputIndisp[] = useMemo(
-    () => dias.map(parseDiaIndisp),
-    [dias],
-  );
+  const diasInputs: DiaInputIndisp[] = useMemo(() => dias.map(parseDiaIndisp), [dias]);
 
   const semana = useMemo(
     () => computeIndisponibilidade(diasInputs, segundaFeira || null),
     [diasInputs, segundaFeira],
   );
 
-  function setDiaField(
-    idx: number,
-    campo: "nr17" | "part" | "outras",
-    val: string,
-  ) {
+  useImperativeHandle(
+    ref,
+    () => ({
+      getDias: () => diasInputs,
+      hasData: () => diasInputs.some((d) => d.nr17 !== null || d.part !== null || d.outras !== null),
+      limpar: () => setDias(Array.from({ length: 6 }, () => ({ nr17: "", part: "", outras: "" }))),
+    }),
+    [diasInputs],
+  );
+
+  const handleLimpar = () => {
+    setDias(Array.from({ length: 6 }, () => ({ nr17: "", part: "", outras: "" })));
+  };
+
+  function setDiaField(idx: number, campo: "nr17" | "part" | "outras", val: string) {
     setDias((prev) => {
       const next = [...prev];
       next[idx] = { ...next[idx], [campo]: filtrarNumerico(val) };
@@ -154,142 +117,12 @@ export function IndisponibilidadeFeedbackForm({
     }
   };
 
-  async function handleGerar() {
-    setErro(null);
-
-    if (!operador.trim()) { setErro("Informe o nome do operador."); return; }
-    if (!segundaFeira) { setErro("Informe a data da segunda-feira do período."); return; }
-    if (!dataFeedback) { setErro("Informe a data do feedback."); return; }
-    const temDados = diasInputs.some(
-      (d) =>
-        d.indisp !== null || d.nr17 !== null || d.part !== null || d.outras !== null,
-    );
-    if (!temDados) { setErro("Preencha pelo menos um dia para o relatório."); return; }
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/feedback/indisponibilidade", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          operador: operador.trim(),
-          segundaFeira,
-          dataFeedback,
-          dias: diasInputs,
-        }),
-      });
-
-      if (!res.ok) {
-        const msg = await res.text().catch(() => "Erro desconhecido");
-        setErro(`Erro ao gerar: ${msg}`);
-        return;
-      }
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-
-      const rawNome = operador.trim().split(/\s+/)[0] || "";
-      const primeiroNome = rawNome
-        .normalize("NFD")
-        .replace(/[̀-ͯ]/g, "")
-        .replace(/[^a-zA-Z]/g, "");
-      const formattedNome =
-        primeiroNome.charAt(0).toUpperCase() + primeiroNome.slice(1).toLowerCase();
-
-      let currentSerial = 1;
-      if (typeof window !== "undefined") {
-        const savedSerial = localStorage.getItem("indisp_serial");
-        if (savedSerial) {
-          const parsed = parseInt(savedSerial, 10);
-          if (!isNaN(parsed)) currentSerial = parsed + 1;
-        }
-        localStorage.setItem("indisp_serial", String(currentSerial));
-      }
-
-      const serialStr = String(currentSerial).padStart(4, "0");
-      const finalFilename = `FeedbackIndisponibilidade_${formattedNome || "Operador"}_${serialStr}.docx`;
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = finalFilename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      setErro("Erro de rede. Tente novamente.");
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   const inputClass =
     "ds-mono-sm w-full rounded border border-border bg-transparent px-2 py-1 text-center placeholder:text-muted-foreground/30 transition-colors focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500";
 
   return (
     <div className="space-y-6">
-      {/* Card 1: Dados do Documento */}
-      <div
-        className="elevation-1 rounded-xl p-6 space-y-5 bg-card border-zinc-200 dark:border-zinc-800"
-        style={{ border: "1px solid var(--border)" }}
-      >
-        <div className="border-b border-border/40 pb-2.5">
-          <h3 className="ds-h2 text-sm font-bold uppercase tracking-wider text-foreground">
-            Indisponibilidade
-          </h3>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1">
-            <label className="ds-small text-muted-foreground font-medium block">
-              Nome do Operador
-            </label>
-            <div className="relative">
-              <IconUser
-                size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60"
-              />
-              <input
-                type="text"
-                value={operador}
-                onChange={(e) => setOperador(e.target.value)}
-                placeholder="Informe o nome completo"
-                className="ds-small w-full rounded-md border border-border bg-transparent pl-9 pr-3 py-2 transition-colors focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="ds-small text-muted-foreground font-medium block">
-              Supervisor Responsável
-            </label>
-            <div className="relative">
-              <IconUserCheck
-                size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/40"
-              />
-              <div className="ds-small flex h-[38px] items-center rounded-md border border-border/50 bg-muted/20 pl-9 pr-3 text-muted-foreground font-medium">
-                {supervisorName}
-              </div>
-            </div>
-          </div>
-
-          <CustomDatePicker
-            label="Segunda-feira do Período"
-            value={segundaFeira}
-            onChange={handleSegundaFeiraChange}
-          />
-
-          <CustomDatePicker
-            label="Data de Aplicação do Feedback"
-            value={dataFeedback}
-            onChange={handleDataFeedbackChange}
-          />
-        </div>
-      </div>
-
-      {/* Card 2: Dados Diários */}
+      {/* Card: Dados Diários */}
       <div
         className="elevation-1 rounded-xl p-6 space-y-4 bg-card border-zinc-200 dark:border-zinc-800"
         style={{ border: "1px solid var(--border)" }}
@@ -381,7 +214,7 @@ export function IndisponibilidadeFeedbackForm({
         </div>
       </div>
 
-      {/* Card 3: Preview */}
+      {/* Card: Preview */}
       <div
         className="elevation-1 rounded-xl p-6 space-y-4 bg-card border-zinc-200 dark:border-zinc-800"
         style={{ border: "1px solid var(--border)" }}
@@ -414,7 +247,7 @@ export function IndisponibilidadeFeedbackForm({
               </tr>
             </thead>
             <tbody>
-              {semana.dias.map((d, i) => (
+              {semana.dias.map((d, i) => (d.indisp !== "—" || d.nr17 !== "—" || d.part !== "—" || d.outras !== "—") ? (
                 <tr
                   key={i}
                   className="hover:bg-muted/5 transition-colors"
@@ -436,7 +269,7 @@ export function IndisponibilidadeFeedbackForm({
                     {d.outras}
                   </td>
                 </tr>
-              ))}
+              ) : null)}
               <tr className="bg-muted/50 font-bold text-foreground border-t-2 border-border">
                 <td className="ds-small px-4 py-3 font-bold">CONSOLIDADO DA SEMANA</td>
                 <td className="ds-mono-sm px-3 py-3 text-center font-bold text-base">
@@ -455,38 +288,7 @@ export function IndisponibilidadeFeedbackForm({
             </tbody>
           </table>
         </div>
-
-        <div className="flex flex-col gap-3 pt-2">
-          {erro && (
-            <p
-              className="ds-small rounded-md px-4 py-2 text-xs"
-              style={{
-                background: "color-mix(in oklch, var(--danger) 8%, transparent)",
-                color: "var(--danger)",
-                border: "1px solid color-mix(in oklch, var(--danger) 15%, transparent)",
-              }}
-            >
-              {erro}
-            </p>
-          )}
-
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleGerar}
-              disabled={loading}
-              className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 text-sm font-semibold transition-all bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.99] disabled:opacity-60 cursor-pointer"
-            >
-              {loading ? (
-                <IconLoader2 size={16} className="animate-spin" aria-hidden="true" />
-              ) : (
-                <IconFileDownload size={16} aria-hidden="true" />
-              )}
-              {loading ? "Exportando..." : "Exportar Relatório Word (.docx)"}
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
-}
+});

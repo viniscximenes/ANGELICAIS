@@ -564,7 +564,9 @@ export function KpiEquipeSection({
 
   const operadoresParaTela = useMemo(() => {
     const operadores = data?.operadores ?? [];
-    if (!nomeFantasia?.ativo || !olhoAberto) return operadores;
+    // olhoAberto=true → revelar nomes reais (slug derivado do email)
+    // olhoAberto=false → mostrar nome fantasia (já em op.nome, resolvido no server)
+    if (!nomeFantasia?.ativo || olhoAberto) return operadores;
     return operadores.map((op) => ({
       ...op,
       nome: deriveNomeOperador(op.email),
@@ -578,9 +580,10 @@ export function KpiEquipeSection({
     [operadoresParaTela, headers],
   );
 
+  // PNG export usa a mesma lógica de nome da tela (fantasia ou real, conforme olho)
   const operadoresParaExport = useMemo(
-    () => aplicarColunasVisiveis(data?.operadores ?? [], headers),
-    [data, headers],
+    () => aplicarColunasVisiveis(operadoresParaTela, headers),
+    [operadoresParaTela, headers],
   );
 
   const sortedOps = useMemo(
