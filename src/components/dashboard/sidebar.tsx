@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  IconBrandHipchat,
   IconCash,
   IconChartBar,
   IconClipboardCheck,
@@ -59,7 +60,8 @@ export type SidebarSection = {
     | "settings"
     | "headset"
     | "trending"
-    | "message";
+    | "message"
+    | "chat";
   basePath: string;
   permission: Permission;
   items: { label: string; href: string }[];
@@ -99,6 +101,7 @@ const ICONS: Record<
   headset: IconHeadset,
   trending: IconTrendingUp,
   message: IconMessage2,
+  chat: IconBrandHipchat,
 };
 
 interface SidebarNavProps {

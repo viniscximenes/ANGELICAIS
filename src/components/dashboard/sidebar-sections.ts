@@ -45,15 +45,27 @@ const ALL_SECTIONS: SidebarSection[] = [
   //   onlyRoles: ["GESTOR"],
   //   items: [{ label: "KPI", href: "/meus-resultados/kpi" }],
   // },
+  // TEMP: oculto — seção Feedback removida da sidebar. A rota /feedback/* continua acessível via URL direta.
+  // {
+  //   id: "feedback",
+  //   label: "Feedback",
+  //   iconName: "message",
+  //   basePath: "/feedback",
+  //   permission: "view_gestor_panel",
+  //   onlyRoles: ["GESTOR"],
+  //   items: [
+  //     { label: "Resultado Semanal", href: "/feedback/resultado-semanal" },
+  //   ],
+  // },
   {
-    id: "feedback",
-    label: "Feedback",
-    iconName: "message",
-    basePath: "/feedback",
+    id: "chat",
+    label: "IA Beedoo",
+    iconName: "chat",
+    basePath: "/chat",
     permission: "view_gestor_panel",
-    onlyRoles: ["GESTOR"],
+    onlyRoles: ["GESTOR", "ADM"],
     items: [
-      { label: "Resultado Semanal", href: "/feedback/resultado-semanal" },
+      { label: "Assistente", href: "/chat" },
     ],
   },
   {
@@ -145,6 +157,7 @@ const ALL_SECTIONS: SidebarSection[] = [
       { label: "RV", href: "/config/rv" },
       { label: "Usuários", href: "/config/usuarios" },
       { label: "Diário de Bordo", href: "/config/db" },
+      { label: "Base de Conhecimento", href: "/config/base-conhecimento" },
     ],
   },
 ];

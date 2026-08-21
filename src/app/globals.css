@@ -596,6 +596,15 @@ a:focus:not(:focus-visible) {
   outline: none;
 }
 
+/* ── Chat: remove todo outline/ring de foco do textarea de input ── */
+.chat-input-no-focus,
+.chat-input-no-focus:focus,
+.chat-input-no-focus:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    Selection color — usa a cor da marca
    ═══════════════════════════════════════════════════════════════════ */
