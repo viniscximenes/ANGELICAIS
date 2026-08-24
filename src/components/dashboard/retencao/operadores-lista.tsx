@@ -36,11 +36,6 @@ export function OperadoresLista({
 
   const metaFracao = meta / 100;
 
-  // Filtra apenas os operadores com dados registrados (total > 0 e tx != null)
-  const operadoresComDados = operadores.filter(
-    (op) => op.tx !== null && op.total > 0,
-  );
-
   function abrir(op: OperadorIndividual) {
     setSelecionado(op);
     setOpen(true);
@@ -61,14 +56,17 @@ export function OperadoresLista({
 
       {/* ── Card em StyledCard com cantos azuis e fundo escurecido ──── */}
       <StyledCard className="p-0 overflow-hidden" withGradient>
-        {operadoresComDados.length === 0 ? (
+        {operadores.length === 0 ? (
           <p className="ds-small text-muted-foreground p-6 text-center">
-            Nenhum operador com atendimentos no período.
+            Nenhum operador cadastrado na equipe.
           </p>
         ) : (
           <ul className="divide-border/30 divide-y">
-            {operadoresComDados.map((op) => {
-              const abaixo = op.tx! < metaFracao;
+            {operadores.map((op) => {
+              // Sem dado no período (tx null ou total 0) ainda é um
+              // operador válido da equipe — só não dá pra avaliar meta.
+              const temDado = op.tx !== null && op.total > 0;
+              const abaixo = temDado && op.tx! < metaFracao;
               const nome = resolverNome(op);
               const qInfo = quartilDoOperador(quartilPorOperador, op.login);
               const qTag = qInfo?.equipe?.quartil ?? null;
@@ -80,12 +78,16 @@ export function OperadoresLista({
                     onClick={() => abrir(op)}
                     className="hover:bg-muted/40 flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors"
                   >
-                    {/* Indicador: verde bate a meta, vermelho não bate */}
+                    {/* Indicador: verde bate a meta, vermelho não bate, neutro sem dado */}
                     <span
                       aria-hidden="true"
                       className="inline-block size-2.5 shrink-0 rounded-full"
                       style={{
-                        background: abaixo ? "var(--danger)" : "var(--success)",
+                        background: !temDado
+                          ? "var(--muted-foreground)"
+                          : abaixo
+                            ? "var(--danger)"
+                            : "var(--success)",
                       }}
                     />
 
@@ -102,10 +104,10 @@ export function OperadoresLista({
 
                     <span
                       className={`ds-mono-sm shrink-0 tabular-nums font-semibold ${
-                        abaixo ? "text-danger" : "text-success"
+                        !temDado ? "text-muted-foreground" : abaixo ? "text-danger" : "text-success"
                       }`}
                     >
-                      {(op.tx! * 100).toFixed(1)}%
+                      {temDado ? `${(op.tx! * 100).toFixed(1)}%` : "—"}
                     </span>
 
                     <span className="ds-mono-sm text-muted-foreground shrink-0 text-right tabular-nums">

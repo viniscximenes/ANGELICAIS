@@ -68,9 +68,9 @@ function CustomSelect({ label, value, onChange, options, placeholder, searchable
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-lg shadow-xl max-h-56 overflow-y-auto scrollbar-tema py-1 flex flex-col">
+        <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-lg shadow-xl max-h-56 overflow-y-auto scrollbar-tema py-1">
           {searchable && (
-            <div className="p-1.5 sticky top-0 bg-popover border-b border-border/40 z-10 shrink-0">
+            <div className="p-1.5 sticky top-0 bg-popover border-b border-border/40 z-10">
               <input
                 type="text"
                 value={searchQuery}
@@ -83,33 +83,31 @@ function CustomSelect({ label, value, onChange, options, placeholder, searchable
             </div>
           )}
 
-          <div className="overflow-y-auto max-h-40">
-            {filteredOptions.length === 0 ? (
-              <div className="px-3 py-2 text-xs text-muted-foreground italic text-center">
-                Nenhum operador encontrado
-              </div>
-            ) : (
-              filteredOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 text-xs transition-colors block truncate cursor-pointer ${
-                    opt.value === value
-                      ? "bg-primary text-primary-foreground font-semibold"
-                      : opt.value === ""
-                      ? "text-muted-foreground hover:text-foreground font-medium italic border-b border-border/20 mb-1"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))
-            )}
-          </div>
+          {filteredOptions.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-muted-foreground italic text-center">
+              Nenhum operador encontrado
+            </div>
+          ) : (
+            filteredOptions.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-xs transition-colors block truncate cursor-pointer ${
+                  opt.value === value
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : opt.value === ""
+                    ? "text-muted-foreground hover:text-foreground font-medium italic border-b border-border/20 mb-1"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))
+          )}
         </div>
       )}
     </div>
@@ -125,15 +123,23 @@ export function CopiarContratos({ emailsEquipe, porTema, operadoresIndividual }:
   const [contratos, setContratos] = useState<ContratoFiltradoItem[]>([]);
   const [copied, setCopied] = useState(false);
 
-  // Lista APENAS operadores que possuem dados/atendimentos de fato (total > 0)
+  // Lista TODOS os operadores da equipe, independente de total/tx estarem
+  // zerados no período — o dropdown é só uma seleção de "quem filtrar",
+  // não uma exibição de métricas. Filtrar por "tem dado" aqui zerava a
+  // lista inteira sempre que a equipe toda estava com métricas zeradas
+  // (ex: período sem atendimentos ainda), mesmo a equipe existindo — a
+  // tabela Equipe do Consolidado não filtra assim, mostra todos com "0".
   const operadoresOptions = useMemo(() => {
     let list: { value: string; label: string }[] = [];
 
     if (operadoresIndividual && operadoresIndividual.length > 0) {
-      const opsComDados = operadoresIndividual.filter((op) => op.total > 0 && op.tx !== null);
-      list = opsComDados.map((op) => {
+      list = operadoresIndividual.map((op) => {
         const email = op.login;
-        const displayName = formatNomeDotSobrenome(op.nomeBanco || email);
+        // Nome vem SEMPRE do login (mesma fonte da tabela Equipe e de
+        // OperadoresLista) — op.nomeBanco é texto cru importado junto com
+        // os atendimentos, pode estar desatualizado/sujo (ex: "caio.silva"
+        // quando o login atual é "caio.vsilva"), ou até em branco.
+        const displayName = formatNomeDotSobrenome(email);
         return { value: email, label: displayName };
       });
     } else {
