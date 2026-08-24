@@ -9,7 +9,7 @@ import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
 import { formatNomeDotSobrenome, formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 
 export const metadata: Metadata = {
-  title: "Feedback Resultado Semanal — ALLOHA FIBRA",
+  title: "Feedback - Resultado Semanal",
 };
 
 export const dynamic = "force-dynamic";

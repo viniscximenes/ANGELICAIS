@@ -12,7 +12,7 @@ import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 
 export const metadata: Metadata = {
-  title: "Tempo Logado & Indisponibilidade — Reports ALLOHA FIBRA",
+  title: "Reports - Tempo Logado & Indisponibilidade",
 };
 
 export const revalidate = 300;

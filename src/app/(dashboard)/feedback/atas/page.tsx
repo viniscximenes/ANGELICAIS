@@ -8,7 +8,7 @@ import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { fetchGestorData, resolveGuiaGestor } from "@/lib/google/gestor";
 
 export const metadata: Metadata = {
-  title: "Atas — ALLOHA FIBRA",
+  title: "Feedback - Atas",
 };
 
 export const dynamic = "force-dynamic";

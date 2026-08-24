@@ -3,21 +3,22 @@ import { createClient } from "@/lib/supabase/server";
 import {
   DEFAULT_META_TX_RETENCAO,
   DEFAULT_ORDEM_TABELA,
+  DEFAULT_SHOW_RV_DIARIO,
   isOrdemTabela,
   type ConfigTabela,
 } from "./types";
 
 /**
- * Config de exibição da tabela do gestor (meta de TX + ordenação),
- * armazenada em `gestor_config_fantasia` (mesma linha usada pelo módulo de
- * nome fantasia e pela meta do Dashboard de Retenção).
+ * Config de exibição da tabela do gestor (meta de TX + ordenação + toggle de
+ * RV Diário), armazenada em `gestor_config_fantasia` (mesma linha usada pelo
+ * módulo de nome fantasia e pela meta do Dashboard de Retenção).
  */
 export async function getConfigTabela(gestorId: string): Promise<ConfigTabela> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("gestor_config_fantasia")
-    .select("meta_tx_retencao, ordem_tabela")
+    .select("meta_tx_retencao, ordem_tabela, show_rv_diario")
     .eq("gestor_id", gestorId)
     .maybeSingle();
 
@@ -35,5 +36,7 @@ export async function getConfigTabela(gestorId: string): Promise<ConfigTabela> {
       ? data.ordem_tabela
       : DEFAULT_ORDEM_TABELA;
 
-  return { metaTxRetencao, ordemTabela };
+  const showRvDiario = data?.show_rv_diario ?? DEFAULT_SHOW_RV_DIARIO;
+
+  return { metaTxRetencao, ordemTabela, showRvDiario };
 }

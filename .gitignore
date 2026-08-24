@@ -30,6 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# dev server (local helper scripts)
+dev-server.log
+dev-server.pid
+
 # env files
 .env*.local
 .env

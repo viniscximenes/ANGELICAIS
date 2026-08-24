@@ -91,7 +91,7 @@ function findProximaFaixa(
 /**
  * Faixa de TX atingida: maior threshold que a TX alcança.
  */
-function findPerUnitFaixa(
+export function findPerUnitFaixa(
   tx: number | null,
   faixas: PerUnitFaixa[],
 ): PerUnitFaixa | null {

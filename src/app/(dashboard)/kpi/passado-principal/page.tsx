@@ -11,7 +11,7 @@ import { getPreviousMonthSnapshot } from "@/lib/kpi/passado/get-previous-month-s
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 
 export const metadata: Metadata = {
-  title: "KPI Passado — Principal — ALLOHA FIBRA",
+  title: "KPI - Passado Principal",
 };
 
 const MEDIUM_CARDS_ORDER = [

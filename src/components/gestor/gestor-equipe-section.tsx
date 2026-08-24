@@ -7,6 +7,7 @@ import {
   IconEye,
   IconEyeOff,
   IconUsersGroup,
+  IconCoin,
 } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 
@@ -24,9 +25,11 @@ import { formatReportLabel } from "@/lib/gestor/format-report-label";
 import {
   DEFAULT_META_TX_RETENCAO,
   DEFAULT_ORDEM_TABELA,
+  DEFAULT_SHOW_RV_DIARIO,
   type OrdemTabela,
 } from "@/lib/gestor/config-tabela/types";
 import { ordenarOperadores } from "@/lib/gestor/config-tabela/ordenar-operadores";
+import { toggleShowRvDiarioAction } from "@/lib/gestor/config-tabela/actions/toggle-show-rv-diario-action";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import { cn } from "@/lib/utils";
@@ -52,6 +55,8 @@ interface GestorEquipeSectionProps {
   metaTxInicial?: number;
   /** Ordenação salva da tabela — `gestor_config_fantasia.ordem_tabela`. */
   ordemTabelaInicial?: OrdemTabela;
+  /** Toggle "RV Diário" salvo — `gestor_config_fantasia.show_rv_diario`. */
+  showRvDiarioInicial?: boolean;
 }
 
 export function GestorEquipeSection({
@@ -64,6 +69,7 @@ export function GestorEquipeSection({
   nomeSupervisorReport: nomeSupervisorReportInicial = null,
   metaTxInicial = DEFAULT_META_TX_RETENCAO,
   ordemTabelaInicial = DEFAULT_ORDEM_TABELA,
+  showRvDiarioInicial = DEFAULT_SHOW_RV_DIARIO,
 }: GestorEquipeSectionProps) {
   const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
   const [operadores, setOperadores] = useState(operadoresIniciais);
@@ -76,11 +82,21 @@ export function GestorEquipeSection({
   // Espelha o open/close do ConfigTabelaPopover só pra elevar a tabela acima
   // do overlay de blur (z-40) enquanto o popover está aberto.
   const [configPopoverOpen, setConfigPopoverOpen] = useState(false);
+  // rvDiario já vem calculado do servidor pra todo mundo, então ligar/desligar
+  // não dispara fetch de dados — só persiste a preferência (upsert parcial,
+  // mesmo padrão do handleToggleOlho).
+  const [showRvDiario, setShowRvDiario] = useState(showRvDiarioInicial);
 
   function handleToggleOlho() {
     const novoValor = !olhoAberto;
     setOlhoAberto(novoValor);
     void toggleOlhoAction("consolidado", novoValor);
+  }
+
+  function handleToggleRvDiario() {
+    const novoValor = !showRvDiario;
+    setShowRvDiario(novoValor);
+    void toggleShowRvDiarioAction(novoValor);
   }
 
   // Refetch usado tanto pelo polling quanto (imediatamente, sem esperar os
@@ -176,6 +192,22 @@ export function GestorEquipeSection({
           </div>
 
           <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleToggleRvDiario}
+              aria-pressed={showRvDiario}
+              className={cn(
+                "ds-mono-sm flex items-center gap-1.5 rounded-md border px-3 py-1.5 transition-all cursor-pointer shadow-sm select-none",
+                showRvDiario
+                  ? "bg-primary text-primary-foreground border-primary hover:opacity-90"
+                  : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/50 hover:text-foreground",
+              )}
+              style={{ fontSize: "12px" }}
+            >
+              <IconCoin size={14} aria-hidden="true" />
+              <span>RV Diário</span>
+            </button>
+
             <Link
               href="/reports/consolidado/analitico"
               className="bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-opacity cursor-pointer shadow-sm"
@@ -218,7 +250,7 @@ export function GestorEquipeSection({
             position: "fixed",
             top: "-99999px",
             left: "-99999px",
-            width: "600px",
+            width: showRvDiario ? "710px" : "600px",
           }}
         >
           <div data-tabela-png>
@@ -228,6 +260,7 @@ export function GestorEquipeSection({
               equipe={equipe}
               variant="excel"
               metaTx={metaTxFracao}
+              showRvDiario={showRvDiario}
             />
           </div>
         </div>
@@ -238,7 +271,11 @@ export function GestorEquipeSection({
               "shrink-0 relative transition-[z-index] duration-0",
               configPopoverOpen && "z-[45]",
             )}
-            style={{ width: "600px", maxWidth: "100%" }}
+            style={{
+              width: showRvDiario ? "710px" : "600px",
+              maxWidth: "100%",
+              transition: "width 0.2s ease",
+            }}
           >
             <StyledCard withGradient className="h-full p-3">
               <EquipeTable
@@ -246,6 +283,7 @@ export function GestorEquipeSection({
                 operadores={operadoresOrdenados}
                 equipe={equipe}
                 metaTx={metaTxFracao}
+                showRvDiario={showRvDiario}
                 headerButton={
                   nomeFantasia?.ativo && (
                     <button
@@ -269,7 +307,7 @@ export function GestorEquipeSection({
                   Atualizar Base D-1
                 </span>
                 <div className="min-h-0 flex-1">
-                  <UploadDropzone confirmRecentReport />
+                  <UploadDropzone />
                 </div>
               </StyledCard>
             </div>

@@ -7,6 +7,7 @@ import {
   IconClipboardText,
   IconLink,
   IconLoader2,
+  IconPaperclip,
   IconPencil,
   IconTrash,
 } from "@tabler/icons-react";
@@ -82,6 +83,19 @@ export function KbArtigoRow({ artigo }: Props) {
             </a>
           )}
 
+          {artigo.anexoNome && (
+            <a
+              href={artigo.anexoUrlAssinada ?? undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ds-mono-sm text-primary flex items-center gap-1 underline underline-offset-2 hover:opacity-80"
+              title="Abrir anexo — a IA cita este arquivo como fonte em vez do link acima"
+            >
+              <IconPaperclip size={12} aria-hidden="true" />
+              {artigo.anexoNome}
+            </a>
+          )}
+
           {artigo.dataPublicacao && (
             <p className="ds-mono-sm text-muted-foreground flex items-center gap-1">
               <IconCalendarEvent size={12} aria-hidden="true" />
@@ -89,18 +103,18 @@ export function KbArtigoRow({ artigo }: Props) {
             </p>
           )}
 
-          {artigo.tags.length > 0 && (
+          {artigo.palavrasChave.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {artigo.tags.map((tag) => (
+              {artigo.palavrasChave.map((termo) => (
                 <span
-                  key={tag}
+                  key={termo}
                   className="ds-mono-sm text-muted-foreground rounded-md px-2 py-0.5"
                   style={{
                     background: "var(--elevation-2-bg)",
                     border: "1px solid var(--border)",
                   }}
                 >
-                  {tag}
+                  {termo}
                 </span>
               ))}
             </div>

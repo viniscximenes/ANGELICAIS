@@ -13,6 +13,7 @@ import { getSnapshotsSummary } from "@/lib/kpi/bases/get-snapshots-summary";
 import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
 import { getKpiColunasConfig } from "@/lib/kpi/gestor/get-kpi-colunas-config";
 import { getKpiEquipePorEmails } from "@/lib/kpi/gestor/get-kpi-equipe-gestor";
+import { getShowRvOperadoresConfig } from "@/lib/kpi/gestor/get-show-rv-operadores-config";
 import { KPI_COLUNAS_ORDER } from "@/lib/kpi/gestor/kpi-colunas-config";
 import { VIRTUAL_KPI_LABELS } from "@/lib/kpi/gestor/retidos-brutos";
 import { toKpiEquipeSerial, type KpiEquipeSerial } from "@/lib/kpi/gestor/serial-types";
@@ -20,7 +21,7 @@ import { stripUnitSuffix } from "@/lib/kpi/strip-unit-suffix";
 import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
 
 export const metadata: Metadata = {
-  title: "Operadores — KPI ALLOHA FIBRA",
+  title: "KPI - Operadores",
 };
 
 // Página personalizada por gestor — nunca cacheada entre usuários.
@@ -65,14 +66,21 @@ export default async function KpiOperadoresPage() {
   // Independe de mês, então os 3 toggles (atual/passado/retrasado) sempre
   // usam a mesma lista. Roda em paralelo com definitions/config de nome
   // fantasia (independentes).
-  const [emailsEquipe, definitions, nomeFantasiaConfig, kpiColunasVisiveis, snapshotsSummary] =
-    await Promise.all([
-      getRosterOperadoresGestor(user.profile.id),
-      getKpiDefinitions(),
-      getNomeFantasiaConfig(user.profile.id),
-      getKpiColunasConfig(user.profile.id),
-      getSnapshotsSummary(),
-    ]);
+  const [
+    emailsEquipe,
+    definitions,
+    nomeFantasiaConfig,
+    kpiColunasVisiveis,
+    snapshotsSummary,
+    showRvOperadores,
+  ] = await Promise.all([
+    getRosterOperadoresGestor(user.profile.id),
+    getKpiDefinitions(),
+    getNomeFantasiaConfig(user.profile.id),
+    getKpiColunasConfig(user.profile.id),
+    getSnapshotsSummary(),
+    getShowRvOperadoresConfig(user.profile.id),
+  ]);
 
   // Toggles de mês: os 3 recentes (atual/passado/retrasado) já vêm
   // pré-carregados abaixo; o resto (histórico) é buscado sob demanda ao
@@ -171,6 +179,7 @@ export default async function KpiOperadoresPage() {
             olhoInicial={nomeFantasiaConfig.olhoOperacional}
             colunasDisponiveis={colunasDisponiveis}
             colunasVisiveisIniciais={kpiColunasVisiveis}
+            showRvInicial={showRvOperadores}
           />
         </div>
       </div>

@@ -14,7 +14,7 @@ import { getRvForOperator } from "@/lib/rv/get-rv-for-operator";
 import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
 
 export const metadata: Metadata = {
-  title: "RV Estimada — Passado — ALLOHA FIBRA",
+  title: "RV - Passado",
 };
 
 function getPreviousMesRef(): string {

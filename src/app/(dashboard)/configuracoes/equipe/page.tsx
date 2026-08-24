@@ -9,7 +9,7 @@ import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getEquipeAction } from "@/lib/gestor/equipe/actions";
 
 export const metadata: Metadata = {
-  title: "Equipe — Configurações ALLOHA FIBRA",
+  title: "Configurações - Equipe",
 };
 
 export const dynamic = "force-dynamic";

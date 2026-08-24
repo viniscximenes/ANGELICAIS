@@ -21,43 +21,6 @@ export type UploadConsolidadoResult =
     }
   | { success: false; error: string };
 
-/**
- * Lê o último report do dia (report_hora + report_nome_supervisor) pra
- * regra dos 5 min no client. Igual a getUltimoReportHoraAction do fluxo
- * antigo (Sheets), agora lendo d1_consolidado. Nunca bloqueia o upload —
- * qualquer falha retorna nulls.
- */
-export async function getUltimoReportHoraAction(): Promise<{
-  hora: string | null;
-  nomeSupervisor: string | null;
-}> {
-  const user = await getCurrentUser();
-  if (!user || !can(user.profile.role, "manage_d1_base")) {
-    return { hora: null, nomeSupervisor: null };
-  }
-
-  try {
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("d1_consolidado")
-      .select("report_hora, report_nome_supervisor")
-      .eq("data_ref", dataRefHojeBR())
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error || !data) return { hora: null, nomeSupervisor: null };
-
-    return {
-      hora: data.report_hora ?? null,
-      nomeSupervisor: data.report_nome_supervisor ?? null,
-    };
-  } catch (err) {
-    console.error("[upload-consolidado] erro ao ler último report:", err);
-    return { hora: null, nomeSupervisor: null };
-  }
-}
-
 export async function uploadConsolidadoAction(
   csvText: string,
 ): Promise<UploadConsolidadoResult> {

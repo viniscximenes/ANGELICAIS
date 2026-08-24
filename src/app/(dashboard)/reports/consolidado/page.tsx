@@ -12,9 +12,11 @@ import { getConfigTabela } from "@/lib/gestor/config-tabela/get-config-tabela";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
+import { aplicarRvDiarioNaEquipe } from "@/lib/rv/calculate-rv-diario";
+import { getCurrentPerUnitFaixas } from "@/lib/rv/get-current-per-unit-faixas";
 
 export const metadata: Metadata = {
-  title: "Consolidado — Reports ALLOHA FIBRA",
+  title: "Reports - Consolidado",
 };
 
 export const revalidate = 300;
@@ -32,11 +34,12 @@ export default async function ReportsConsolidadoPage() {
     redirect(getPostLoginPath(user.profile.role));
   }
 
-  const [{ data, reportHora, reportNomeSupervisor }, nomeFantasiaConfig, configTabela] =
+  const [{ data, reportHora, reportNomeSupervisor }, nomeFantasiaConfig, configTabela, rvFaixas] =
     await Promise.all([
       getGestorConsolidado(user.profile.id),
       getNomeFantasiaConfig(user.profile.id),
       getConfigTabela(user.profile.id),
+      getCurrentPerUnitFaixas(),
     ]);
 
   const nomeFantasia = {
@@ -67,7 +70,7 @@ export default async function ReportsConsolidadoPage() {
   const showUpload = can(user.profile.role, "manage_d1_base");
 
   // Converte para o formato que a EquipeTable do D-1 já aceita.
-  const operadores: OperadorConsolidado[] = data.operadores.map((op) => ({
+  const operadoresSemRv: OperadorConsolidado[] = data.operadores.map((op) => ({
     email: resolverNomeExibicao(op.nome.trim().toLowerCase(), nomeFantasia),
     emailOriginal: op.nome.trim().toLowerCase(),
     supervisor: op.gestora,
@@ -77,12 +80,15 @@ export default async function ReportsConsolidadoPage() {
     txRetencao: op.txRetencao,
   }));
 
+  const { operadores, rvDiarioEquipe } = aplicarRvDiarioNaEquipe(operadoresSemRv, rvFaixas);
+
   const equipe: ResumoEquipe = {
     retidos: data.consolidado.retidos,
     cancelados: data.consolidado.cancelados,
     pedidos: data.consolidado.pedidos,
     txRetencao: data.consolidado.txRetencao,
     horaReport: reportHora ?? "—",
+    rvDiario: rvDiarioEquipe,
   };
 
   const gestora = data.consolidado.gestora
@@ -139,6 +145,7 @@ export default async function ReportsConsolidadoPage() {
             nomeSupervisorReport={reportNomeSupervisor}
             metaTxInicial={configTabela.metaTxRetencao}
             ordemTabelaInicial={configTabela.ordemTabela}
+            showRvDiarioInicial={configTabela.showRvDiario}
           />
         </div>
       </div>

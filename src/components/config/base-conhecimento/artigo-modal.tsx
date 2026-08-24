@@ -1,16 +1,31 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { IconLoader2, IconX } from "@tabler/icons-react";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import {
+  IconFileTypePdf,
+  IconLoader2,
+  IconPaperclip,
+  IconPhoto,
+  IconTrash,
+  IconX,
+} from "@tabler/icons-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { CustomDatePicker } from "@/components/feedback/custom-date-picker";
 import { createArtigoAction } from "@/lib/kb/actions/create-artigo-action";
 import { updateArtigoAction } from "@/lib/kb/actions/update-artigo-action";
+import { validarAnexo } from "@/lib/kb/anexo-validacao";
 import type { KbArtigo, KbTipo } from "@/lib/kb/types";
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
@@ -30,9 +45,16 @@ export function ArtigoModal({ open, onClose, artigo, defaultTipo }: Props) {
   const [conteudo, setConteudo] = useState("");
   const [link, setLink] = useState("");
   const [dataPublicacao, setDataPublicacao] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
+  const [palavrasChave, setPalavrasChave] = useState<string[]>([]);
+  const [palavraChaveInput, setPalavraChaveInput] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  // Anexo: arquivo novo escolhido nesta sessão do modal (ainda não enviado),
+  // e o que já está salvo no artigo (nome + link assinado pra visualizar).
+  const [anexoFile, setAnexoFile] = useState<File | null>(null);
+  const [anexoExistenteNome, setAnexoExistenteNome] = useState<string | null>(null);
+  const [anexoExistenteUrl, setAnexoExistenteUrl] = useState<string | null>(null);
+  const [removerAnexoExistente, setRemoverAnexoExistente] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -41,35 +63,78 @@ export function ArtigoModal({ open, onClose, artigo, defaultTipo }: Props) {
       setConteudo(artigo?.conteudo ?? "");
       setLink(artigo?.link ?? "");
       setDataPublicacao(artigo?.dataPublicacao ?? "");
-      setTags(artigo?.tags ?? []);
-      setTagInput("");
+      setPalavrasChave(artigo?.palavrasChave ?? []);
+      setPalavraChaveInput("");
+      setAnexoFile(null);
+      setAnexoExistenteNome(artigo?.anexoNome ?? null);
+      setAnexoExistenteUrl(artigo?.anexoUrlAssinada ?? null);
+      setRemoverAnexoExistente(false);
     }
   }, [open, artigo, defaultTipo]);
+
+  const onDropAnexo = useCallback((acceptedFiles: File[], fileRejections: unknown[]) => {
+    if (fileRejections.length > 0) {
+      toast.error("Formato não suportado. Use PDF, PNG, JPG, JPEG ou WEBP.");
+      return;
+    }
+    const file = acceptedFiles[0];
+    if (!file) return;
+    const validacao = validarAnexo(file);
+    if (!validacao.valido) {
+      toast.error(validacao.erro);
+      return;
+    }
+    setAnexoFile(file);
+    setRemoverAnexoExistente(false);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive, open: abrirSeletorArquivo } = useDropzone({
+    onDrop: onDropAnexo,
+    accept: {
+      "application/pdf": [".pdf"],
+      "image/png": [".png"],
+      "image/jpeg": [".jpg", ".jpeg"],
+      "image/webp": [".webp"],
+    },
+    multiple: false,
+    disabled: isPending,
+    noClick: true,
+  });
+
+  function removerAnexoSelecionado() {
+    setAnexoFile(null);
+  }
+
+  function removerAnexoAtual() {
+    setAnexoExistenteNome(null);
+    setAnexoExistenteUrl(null);
+    setRemoverAnexoExistente(true);
+  }
 
   function handleClose() {
     if (isPending) return;
     onClose();
   }
 
-  function addTag() {
-    const clean = tagInput.trim().toLowerCase();
-    if (clean && !tags.includes(clean)) {
-      setTags([...tags, clean]);
+  function addPalavraChave() {
+    const clean = palavraChaveInput.trim().toLowerCase();
+    if (clean && !palavrasChave.includes(clean)) {
+      setPalavrasChave([...palavrasChave, clean]);
     }
-    setTagInput("");
+    setPalavraChaveInput("");
   }
 
-  function handleTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  function handlePalavraChaveKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
-      addTag();
-    } else if (e.key === "Backspace" && !tagInput && tags.length > 0) {
-      setTags(tags.slice(0, -1));
+      addPalavraChave();
+    } else if (e.key === "Backspace" && !palavraChaveInput && palavrasChave.length > 0) {
+      setPalavrasChave(palavrasChave.slice(0, -1));
     }
   }
 
-  function removeTag(tag: string) {
-    setTags(tags.filter((t) => t !== tag));
+  function removePalavraChave(termo: string) {
+    setPalavrasChave(palavrasChave.filter((t) => t !== termo));
   }
 
   function handleSubmit() {
@@ -77,9 +142,21 @@ export function ArtigoModal({ open, onClose, artigo, defaultTipo }: Props) {
     if (!conteudo.trim()) return toast.error("Conteúdo obrigatório");
 
     startTransition(async () => {
-      const input = { titulo, conteudo, tags, tipo, link, dataPublicacao };
+      const input = {
+        titulo,
+        conteudo,
+        palavrasChave,
+        tipo,
+        link,
+        dataPublicacao,
+        anexo: anexoFile,
+      };
       const r = isEdit
-        ? await updateArtigoAction({ id: artigo.id, ...input })
+        ? await updateArtigoAction({
+            id: artigo.id,
+            ...input,
+            removerAnexo: removerAnexoExistente,
+          })
         : await createArtigoAction(input);
 
       if (r.success) {
@@ -225,6 +302,96 @@ export function ArtigoModal({ open, onClose, artigo, defaultTipo }: Props) {
                 </div>
               )}
 
+              {tipo === "artigo" && (
+                <div>
+                  <label className="ds-mono-sm text-muted-foreground mb-1 block">
+                    Anexo (PDF ou imagem)
+                  </label>
+
+                  {anexoFile ? (
+                    <div
+                      className="elevation-2 flex items-center justify-between gap-3 rounded-md px-3 py-2"
+                      style={{ border: "1px solid var(--border)" }}
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        {anexoFile.name.toLowerCase().endsWith(".pdf") ? (
+                          <IconFileTypePdf size={18} className="text-muted-foreground shrink-0" aria-hidden="true" />
+                        ) : (
+                          <IconPhoto size={18} className="text-muted-foreground shrink-0" aria-hidden="true" />
+                        )}
+                        <span className="ds-body truncate">{anexoFile.name}</span>
+                        <span className="ds-mono-sm text-muted-foreground shrink-0">
+                          {formatBytes(anexoFile.size)}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removerAnexoSelecionado}
+                        disabled={isPending}
+                        aria-label="Remover arquivo selecionado"
+                        className="text-muted-foreground hover:text-destructive shrink-0"
+                      >
+                        <IconTrash size={16} aria-hidden="true" />
+                      </button>
+                    </div>
+                  ) : anexoExistenteNome && !removerAnexoExistente ? (
+                    <div
+                      className="elevation-2 flex items-center justify-between gap-3 rounded-md px-3 py-2"
+                      style={{ border: "1px solid var(--border)" }}
+                    >
+                      <a
+                        href={anexoExistenteUrl ?? undefined}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ds-body text-primary flex min-w-0 items-center gap-2 truncate underline underline-offset-2 hover:opacity-80"
+                      >
+                        <IconPaperclip size={18} className="shrink-0" aria-hidden="true" />
+                        <span className="truncate">{anexoExistenteNome}</span>
+                      </a>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={abrirSeletorArquivo}
+                          disabled={isPending}
+                          className="ds-mono-sm text-muted-foreground hover:text-foreground"
+                        >
+                          Substituir
+                        </button>
+                        <button
+                          type="button"
+                          onClick={removerAnexoAtual}
+                          disabled={isPending}
+                          aria-label="Remover anexo"
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <IconTrash size={16} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      {...getRootProps()}
+                      onClick={abrirSeletorArquivo}
+                      className="elevation-2 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed px-3 py-4 transition-colors hover:border-primary"
+                      style={{
+                        borderColor: isDragActive ? "var(--primary)" : "var(--border)",
+                        background: isDragActive
+                          ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
+                          : undefined,
+                      }}
+                    >
+                      <input {...getInputProps()} />
+                      <IconPaperclip size={16} className="text-muted-foreground" aria-hidden="true" />
+                      <span className="ds-mono-sm text-muted-foreground">
+                        {isDragActive
+                          ? "Solte o arquivo aqui"
+                          : "Arraste um arquivo ou clique para selecionar (PDF, PNG, JPG, WEBP — até 10MB)"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="ds-mono-sm text-muted-foreground mb-1 block">
                   {tipo === "artigo" ? "Conteúdo" : "Descrição"}
@@ -244,29 +411,42 @@ export function ArtigoModal({ open, onClose, artigo, defaultTipo }: Props) {
                 />
               </div>
 
-              <div>
+              <div
+                className="elevation-2 rounded-xl p-4"
+                style={{ border: "1px solid var(--border)" }}
+              >
                 <label className="ds-mono-sm text-muted-foreground mb-1 block">
-                  Tags
+                  Palavras-chave para busca
                 </label>
+                <p className="ds-small text-muted-foreground mb-3">
+                  Adicione termos e sinônimos que um gestor poderia usar para
+                  procurar esse assunto (ex: para o artigo de Máscaras do
+                  Financeiro: &quot;máscara&quot;, &quot;BKO&quot;,
+                  &quot;chamado financeiro&quot;, &quot;ocorrência
+                  financeira&quot;, &quot;cobrança&quot;,
+                  &quot;desconto&quot;). Sem limite de quantidade, mas o ideal
+                  é ter pelo menos 3 a 5 por artigo para a busca funcionar
+                  bem.
+                </p>
                 <div
-                  className="elevation-2 flex flex-wrap items-center gap-1.5 rounded-md px-2 py-2"
+                  className="elevation-1 flex flex-wrap items-center gap-1.5 rounded-md px-2 py-2"
                   style={{ border: "1px solid var(--border)" }}
                 >
-                  {tags.map((tag) => (
+                  {palavrasChave.map((termo) => (
                     <span
-                      key={tag}
+                      key={termo}
                       className="ds-mono-sm text-foreground flex items-center gap-1 rounded-md px-2 py-1"
                       style={{
                         background: "var(--elevation-3-bg)",
                         border: "1px solid var(--border)",
                       }}
                     >
-                      {tag}
+                      {termo}
                       <button
                         type="button"
-                        onClick={() => removeTag(tag)}
+                        onClick={() => removePalavraChave(termo)}
                         disabled={isPending}
-                        aria-label={`Remover tag ${tag}`}
+                        aria-label={`Remover palavra-chave ${termo}`}
                         className="text-muted-foreground hover:text-foreground"
                       >
                         <IconX size={12} aria-hidden="true" />
@@ -275,13 +455,15 @@ export function ArtigoModal({ open, onClose, artigo, defaultTipo }: Props) {
                   ))}
                   <input
                     type="text"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={handleTagKeyDown}
-                    onBlur={addTag}
+                    value={palavraChaveInput}
+                    onChange={(e) => setPalavraChaveInput(e.target.value)}
+                    onKeyDown={handlePalavraChaveKeyDown}
+                    onBlur={addPalavraChave}
                     disabled={isPending}
-                    placeholder={tags.length === 0 ? "digite e Enter" : ""}
-                    className="ds-mono-sm min-w-[100px] flex-1 bg-transparent px-1 py-1 outline-none"
+                    placeholder={
+                      palavrasChave.length === 0 ? "digite e Enter" : ""
+                    }
+                    className="ds-mono-sm min-w-[140px] flex-1 bg-transparent px-1 py-1 outline-none"
                   />
                 </div>
               </div>

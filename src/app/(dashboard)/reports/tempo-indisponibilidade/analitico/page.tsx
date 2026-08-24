@@ -12,7 +12,7 @@ import { getConfigAderencia } from "@/lib/gestor/config-aderencia/get-config-ade
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 
 export const metadata: Metadata = {
-  title: "Analítico — Tempo Logado & Indisponibilidade ALLOHA FIBRA",
+  title: "Reports - Tempo Logado & Indisponibilidade - Analítico",
 };
 
 export default async function AnaliticoTempoIndisponibilidadePage() {

@@ -27,7 +27,9 @@ export function isOrdemTabela(value: string): value is OrdemTabela {
 export type ConfigTabela = {
   metaTxRetencao: number;
   ordemTabela: OrdemTabela;
+  showRvDiario: boolean;
 };
 
 export const DEFAULT_META_TX_RETENCAO = 60;
 export const DEFAULT_ORDEM_TABELA: OrdemTabela = "padrao";
+export const DEFAULT_SHOW_RV_DIARIO = false;

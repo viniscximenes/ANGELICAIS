@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { StyledCard } from "@/components/gestor/styled-card";
-import type { HoraEvolucaoData } from "@/lib/retencao/get-evolucao-hora";
+import type { HoraEvolucaoData, TemaHoraData } from "@/lib/retencao/get-evolucao-hora";
 import type { ReactNode } from "react";
 import { IconChartLine } from "@tabler/icons-react";
 
@@ -22,6 +22,16 @@ interface GraficoEvolucaoProps {
   meta: number; // Meta de 0 a 100
   /** Slot à direita do título (ex.: engrenagem de configuração de metas). */
   acoes?: ReactNode;
+}
+
+// Mesma ordenação do card "Retenção por Tema": maior tx primeiro.
+function ordenarPorTema(temas: TemaHoraData[]): TemaHoraData[] {
+  return [...temas].sort((a, b) => {
+    if (a.tx === null && b.tx === null) return 0;
+    if (a.tx === null) return 1;
+    if (b.tx === null) return -1;
+    return b.tx - a.tx;
+  });
 }
 
 export function GraficoEvolucao({ dados, meta, acoes }: GraficoEvolucaoProps) {
@@ -112,6 +122,7 @@ export function GraficoEvolucao({ dados, meta, acoes }: GraficoEvolucaoProps) {
               content={({ active, payload }) => {
                 if (!active || !payload || !payload.length) return null;
                 const info = payload[0].payload as typeof chartData[0];
+                const temasOrdenados = ordenarPorTema(info.porTema ?? []);
                 return (
                   <div className="bg-popover border border-border/80 rounded-lg p-3 shadow-md space-y-1.5 font-sans">
                     <p className="text-[11px] font-semibold text-foreground uppercase tracking-wider">
@@ -133,6 +144,23 @@ export function GraficoEvolucao({ dados, meta, acoes }: GraficoEvolucaoProps) {
                     <p className="text-xs text-muted-foreground">
                       Cancelados: <strong className="text-foreground">{info.cancelados}</strong>
                     </p>
+
+                    {temasOrdenados.length > 0 && (
+                      <>
+                        <div className="h-px bg-border/60 my-1" />
+                        <p className="text-[11px] font-semibold text-foreground uppercase tracking-wider">
+                          Retenção por Tema
+                        </p>
+                        {temasOrdenados.map((tema) => (
+                          <p key={tema.motivo} className="text-xs text-muted-foreground">
+                            {tema.motivo}:{" "}
+                            <strong className={tema.tx !== null && tema.tx * 100 < meta ? "text-danger" : "text-success"}>
+                              {tema.tx !== null ? `${(tema.tx * 100).toFixed(1)}%` : "—"}
+                            </strong>
+                          </p>
+                        ))}
+                      </>
+                    )}
                   </div>
                 );
               }}

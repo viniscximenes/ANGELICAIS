@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAnexoUrlAssinada } from "./anexo";
 
 import type { KbArtigo } from "./types";
 
@@ -8,7 +9,7 @@ export async function getArtigos(): Promise<KbArtigo[]> {
   const { data, error } = await supabase
     .from("kb_artigos")
     .select(
-      "id, titulo, conteudo, tags, ativo, tipo, link, data_publicacao, created_at, updated_at",
+      "id, titulo, conteudo, palavras_chave, ativo, tipo, link, data_publicacao, created_at, updated_at, anexo_url, anexo_tipo, anexo_nome",
     )
     .order("updated_at", { ascending: false });
 
@@ -17,16 +18,22 @@ export async function getArtigos(): Promise<KbArtigo[]> {
     return [];
   }
 
-  return (data ?? []).map((r) => ({
-    id: r.id,
-    titulo: r.titulo,
-    conteudo: r.conteudo,
-    tags: r.tags ?? [],
-    ativo: r.ativo,
-    tipo: r.tipo,
-    link: r.link,
-    dataPublicacao: r.data_publicacao,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-  }));
+  return Promise.all(
+    (data ?? []).map(async (r) => ({
+      id: r.id,
+      titulo: r.titulo,
+      conteudo: r.conteudo,
+      palavrasChave: r.palavras_chave ?? [],
+      ativo: r.ativo,
+      tipo: r.tipo,
+      link: r.link,
+      dataPublicacao: r.data_publicacao,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      anexoPath: r.anexo_url,
+      anexoTipo: r.anexo_tipo,
+      anexoNome: r.anexo_nome,
+      anexoUrlAssinada: await getAnexoUrlAssinada(r.anexo_url),
+    })),
+  );
 }

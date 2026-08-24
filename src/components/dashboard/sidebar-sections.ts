@@ -12,9 +12,9 @@ const ALL_SECTIONS: SidebarSection[] = [
     permission: "view_gestor_panel",
     // Só o GESTOR vê — o ADM tem a permissão, mas não acessa esta tela.
     onlyRoles: ["GESTOR"],
-    // Divisória "Minha Equipe" acima do grupo Reports — só aparece pro GESTOR
+    // Divisória "MEUS RESULTADOS" acima do grupo Reports — só aparece pro GESTOR
     // porque esta seção já é onlyRoles: ["GESTOR"].
-    divider: "Minha Equipe",
+    divider: "MEUS RESULTADOS",
     items: [
       { label: "Consolidado", href: "/reports/consolidado" },
       { label: "Tempo Logado & Indisp.", href: "/reports/tempo-indisponibilidade" },
@@ -63,7 +63,9 @@ const ALL_SECTIONS: SidebarSection[] = [
     iconName: "chat",
     basePath: "/chat",
     permission: "view_gestor_panel",
-    onlyRoles: ["GESTOR", "ADM"],
+    // Oculto pro GESTOR a pedido — o ADM continua vendo (rota /chat segue
+    // acessível via URL direta pra quem não vê o item no menu).
+    onlyRoles: ["ADM"],
     items: [
       { label: "Assistente", href: "/chat" },
     ],

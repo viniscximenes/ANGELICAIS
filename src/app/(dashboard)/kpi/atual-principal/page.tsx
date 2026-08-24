@@ -12,7 +12,7 @@ import type { NeutralKpiValue } from "@/lib/kpi/passado/types";
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 
 export const metadata: Metadata = {
-  title: "KPI Atual — Principal — ALLOHA FIBRA",
+  title: "KPI - Atual Principal",
 };
 
 function formatMonthLabel(mesRef: string): string {

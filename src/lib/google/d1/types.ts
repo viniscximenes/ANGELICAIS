@@ -7,6 +7,8 @@ export type OperadorConsolidado = {
   cancelados: number;
   pedidos: number;
   txRetencao: number | null;
+  /** RV Diário — faixa do RV do mês (rv_per_unit_indicators) aplicada à tx/retidos do dia. Opcional: só calculado onde a coluna "RV Diário" existe (reports/consolidado). */
+  rvDiario?: number | null;
 };
 
 /**
@@ -32,6 +34,8 @@ export type ResumoEquipe = {
   pedidos: number;
   txRetencao: number | null;
   horaReport: string;
+  /** Soma do rvDiario de todos os operadores — ver OperadorConsolidado.rvDiario. */
+  rvDiario?: number | null;
 };
 
 /**

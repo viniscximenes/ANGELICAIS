@@ -12,7 +12,7 @@ import { can } from "@/lib/auth/permissions";
 import { getOperadorConsolidado } from "@/lib/d1-db/get-operador-consolidado";
 
 export const metadata: Metadata = {
-  title: "Consolidado — D-1 ALLOHA FIBRA",
+  title: "D-1 - Consolidado",
 };
 
 export const revalidate = 300;

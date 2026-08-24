@@ -1,5 +1,14 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { aplicarFiltroEscopo } from "./escopo";
+import { normalizarTema } from "./normalizar-tema";
+
+export type TemaHoraData = {
+  motivo: string;
+  total: number;
+  retidos: number;
+  cancelados: number;
+  tx: number | null; // null se total = 0
+};
 
 export type HoraEvolucaoData = {
   /** Chave do bucket. 7 = "< 08", 8..19 = a própria hora, 20 = "≥ 20". */
@@ -9,6 +18,13 @@ export type HoraEvolucaoData = {
   retidos: number;
   cancelados: number;
   tx: number | null; // null se total = 0
+  /**
+   * Retenção por tema, calculada só com os atendimentos deste bucket de
+   * hora — mesmo agrupamento de `getPorTema`, mas com o corte adicional de
+   * hora. Opcional porque `get-por-operador-individual` monta seu próprio
+   * `HoraEvolucaoData[]` (breakdown por operador) sem essa dimensão.
+   */
+  porTema?: TemaHoraData[];
 };
 
 /**
@@ -55,25 +71,52 @@ export async function getEvolucaoHora(
 
   // Sem recorte de horas: os buckets das pontas ("< 08" e "≥ 20") precisam
   // enxergar os atendimentos fora da janela de operação.
-  let query = supabase
-    .from("retencao_atendimentos")
-    .select("hora_bucket, foi_cancelamento")
-    .range(0, 9999);
+  let allData: { hora_bucket: number | null; foi_cancelamento: boolean | null; motivo: string | null }[] = [];
+  let page = 0;
+  const pageSize = 1000;
+  let hasMore = true;
 
-  query = aplicarFiltroEscopo(query, { emailsEquipe });
+  while (hasMore) {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
 
-  const { data, error } = await query;
-  if (error) {
-    console.error("[getEvolucaoHora] erro ao buscar evolução por hora:", error.message);
-    throw new Error(error.message);
+    let query = supabase
+      .from("retencao_atendimentos")
+      .select("hora_bucket, foi_cancelamento, motivo")
+      .range(from, to);
+
+    query = aplicarFiltroEscopo(query, { emailsEquipe });
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("[getEvolucaoHora] erro ao buscar evolução por hora:", error.message);
+      throw new Error(error.message);
+    }
+
+    const list = data || [];
+    allData = allData.concat(list);
+
+    if (list.length < pageSize) {
+      hasMore = false;
+    } else {
+      page++;
+    }
   }
 
-  const map = new Map<number, { total: number; retidos: number; cancelados: number }>();
+  const map = new Map<
+    number,
+    {
+      total: number;
+      retidos: number;
+      cancelados: number;
+      temas: Map<string, { total: number; retidos: number; cancelados: number }>;
+    }
+  >();
   for (const b of BUCKETS) {
-    map.set(b.hora, { total: 0, retidos: 0, cancelados: 0 });
+    map.set(b.hora, { total: 0, retidos: 0, cancelados: 0, temas: new Map() });
   }
 
-  for (const item of data ?? []) {
+  for (const item of allData) {
     const h = item.hora_bucket;
     // Sem hora não dá pra posicionar no eixo — fica fora do gráfico.
     if (h === null || h === undefined) continue;
@@ -81,16 +124,38 @@ export async function getEvolucaoHora(
     const alvo = map.get(bucketDe(h));
     if (!alvo) continue;
 
+    const isCancelado = item.foi_cancelamento === true;
+
     alvo.total++;
-    if (item.foi_cancelamento === true) {
+    if (isCancelado) {
       alvo.cancelados++;
     } else {
       alvo.retidos++;
     }
+
+    // Mesmo agrupamento do bloco "Retenção por Tema" (getPorTema), aplicado
+    // dentro do bucket de hora.
+    const tema = normalizarTema(item.motivo);
+    const temaAgg = alvo.temas.get(tema) ?? { total: 0, retidos: 0, cancelados: 0 };
+    temaAgg.total++;
+    if (isCancelado) {
+      temaAgg.cancelados++;
+    } else {
+      temaAgg.retidos++;
+    }
+    alvo.temas.set(tema, temaAgg);
   }
 
   return BUCKETS.map((b) => {
     const agg = map.get(b.hora)!;
+    const porTema: TemaHoraData[] = [...agg.temas.entries()].map(([motivo, t]) => ({
+      motivo,
+      total: t.total,
+      retidos: t.retidos,
+      cancelados: t.cancelados,
+      tx: t.total > 0 ? t.retidos / t.total : null,
+    }));
+
     return {
       hora: b.hora,
       label: b.label,
@@ -98,6 +163,7 @@ export async function getEvolucaoHora(
       retidos: agg.retidos,
       cancelados: agg.cancelados,
       tx: agg.total > 0 ? agg.retidos / agg.total : null,
+      porTema,
     };
   });
 }

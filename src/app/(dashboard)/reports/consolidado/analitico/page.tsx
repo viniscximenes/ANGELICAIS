@@ -9,7 +9,7 @@ import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getEmailsEquipe } from "@/lib/retencao/get-emails-equipe";
 
 export const metadata: Metadata = {
-  title: "Analítico — Consolidado ALLOHA FIBRA",
+  title: "Reports - Consolidado - Analítico",
 };
 
 export default async function AnaliticoConsolidadoPage() {

@@ -10,7 +10,7 @@ import { getPreviousMonthSecundario } from "@/lib/kpi/passado/get-previous-month
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 
 export const metadata: Metadata = {
-  title: "KPI Passado — Secundário — ALLOHA FIBRA",
+  title: "KPI - Passado Secundário",
 };
 
 const SECUNDARIO_ORDER = [

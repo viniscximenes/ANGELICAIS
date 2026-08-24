@@ -11,6 +11,7 @@ import {
   IconEyeOff,
   IconLoader2,
   IconUsersGroup,
+  IconCoin,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
@@ -22,6 +23,8 @@ import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fant
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import { getKpiMesHistoricoAction } from "@/lib/kpi/gestor/get-kpi-mes-historico-action";
+import { getRvOperadoresAction } from "@/lib/kpi/gestor/get-rv-operadores-action";
+import { toggleShowRvOperadoresAction } from "@/lib/kpi/gestor/toggle-show-rv-operadores-action";
 import { KPI_COLUNAS_ORDER } from "@/lib/kpi/gestor/kpi-colunas-config";
 import { saveKpiColunasAction } from "@/lib/kpi/gestor/save-kpi-colunas-action";
 import type {
@@ -29,8 +32,13 @@ import type {
   KpiEquipeSerial,
   OperadorKpiSerial,
 } from "@/lib/kpi/gestor/serial-types";
+import { formatBRL } from "@/lib/rv/format-money";
+import type { RvEquipeResultado } from "@/lib/rv/get-rv-para-equipe";
+import type { RvScope } from "@/lib/rv/types";
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 import { cn } from "@/lib/utils";
+
+type RvModo = "normal" | "contestacao";
 
 type SortDir = "asc" | "desc";
 type SortState = { slug: string; dir: SortDir };
@@ -285,12 +293,23 @@ const PNG_ZEBRA_PAR = "#f8f8f8";
 const PNG_CELL_PADDING = "12px 24px";
 const PNG_COL_MIN_WIDTH = 120;
 
+function rvTituloColuna(modo: RvModo): string {
+  return modo === "normal" ? "RV (SEM CONTESTAÇÃO)" : "RV (CONTESTADO ABS E INDISP)";
+}
+
 function KpiTablePng({
   operadores,
   headers,
+  rvVisivel,
+  rvModo,
+  getRvLiquido,
 }: {
   operadores: OperadorKpiSerial[];
   headers: { slug: string; displayName: string }[];
+  /** Coluna RV extra, opcional — reflete o toggle/modo no momento do print. */
+  rvVisivel?: boolean;
+  rvModo?: RvModo;
+  getRvLiquido?: (email: string) => number | null;
 }) {
   return (
     <table
@@ -335,12 +354,32 @@ function KpiTablePng({
                 color: "#ffffff",
                 textAlign: "center",
                 whiteSpace: "nowrap",
-                borderRight: idx < headers.length - 1 ? `1px solid ${PNG_HEADER_DIVIDER}` : undefined,
+                borderRight:
+                  idx < headers.length - 1 || rvVisivel
+                    ? `1px solid ${PNG_HEADER_DIVIDER}`
+                    : undefined,
               }}
             >
               {h.displayName}
             </th>
           ))}
+          {rvVisivel && (
+            <th
+              style={{
+                padding: PNG_CELL_PADDING,
+                minWidth: PNG_COL_MIN_WIDTH,
+                fontSize: "11px",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                color: "#ffffff",
+                textAlign: "center",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {rvTituloColuna(rvModo ?? "normal")}
+            </th>
+          )}
         </tr>
       </thead>
       <tbody>
@@ -373,12 +412,33 @@ function KpiTablePng({
                   color: "#000000",
                   fontVariantNumeric: "tabular-nums",
                   borderTop: `1px solid ${PNG_BORDER}`,
-                  borderRight: kIdx < op.kpis.length - 1 ? `1px solid ${PNG_BORDER}` : undefined,
+                  borderRight:
+                    kIdx < op.kpis.length - 1 || rvVisivel
+                      ? `1px solid ${PNG_BORDER}`
+                      : undefined,
                 }}
               >
                 {kpi.valor === null ? "N/D" : formatKpiValue(kpi.valor, kpi.valueType)}
               </td>
             ))}
+            {rvVisivel && (
+              <td
+                style={{
+                  padding: PNG_CELL_PADDING,
+                  minWidth: PNG_COL_MIN_WIDTH,
+                  fontSize: "12px",
+                  textAlign: "center",
+                  color: "#000000",
+                  fontVariantNumeric: "tabular-nums",
+                  borderTop: `1px solid ${PNG_BORDER}`,
+                }}
+              >
+                {(() => {
+                  const liquido = getRvLiquido?.(op.email) ?? null;
+                  return liquido === null ? "N/D" : formatBRL(liquido);
+                })()}
+              </td>
+            )}
           </tr>
         ))}
       </tbody>
@@ -396,6 +456,8 @@ interface KpiEquipeSectionProps {
   olhoInicial?: boolean;
   colunasDisponiveis: ColunaKpiDisponivel[];
   colunasVisiveisIniciais: string[];
+  /** Toggle "Exibir RV" salvo — gestor_config_fantasia.show_rv_operadores. */
+  showRvInicial?: boolean;
 }
 
 export function KpiEquipeSection({
@@ -407,6 +469,7 @@ export function KpiEquipeSection({
   olhoInicial = false,
   colunasDisponiveis,
   colunasVisiveisIniciais,
+  showRvInicial = false,
 }: KpiEquipeSectionProps) {
   const [mesSelecionado, setMesSelecionado] = useState<string>(dataAtual.mesRef);
   // Cache dos meses históricos já buscados (getKpiMesHistoricoAction) — evita
@@ -419,6 +482,16 @@ export function KpiEquipeSection({
   // Espelha o open/close do ConfigKpiPopover só pra elevar a tabela acima do
   // overlay de blur (z-40) enquanto o popover está aberto.
   const [configPopoverOpen, setConfigPopoverOpen] = useState(false);
+
+  // ── RV (geral, mensal) ────────────────────────────────────────────
+  // rvVisivel persiste por gestor (show_rv_operadores); rvModo é só de
+  // sessão — sempre volta pra "Normal" no F5/login (decisão explícita).
+  const [rvVisivel, setRvVisivel] = useState(showRvInicial);
+  const [rvModo, setRvModo] = useState<RvModo>("normal");
+  // Cache por mês, igual historicoCache — busca sob demanda ao ligar o
+  // toggle ou trocar de mês com ele já ligado.
+  const [rvCache, setRvCache] = useState<Record<string, RvEquipeResultado>>({});
+  const [carregandoRv, setCarregandoRv] = useState<string | null>(null);
 
   const data: KpiEquipeSerial | null =
     mesSelecionado === dataAtual.mesRef
@@ -435,6 +508,51 @@ export function KpiEquipeSection({
     void toggleOlhoAction("operacional", novoValor);
   }
 
+  // RV só está disponível pra Mês Atual (rule_set "current") — restrito só a
+  // esse mês por pedido explícito; Mês Passado, Retrasado e históricos não
+  // mostram o toggle nem a coluna, mesmo que a preferência esteja "ativado".
+  const scopeParaMes = useCallback(
+    (mesRef: string): RvScope | null => {
+      if (mesRef === dataAtual.mesRef) return "current";
+      return null;
+    },
+    [dataAtual.mesRef],
+  );
+
+  const buscarRv = useCallback(
+    (mesRef: string) => {
+      const scope = scopeParaMes(mesRef);
+      if (!scope) return;
+      if (mesRef in rvCache) return;
+
+      setCarregandoRv(mesRef);
+      void getRvOperadoresAction(mesRef, scope).then((result) => {
+        setCarregandoRv((atual) => (atual === mesRef ? null : atual));
+        if (result.success) {
+          setRvCache((prev) => ({ ...prev, [mesRef]: result.data }));
+        } else {
+          toast.error(result.error);
+        }
+      });
+    },
+    [scopeParaMes, rvCache],
+  );
+
+  function handleToggleRv() {
+    const novoValor = !rvVisivel;
+    setRvVisivel(novoValor);
+    if (novoValor) buscarRv(mesSelecionado);
+    void toggleShowRvOperadoresAction(novoValor);
+  }
+
+  // Se o toggle já veio ligado (preferência persistida), busca a RV do mês
+  // atual assim que o componente monta — senão a coluna apareceria vazia
+  // até alguma outra interação (trocar de mês) disparar a primeira busca.
+  useEffect(() => {
+    if (rvVisivel) buscarRv(mesSelecionado);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleMesChange = useCallback(
     (mesRef: string) => {
       setMesSelecionado(mesRef);
@@ -445,19 +563,21 @@ export function KpiEquipeSection({
         mesRef === dataPassado.mesRef ||
         mesRef === dataRetrasado.mesRef ||
         mesRef in historicoCache;
-      if (jaDisponivel) return;
+      if (!jaDisponivel) {
+        setCarregandoMes(mesRef);
+        void getKpiMesHistoricoAction(mesRef).then((result) => {
+          setCarregandoMes((atual) => (atual === mesRef ? null : atual));
+          if (result.success) {
+            setHistoricoCache((prev) => ({ ...prev, [mesRef]: result.data }));
+          } else {
+            toast.error(result.error);
+          }
+        });
+      }
 
-      setCarregandoMes(mesRef);
-      void getKpiMesHistoricoAction(mesRef).then((result) => {
-        setCarregandoMes((atual) => (atual === mesRef ? null : atual));
-        if (result.success) {
-          setHistoricoCache((prev) => ({ ...prev, [mesRef]: result.data }));
-        } else {
-          toast.error(result.error);
-        }
-      });
+      if (rvVisivel) buscarRv(mesRef);
     },
-    [dataAtual.mesRef, dataPassado.mesRef, dataRetrasado.mesRef, historicoCache],
+    [dataAtual.mesRef, dataPassado.mesRef, dataRetrasado.mesRef, historicoCache, rvVisivel, buscarRv],
   );
 
   const handleSort = (slug: string) => {
@@ -591,6 +711,40 @@ export function KpiEquipeSection({
     [operadoresParaTabela, sort],
   );
 
+  // Print precisa refletir a MESMA ordem da tela no momento da captura —
+  // mesma função e mesmo `sort` de sortedOps, não uma ordenação própria.
+  const operadoresParaExportOrdenados = useMemo(
+    () => applySortToOperadores(operadoresParaExport, sort),
+    [operadoresParaExport, sort],
+  );
+
+  const scopeAtual = scopeParaMes(mesSelecionado);
+  const rvDataAtual = rvCache[mesSelecionado] ?? null;
+  // Coluna (tela + print) só aparece com a preferência ligada E o mês atual
+  // suportando RV — rvVisivel (a preferência salva) não muda quando o mês
+  // muda, só a renderização.
+  const rvColunaAtiva = rvVisivel && !!scopeAtual;
+
+  // Reaproveitado pela tela e pelo print (KpiTablePng) — mesmo valor, mesmo
+  // modo (Normal/Contestação) selecionado no momento da leitura.
+  function getRvLiquido(email: string): number | null {
+    if (!scopeAtual || !rvDataAtual) return null;
+    const resultado = rvDataAtual.porOperador[email.trim().toLowerCase()];
+    if (!resultado) return null;
+    const calculo = rvModo === "normal" ? resultado.normal : resultado.contestacao;
+    return calculo.liquido;
+  }
+
+  function renderRvCell(email: string) {
+    const liquido = getRvLiquido(email);
+    if (liquido === null) return <span className="text-muted-foreground">—</span>;
+    return (
+      <span style={{ fontVariantNumeric: "tabular-nums" }}>
+        {formatBRL(liquido)}
+      </span>
+    );
+  }
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
@@ -668,7 +822,72 @@ export function KpiEquipeSection({
           </div>
 
           {data && data.operadores.length > 0 && (
-            <div className="ml-auto flex shrink-0 items-center gap-2">
+            <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
+              {/*
+                RV só existe pra Mês Atual (current) e Mês Passado (previous)
+                — não é só desabilitar em outros meses, o controle inteiro
+                some (scopeAtual null). rvVisivel (a preferência salva) não
+                é tocado aqui, só a renderização — ao voltar pra um mês
+                suportado, o toggle reaparece do jeito que estava.
+              */}
+              {scopeAtual && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleToggleRv}
+                    aria-pressed={rvVisivel}
+                    className={cn(
+                      "ds-mono-sm flex items-center gap-1.5 rounded-md border px-3 py-1.5 transition-all cursor-pointer shadow-sm select-none",
+                      rvVisivel
+                        ? "bg-primary text-primary-foreground border-primary hover:opacity-90"
+                        : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/50 hover:text-foreground",
+                    )}
+                    style={{ fontSize: "12px" }}
+                  >
+                    <IconCoin size={14} aria-hidden="true" />
+                    <span>Exibir RV</span>
+                  </button>
+
+                  {rvVisivel && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setRvModo("normal")}
+                        className={cn(
+                          "ds-mono-sm flex items-center gap-1.5 rounded-md border px-3 py-1.5 transition-all cursor-pointer shadow-sm select-none",
+                          rvModo === "normal"
+                            ? "bg-primary text-primary-foreground border-primary hover:opacity-90"
+                            : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/50 hover:text-foreground",
+                        )}
+                        style={{ fontSize: "12px" }}
+                      >
+                        <span>RV Normal</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRvModo("contestacao")}
+                        className={cn(
+                          "ds-mono-sm flex items-center gap-1.5 rounded-md border px-3 py-1.5 transition-all cursor-pointer shadow-sm select-none",
+                          rvModo === "contestacao"
+                            ? "bg-primary text-primary-foreground border-primary hover:opacity-90"
+                            : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/50 hover:text-foreground",
+                        )}
+                        style={{ fontSize: "12px" }}
+                      >
+                        <span>RV com Contestação</span>
+                      </button>
+                      {carregandoRv === mesSelecionado && (
+                        <IconLoader2
+                          size={14}
+                          className="animate-spin text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+
               <CopyKpiButton dataCorte={data.dataCorte} />
               <ConfigKpiPopover
                 colunasDisponiveis={colunasDisponiveisOrdenadas}
@@ -787,6 +1006,11 @@ export function KpiEquipeSection({
                           <SortIcon slug={h.slug} sort={sort} />
                         </th>
                       ))}
+                      {rvColunaAtiva && (
+                        <th className="ds-mono-sm text-muted-foreground px-3 py-2.5 text-center font-semibold tracking-wider uppercase whitespace-nowrap select-none border-l border-border/50">
+                          {rvTituloColuna(rvModo)}
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -834,6 +1058,14 @@ export function KpiEquipeSection({
                             </td>
                           );
                         })}
+                        {rvColunaAtiva && (
+                          <td
+                            className="ds-mono-sm px-3 py-2 text-center border-l border-border/30"
+                            style={{ fontVariantNumeric: "tabular-nums" }}
+                          >
+                            {renderRvCell(op.email)}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -863,7 +1095,13 @@ export function KpiEquipeSection({
         }}
       >
         <div data-kpi-tabela-png>
-          <KpiTablePng operadores={operadoresParaExport} headers={headers} />
+          <KpiTablePng
+            operadores={operadoresParaExportOrdenados}
+            headers={headers}
+            rvVisivel={rvColunaAtiva}
+            rvModo={rvModo}
+            getRvLiquido={getRvLiquido}
+          />
         </div>
       </div>
     </motion.section>

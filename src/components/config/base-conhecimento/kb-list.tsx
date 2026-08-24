@@ -37,7 +37,7 @@ export function KbList({
     return artigos.filter(
       (a) =>
         a.titulo.toLowerCase().includes(q) ||
-        a.tags.some((tag) => tag.toLowerCase().includes(q)),
+        a.palavrasChave.some((termo) => termo.toLowerCase().includes(q)),
     );
   }, [artigos, query]);
 
@@ -69,7 +69,7 @@ export function KbList({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por título ou tag..."
+            placeholder="Buscar por título ou palavra-chave..."
             className="elevation-2 ds-body w-full rounded-md py-2 pr-3 pl-9"
             style={{ border: "1px solid var(--border)" }}
           />

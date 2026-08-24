@@ -10,10 +10,14 @@ import { ChatMessage, type ChatMessageData } from "./chat-message";
 
 const Orb = dynamic(() => import("@/components/Orb"), { ssr: false });
 
-// Um pouco acima do pior caso do servidor (20s conexão + 30s idle no stream),
-// pra dar tempo do próprio backend desistir e mandar uma mensagem de erro
-// antes do cliente abortar por conta própria.
-const CHAT_TIMEOUT_MS = 60_000;
+// O backend agora acumula a resposta inteira, valida as tags citadas contra
+// a base e pode tentar de novo uma vez antes de responder (ver
+// src/app/api/chat/route.ts) — ou seja, o cliente só recebe algo depois que
+// isso tudo terminar, não em tempo real. Uma única tentativa de listagem
+// longa já levou ~90s nos testes; duas tentativas em sequência podem
+// facilmente passar de 3 minutos. Esse timeout precisa cobrir o pior caso
+// de duas tentativas completas, não só uma.
+const CHAT_TIMEOUT_MS = 240_000;
 
 const SUGESTOES = [
   "Me envie todas as máscaras do Financeiro.",
@@ -180,7 +184,7 @@ export function ChatWindow() {
       </div>
 
       {/* ── Área de mensagens ────────────────────────────────── */}
-      <div className="relative z-[2] flex-1 overflow-y-auto">
+      <div className="relative z-[2] flex-1 overflow-y-auto scrollbar-tema">
         <div className="mx-auto w-full max-w-3xl px-4 py-6">
 
           {/* Estado vazio */}

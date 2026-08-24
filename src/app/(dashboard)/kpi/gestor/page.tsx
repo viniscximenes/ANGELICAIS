@@ -15,7 +15,7 @@ import { getMesesDisponiveisGestor } from "@/lib/kpi/gestor/get-meses-disponivei
 import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
 
 export const metadata: Metadata = {
-  title: "Gestor — ALLOHA FIBRA",
+  title: "KPI - Gestor",
 };
 
 // Página personalizada por gestor — nunca cacheada entre usuários.

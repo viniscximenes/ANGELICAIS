@@ -3,6 +3,8 @@
 import { forwardRef } from "react";
 
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
+import { formatBRL } from "@/lib/rv/format-money";
+import { cn } from "@/lib/utils";
 
 interface EquipeTableProps {
   operadores: OperadorConsolidado[];
@@ -17,6 +19,18 @@ interface EquipeTableProps {
    * pelo D-1 do operador. O painel do gestor passa a meta configurável dele.
    */
   metaTx?: number;
+  /**
+   * Coluna extra opcional (RV Diário), gated pelo toggle da tela.
+   * Off (default): grid idêntico ao atual, sem nenhuma mudança de DOM/classes
+   * nas 5 colunas existentes. Só a variante "screen" suporta — a PNG (excel)
+   * não ganha essa coluna.
+   */
+  showRvDiario?: boolean;
+}
+
+function formatRv(rv: number | null | undefined): string {
+  if (rv === null || rv === undefined) return "—";
+  return formatBRL(rv);
 }
 
 const META_TX_PADRAO = 0.6;
@@ -36,7 +50,7 @@ function meetsMeta(tx: number, meta: number = META_TX_PADRAO): boolean {
 
 export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
   function EquipeTable(
-    { operadores, equipe, variant = "screen", hideTotais, headerButton, metaTx },
+    { operadores, equipe, variant = "screen", hideTotais, headerButton, metaTx, showRvDiario },
     ref,
   ) {
     if (variant === "excel") {
@@ -47,6 +61,7 @@ export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           equipe={equipe}
           hideTotais={hideTotais}
           metaTx={metaTx}
+          showRvDiario={showRvDiario}
         />
       );
     }
@@ -58,6 +73,7 @@ export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
         hideTotais={hideTotais}
         headerButton={headerButton}
         metaTx={metaTx}
+        showRvDiario={showRvDiario}
       />
     );
   },
@@ -69,7 +85,7 @@ export const EquipeTable = forwardRef<HTMLDivElement, EquipeTableProps>(
 
 const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
   function ScreenTable(
-    { operadores, equipe, hideTotais, headerButton, metaTx },
+    { operadores, equipe, hideTotais, headerButton, metaTx, showRvDiario },
     ref,
   ) {
     const equipeMeets =
@@ -83,25 +99,40 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
       >
         {/* Cabeçalho Estilo Planilha */}
         <div
-          className="ds-mono-sm text-muted-foreground grid grid-cols-12 gap-0 font-semibold tracking-wider uppercase bg-muted/40"
-          style={{ borderBottom: "1px solid var(--border)" }}
+          className="ds-mono-sm text-muted-foreground grid gap-0 font-semibold tracking-wider uppercase bg-muted/40"
+          style={{
+            borderBottom: "1px solid var(--border)",
+            gridTemplateColumns: showRvDiario
+              ? "3fr 2fr 2fr 2fr 3fr 3fr"
+              : "3fr 2fr 2fr 2fr 3fr",
+          }}
         >
-          <div className="col-span-3 px-3 py-2.5 text-center border-r border-border/50 flex items-center justify-center gap-1.5">
+          <div className="px-3 py-2.5 text-center border-r border-border/50 flex items-center justify-center gap-1.5">
             <span>Operador</span>
             {headerButton}
           </div>
-          <div className="col-span-2 px-3 py-2.5 text-center border-r border-border/50">
+          <div className="px-3 py-2.5 text-center border-r border-border/50">
             Retidos
           </div>
-          <div className="col-span-2 px-3 py-2.5 text-center border-r border-border/50">
+          <div className="px-3 py-2.5 text-center border-r border-border/50">
             Cancelados
           </div>
-          <div className="col-span-2 px-3 py-2.5 text-center border-r border-border/50">
+          <div className="px-3 py-2.5 text-center border-r border-border/50">
             Pedidos
           </div>
-          <div className="col-span-3 px-3 py-2.5 text-center">
+          <div
+            className={cn(
+              "px-3 py-2.5 text-center",
+              showRvDiario && "border-r border-border/50",
+            )}
+          >
             Tx Retenção
           </div>
+          {showRvDiario && (
+            <div className="px-3 py-2.5 text-center">
+              RV Diário
+            </div>
+          )}
         </div>
 
         {/* Linhas de Operadores */}
@@ -115,17 +146,20 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           return (
             <div
               key={key}
-              className="grid grid-cols-12 items-center gap-0"
+              className="grid items-center gap-0"
               style={{
                 background: belowMeta
                   ? "color-mix(in oklch, var(--danger) 5%, transparent)"
                   : "transparent",
                 borderBottom: isLast && hideTotais ? "none" : "1px solid var(--border)/40",
                 opacity: semAtendimentos ? 0.4 : 1,
+                gridTemplateColumns: showRvDiario
+                  ? "3fr 2fr 2fr 2fr 3fr 3fr"
+                  : "3fr 2fr 2fr 2fr 3fr",
               }}
             >
               <div
-                className="ds-body col-span-3 truncate px-3 py-2 text-center border-r border-border/30 font-medium"
+                className="ds-body truncate px-3 py-2 text-center border-r border-border/30 font-medium"
                 style={{
                   color: semAtendimentos
                     ? "var(--muted-foreground)"
@@ -137,24 +171,29 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                 {formatOperatorLabel(op.email)}
               </div>
               <div
-                className="ds-mono-sm col-span-2 px-3 py-2 text-center border-r border-border/30"
+                className="ds-mono-sm px-3 py-2 text-center border-r border-border/30"
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {op.retidos}
               </div>
               <div
-                className="ds-mono-sm col-span-2 px-3 py-2 text-center border-r border-border/30"
+                className="ds-mono-sm px-3 py-2 text-center border-r border-border/30"
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {op.cancelados}
               </div>
               <div
-                className="ds-mono-sm col-span-2 px-3 py-2 text-center border-r border-border/30"
+                className="ds-mono-sm px-3 py-2 text-center border-r border-border/30"
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {op.pedidos}
               </div>
-              <div className="ds-mono-sm col-span-3 flex items-center justify-center gap-1.5 px-3 py-2">
+              <div
+                className={cn(
+                  "ds-mono-sm flex items-center justify-center gap-1.5 px-3 py-2",
+                  showRvDiario && "border-r border-border/30",
+                )}
+              >
                 {semAtendimentos ? (
                   <span className="text-muted-foreground">—</span>
                 ) : (
@@ -182,6 +221,14 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                   </>
                 )}
               </div>
+              {showRvDiario && (
+                <div
+                  className="ds-mono-sm px-3 py-2 text-center"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {formatRv(op.rvDiario)}
+                </div>
+              )}
             </div>
           );
         })}
@@ -189,34 +236,42 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
         {/* Linha de Totais (Equipe) - Fechamento Contábil / Excel */}
         {!hideTotais && (
           <div
-            className="ds-body grid grid-cols-12 items-center gap-0 bg-muted/20 font-bold"
+            className="ds-body grid items-center gap-0 bg-muted/20 font-bold"
             style={{
               borderTop: "2px solid var(--border)",
               borderBottom: "2px double var(--border)",
+              gridTemplateColumns: showRvDiario
+                ? "3fr 2fr 2fr 2fr 3fr 3fr"
+                : "3fr 2fr 2fr 2fr 3fr",
             }}
           >
-            <div className="col-span-3 px-3 py-2.5 text-center border-r border-border/40 text-foreground">
+            <div className="px-3 py-2.5 text-center border-r border-border/40 text-foreground">
               EQUIPE
             </div>
             <div
-              className="col-span-2 px-3 py-2.5 text-center border-r border-border/40"
+              className="px-3 py-2.5 text-center border-r border-border/40"
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {equipe.retidos}
             </div>
             <div
-              className="col-span-2 px-3 py-2.5 text-center border-r border-border/40"
+              className="px-3 py-2.5 text-center border-r border-border/40"
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {equipe.cancelados}
             </div>
             <div
-              className="col-span-2 px-3 py-2.5 text-center border-r border-border/40"
+              className="px-3 py-2.5 text-center border-r border-border/40"
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {equipe.pedidos}
             </div>
-            <div className="col-span-3 flex items-center justify-center gap-1.5 px-3 py-2.5">
+            <div
+              className={cn(
+                "flex items-center justify-center gap-1.5 px-3 py-2.5",
+                showRvDiario && "border-r border-border/40",
+              )}
+            >
               {equipe.txRetencao === null ? (
                 <span className="text-muted-foreground">—</span>
               ) : (
@@ -241,6 +296,14 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                 </>
               )}
             </div>
+            {showRvDiario && (
+              <div
+                className="px-3 py-2.5 text-center"
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
+                {formatRv(equipe.rvDiario)}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -298,9 +361,12 @@ const EXCEL_NUM_CELL: React.CSSProperties = {
 };
 
 const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
-  function ExcelTable({ operadores, equipe, hideTotais, metaTx }, ref) {
+  function ExcelTable({ operadores, equipe, hideTotais, metaTx, showRvDiario }, ref) {
     const equipeMeets =
       equipe.txRetencao !== null && meetsMeta(equipe.txRetencao, metaTx);
+    const gridCols = showRvDiario
+      ? "3fr 2fr 2fr 2fr 3fr 3fr"
+      : "3fr 2fr 2fr 2fr 3fr";
 
     return (
       <div
@@ -318,7 +384,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "3fr 2fr 2fr 2fr 3fr",
+            gridTemplateColumns: gridCols,
             background: "#1f4e78",
             borderBottom: "1px solid #1f4e78",
           }}
@@ -335,7 +401,18 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           <div style={{ ...EXCEL_HEADER_CELL, ...EXCEL_HEADER_DIVIDER }}>
             Pedidos
           </div>
-          <div style={EXCEL_HEADER_CELL}>Tx Retenção</div>
+          <div
+            style={
+              showRvDiario
+                ? { ...EXCEL_HEADER_CELL, ...EXCEL_HEADER_DIVIDER }
+                : EXCEL_HEADER_CELL
+            }
+          >
+            Tx Retenção
+          </div>
+          {showRvDiario && (
+            <div style={EXCEL_HEADER_CELL}>RV Diário</div>
+          )}
         </div>
 
         {operadores.map((op, idx) => {
@@ -359,7 +436,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               key={key}
               style={{
                 display: "grid",
-                gridTemplateColumns: "3fr 2fr 2fr 2fr 3fr",
+                gridTemplateColumns: gridCols,
                 background: rowBg,
                 borderBottom: isLast ? "none" : "1px solid #d0d0d0",
               }}
@@ -406,6 +483,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               <div
                 style={{
                   ...EXCEL_NUM_CELL,
+                  ...(showRvDiario ? EXCEL_COL_DIVIDER : null),
                   color: txColor,
                   display: "flex",
                   alignItems: "center",
@@ -431,6 +509,16 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                   </>
                 )}
               </div>
+              {showRvDiario && (
+                <div
+                  style={{
+                    ...EXCEL_NUM_CELL,
+                    color: EXCEL_NEUTRAL,
+                  }}
+                >
+                  {formatRv(op.rvDiario)}
+                </div>
+              )}
             </div>
           );
         })}
@@ -439,7 +527,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "3fr 2fr 2fr 2fr 3fr",
+            gridTemplateColumns: gridCols,
             // Linha de total SEMPRE cinza — nunca pinta de vermelho, mesmo com
             // TX < 60% (o alerta vermelho vale só para linhas de operador).
             background: "#f0f0f0",
@@ -492,6 +580,7 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           <div
             style={{
               ...EXCEL_NUM_CELL,
+              ...(showRvDiario ? EXCEL_COL_DIVIDER : null),
               fontWeight: 600,
               color: EXCEL_NEUTRAL,
               display: "flex",
@@ -518,6 +607,17 @@ const ExcelTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               </>
             )}
           </div>
+          {showRvDiario && (
+            <div
+              style={{
+                ...EXCEL_NUM_CELL,
+                fontWeight: 600,
+                color: EXCEL_NEUTRAL,
+              }}
+            >
+              {formatRv(equipe.rvDiario)}
+            </div>
+          )}
         </div>
         )}
       </div>

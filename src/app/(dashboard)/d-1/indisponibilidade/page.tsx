@@ -13,7 +13,7 @@ import { getOperadorIndisponibilidade } from "@/lib/d1-db/get-operador-indisponi
 import { getTodosOperadoresIndisponibilidade } from "@/lib/d1-db/get-todos-indisponibilidade";
 
 export const metadata: Metadata = {
-  title: "Indisponibilidade — D-1 ALLOHA FIBRA",
+  title: "D-1 - Indisponibilidade",
 };
 
 export const revalidate = 300;

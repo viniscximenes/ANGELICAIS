@@ -6,12 +6,7 @@ import Papa from "papaparse";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
-import {
-  getUltimoReportHoraAction,
-  uploadConsolidadoAction,
-} from "@/lib/d1-db/actions/upload-consolidado-action";
-import { getTimePartsInBR } from "@/lib/utils/format-datetime-br";
-import { ConfirmRecentReportDialog } from "./confirm-recent-report-dialog";
+import { uploadConsolidadoAction } from "@/lib/d1-db/actions/upload-consolidado-action";
 import { UploadProgressModal } from "./upload-progress-modal";
 
 export type UploadStep =
@@ -21,41 +16,10 @@ export type UploadStep =
   | "done"
   | null;
 
-const REPORT_RECENTE_MIN = 5;
-
-/**
- * Minutos decorridos desde a hora do report "HH:MM" (S2), na hora atual de
- * Brasília. Retorna null se não houver hora ou se o formato for inválido.
- * Pode ser negativo (virada de dia) — o caller só age no intervalo [0, 5).
- */
-function minutosDesdeReport(hora: string | null): number | null {
-  if (!hora) return null;
-  const m = hora.match(/^(\d{1,2}):(\d{2})/);
-  if (!m) return null;
-  const reportMin = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
-  const { hour, minute } = getTimePartsInBR();
-  return hour * 60 + minute - reportMin;
-}
-
-interface UploadDropzoneProps {
-  /**
-   * Ativa a regra dos 5 min: antes de enviar, lê S2 (último report) e, se
-   * < 5 min, pede confirmação. Usado pelo painel do gestor.
-   */
-  confirmRecentReport?: boolean;
-}
-
-export function UploadDropzone({
-  confirmRecentReport = false,
-}: UploadDropzoneProps) {
+export function UploadDropzone() {
   const [step, setStep] = useState<UploadStep>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [rowsWritten, setRowsWritten] = useState<number>(0);
-  // Regra dos 5 min: linhas pendentes aguardando confirmação no dialog.
-  const [pendingRows, setPendingRows] = useState<string[][] | null>(null);
-  const [pendingCsvText, setPendingCsvText] = useState<string>("");
-  const [ultimoReportHora, setUltimoReportHora] = useState("");
-  const [ultimoReportNome, setUltimoReportNome] = useState<string | null>(null);
 
   // Executa o upload de fato (etapas + action + reload).
   const processUpload = useCallback(async (csvText: string) => {
@@ -84,19 +48,6 @@ export function UploadDropzone({
       setStep(null);
       window.location.reload();
     }, 3000);
-  }, []);
-
-  const handleConfirmSend = useCallback(() => {
-    const csv = pendingCsvText;
-    setPendingRows(null);
-    setPendingCsvText("");
-    if (csv) void processUpload(csv);
-  }, [pendingCsvText, processUpload]);
-
-  const handleCancelSend = useCallback(() => {
-    setPendingRows(null);
-    setPendingCsvText("");
-    setStep(null);
   }, []);
 
   const handleFile = useCallback(async (file: File) => {
@@ -149,21 +100,6 @@ export function UploadDropzone({
           // Delay pra UX mostrar a etapa "ANEXANDO"
           await new Promise((r) => setTimeout(r, 600));
 
-          // Regra dos 5 min (opt-in): se o último report (S2) foi há menos de
-          // 5 min, pausa e pede confirmação antes de prosseguir.
-          if (confirmRecentReport) {
-            const { hora, nomeSupervisor } = await getUltimoReportHoraAction();
-            const mins = minutosDesdeReport(hora);
-            if (mins !== null && mins >= 0 && mins < REPORT_RECENTE_MIN) {
-              setUltimoReportHora(hora ?? "");
-              setUltimoReportNome(nomeSupervisor);
-              setPendingRows(rows);
-              setPendingCsvText(csvText);
-              setStep(null); // esconde o progresso enquanto o dialog decide
-              return;
-            }
-          }
-
           await processUpload(csvText);
         },
         error: (err: Error) => {
@@ -179,7 +115,7 @@ export function UploadDropzone({
       toast.error("Não foi possível ler o arquivo");
       console.error("[upload] read error:", err);
     }
-  }, [confirmRecentReport, processUpload]);
+  }, [processUpload]);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -264,15 +200,6 @@ export function UploadDropzone({
       </div>
 
       <UploadProgressModal step={step} rowsWritten={rowsWritten} />
-      <ConfirmRecentReportDialog
-        open={pendingRows !== null}
-        limiteMinutos={REPORT_RECENTE_MIN}
-        hora={ultimoReportHora.match(/^(\d{1,2}:\d{2})/)?.[1] ?? ultimoReportHora}
-        nomeSupervisor={ultimoReportNome}
-        onConfirm={handleConfirmSend}
-        onCancel={handleCancelSend}
-      />
-
     </>
   );
 }

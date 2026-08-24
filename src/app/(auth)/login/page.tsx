@@ -9,7 +9,7 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 
 export const metadata: Metadata = {
-  title: "Entrar — ALLOHA FIBRA",
+  title: "Entrar",
 };
 
 export default async function LoginPage() {

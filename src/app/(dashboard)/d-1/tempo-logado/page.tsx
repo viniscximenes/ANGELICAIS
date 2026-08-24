@@ -11,7 +11,7 @@ import { can } from "@/lib/auth/permissions";
 import { getOperadorTempoLogado } from "@/lib/d1-db/get-operador-tempo-logado";
 
 export const metadata: Metadata = {
-  title: "Tempo Logado — D-1 ALLOHA FIBRA",
+  title: "D-1 - Tempo Logado",
 };
 
 export const revalidate = 300;
