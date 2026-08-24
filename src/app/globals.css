@@ -668,3 +668,18 @@ select option {
   background-color: var(--card);
   color: var(--foreground);
 }
+
+/* === Transição de tema (claro/escuro) ===
+   Enquanto o ThemeTransitionOverlay está trocando o tema por baixo do blur,
+   desliga TODAS as transições/animações CSS do conteúdo da página. Sem isso,
+   a regra global "*, *::before, *::after { transition-duration: ... }" faz
+   cada elemento animar sua própria cor com timing levemente diferente,
+   gerando um "cintilar" perceptível por baixo do overlay. Fora de @layer de
+   propósito: precisa vencer a regra base independentemente da ordem de
+   camadas. */
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition: none !important;
+  animation: none !important;
+}
