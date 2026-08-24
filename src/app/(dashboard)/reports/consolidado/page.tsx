@@ -128,7 +128,7 @@ export default async function ReportsConsolidadoPage() {
               Painel do Gestor
             </span>
             <div className="flex flex-wrap items-baseline gap-3">
-              <h1 className="ds-h1">Consolidado</h1>
+              <h1 className="ds-h1 font-bold">Consolidado</h1>
               <span className="ds-mono-sm text-muted-foreground">
                 / Reports · {gestora}
               </span>

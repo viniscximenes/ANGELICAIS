@@ -150,7 +150,7 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                 onClick={onNavigate}
                 aria-expanded={isActiveSection}
                 aria-current={isActiveSection ? "page" : undefined}
-                className={`hover:bg-muted/50 flex items-center gap-3 rounded-md border-l-2 px-3 py-2 transition-colors duration-150 ${
+                className={`hover:bg-muted/50 hover:text-foreground flex items-center gap-3 rounded-md border-l-2 px-3 py-2 transition-colors duration-150 ${
                   isActiveSection
                     ? "border-primary bg-[var(--elevation-1-bg)] text-foreground"
                     : "text-muted-foreground border-transparent"
@@ -182,7 +182,7 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                               href={item.href}
                               onClick={onNavigate}
                               aria-current={isActiveItem ? "page" : undefined}
-                              className={`hover:bg-muted/50 relative flex items-center rounded-md py-1.5 pr-3 pl-9 transition-colors duration-150 ${
+                              className={`hover:bg-muted/50 hover:text-foreground relative flex items-center rounded-md py-1.5 pr-3 pl-9 transition-colors duration-150 ${
                                 isActiveItem
                                   ? "text-foreground"
                                   : "text-muted-foreground"
@@ -191,7 +191,7 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                               {isActiveItem && (
                                 <span
                                   aria-hidden="true"
-                                  className="absolute top-1/2 left-[24px] h-4 w-[3px] -translate-y-1/2 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-700"
+                                  className="bg-foreground/60 absolute top-1/2 left-[24px] h-4 w-[3px] -translate-y-1/2 rounded-full dark:bg-gradient-to-b dark:from-emerald-400 dark:to-emerald-700"
                                 />
                               )}
                               <span className="ds-small">{item.label}</span>
@@ -220,7 +220,7 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                                           aria-current={
                                             isActiveSub ? "page" : undefined
                                           }
-                                          className={`hover:bg-muted/50 relative flex items-center rounded-md py-1.5 pr-3 pl-14 transition-colors duration-150 ${
+                                          className={`hover:bg-muted/50 hover:text-foreground relative flex items-center rounded-md py-1.5 pr-3 pl-14 transition-colors duration-150 ${
                                             isActiveSub
                                               ? "text-foreground"
                                               : "text-muted-foreground"
@@ -229,7 +229,7 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                                           {isActiveSub && (
                                             <span
                                               aria-hidden="true"
-                                              className="absolute top-1/2 left-[44px] h-4 w-[3px] -translate-y-1/2 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-700"
+                                              className="bg-foreground/60 absolute top-1/2 left-[44px] h-4 w-[3px] -translate-y-1/2 rounded-full dark:bg-gradient-to-b dark:from-emerald-400 dark:to-emerald-700"
                                             />
                                           )}
                                           <span className="ds-small">
@@ -297,7 +297,7 @@ export function Sidebar({ sections, user }: SidebarProps) {
   return (
     <nav
       aria-label="Navegação principal"
-      className="sticky top-[60px] hidden h-[calc(100vh-60px)] w-[240px] shrink-0 flex-col bg-zinc-50 px-4 pt-3 pb-4 shadow-[1px_0_0_0_rgba(0,0,0,0.05)] lg:flex dark:bg-zinc-950 dark:shadow-[1px_0_0_0_rgba(255,255,255,0.05)]"
+      className="sticky top-[60px] hidden h-[calc(100vh-60px)] w-[240px] shrink-0 flex-col border-r border-[var(--border)] bg-[var(--sidebar)] px-4 pt-3 pb-4 lg:flex dark:border-r-0 dark:bg-zinc-950 dark:shadow-[1px_0_0_0_rgba(255,255,255,0.05)]"
     >
       <SidebarNav sections={sections} user={user} />
     </nav>

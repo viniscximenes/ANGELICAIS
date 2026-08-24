@@ -33,7 +33,7 @@ export function AppHeader({ user, sections }: AppHeaderProps) {
   }, [pathname]);
 
   return (
-    <header className="border-border/50 bg-background/80 sticky top-0 z-30 h-[60px] border-b backdrop-blur-md">
+    <header className="border-border bg-background/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] sticky top-0 z-30 h-[60px] border-b backdrop-blur-md dark:border-border/50 dark:shadow-none">
       <div className="flex h-[60px] items-center justify-between gap-4 px-6">
         {/* ── Esquerda: hamburger (mobile) + branding ────────── */}
         <div className="flex min-w-0 items-center gap-3">

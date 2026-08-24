@@ -20,6 +20,7 @@ export function UploadDropzone() {
   const [step, setStep] = useState<UploadStep>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [rowsWritten, setRowsWritten] = useState<number>(0);
+  const [isHovering, setIsHovering] = useState(false);
 
   // Executa o upload de fato (etapas + action + reload).
   const processUpload = useCallback(async (csvText: string) => {
@@ -142,18 +143,25 @@ export function UploadDropzone() {
   return (
     <>
       <div
-        {...getRootProps()}
+        {...getRootProps({
+          onMouseEnter: () => setIsHovering(true),
+          onMouseLeave: () => setIsHovering(false),
+        })}
         className="relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed transition-all duration-300 hover:border-primary"
         style={{
           background: isDragActive
             ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
-            : "var(--card)",
+            : isHovering
+              ? "var(--muted-hover-bg, var(--card))"
+              : "var(--upload-idle-bg, var(--card))",
           borderColor: isDragReject
             ? "var(--danger)"
             : isDragActive
               ? "var(--primary)"
               : "var(--border)",
-          boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "none",
+          boxShadow: isDragActive
+            ? "0 0 40px var(--glow-accent)"
+            : "var(--shadow-sm, none)",
           padding: "2.5rem 1.5rem",
           opacity: isProcessing ? 0.5 : 1,
           pointerEvents: isProcessing ? "none" : "auto",
@@ -166,12 +174,12 @@ export function UploadDropzone() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border/80 bg-muted/40 text-muted-foreground">
             {isDragActive ? (
               <IconCloudUpload
-                size={26}
+                size={30}
                 aria-hidden="true"
               />
             ) : (
               <IconFileSpreadsheet
-                size={26}
+                size={30}
                 aria-hidden="true"
               />
             )}

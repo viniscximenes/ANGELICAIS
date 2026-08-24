@@ -99,7 +99,7 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
       >
         {/* Cabeçalho Estilo Planilha */}
         <div
-          className="ds-mono-sm text-muted-foreground grid gap-0 font-semibold tracking-wider uppercase bg-muted/40"
+          className="ds-mono-sm text-muted-foreground grid gap-0 font-bold tracking-wider uppercase bg-muted/40"
           style={{
             borderBottom: "1px solid var(--border)",
             gridTemplateColumns: showRvDiario
@@ -146,13 +146,13 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           return (
             <div
               key={key}
-              className="grid items-center gap-0"
+              className="grid items-center gap-0 transition-colors hover:bg-muted/40"
               style={{
                 background: belowMeta
                   ? "color-mix(in oklch, var(--danger) 5%, transparent)"
-                  : "transparent",
+                  : undefined,
                 borderBottom: isLast && hideTotais ? "none" : "1px solid var(--border)/40",
-                opacity: semAtendimentos ? 0.4 : 1,
+                opacity: semAtendimentos ? 0.65 : 1,
                 gridTemplateColumns: showRvDiario
                   ? "3fr 2fr 2fr 2fr 3fr 3fr"
                   : "3fr 2fr 2fr 2fr 3fr",

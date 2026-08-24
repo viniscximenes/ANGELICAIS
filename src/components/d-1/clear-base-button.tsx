@@ -44,7 +44,7 @@ export function ClearBaseButton({ action, onCleared }: Props) {
     <button
       type="button"
       onClick={handleClick}
-      className="bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-opacity cursor-pointer shadow-sm disabled:opacity-50"
+      className="bg-destructive text-destructive-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-opacity cursor-pointer shadow-sm disabled:opacity-50"
       style={{ fontSize: "12px" }}
     >
       {isPending ? (

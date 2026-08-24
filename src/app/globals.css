@@ -24,6 +24,7 @@
     --color-input: var(--input);
     --color-border: var(--border);
     --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
@@ -208,30 +209,56 @@
 [data-theme="light"] {
     /* ─── Backgrounds com profundidade ─── */
 
-    /* Fundo principal: Cinza sutil para destacar a tabela e cards brancos */
-    --background: oklch(0.975 0.002 240); /* #f3f4f6 */
+    /* Fundo principal: off-white perceptível (não branco puro), serve de
+       base sob os cards/tabelas brancos — cria hierarquia visual real. */
+    --background: oklch(0.975 0.003 240);
 
-    /* Cards e áreas de destaque: Branco puro */
-    --card: oklch(1.00 0.00 0); 
-    --card-foreground: oklch(0.15 0.002 240); /* #111111 */
+    /* Cards e áreas de destaque: branco puro — contraste sutil com o fundo
+       + --shadow-sm (abaixo) pra profundidade de verdade. */
+    --card: oklch(1.00 0.00 0);
+    --card-foreground: oklch(0.20 0.008 240); /* #18181b */
     --popover: oklch(1.00 0.00 0);
-    --popover-foreground: oklch(0.15 0.002 240);
+    --popover-foreground: oklch(0.20 0.008 240);
 
-    /* Muted: cinza médio suave para cabeçalhos da planilha e submenus */
-    --muted: oklch(0.93 0.002 240); /* #e5e7eb */
-    --muted-foreground: oklch(0.40 0.003 240);
+    /* Muted: cinza suave para cabeçalhos da planilha e submenus */
+    --muted: oklch(0.96 0.002 240); /* #f4f4f5 */
+    /* Texto secundário — mais escuro que o padrão shadcn pra ficar legível
+       em fundo claro (labels tipo "RETIDOS", "CANCELADOS"). */
+    --muted-foreground: oklch(0.47 0.014 244); /* ~#5c5f66 */
 
-    /* Bordas mais visíveis e limpas, sem ficarem grossas */
-    --border: oklch(0.88 0.003 240); /* #d1d5db */
+    /* Bordas visíveis o bastante pra separar sidebar / header / tabela /
+       painel de upload, sem ficarem grossas. */
+    --border: oklch(0.87 0.004 240); /* ~#d9d9dd */
+    --input: oklch(0.87 0.004 240);
+
+    /* Painel lateral: tom mais acinzentado que --background, pra a sidebar
+       se distinguir claramente da área de conteúdo (usado só em light —
+       sidebar.tsx mantém dark:bg-zinc-950 hardcoded e intocado). */
+    --sidebar: oklch(0.945 0.004 240);
+
+    /* Zona de drop do upload: leve cinza "clicável" dentro da borda
+       tracejada, só em repouso (drag-active continua com o tint de
+       --primary). Referenciado com fallback var(--upload-idle-bg,
+       var(--card)) no componente — em dark, onde este token não existe,
+       cai automaticamente de volta em --card, sem mudar nada lá. */
+    --upload-idle-bg: var(--muted);
 
     /* ─── Texto ─── */
 
     /* Grafite escuro quase preto pra máxima legibilidade */
-    --foreground: oklch(0.15 0.002 240);
+    --foreground: oklch(0.20 0.008 240); /* #18181b */
 
-    /* ─── Brand azul ALLOHA FIBRA ─── */
-    --primary: oklch(0.398 0.195 240.0);
-    --primary-foreground: oklch(1.00 0.00 0);
+    /* ─── Primário: azul petróleo bem escuro e dessaturado ───
+       Passo intermediário entre o grafite neutro (chroma quase zero, ficou
+       "seco") e o azul vibrante original (chroma 0.21, "gritava"). Em
+       chroma 0.055 lê como um azul-marinho fechado — dá um toque de cor
+       perceptível de perto, mas ainda lê como "quase preto" à distância. */
+    --primary: oklch(0.24 0.055 240.0);
+    --primary-foreground: oklch(0.98 0.00 0);
+
+    /* ─── Destructive: vermelho mais escuro/dessaturado ─── */
+    --destructive: oklch(0.46 0.13 25.0);
+    --destructive-foreground: oklch(1.00 0.00 0);
 
     /* ─── Status ─── */
     --success: oklch(0.55 0.13 145);
@@ -248,25 +275,88 @@
 
     /* ─── Elevation ─── */
     --elevation-1-bg: oklch(1.00 0.00 0);
-    --elevation-1-border: oklch(0.88 0.002 240);
+    --elevation-1-border: oklch(0.90 0.003 240);
 
     --elevation-2-bg: oklch(1.00 0.00 0);
-    --elevation-2-border: oklch(0.86 0.002 240);
+    --elevation-2-border: oklch(0.88 0.003 240);
 
     --elevation-3-bg: oklch(1.00 0.00 0);
-    --elevation-3-border: oklch(0.84 0.002 240);
+    --elevation-3-border: oklch(0.85 0.003 240);
 
-    /* ─── Glow ─── */
-    --glow-accent: oklch(0.398 0.195 240.0 / 0.05);
-    --glow-accent-strong: oklch(0.398 0.195 240.0 / 0.10);
+    /* ─── Sombras — profundidade real de card/tabela sobre --background ─── */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.09), 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 14px 28px rgba(0, 0, 0, 0.10), 0 4px 10px rgba(0, 0, 0, 0.05);
+
+    /* ─── Glow — único ponto onde sobra um azul "petróleo" discreto ─── */
+    --glow-accent: oklch(0.40 0.09 240.0 / 0.06);
+    --glow-accent-strong: oklch(0.40 0.09 240.0 / 0.12);
 
     /* ─── Hover states ─── */
-    --card-hover-bg: oklch(0.99 0.001 240);
-    --muted-hover-bg: oklch(0.91 0.002 240);
-    --border-hover: oklch(0.80 0.003 240);
+    --card-hover-bg: oklch(0.97 0.002 240);
+    --muted-hover-bg: oklch(0.93 0.002 240);
+    --border-hover: oklch(0.82 0.004 240);
 
     /* Linha guia */
-    --row-border: oklch(0.88 0.002 240);
+    --row-border: oklch(0.90 0.003 240);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Melhorias visuais adicionais para o Light Mode (sobrescritas CSS)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Sombra sutil em cards e popovers em Light Mode para criar profundidade */
+[data-theme="light"] [data-slot="card"] {
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* Correção da borda do Dropzone no hover (sobrepõe estilos inline do react-dropzone) */
+[data-theme="light"] .border-dashed:hover {
+    border-color: var(--primary) !important;
+}
+
+/* Melhor destaque visual de hover e active de botões primários e destrutivos.
+   Primary é um azul petróleo bem escuro — hover/active escurecem ainda mais
+   (como um botão sólido convencional), mantendo o mesmo matiz. */
+[data-theme="light"] .bg-primary:hover {
+    background-color: oklch(0.19 0.05 240.0) !important;
+    opacity: 1 !important;
+}
+[data-theme="light"] .bg-primary:active {
+    background-color: oklch(0.15 0.045 240.0) !important;
+}
+[data-theme="light"] .bg-destructive:hover {
+    background-color: oklch(0.40 0.12 25.0) !important;
+    opacity: 1 !important;
+}
+[data-theme="light"] .bg-destructive:active {
+    background-color: oklch(0.35 0.11 25.0) !important;
+}
+
+/* Hover em botões secundários / inativos com borda */
+[data-theme="light"] button.border-border:hover:not(.bg-primary) {
+    background-color: var(--muted) !important;
+    color: var(--foreground) !important;
+}
+
+/* Destaque sutil para o item ativo ("Reports") na Sidebar. Usa --foreground
+   (não --primary, que agora é quase preto e ficaria indistinguível do texto
+   normal) — fundo cinza claro + peso semibold marcam o item ativo sem
+   depender de cor de destaque. */
+[data-theme="light"] nav a[aria-current="page"] {
+    background-color: color-mix(in oklch, var(--foreground) 8%, transparent) !important;
+    color: var(--foreground) !important;
+    font-weight: 600;
+}
+
+/* Customização e hierarquia da Tabela de Equipe */
+[data-theme="light"] [data-equipe-table] > div:first-child {
+    background-color: var(--muted) !important;
+    border-bottom: 2px solid var(--border) !important;
+    color: var(--foreground) !important;
+}
+[data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover {
+    background-color: var(--muted-hover-bg) !important;
 }
 
 /* Hover apenas em LINKS com elevation (cards clicáveis).
@@ -286,21 +376,15 @@
 
 /* Sombras neutras — visíveis sobre fundo claro */
 [data-theme="light"] .elevation-1 {
-    box-shadow:
-        0 1px 3px rgba(0, 0, 0, 0.05),
-        0 1px 2px rgba(0, 0, 0, 0.03);
+    box-shadow: var(--shadow-sm);
 }
 
 [data-theme="light"] .elevation-2 {
-    box-shadow:
-        0 4px 10px rgba(0, 0, 0, 0.06),
-        0 2px 4px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--shadow-md);
 }
 
 [data-theme="light"] .elevation-3 {
-    box-shadow:
-        0 12px 24px rgba(0, 0, 0, 0.08),
-        0 4px 10px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--shadow-lg);
 }
 
 .dark {
