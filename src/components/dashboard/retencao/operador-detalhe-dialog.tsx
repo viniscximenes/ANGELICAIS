@@ -69,18 +69,13 @@ export function OperadorDetalheDialog({
     txDisplay: d.tx !== null ? parseFloat((d.tx * 100).toFixed(1)) : null,
   }));
 
-  const validTxValues = chartData.map((d) => d.txDisplay).filter((v): v is number => v !== null);
-  const dataMax = validTxValues.length > 0 ? Math.max(...validTxValues) : 100;
-  const dataMin = validTxValues.length > 0 ? Math.min(...validTxValues) : 0;
-
-  let gradientOffset = 0;
-  if (dataMax <= meta) {
-    gradientOffset = 0;
-  } else if (dataMin >= meta) {
-    gradientOffset = 1;
-  } else {
-    gradientOffset = (dataMax - meta) / (dataMax - dataMin);
-  }
+  // Cor sólida (não gradiente) pra linha de retenção — o gradiente via
+  // stroke="url(#id)" é recriado do zero toda vez que o modal abre (o
+  // Dialog desmonta o conteúdo quando fechado), e pode pintar o <path>
+  // antes do <defs> estar disponível no primeiro frame, deixando só os
+  // dots visíveis. Os dots já mostram o status por hora individualmente;
+  // a linha reflete o status geral do operador no período.
+  const linhaAbaixoDaMeta = operador.tx === null || operador.tx < meta / 100;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -172,14 +167,6 @@ export function OperadorDetalheDialog({
                     data={chartData}
                     margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                   >
-                    <defs>
-                      <linearGradient id="txLineGradOperador" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset={0} stopColor="var(--success)" />
-                        <stop offset={gradientOffset} stopColor="var(--success)" />
-                        <stop offset={gradientOffset} stopColor="var(--danger)" />
-                        <stop offset={1} stopColor="var(--danger)" />
-                      </linearGradient>
-                    </defs>
                     <CartesianGrid
                       vertical={false}
                       stroke="var(--border)"
@@ -286,7 +273,7 @@ export function OperadorDetalheDialog({
                       yAxisId="left"
                       type="monotone"
                       dataKey="txDisplay"
-                      stroke="url(#txLineGradOperador)"
+                      stroke={linhaAbaixoDaMeta ? "var(--danger)" : "var(--success)"}
                       strokeWidth={2.5}
                       animationDuration={350}
                       animationEasing="ease-out"
