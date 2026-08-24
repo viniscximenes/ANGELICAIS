@@ -13,6 +13,8 @@ interface KpiGestorCardProps {
   delayIndex: number;
   isHovered: boolean;
   isDimmed: boolean;
+  /** Só aplica a cor semântica de meta (verde/vermelho) quando true — Mês Atual. */
+  isMesAtual: boolean;
   onHover: (slug: string, event: React.MouseEvent<HTMLDivElement>) => void;
   onLeave: () => void;
 }
@@ -28,8 +30,19 @@ function getStatusColor(status: "success" | "danger" | null): string {
   }
 }
 
-function CardBody({ card, delayIndex }: { card: KpiGestorCardSerial; delayIndex: number }) {
-  const status = card.status;
+function CardBody({
+  card,
+  delayIndex,
+  isMesAtual,
+}: {
+  card: KpiGestorCardSerial;
+  delayIndex: number;
+  isMesAtual: boolean;
+}) {
+  // Fora do Mês Atual, a cor de status (verde/vermelho) some — os cards
+  // caem no neutro (--foreground/--muted-foreground) mesmo que o valor
+  // daquele período esteja acima ou abaixo da meta.
+  const status = isMesAtual ? card.status : null;
   const color = getStatusColor(status);
   const valueColor = status ? color : card.temDado ? "var(--foreground)" : "var(--muted-foreground)";
 
@@ -42,10 +55,7 @@ function CardBody({ card, delayIndex }: { card: KpiGestorCardSerial; delayIndex:
         duration: 0.25,
         ease: EASE_OUT_EXPO,
       }}
-      className="relative overflow-hidden rounded-lg p-6 flex flex-col justify-between min-h-[140px] h-full bg-zinc-800/45 border border-white/10 backdrop-blur-md"
-      style={{
-        boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.3)",
-      }}
+      className="relative overflow-hidden rounded-lg p-6 flex flex-col justify-between min-h-[140px] h-full bg-card border border-border shadow-[var(--shadow-sm)] backdrop-blur-md dark:bg-zinc-800/45 dark:border-white/10 dark:shadow-[0_10px_15px_-3px_rgb(0_0_0_/_0.3)]"
     >
       <div
         aria-hidden="true"
@@ -137,7 +147,15 @@ export function SemDadoTooltipContent({ card }: { card: KpiGestorCardSerial }) {
  * o slug pro KpiGestorSection, que decide dim/tooltip pra todos os cards
  * de uma vez (ver painel flutuante único em kpi-gestor-section.tsx).
  */
-export function KpiGestorCard({ card, delayIndex, isHovered, isDimmed, onHover, onLeave }: KpiGestorCardProps) {
+export function KpiGestorCard({
+  card,
+  delayIndex,
+  isHovered,
+  isDimmed,
+  isMesAtual,
+  onHover,
+  onLeave,
+}: KpiGestorCardProps) {
   return (
     <div
       onMouseEnter={(event) => onHover(card.configSlug, event)}
@@ -148,7 +166,7 @@ export function KpiGestorCard({ card, delayIndex, isHovered, isDimmed, onHover, 
         isHovered && "relative z-10 scale-[1.02]",
       )}
     >
-      <CardBody card={card} delayIndex={delayIndex} />
+      <CardBody card={card} delayIndex={delayIndex} isMesAtual={isMesAtual} />
     </div>
   );
 }

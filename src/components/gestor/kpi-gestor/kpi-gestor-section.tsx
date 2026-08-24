@@ -156,6 +156,9 @@ export function KpiGestorSection({
 
   const principais = data?.cards.filter((c) => c.secao === "principais") ?? [];
   const complementares = data?.cards.filter((c) => c.secao === "complementares") ?? [];
+  // Cor semântica de meta (verde/vermelho) só faz sentido no Mês Atual —
+  // meses passados são histórico, não algo "fora da meta" agora.
+  const isMesAtual = mesSelecionado === dataAtual.mesRef;
 
   const hoveredDefasado = hoveredKpi ? data?.defasados[hoveredKpi] : undefined;
   const hoveredCard = hoveredKpi ? data?.cards.find((c) => c.configSlug === hoveredKpi) : undefined;
@@ -261,6 +264,7 @@ export function KpiGestorSection({
                     delayIndex={i}
                     isHovered={hoveredKpi === card.configSlug}
                     isDimmed={hoveredKpi !== null && hoveredKpi !== card.configSlug}
+                    isMesAtual={isMesAtual}
                     onHover={handleCardHover}
                     onLeave={handleCardLeave}
                   />
@@ -278,6 +282,7 @@ export function KpiGestorSection({
                     delayIndex={i}
                     isHovered={hoveredKpi === card.configSlug}
                     isDimmed={hoveredKpi !== null && hoveredKpi !== card.configSlug}
+                    isMesAtual={isMesAtual}
                     onHover={handleCardHover}
                     onLeave={handleCardLeave}
                   />
