@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   IconChartBar,
@@ -33,6 +33,7 @@ import { toggleShowRvDiarioAction } from "@/lib/gestor/config-tabela/actions/tog
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import { cn } from "@/lib/utils";
+import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
@@ -90,31 +91,54 @@ export function GestorEquipeSection({
   function handleToggleOlho() {
     const novoValor = !olhoAberto;
     setOlhoAberto(novoValor);
-    void toggleOlhoAction("consolidado", novoValor);
+    toggleOlhoAction("consolidado", novoValor).catch((err) => {
+      if (!handleStaleActionError(err)) {
+        console.error("[GestorEquipeSection] erro ao salvar preferência de olho:", err);
+      }
+    });
   }
 
   function handleToggleRvDiario() {
     const novoValor = !showRvDiario;
     setShowRvDiario(novoValor);
-    void toggleShowRvDiarioAction(novoValor);
+    toggleShowRvDiarioAction(novoValor).catch((err) => {
+      if (!handleStaleActionError(err)) {
+        console.error("[GestorEquipeSection] erro ao salvar preferência de RV Diário:", err);
+      }
+    });
   }
+
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Refetch usado tanto pelo polling quanto (imediatamente, sem esperar os
   // 30s) pelo ClearBaseButton — mesma fonte, dois gatilhos.
   async function refetchConsolidado() {
-    const result = await refreshConsolidadoAction();
-    if (result.success) {
-      setOperadores(result.operadores);
-      setEquipe(result.equipe);
-      setNomeSupervisorReport(result.nomeSupervisorReport);
+    try {
+      const result = await refreshConsolidadoAction();
+      if (result.success) {
+        setOperadores(result.operadores);
+        setEquipe(result.equipe);
+        setNomeSupervisorReport(result.nomeSupervisorReport);
+      }
+    } catch (err) {
+      // Server Action de um build anterior (hot reload em dev, ou deploy
+      // novo em produção com a aba aberta): avisa o usuário uma única vez e
+      // para o polling, em vez de repetir a mesma falha a cada 30s pra sempre.
+      if (handleStaleActionError(err)) {
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+        return;
+      }
+      console.error("[GestorEquipeSection] erro ao atualizar consolidado (polling):", err);
     }
   }
 
   // Polling: reconsulta a base a cada 30s (sem F5) e atualiza operadores +
   // hora/nome do report se houver mudança.
   useEffect(() => {
-    const interval = setInterval(refetchConsolidado, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    pollIntervalRef.current = setInterval(refetchConsolidado, POLL_INTERVAL_MS);
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
   }, []);
 
   // Navegação via teclado: setas Cima (ArrowUp) e Baixo (ArrowDown) rolam a página

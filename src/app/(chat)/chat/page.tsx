@@ -15,7 +15,9 @@ export default async function ChatPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  // Apenas GESTOR e ADM têm acesso — OP e AUX são redirecionados
+  // Apenas GESTOR tem acesso — OP/AUX são redirecionados aqui, e ADM nem
+  // chega a esta checagem (bloqueado antes, no middleware — ver
+  // src/lib/supabase/middleware.ts)
   if (!can(user.profile.role, "view_gestor_panel")) {
     redirect("/d-1/consolidado");
   }

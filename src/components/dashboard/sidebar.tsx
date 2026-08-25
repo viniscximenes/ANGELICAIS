@@ -150,7 +150,7 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                 onClick={onNavigate}
                 aria-expanded={isActiveSection}
                 aria-current={isActiveSection ? "page" : undefined}
-                className={`hover:bg-muted/50 hover:text-foreground flex items-center gap-3 rounded-md border-l-2 px-3 py-2 transition-colors duration-150 ${
+                className={`sidebar-main-link hover:bg-muted/50 hover:text-foreground flex items-center gap-3 rounded-md border-l-2 px-3 py-2 transition-colors duration-150 ${
                   isActiveSection
                     ? "border-primary bg-[var(--elevation-1-bg)] text-foreground"
                     : "text-muted-foreground border-transparent"

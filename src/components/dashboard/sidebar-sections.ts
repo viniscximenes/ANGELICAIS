@@ -139,10 +139,11 @@ const ALL_SECTIONS: SidebarSection[] = [
   // },
   {
     id: "bases",
-    label: "BASES",
+    label: "Bases",
     iconName: "database",
     basePath: "/bases",
     permission: "manage_base",
+    divider: "PAINEL ADM",
     items: [
       { label: "KPI", href: "/bases/kpi" },
       { label: "Pausas Programadas", href: "/bases/pausas" },

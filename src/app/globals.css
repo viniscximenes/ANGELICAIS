@@ -343,7 +343,7 @@
    (não --primary, que agora é quase preto e ficaria indistinguível do texto
    normal) — fundo cinza claro + peso semibold marcam o item ativo sem
    depender de cor de destaque. */
-[data-theme="light"] nav a[aria-current="page"] {
+[data-theme="light"] nav a.sidebar-main-link[aria-current="page"] {
     background-color: color-mix(in oklch, var(--foreground) 8%, transparent) !important;
     color: var(--foreground) !important;
     font-weight: 600;
