@@ -43,13 +43,19 @@ export async function getOperadorConsolidado(email: string): Promise<UserD1View>
     outros: 0,
   };
 
+  // PEDIDOS = RETIDOS + CANCELADOS — derivado aqui (em vez de confiar em
+  // data.pedidos) pra não depender de reprocessar o upload sempre que essa
+  // regra mudar.
+  const retidos = data.retidos ?? 0;
+  const cancelados = data.cancelados ?? 0;
+
   return {
     operador: {
       email: data.operator_email,
       supervisor: data.supervisor ?? "",
-      retidos: data.retidos ?? 0,
-      cancelados: data.cancelados ?? 0,
-      pedidos: data.pedidos ?? 0,
+      retidos,
+      cancelados,
+      pedidos: retidos + cancelados,
       txRetencao: data.tx_retencao,
     },
     contratos: {

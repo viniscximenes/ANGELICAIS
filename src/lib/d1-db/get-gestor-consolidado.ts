@@ -131,15 +131,20 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
         motivosCancelados: ZERO_BREAKDOWN,
       };
     }
+    // PEDIDOS = RETIDOS + CANCELADOS — derivado aqui (em vez de confiar em
+    // row.pedidos) pra não depender de reprocessar o upload sempre que essa
+    // regra mudar.
+    const retidos = row.retidos ?? 0;
+    const cancelados = row.cancelados ?? 0;
     return {
       // Usa o email canônico do roster (@alloha.com), não o valor bruto do
       // CSV — mantém a identidade estável mesmo se o CSV variar de domínio
       // entre uploads (nome-fantasia e a key da tabela dependem disso).
       nome: email,
       gestora: row.supervisor ?? nomeGestor,
-      retidos: row.retidos ?? 0,
-      cancelados: row.cancelados ?? 0,
-      pedidos: row.pedidos ?? 0,
+      retidos,
+      cancelados,
+      pedidos: retidos + cancelados,
       txRetencao: row.tx_retencao,
       motivosRetidos: row.motivos_retidos ?? ZERO_BREAKDOWN,
       motivosCancelados: row.motivos_cancelados ?? ZERO_BREAKDOWN,
@@ -167,6 +172,7 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
     }
   }
 
+  // PEDIDOS = RETIDOS + CANCELADOS também na linha "EQUIPE" (total geral).
   const totalPedidos = totalRetidos + totalCancelados;
 
   const consolidado: GestorConsolidado = {

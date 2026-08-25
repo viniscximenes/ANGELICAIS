@@ -4,6 +4,7 @@ import { getQuedas } from "./get-quedas";
 import { getEvolucaoHora, HORAS_OPERACAO } from "./get-evolucao-hora";
 import { getVisaoGeral } from "./get-visao-geral";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
 
 export type AlertaSeveridade = "critical" | "warning" | "success";
@@ -88,7 +89,7 @@ export async function getAlertas(
   const supabase = createAdminClient();
   let queryAtendimentos = supabase
     .from("retencao_atendimentos")
-    .select("motivo, hora, foi_cancelamento");
+    .select("motivo, hora, foi_cancelamento, status_retencao");
   queryAtendimentos = aplicarFiltroEscopo(queryAtendimentos, { emailsEquipe });
   queryAtendimentos = queryAtendimentos.in("hora", HORAS_OPERACAO);
 
@@ -101,7 +102,11 @@ export async function getAlertas(
         mot = "Mud. Endereço";
       }
       const h = row.hora;
-      const isRetained = !row.foi_cancelamento;
+      // "Abortado" não é retenção nem cancelamento — fica fora desta
+      // contagem hora a hora por tema.
+      const classe = classificarAtendimento(row);
+      if (classe === "abortado") continue;
+      const isRetained = classe === "retido";
 
       if (!themeHourlyStats[mot]) themeHourlyStats[mot] = {};
       if (!themeHourlyStats[mot][h]) themeHourlyStats[mot][h] = { total: 0, retidos: 0 };

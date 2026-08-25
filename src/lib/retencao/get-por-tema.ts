@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
 import { normalizarTema } from "./normalizar-tema";
 
@@ -28,7 +29,12 @@ export async function getPorTema(
   emailsEquipe: string[],
 ): Promise<TemaData[]> {
   const supabase = createAdminClient();
-  let allData: { motivo: string | null; submotivo: string | null; foi_cancelamento: boolean | null }[] = [];
+  let allData: {
+    motivo: string | null;
+    submotivo: string | null;
+    foi_cancelamento: boolean | null;
+    status_retencao: string | null;
+  }[] = [];
   let page = 0;
   const pageSize = 1000;
   let hasMore = true;
@@ -39,7 +45,7 @@ export async function getPorTema(
 
     let query = supabase
       .from("retencao_atendimentos")
-      .select("motivo, submotivo, foi_cancelamento")
+      .select("motivo, submotivo, foi_cancelamento, status_retencao")
       .range(from, to);
 
     query = aplicarFiltroEscopo(query, { emailsEquipe });
@@ -89,7 +95,11 @@ export async function getPorTema(
       sub = `${rawMot} / ${rawSub}`;
     }
 
-    const isCancel = item.foi_cancelamento === true;
+    // "Abortado" não é nem sucesso nem fracasso de retenção — fica fora de
+    // retidos, cancelados e do total (= PEDIDOS = RETIDOS + CANCELADOS).
+    const classe = classificarAtendimento(item);
+    if (classe === "abortado") continue;
+    const isCancelado = classe === "cancelado";
 
     if (!map[mot]) {
       map[mot] = {
@@ -103,7 +113,7 @@ export async function getPorTema(
 
     const motObj = map[mot];
     motObj.total++;
-    if (isCancel) {
+    if (isCancelado) {
       motObj.cancelados++;
     } else {
       motObj.retidos++;
@@ -120,7 +130,7 @@ export async function getPorTema(
 
     const subObj = motObj.submotivosMap[sub];
     subObj.total++;
-    if (isCancel) {
+    if (isCancelado) {
       subObj.cancelados++;
     } else {
       subObj.retidos++;

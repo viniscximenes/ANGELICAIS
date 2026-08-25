@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { classificarAtendimento } from "./classificar-atendimento";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
 import { aplicarFiltroEscopo } from "./escopo";
 
@@ -21,7 +22,12 @@ export async function getPorOperador(
   emailsEquipe: string[],
 ): Promise<OperadorItem[]> {
   const supabase = createAdminClient();
-  let allData: { usuario_login: string | null; usuario_nome: string | null; foi_cancelamento: boolean | null }[] = [];
+  let allData: {
+    usuario_login: string | null;
+    usuario_nome: string | null;
+    foi_cancelamento: boolean | null;
+    status_retencao: string | null;
+  }[] = [];
   let page = 0;
   const pageSize = 1000;
   let hasMore = true;
@@ -32,7 +38,7 @@ export async function getPorOperador(
 
     let query = supabase
       .from("retencao_atendimentos")
-      .select("usuario_login, usuario_nome, foi_cancelamento")
+      .select("usuario_login, usuario_nome, foi_cancelamento, status_retencao")
       .range(from, to);
 
     query = aplicarFiltroEscopo(query, { escopo, emailsEquipe });
@@ -73,7 +79,7 @@ export async function getPorOperador(
       nome = item.usuario_login ? item.usuario_login.split("@")[0].trim() : "Operador Desconhecido";
     }
 
-    const isCancel = item.foi_cancelamento === true;
+    const classe = classificarAtendimento(item);
 
     if (!operators[chave]) {
       // login: guarda a primeira variante encontrada — usada depois como
@@ -81,10 +87,14 @@ export async function getPorOperador(
       operators[chave] = { login, nome, total: 0, retidos: 0, cancelados: 0 };
     }
 
-    operators[chave].total += 1;
-    if (isCancel) {
+    // "Abortado" (validação FaceID sem resposta) fica fora de total (=
+    // PEDIDOS), retidos e cancelados — não é nem sucesso nem fracasso de
+    // retenção, e PEDIDOS = RETIDOS + CANCELADOS.
+    if (classe === "cancelado") {
+      operators[chave].total += 1;
       operators[chave].cancelados += 1;
-    } else {
+    } else if (classe === "retido") {
+      operators[chave].total += 1;
       operators[chave].retidos += 1;
     }
   }

@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { classificarAtendimento } from "./classificar-atendimento";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
 import { aplicarFiltroEscopo } from "./escopo";
 import { BUCKETS, bucketDe, type HoraEvolucaoData } from "./get-evolucao-hora";
@@ -33,6 +34,7 @@ type Linha = {
   motivo: string | null;
   hora_bucket: number | null;
   foi_cancelamento: boolean | null;
+  status_retencao: string | null;
 };
 
 type Acumulador = {
@@ -59,8 +61,10 @@ function novoAcumulador(login: string): Acumulador {
   };
 }
 
-function taxa(retidos: number, total: number): number | null {
-  return total > 0 ? retidos / total : null;
+/** TX = retidos / (retidos + cancelados) — "Abortado" fica fora do numerador e do denominador. */
+function taxa(retidos: number, cancelados: number): number | null {
+  const denom = retidos + cancelados;
+  return denom > 0 ? retidos / denom : null;
 }
 
 /**
@@ -87,7 +91,7 @@ export async function getPorOperadorIndividual(
   while (hasMore) {
     let query = supabase
       .from("retencao_atendimentos")
-      .select("usuario_login, usuario_nome, motivo, hora_bucket, foi_cancelamento")
+      .select("usuario_login, usuario_nome, motivo, hora_bucket, foi_cancelamento, status_retencao")
       .range(page * pageSize, page * pageSize + pageSize - 1);
 
     query = aplicarFiltroEscopo(query, { emailsEquipe });
@@ -127,16 +131,23 @@ export async function getPorOperadorIndividual(
 
     if (!acc.nomeBanco && linha.usuario_nome) acc.nomeBanco = linha.usuario_nome;
 
-    const cancelado = linha.foi_cancelamento === true;
+    // "Abortado" (validação FaceID sem resposta) não é nem sucesso nem
+    // fracasso de retenção — fica fora de retidos, cancelados e do total
+    // (= PEDIDOS = RETIDOS + CANCELADOS), em todas as dimensões (geral, por
+    // hora e por motivo).
+    const classe = classificarAtendimento(linha);
+    if (classe === "abortado") continue;
+    const isCancelado = classe === "cancelado";
+
     acc.total++;
-    if (cancelado) acc.cancelados++;
+    if (isCancelado) acc.cancelados++;
     else acc.retidos++;
 
     if (linha.hora_bucket !== null && linha.hora_bucket !== undefined) {
       const alvo = acc.porHora.get(bucketDe(linha.hora_bucket));
       if (alvo) {
         alvo.total++;
-        if (cancelado) alvo.cancelados++;
+        if (isCancelado) alvo.cancelados++;
         else alvo.retidos++;
       }
     }
@@ -146,7 +157,7 @@ export async function getPorOperadorIndividual(
     const motivo = normalizarTema(linha.motivo);
     const m = acc.porMotivo.get(motivo) ?? { retidos: 0, cancelados: 0, total: 0 };
     m.total++;
-    if (cancelado) m.cancelados++;
+    if (isCancelado) m.cancelados++;
     else m.retidos++;
     acc.porMotivo.set(motivo, m);
   }
@@ -157,7 +168,7 @@ export async function getPorOperadorIndividual(
     total: acc.total,
     retidos: acc.retidos,
     cancelados: acc.cancelados,
-    tx: taxa(acc.retidos, acc.total),
+    tx: taxa(acc.retidos, acc.cancelados),
     porHora: BUCKETS.map((b) => {
       const h = acc.porHora.get(b.hora)!;
       return {
@@ -166,7 +177,7 @@ export async function getPorOperadorIndividual(
         total: h.total,
         retidos: h.retidos,
         cancelados: h.cancelados,
-        tx: taxa(h.retidos, h.total),
+        tx: taxa(h.retidos, h.cancelados),
       };
     }),
     porMotivo: [...acc.porMotivo.entries()]
@@ -175,7 +186,7 @@ export async function getPorOperadorIndividual(
         retidos: v.retidos,
         cancelados: v.cancelados,
         total: v.total,
-        tx: taxa(v.retidos, v.total),
+        tx: taxa(v.retidos, v.cancelados),
       }))
       .sort((a, b) => b.total - a.total),
   }));

@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
 
 export type ContribItem = {
@@ -26,7 +27,7 @@ export async function getContribuicaoQueda(
   // Carrega apenas os registros da hora atual (onde ocorreu a queda)
   let query = supabase
     .from("retencao_atendimentos")
-    .select("motivo, usuario_login, usuario_nome, foi_cancelamento")
+    .select("motivo, usuario_login, usuario_nome, foi_cancelamento, status_retencao")
     .eq("hora_bucket", horaAtual);
 
   query = aplicarFiltroEscopo(query, { emailsEquipe });
@@ -84,7 +85,12 @@ export async function getContribuicaoQueda(
     const opRaw = item.usuario_login || item.usuario_nome || "Operador Desconhecido";
     const op = opRaw.includes("@") ? opRaw.split("@")[0] : opRaw;
 
-    const isCancel = item.foi_cancelamento === true;
+    // "Abortado" não é nem retenção nem cancelamento — fica de fora desta
+    // análise de contribuição para a queda (que só olha para `total` e
+    // `cancelados` na conta de tx = 1 - cancelados/total).
+    const classe = classificarAtendimento(item);
+    if (classe === "abortado") continue;
+    const isCancel = classe === "cancelado";
 
     if (!statsMotivo[mot]) statsMotivo[mot] = { total: 0, cancelados: 0 };
     statsMotivo[mot].total++;

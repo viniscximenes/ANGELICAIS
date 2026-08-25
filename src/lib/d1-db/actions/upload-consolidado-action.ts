@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { saveEvolucaoAction } from "@/lib/d1/evolucao/actions/save-evolucao-action";
+import { classificarAtendimento } from "@/lib/retencao/classificar-atendimento";
 import { parseBaseRetencao } from "@/lib/retencao/parse-base-retencao";
 import { salvarBaseRetencao } from "@/lib/retencao/salvar-base-retencao";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -90,13 +91,20 @@ export async function uploadConsolidadoAction(
       porOperador.set(chave, agg);
     }
 
+    // "Abortado" (validação FaceID sem resposta) não é um desfecho de
+    // retenção nem de cancelamento — fica fora de retidos/cancelados/
+    // motivos/contratos e, por consequência, fora de PEDIDOS (= RETIDOS +
+    // CANCELADOS) e da TX RETENÇÃO.
+    const classe = classificarAtendimento(linha);
+    if (classe === "abortado") continue;
+
     const bucket = bucketMotivo(linha.motivo);
     const contrato: ContratoItem = {
       contrato: linha.cod_air || "",
       cliente: linha.comprador_nome || "",
     };
 
-    if (linha.foi_cancelamento) {
+    if (classe === "cancelado") {
       agg.cancelados++;
       agg.motivosCancelados[bucket]++;
       agg.contratosCancelados.push(contrato);
@@ -160,6 +168,8 @@ export async function uploadConsolidadoAction(
       continue;
     }
 
+    // PEDIDOS = RETIDOS + CANCELADOS — "Abortado" já foi excluído do
+    // agregado acima, então nunca chega aqui.
     const pedidos = agg.retidos + agg.cancelados;
     const txRetencao = pedidos > 0 ? agg.retidos / pedidos : null;
 

@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getEmailVariants } from "@/lib/utils/email-variants";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
+import { classificarAtendimento, STATUS_RETENCAO_ABORTADO } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
 
 export type FiltroContratos = {
@@ -15,7 +16,8 @@ export type FiltroContratos = {
 export type ContratoFiltradoItem = {
   usuarioLogin: string;
   nomeSobrenome: string;
-  status: "RETIDO" | "CANCELADO";
+  /** ABORTADO = validação FaceID sem resposta do cliente; só aparece quando o filtro de status é "todos". */
+  status: "RETIDO" | "CANCELADO" | "ABORTADO";
   motivo: string;
   codAir: string;
   linhaFormatada: string; // ex: "igor.souza - RETIDO - Mud. Endereço - 503351"
@@ -25,7 +27,7 @@ export async function getContratosFiltrados(filtros: FiltroContratos): Promise<C
   const supabase = createAdminClient();
   let query = supabase
     .from("retencao_atendimentos")
-    .select("usuario_login, foi_cancelamento, motivo, cod_air");
+    .select("usuario_login, foi_cancelamento, motivo, cod_air, status_retencao");
 
   // Filtro de Escopo e Horas (Reuso)
   query = aplicarFiltroEscopo(query, {
@@ -41,7 +43,9 @@ export async function getContratosFiltrados(filtros: FiltroContratos): Promise<C
 
   // Filtro de Status
   if (filtros.status === "retido") {
-    query = query.eq("foi_cancelamento", false);
+    // "Abortado" também vem com foi_cancelamento=false, mas não é retenção —
+    // fica de fora do filtro "Retidos".
+    query = query.eq("foi_cancelamento", false).not("status_retencao", "eq", STATUS_RETENCAO_ABORTADO);
   } else if (filtros.status === "cancelado") {
     query = query.eq("foi_cancelamento", true);
   }
@@ -96,14 +100,21 @@ export async function getContratosFiltrados(filtros: FiltroContratos): Promise<C
   }
 
   const rawRows = (data || []).filter(
-    (r): r is { usuario_login: string | null; foi_cancelamento: boolean | null; motivo: string | null; cod_air: string } =>
-      typeof r.cod_air === "string" && r.cod_air.trim() !== ""
+    (r): r is {
+      usuario_login: string | null;
+      foi_cancelamento: boolean | null;
+      motivo: string | null;
+      cod_air: string;
+      status_retencao: string | null;
+    } => typeof r.cod_air === "string" && r.cod_air.trim() !== ""
   );
 
   return rawRows.map((r) => {
     const usuarioLogin = r.usuario_login || "";
     const nomeSobrenome = formatNomeDotSobrenome(usuarioLogin);
-    const statusStr: "RETIDO" | "CANCELADO" = r.foi_cancelamento ? "CANCELADO" : "RETIDO";
+    const classe = classificarAtendimento(r);
+    const statusStr: "RETIDO" | "CANCELADO" | "ABORTADO" =
+      classe === "cancelado" ? "CANCELADO" : classe === "abortado" ? "ABORTADO" : "RETIDO";
     const motivoStr = r.motivo?.trim() || "Outros";
     const codAirStr = r.cod_air.trim();
 

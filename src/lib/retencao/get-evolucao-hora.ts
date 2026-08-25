@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
 import { normalizarTema } from "./normalizar-tema";
 
@@ -71,7 +72,12 @@ export async function getEvolucaoHora(
 
   // Sem recorte de horas: os buckets das pontas ("< 08" e "≥ 20") precisam
   // enxergar os atendimentos fora da janela de operação.
-  let allData: { hora_bucket: number | null; foi_cancelamento: boolean | null; motivo: string | null }[] = [];
+  let allData: {
+    hora_bucket: number | null;
+    foi_cancelamento: boolean | null;
+    motivo: string | null;
+    status_retencao: string | null;
+  }[] = [];
   let page = 0;
   const pageSize = 1000;
   let hasMore = true;
@@ -82,7 +88,7 @@ export async function getEvolucaoHora(
 
     let query = supabase
       .from("retencao_atendimentos")
-      .select("hora_bucket, foi_cancelamento, motivo")
+      .select("hora_bucket, foi_cancelamento, motivo, status_retencao")
       .range(from, to);
 
     query = aplicarFiltroEscopo(query, { emailsEquipe });
@@ -124,7 +130,11 @@ export async function getEvolucaoHora(
     const alvo = map.get(bucketDe(h));
     if (!alvo) continue;
 
-    const isCancelado = item.foi_cancelamento === true;
+    // "Abortado" não é nem sucesso nem fracasso de retenção — fica fora de
+    // retidos, cancelados e do total (= PEDIDOS = RETIDOS + CANCELADOS).
+    const classe = classificarAtendimento(item);
+    if (classe === "abortado") continue;
+    const isCancelado = classe === "cancelado";
 
     alvo.total++;
     if (isCancelado) {
