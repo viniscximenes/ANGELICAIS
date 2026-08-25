@@ -24,8 +24,7 @@ import { getDataPngHoje } from "@/components/dashboard/export-popup-png-theme";
 import { StyledCard } from "@/components/gestor/styled-card";
 import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
 import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
-
-import { OperadorDetalhePngContent } from "./operador-detalhe-png-content";
+import { resolverTokenCss } from "@/lib/utils/resolver-token-css";
 
 interface Props {
   operador: OperadorIndividual | null;
@@ -53,9 +52,9 @@ export function OperadorDetalheDialog({
 
   if (!operador) return null;
 
-  // Nome real (login antes do @) — sempre este no PNG, nunca nome fantasia.
+  // Nome real (login antes do @) — esta tela não tem nome fantasia/anonimização.
   const nomeReal = operador.login.split("@")[0] || operador.login;
-  const { header: dataHeader, file: dataFile } = getDataPngHoje();
+  const { file: dataFile } = getDataPngHoje();
 
   const resumo = [
     { label: "TX Retenção", valor: formatTx(operador.tx) },
@@ -69,13 +68,75 @@ export function OperadorDetalheDialog({
     txDisplay: d.tx !== null ? parseFloat((d.tx * 100).toFixed(1)) : null,
   }));
 
-  // Cor sólida (não gradiente) pra linha de retenção — o gradiente via
-  // stroke="url(#id)" é recriado do zero toda vez que o modal abre (o
-  // Dialog desmonta o conteúdo quando fechado), e pode pintar o <path>
-  // antes do <defs> estar disponível no primeiro frame, deixando só os
-  // dots visíveis. Os dots já mostram o status por hora individualmente;
-  // a linha reflete o status geral do operador no período.
-  const linhaAbaixoDaMeta = operador.tx === null || operador.tx < meta / 100;
+  // Gradiente da linha de retenção: um <linearGradient> único cobrindo a
+  // linha inteira, com stops calculados pra trocar de cor EXATAMENTE no
+  // ponto (fracionário, por interpolação linear) em que o traço cruza a
+  // meta — não arredondado pra uma ponta do segmento. Ex: um trecho que
+  // sai de 50% (abaixo) e chega a 100% (acima), com meta 65%, cruza a 30%
+  // do caminho entre os dois pontos — antes disso vermelho, depois verde.
+  //
+  // Cores dos stops usam valor COMPUTADO (resolverTokenCss), não a string
+  // "var(--danger)" crua: o export em PNG clona este SVG e serializa num
+  // <img> isolado, onde `var()` não tem acesso ao :root da página — sem
+  // resolver antes, o gradiente sairia invisível na imagem exportada.
+  //
+  // type="linear" (não "monotone"): a interpolação do cruzamento acima é
+  // linear por definição — usar uma curva monotone faria o traço
+  // renderizado divergir ligeiramente da posição calculada do cruzamento.
+  //
+  // Um <Line> só (não múltiplos por segmento): a tentativa anterior com
+  // várias <Line> só conseguia trocar de cor nas PONTAS dos segmentos,
+  // nunca no meio — não dá pra representar um cruzamento no meio do
+  // trecho sem gradiente.
+  const corAbaixoMeta = resolverTokenCss("--danger", "#dc2626");
+  const corAcimaMeta = resolverTokenCss("--success", "#16a34a");
+  const META_GRADIENT_ID = "linha-retencao-meta-gradient";
+
+  const indicesComDado = chartData
+    .map((d, idx) => (d.txDisplay !== null ? idx : null))
+    .filter((idx): idx is number => idx !== null);
+
+  const primeiroIdx = indicesComDado[0];
+  const ultimoIdx = indicesComDado[indicesComDado.length - 1];
+  const spanIdx = primeiroIdx !== undefined && ultimoIdx !== undefined ? ultimoIdx - primeiroIdx : 0;
+
+  function offsetDoIndice(idxFracionario: number): number {
+    if (spanIdx <= 0 || primeiroIdx === undefined) return 0;
+    return (idxFracionario - primeiroIdx) / spanIdx;
+  }
+
+  const stopsGradiente: { offset: number; cor: string }[] = [];
+
+  // Um stop na cor do próprio ponto, pra cada ponto com dado — cobre os
+  // trechos que NÃO cruzam a meta (as duas pontas na mesma cor).
+  indicesComDado.forEach((idx) => {
+    const abaixo = chartData[idx].txDisplay! < meta;
+    stopsGradiente.push({ offset: offsetDoIndice(idx), cor: abaixo ? corAbaixoMeta : corAcimaMeta });
+  });
+
+  // Pra cada trecho que CRUZA a meta, insere dois stops bem próximos no
+  // ponto exato de cruzamento — troca "seca" de cor, sem gradiente suave.
+  indicesComDado.slice(0, -1).forEach((idx, i) => {
+    const proxIdx = indicesComDado[i + 1];
+    const valorInicial = chartData[idx].txDisplay!;
+    const valorFinal = chartData[proxIdx].txDisplay!;
+    const inicioAbaixo = valorInicial < meta;
+    const fimAbaixo = valorFinal < meta;
+    if (inicioAbaixo === fimAbaixo) return;
+
+    const fracaoCruzamento = (meta - valorInicial) / (valorFinal - valorInicial);
+    const idxCruzamento = idx + fracaoCruzamento * (proxIdx - idx);
+    const offsetCruzamento = offsetDoIndice(idxCruzamento);
+    const offsetSegmento = offsetDoIndice(proxIdx) - offsetDoIndice(idx);
+    const epsilon = Math.max(0.0008, offsetSegmento * 0.01);
+
+    stopsGradiente.push(
+      { offset: Math.max(0, offsetCruzamento - epsilon), cor: inicioAbaixo ? corAbaixoMeta : corAcimaMeta },
+      { offset: Math.min(1, offsetCruzamento + epsilon), cor: fimAbaixo ? corAbaixoMeta : corAcimaMeta },
+    );
+  });
+
+  stopsGradiente.sort((a, b) => a.offset - b.offset);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,21 +147,15 @@ export function OperadorDetalheDialog({
           className="absolute top-2 right-10"
         />
 
-        {/* Wrapper offscreen (tema claro forçado) — só existe pra captura do PNG */}
-        <div
-          aria-hidden="true"
-          style={{ position: "fixed", top: "-99999px", left: "-99999px", pointerEvents: "none" }}
-        >
-          <OperadorDetalhePngContent
-            ref={pngRef}
-            operador={operador}
-            nomeReal={nomeReal}
-            dataHeader={dataHeader}
-            meta={meta}
-            quartil={quartil}
-          />
-        </div>
-
+        {/*
+          Sem template separado pra exportação: o PNG captura este mesmo
+          wrapper (via pngRef + ExportPopupPngButton), com background
+          explícito porque o fundo do DialogContent fica no ancestral, fora
+          do que é capturado. Assim a imagem sempre reflete o tema atual
+          (claro/escuro), a ordem real dos cards, a moldura com cantoneiras e
+          o cabeçalho neutro da tabela — sem divergir do que está na tela.
+        */}
+        <div ref={pngRef} style={{ backgroundColor: "var(--background)" }}>
         {/* Cabeçalho */}
         <DialogHeader className="border-b border-dashed border-border/60 pb-3 space-y-1.5">
           <DialogTitle className="ds-h3 text-foreground font-semibold tracking-tight text-xl">
@@ -167,6 +222,14 @@ export function OperadorDetalheDialog({
                     data={chartData}
                     margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                   >
+                    <defs>
+                      <linearGradient id={META_GRADIENT_ID} x1="0" y1="0" x2="1" y2="0">
+                        {stopsGradiente.map((s, i) => (
+                          <stop key={i} offset={s.offset} stopColor={s.cor} />
+                        ))}
+                      </linearGradient>
+                    </defs>
+
                     <CartesianGrid
                       vertical={false}
                       stroke="var(--border)"
@@ -268,12 +331,17 @@ export function OperadorDetalheDialog({
                       }}
                     />
 
-                    {/* Linha da Retenção */}
+                    {/* Linha da Retenção — um <Line> só, colorido pelo
+                        gradiente calculado acima (stopsGradiente), que troca
+                        de cor exatamente no ponto de cruzamento com a meta.
+                        Fallback sólido depois do url() pro caso raro do
+                        gradiente não estar pronto no primeiro frame (SVG
+                        aceita cor de fallback após a referência ao gradiente). */}
                     <Line
                       yAxisId="left"
-                      type="monotone"
+                      type="linear"
                       dataKey="txDisplay"
-                      stroke={linhaAbaixoDaMeta ? "var(--danger)" : "var(--success)"}
+                      stroke={`url(#${META_GRADIENT_ID}) ${corAbaixoMeta}`}
                       strokeWidth={2.5}
                       animationDuration={350}
                       animationEasing="ease-out"
@@ -370,6 +438,7 @@ export function OperadorDetalheDialog({
               )}
             </StyledCard>
           </div>
+        </div>
         </div>
       </DialogContent>
     </Dialog>
