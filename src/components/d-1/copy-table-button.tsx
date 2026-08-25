@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
-import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
 
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
+import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 
 function getHoraReport(equipe: ResumoEquipe): string {
   if (!equipe.horaReport || equipe.horaReport === "—") return "—";
@@ -108,7 +108,7 @@ export function CopyTableButton({ equipe }: CopyTableButtonProps) {
     setState("copying");
 
     try {
-      const pngDataUrl = await domToPng(target, { scale: 3 });
+      const pngDataUrl = await capturarComoPng(target);
       const hora = getHoraReport(equipe);
       const html = formatReportHtml(hora, pngDataUrl);
 

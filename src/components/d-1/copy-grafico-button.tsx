@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { IconChartLine, IconCheck, IconLoader2 } from "@tabler/icons-react";
-import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
+
+import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 
 export function CopyGraficoButton() {
   const [isPending, startTransition] = useTransition();
@@ -20,7 +21,7 @@ export function CopyGraficoButton() {
           return;
         }
 
-        const pngDataUrl = await domToPng(target, { scale: 3 });
+        const pngDataUrl = await capturarComoPng(target);
 
         const response = await fetch(pngDataUrl);
         const blob = await response.blob();

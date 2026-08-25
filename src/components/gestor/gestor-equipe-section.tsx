@@ -263,9 +263,16 @@ export function GestorEquipeSection({
         </div>
 
         {/*
-          Wrapper INVISÍVEL usado SÓ pela captura do PNG (variant excel). Vive
-          off-screen pra não afetar o layout. O CopyTableButton procura por
-          [data-tabela-png].
+          Wrapper INVISÍVEL usado SÓ pela captura do PNG. Vive off-screen pra
+          não afetar o layout. Renderiza o MESMO card/tabela do site (variant
+          "screen" padrão, dentro do mesmo StyledCard com as cantoneiras) —
+          nada de template hardcoded à parte, pra imagem exportada sair
+          idêntica ao que está na tela, nos dois temas.
+          Usa `operadoresPngOrdenados` (não a lista com o "olho" aberto) de
+          propósito: a imagem exportada nunca deve revelar nomes reais só
+          porque o gestor tinha o nome fantasia temporariamente aberto na
+          tela no momento do clique.
+          O CopyTableButton procura por [data-tabela-png].
         */}
         <div
           data-equipe-png-wrapper
@@ -278,14 +285,15 @@ export function GestorEquipeSection({
           }}
         >
           <div data-tabela-png>
-            <EquipeTable
-              key="gestor-equipe-png"
-              operadores={operadoresPngOrdenados}
-              equipe={equipe}
-              variant="excel"
-              metaTx={metaTxFracao}
-              showRvDiario={showRvDiario}
-            />
+            <StyledCard withGradient className="p-3">
+              <EquipeTable
+                key="gestor-equipe-png"
+                operadores={operadoresPngOrdenados}
+                equipe={equipe}
+                metaTx={metaTxFracao}
+                showRvDiario={showRvDiario}
+              />
+            </StyledCard>
           </div>
         </div>
 

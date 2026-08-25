@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { IconCheck, IconDownload, IconLoader2 } from "@tabler/icons-react";
-import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
+
+import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -43,7 +44,7 @@ export function ExportPopupPngButton({
     setState("gerando");
 
     try {
-      const dataUrl = await domToPng(target, { scale: 2 });
+      const dataUrl = await capturarComoPng(target, { scale: 2 });
 
       const link = document.createElement("a");
       link.href = dataUrl;

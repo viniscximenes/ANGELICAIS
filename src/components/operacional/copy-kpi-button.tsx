@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
-import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
 
 import { buildClipboardReportHtml } from "@/lib/gestor/build-clipboard-report-html";
+import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 
 function escapeHtml(str: string): string {
@@ -78,7 +78,7 @@ export function CopyKpiButton({ dataCorte }: CopyKpiButtonProps) {
     setState("copying");
 
     try {
-      const pngDataUrl = await domToPng(target, { scale: 3 });
+      const pngDataUrl = await capturarComoPng(target);
       const subtitulo = dataCorte
         ? `atualizado até ${escapeHtml(formatDateBR(dataCorte))}`
         : "—";

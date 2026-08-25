@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
-import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
+
+import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 
 export function CopyIndispPausasButton() {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
@@ -21,7 +22,7 @@ export function CopyIndispPausasButton() {
     setState("copying");
 
     try {
-      const pngDataUrl = await domToPng(target, { scale: 3 });
+      const pngDataUrl = await capturarComoPng(target);
 
       const blobResponse = await fetch(pngDataUrl);
       const imageBlob = await blobResponse.blob();

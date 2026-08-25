@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
-import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
 
 import { buildClipboardReportHtml } from "@/lib/gestor/build-clipboard-report-html";
+import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 
 function escapeHtml(str: string): string {
   return str
@@ -70,7 +70,7 @@ export function CopyIndisponibilidadeButton({
     setState("copying");
 
     try {
-      const pngDataUrl = await domToPng(target, { scale: 3 });
+      const pngDataUrl = await capturarComoPng(target);
       const hora =
         horaReport && horaReport !== "—"
           ? horaReport.match(/^(\d{1,2}:\d{2})/)?.[1] ?? horaReport
