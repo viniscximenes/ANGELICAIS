@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   IconX,
@@ -275,174 +275,211 @@ function SortIcon({ slug, sort }: { slug: string; sort: SortState }) {
   );
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   PNG offscreen — capturado por CopyKpiButton via [data-kpi-tabela-png].
-   SÓ a tabela (sem título/subtítulo — esses vão como texto no clipboard,
-   via buildClipboardReportHtml, mesmo padrão do Consolidado/Tempo
-   Logado/Indisponibilidade). Fundo branco fixo, texto sempre preto (sem
-   cores de meta), zebra nas linhas.
-   ──────────────────────────────────────────────────────────────────── */
-
-const PNG_SANS_STACK = "'Segoe UI', 'Arial', sans-serif";
-const PNG_HEADER_BG = "#1f4e78";
-const PNG_HEADER_DIVIDER = "#4a7ba6";
-const PNG_BORDER = "#d0d0d0";
-const PNG_ZEBRA_IMPAR = "#ffffff";
-const PNG_ZEBRA_PAR = "#f8f8f8";
-
-const PNG_CELL_PADDING = "12px 24px";
-const PNG_COL_MIN_WIDTH = 120;
-
 function rvTituloColuna(modo: RvModo): string {
   return modo === "normal" ? "RV (SEM CONTESTAÇÃO)" : "RV (CONTESTADO ABS E INDISP)";
 }
 
-function KpiTablePng({
+/* ────────────────────────────────────────────────────────────────────
+   Tabela de Operadores — usada tanto na tela quanto (numa instância
+   offscreen, sem os handlers interativos) na captura de PNG do
+   CopyKpiButton. Mesmo componente, mesmos tokens/classes — nenhum
+   template hardcoded à parte, pra imagem exportada sair idêntica ao
+   que está na tela, nos dois temas.
+
+   Modo estático (export): basta OMITIR onSort — sem esse prop, os
+   headers não ficam draggable/clicáveis, mas a aparência é idêntica
+   (draggable/onClick não mudam nada visualmente, só comportamento).
+   ──────────────────────────────────────────────────────────────────── */
+function KpiOperadoresTabela({
   operadores,
   headers,
-  rvVisivel,
+  isMesPassado,
+  sort,
+  rvColunaAtiva,
   rvModo,
   getRvLiquido,
+  mostrarToggleOlho,
+  olhoAberto,
+  onToggleOlho,
+  onSort,
+  dragIndex = null,
+  dragOverIndex = null,
+  onHeaderDragStart,
+  onHeaderDragEnter,
+  onHeaderDragLeave,
+  onHeaderDrop,
+  onHeaderDragEnd,
 }: {
   operadores: OperadorKpiSerial[];
   headers: { slug: string; displayName: string }[];
-  /** Coluna RV extra, opcional — reflete o toggle/modo no momento do print. */
-  rvVisivel?: boolean;
-  rvModo?: RvModo;
-  getRvLiquido?: (email: string) => number | null;
+  isMesPassado: boolean;
+  sort: SortState;
+  rvColunaAtiva: boolean;
+  rvModo: RvModo;
+  getRvLiquido: (email: string) => number | null;
+  mostrarToggleOlho?: boolean;
+  olhoAberto?: boolean;
+  onToggleOlho?: () => void;
+  /** Presente = tabela interativa (tela); ausente = instância estática (export). */
+  onSort?: (slug: string) => void;
+  dragIndex?: number | null;
+  dragOverIndex?: number | null;
+  onHeaderDragStart?: (idx: number) => void;
+  onHeaderDragEnter?: (idx: number) => void;
+  onHeaderDragLeave?: (e: DragEvent<HTMLTableCellElement>, idx: number) => void;
+  onHeaderDrop?: (fromIndex: number, toIndex: number) => void;
+  onHeaderDragEnd?: () => void;
 }) {
+  const interativo = !!onSort;
+
   return (
-    <table
-      style={{
-        borderCollapse: "collapse",
-        tableLayout: "auto",
-        width: "auto",
-        background: "#ffffff",
-        color: "#000000",
-        border: "1px solid #c0c0c0",
-        fontFamily: PNG_SANS_STACK,
-      }}
-    >
-      <thead>
-        <tr style={{ background: PNG_HEADER_BG }}>
-          <th
-            style={{
-              padding: PNG_CELL_PADDING,
-              minWidth: PNG_COL_MIN_WIDTH,
-              fontSize: "11px",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-              color: "#ffffff",
-              textAlign: "center",
-              whiteSpace: "nowrap",
-              borderRight: `1px solid ${PNG_HEADER_DIVIDER}`,
-            }}
-          >
-            Operador
-          </th>
-          {headers.map((h, idx) => (
-            <th
-              key={h.slug}
-              style={{
-                padding: PNG_CELL_PADDING,
-                minWidth: PNG_COL_MIN_WIDTH,
-                fontSize: "11px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                color: "#ffffff",
-                textAlign: "center",
-                whiteSpace: "nowrap",
-                borderRight:
-                  idx < headers.length - 1 || rvVisivel
-                    ? `1px solid ${PNG_HEADER_DIVIDER}`
-                    : undefined,
-              }}
-            >
-              {h.displayName}
-            </th>
-          ))}
-          {rvVisivel && (
-            <th
-              style={{
-                padding: PNG_CELL_PADDING,
-                minWidth: PNG_COL_MIN_WIDTH,
-                fontSize: "11px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                color: "#ffffff",
-                textAlign: "center",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {rvTituloColuna(rvModo ?? "normal")}
-            </th>
-          )}
-        </tr>
-      </thead>
-      <tbody>
-        {operadores.map((op, idx) => (
-          <tr
-            key={op.email}
-            style={{ background: idx % 2 === 0 ? PNG_ZEBRA_IMPAR : PNG_ZEBRA_PAR }}
-          >
-            <td
-              style={{
-                padding: PNG_CELL_PADDING,
-                minWidth: PNG_COL_MIN_WIDTH,
-                fontSize: "12px",
-                textAlign: "center",
-                color: "#000000",
-                borderRight: `1px solid ${PNG_BORDER}`,
-                borderTop: `1px solid ${PNG_BORDER}`,
-              }}
-            >
-              {op.nome}
-            </td>
-            {op.kpis.map((kpi, kIdx) => (
-              <td
-                key={kpi.slug}
+    <StyledCard withGradient className="p-3">
+      <div className="elevation-1 overflow-x-auto rounded-xl border border-border/80 scrollbar-tema">
+        <table className="w-full border-collapse text-sm" style={{ minWidth: 860 }}>
+          <thead>
+            <tr className="bg-muted/40" style={{ borderBottom: "1px solid var(--border)" }}>
+              <th className="ds-mono-sm text-muted-foreground sticky left-0 z-20 bg-card px-4 py-2.5 text-center align-middle font-semibold tracking-wider uppercase whitespace-nowrap select-none border-r border-border/50 shadow-sm">
+                <div className="flex items-center justify-center gap-1.5">
+                  <span>Operador</span>
+                  {mostrarToggleOlho && (
+                    <button
+                      type="button"
+                      onClick={onToggleOlho}
+                      title={olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"}
+                      className="text-muted-foreground/60 hover:text-muted-foreground transition-colors inline-flex items-center cursor-pointer"
+                    >
+                      {olhoAberto ? <IconEye size={14} /> : <IconEyeOff size={14} />}
+                    </button>
+                  )}
+                </div>
+              </th>
+
+              {headers.map((h, idx) => (
+                <th
+                  key={h.slug}
+                  draggable={interativo}
+                  onDragStart={
+                    interativo
+                      ? (e) => {
+                          e.dataTransfer.setData("text/plain", String(idx));
+                          e.dataTransfer.effectAllowed = "move";
+                          onHeaderDragStart?.(idx);
+                        }
+                      : undefined
+                  }
+                  onDragOver={
+                    interativo
+                      ? (e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                        }
+                      : undefined
+                  }
+                  onDragEnter={interativo ? () => onHeaderDragEnter?.(idx) : undefined}
+                  onDragLeave={interativo ? (e) => onHeaderDragLeave?.(e, idx) : undefined}
+                  onDrop={
+                    interativo
+                      ? (e) => {
+                          e.preventDefault();
+                          const fromIndex = parseInt(e.dataTransfer.getData("text/plain"), 10);
+                          onHeaderDrop?.(fromIndex, idx);
+                        }
+                      : undefined
+                  }
+                  onDragEnd={interativo ? onHeaderDragEnd : undefined}
+                  title={interativo ? "Arraste para reordenar · clique para ordenar" : undefined}
+                  className={cn(
+                    "ds-mono-sm text-muted-foreground px-3 py-2.5 text-center font-semibold tracking-wider uppercase whitespace-nowrap select-none",
+                    interativo &&
+                      "hover:text-foreground transition-colors cursor-grab active:cursor-grabbing",
+                    idx < headers.length - 1 ? "border-r border-border/50" : "",
+                    dragIndex === idx && "opacity-50",
+                    dragOverIndex !== null &&
+                      dragOverIndex === idx &&
+                      dragIndex !== idx &&
+                      (dragIndex !== null && dragIndex < idx
+                        ? "border-r-2 border-r-primary"
+                        : "border-l-2 border-l-primary"),
+                  )}
+                  onClick={interativo ? () => onSort?.(h.slug) : undefined}
+                >
+                  {h.displayName}
+                  {interativo && <SortIcon slug={h.slug} sort={sort} />}
+                </th>
+              ))}
+              {rvColunaAtiva && (
+                <th className="ds-mono-sm text-muted-foreground px-3 py-2.5 text-center font-semibold tracking-wider uppercase whitespace-nowrap select-none border-l border-border/50">
+                  {rvTituloColuna(rvModo)}
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {operadores.map((op, i) => (
+              <tr
+                key={op.email}
+                className="group hover:bg-muted/10 transition-colors"
                 style={{
-                  padding: PNG_CELL_PADDING,
-                  minWidth: PNG_COL_MIN_WIDTH,
-                  fontSize: "12px",
-                  textAlign: "center",
-                  color: "#000000",
-                  fontVariantNumeric: "tabular-nums",
-                  borderTop: `1px solid ${PNG_BORDER}`,
-                  borderRight:
-                    kIdx < op.kpis.length - 1 || rvVisivel
-                      ? `1px solid ${PNG_BORDER}`
-                      : undefined,
+                  borderBottom:
+                    i < operadores.length - 1 ? "1px solid var(--border)" : undefined,
                 }}
               >
-                {kpi.valor === null ? "N/D" : formatKpiValue(kpi.valor, kpi.valueType)}
-              </td>
+                <td className="ds-body sticky left-0 z-10 bg-card px-4 py-2 text-center align-middle font-medium border-r border-border/30 shadow-sm">
+                  {op.nome}
+                </td>
+                {op.kpis.map((kpi, idx) => {
+                  const v = statusColorVar(kpi, isMesPassado);
+                  return (
+                    <td
+                      key={kpi.slug}
+                      className={[
+                        "ds-mono-sm px-3 py-2 text-center",
+                        idx < op.kpis.length - 1 ? "border-r border-border/30" : "",
+                      ].join(" ")}
+                      style={celulaStyle(kpi, isMesPassado)}
+                    >
+                      {kpi.valor === null ? (
+                        <span className="text-muted-foreground">N/D</span>
+                      ) : (
+                        <span className="inline-flex items-center justify-center gap-1.5">
+                          <span style={{ fontVariantNumeric: "tabular-nums" }}>
+                            {formatKpiValue(kpi.valor, kpi.valueType)}
+                          </span>
+                          {v && (
+                            <span
+                              aria-hidden="true"
+                              className="inline-block h-1.5 w-1.5 rounded-full"
+                              style={{ background: `var(${v})` }}
+                            />
+                          )}
+                        </span>
+                      )}
+                    </td>
+                  );
+                })}
+                {rvColunaAtiva && (
+                  <td
+                    className="ds-mono-sm px-3 py-2 text-center border-l border-border/30"
+                    style={{ fontVariantNumeric: "tabular-nums" }}
+                  >
+                    {(() => {
+                      const liquido = getRvLiquido(op.email);
+                      return liquido === null ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        <span style={{ fontVariantNumeric: "tabular-nums" }}>
+                          {formatBRL(liquido)}
+                        </span>
+                      );
+                    })()}
+                  </td>
+                )}
+              </tr>
             ))}
-            {rvVisivel && (
-              <td
-                style={{
-                  padding: PNG_CELL_PADDING,
-                  minWidth: PNG_COL_MIN_WIDTH,
-                  fontSize: "12px",
-                  textAlign: "center",
-                  color: "#000000",
-                  fontVariantNumeric: "tabular-nums",
-                  borderTop: `1px solid ${PNG_BORDER}`,
-                }}
-              >
-                {(() => {
-                  const liquido = getRvLiquido?.(op.email) ?? null;
-                  return liquido === null ? "N/D" : formatBRL(liquido);
-                })()}
-              </td>
-            )}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+          </tbody>
+        </table>
+      </div>
+    </StyledCard>
   );
 }
 
@@ -700,10 +737,15 @@ export function KpiEquipeSection({
     [operadoresParaTela, headers],
   );
 
-  // PNG export usa a mesma lógica de nome da tela (fantasia ou real, conforme olho)
+  // Export SEMPRE usa nome fantasia (ou o fallback já embutido em
+  // resolverNomeExibicao/deriveNomeOperador quando não há apelido
+  // cadastrado) — nunca o nome real, mesmo que o gestor esteja com o
+  // "olho" aberto revelando nomes reais na tela no momento do clique.
+  // Por isso parte de `data.operadores` (bruto, resolvido no server),
+  // não de `operadoresParaTela` (que segue o toggle do olho).
   const operadoresParaExport = useMemo(
-    () => aplicarColunasVisiveis(operadoresParaTela, headers),
-    [operadoresParaTela, headers],
+    () => aplicarColunasVisiveis(data?.operadores ?? [], headers),
+    [data, headers],
   );
 
   const sortedOps = useMemo(
@@ -725,24 +767,14 @@ export function KpiEquipeSection({
   // muda, só a renderização.
   const rvColunaAtiva = rvVisivel && !!scopeAtual;
 
-  // Reaproveitado pela tela e pelo print (KpiTablePng) — mesmo valor, mesmo
-  // modo (Normal/Contestação) selecionado no momento da leitura.
+  // Reaproveitado pela tela e pela exportação (KpiOperadoresTabela) — mesmo
+  // valor, mesmo modo (Normal/Contestação) selecionado no momento da leitura.
   function getRvLiquido(email: string): number | null {
     if (!scopeAtual || !rvDataAtual) return null;
     const resultado = rvDataAtual.porOperador[email.trim().toLowerCase()];
     if (!resultado) return null;
     const calculo = rvModo === "normal" ? resultado.normal : resultado.contestacao;
     return calculo.liquido;
-  }
-
-  function renderRvCell(email: string) {
-    const liquido = getRvLiquido(email);
-    if (liquido === null) return <span className="text-muted-foreground">—</span>;
-    return (
-      <span style={{ fontVariantNumeric: "tabular-nums" }}>
-        {formatBRL(liquido)}
-      </span>
-    );
   }
 
   return (
@@ -927,151 +959,34 @@ export function KpiEquipeSection({
                   equipe abaixo é a mesma do último mês com dados.
                 </p>
               )}
-              <StyledCard withGradient className="p-3">
-                <div className="elevation-1 overflow-x-auto rounded-xl border border-border/80 scrollbar-tema">
-                <table
-                  className="w-full border-collapse text-sm"
-                  style={{ minWidth: 860 }}
-                >
-                  <thead>
-                    <tr
-                      className="bg-muted/40"
-                      style={{ borderBottom: "1px solid var(--border)" }}
-                    >
-                      <th
-                        className="ds-mono-sm text-muted-foreground sticky left-0 z-20 bg-card px-4 py-2.5 text-center align-middle font-semibold tracking-wider uppercase whitespace-nowrap select-none border-r border-border/50 shadow-sm"
-                      >
-                        <div className="flex items-center justify-center gap-1.5">
-                          <span>Operador</span>
-                          {nomeFantasia?.ativo && (
-                            <button
-                              type="button"
-                              onClick={handleToggleOlho}
-                              title={
-                                olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"
-                              }
-                              className="text-muted-foreground/60 hover:text-muted-foreground transition-colors inline-flex items-center cursor-pointer"
-                            >
-                              {olhoAberto ? <IconEye size={14} /> : <IconEyeOff size={14} />}
-                            </button>
-                          )}
-                        </div>
-                      </th>
-
-                      {headers.map((h, idx) => (
-                        <th
-                          key={h.slug}
-                          draggable
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData("text/plain", String(idx));
-                            e.dataTransfer.effectAllowed = "move";
-                            setDragIndex(idx);
-                          }}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = "move";
-                          }}
-                          onDragEnter={() => setDragOverIndex(idx)}
-                          onDragLeave={(e) => {
-                            // dragleave também dispara ao passar sobre filhos
-                            // (span/ícone) — só limpa se saiu mesmo do <th>.
-                            if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-                            setDragOverIndex((atual) => (atual === idx ? null : atual));
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            const fromIndex = parseInt(
-                              e.dataTransfer.getData("text/plain"),
-                              10,
-                            );
-                            handleReorder(fromIndex, idx);
-                            limparDrag();
-                          }}
-                          onDragEnd={limparDrag}
-                          title="Arraste para reordenar · clique para ordenar"
-                          className={cn(
-                            "ds-mono-sm text-muted-foreground px-3 py-2.5 text-center font-semibold tracking-wider uppercase whitespace-nowrap select-none hover:text-foreground transition-colors cursor-grab active:cursor-grabbing",
-                            idx < headers.length - 1 ? "border-r border-border/50" : "",
-                            dragIndex === idx && "opacity-50",
-                            dragOverIndex !== null &&
-                              dragOverIndex === idx &&
-                              dragIndex !== idx &&
-                              (dragIndex !== null && dragIndex < idx
-                                ? "border-r-2 border-r-primary"
-                                : "border-l-2 border-l-primary"),
-                          )}
-                          onClick={() => handleSort(h.slug)}
-                        >
-                          {h.displayName}
-                          <SortIcon slug={h.slug} sort={sort} />
-                        </th>
-                      ))}
-                      {rvColunaAtiva && (
-                        <th className="ds-mono-sm text-muted-foreground px-3 py-2.5 text-center font-semibold tracking-wider uppercase whitespace-nowrap select-none border-l border-border/50">
-                          {rvTituloColuna(rvModo)}
-                        </th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedOps.map((op, i) => (
-                      <tr
-                        key={op.email}
-                        className="group hover:bg-muted/10 transition-colors"
-                        style={{
-                          borderBottom:
-                            i < sortedOps.length - 1
-                              ? "1px solid var(--border)"
-                              : undefined,
-                        }}
-                      >
-                        <td className="ds-body sticky left-0 z-10 bg-card px-4 py-2 text-center align-middle font-medium border-r border-border/30 shadow-sm">
-                          {op.nome}
-                        </td>
-                        {op.kpis.map((kpi, idx) => {
-                          const v = statusColorVar(kpi, data.isMesPassado);
-                          return (
-                            <td
-                              key={kpi.slug}
-                              className={[
-                                "ds-mono-sm px-3 py-2 text-center",
-                                idx < op.kpis.length - 1 ? "border-r border-border/30" : "",
-                              ].join(" ")}
-                              style={celulaStyle(kpi, data.isMesPassado)}
-                            >
-                              {kpi.valor === null ? (
-                                <span className="text-muted-foreground">N/D</span>
-                              ) : (
-                                <span className="inline-flex items-center justify-center gap-1.5">
-                                  <span style={{ fontVariantNumeric: "tabular-nums" }}>
-                                    {formatKpiValue(kpi.valor, kpi.valueType)}
-                                  </span>
-                                  {v && (
-                                    <span
-                                      aria-hidden="true"
-                                      className="inline-block h-1.5 w-1.5 rounded-full"
-                                      style={{ background: `var(${v})` }}
-                                    />
-                                  )}
-                                </span>
-                              )}
-                            </td>
-                          );
-                        })}
-                        {rvColunaAtiva && (
-                          <td
-                            className="ds-mono-sm px-3 py-2 text-center border-l border-border/30"
-                            style={{ fontVariantNumeric: "tabular-nums" }}
-                          >
-                            {renderRvCell(op.email)}
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              </StyledCard>
+              <KpiOperadoresTabela
+                operadores={sortedOps}
+                headers={headers}
+                isMesPassado={data.isMesPassado}
+                sort={sort}
+                rvColunaAtiva={rvColunaAtiva}
+                rvModo={rvModo}
+                getRvLiquido={getRvLiquido}
+                mostrarToggleOlho={!!nomeFantasia?.ativo}
+                olhoAberto={olhoAberto}
+                onToggleOlho={handleToggleOlho}
+                onSort={handleSort}
+                dragIndex={dragIndex}
+                dragOverIndex={dragOverIndex}
+                onHeaderDragStart={setDragIndex}
+                onHeaderDragEnter={setDragOverIndex}
+                onHeaderDragLeave={(e, idx) => {
+                  // dragleave também dispara ao passar sobre filhos
+                  // (span/ícone) — só limpa se saiu mesmo do <th>.
+                  if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                  setDragOverIndex((atual) => (atual === idx ? null : atual));
+                }}
+                onHeaderDrop={(fromIndex, toIndex) => {
+                  handleReorder(fromIndex, toIndex);
+                  limparDrag();
+                }}
+                onHeaderDragEnd={limparDrag}
+              />
             </>
           )}
         </div>
@@ -1081,29 +996,42 @@ export function KpiEquipeSection({
           mais clicável) — componente mantido no arquivo, só não é chamado. */}
 
       {/*
-        Wrapper INVISÍVEL usado SÓ pela captura do PNG (CopyKpiButton).
-        Vive off-screen pra não afetar o layout. Usa data.operadores (nome já
-        vem com fantasia resolvida no server, se ativa) — nunca a versão do
-        olho aberto/revelado da tela.
+        Wrapper INVISÍVEL usado SÓ pela captura do PNG (CopyKpiButton). Vive
+        off-screen pra não afetar o layout. Renderiza o MESMO
+        KpiOperadoresTabela do site (mesmo StyledCard com as cantoneiras,
+        mesmos tokens) — nada de template hardcoded à parte, pra imagem
+        exportada sair idêntica ao que está na tela, nos dois temas.
+
+        Usa `operadoresParaExportOrdenados` (derivado de data.operadores,
+        não de operadoresParaTela) de propósito: a imagem exportada sempre
+        mostra nome fantasia, nunca o nome real — mesmo que o gestor esteja
+        com o "olho" aberto revelando nomes reais na tela no momento do
+        clique. Sem passar onSort, a instância fica estática (sem
+        drag/clique) — mesma aparência, sem interatividade que não faz
+        sentido numa captura.
       */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          top: "-99999px",
-          left: "-99999px",
-        }}
-      >
-        <div data-kpi-tabela-png>
-          <KpiTablePng
-            operadores={operadoresParaExportOrdenados}
-            headers={headers}
-            rvVisivel={rvColunaAtiva}
-            rvModo={rvModo}
-            getRvLiquido={getRvLiquido}
-          />
+      {data && data.operadores.length > 0 && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: "-99999px",
+            left: "-99999px",
+          }}
+        >
+          <div data-kpi-tabela-png>
+            <KpiOperadoresTabela
+              operadores={operadoresParaExportOrdenados}
+              headers={headers}
+              isMesPassado={data.isMesPassado}
+              sort={sort}
+              rvColunaAtiva={rvColunaAtiva}
+              rvModo={rvModo}
+              getRvLiquido={getRvLiquido}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </motion.section>
   );
 }
