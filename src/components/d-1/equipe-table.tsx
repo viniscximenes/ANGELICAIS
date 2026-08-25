@@ -5,6 +5,20 @@ import { forwardRef } from "react";
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
 import { formatBRL } from "@/lib/rv/format-money";
 import { cn } from "@/lib/utils";
+import {
+  corNomeOperador,
+  fundoLinhaRuim,
+  TABELA_CONTAINER_CLASS,
+  TABELA_HEADER_BORDA,
+  TABELA_HEADER_CELL_CLASS,
+  TABELA_HEADER_CELL_ULTIMA_CLASS,
+  TABELA_HEADER_CLASS,
+  TABELA_LINHA_CLASS,
+  TABELA_NOME_CELL_CLASS,
+  TABELA_VALOR_CELL_CLASS,
+  ValorSemantico,
+  ValorSemDado,
+} from "@/components/gestor/tabela-padrao";
 
 interface EquipeTableProps {
   operadores: OperadorConsolidado[];
@@ -92,34 +106,24 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
       equipe.txRetencao !== null && meetsMeta(equipe.txRetencao, metaTx);
 
     return (
-      <div
-        ref={ref}
-        data-equipe-table
-        className="elevation-1 overflow-hidden rounded-xl border border-border/80"
-      >
+      <div ref={ref} data-equipe-table className={TABELA_CONTAINER_CLASS}>
         {/* Cabeçalho Estilo Planilha */}
         <div
-          className="ds-mono-sm text-muted-foreground grid gap-0 font-bold tracking-wider uppercase bg-muted/40"
+          className={TABELA_HEADER_CLASS}
           style={{
-            borderBottom: "1px solid var(--border)",
+            ...TABELA_HEADER_BORDA,
             gridTemplateColumns: showRvDiario
               ? "3fr 2fr 2fr 2fr 3fr 3fr"
               : "3fr 2fr 2fr 2fr 3fr",
           }}
         >
-          <div className="px-3 py-2.5 text-center border-r border-border/50 flex items-center justify-center gap-1.5">
+          <div className={cn(TABELA_HEADER_CELL_CLASS, "flex items-center justify-center gap-1.5")}>
             <span>Operador</span>
             {headerButton}
           </div>
-          <div className="px-3 py-2.5 text-center border-r border-border/50">
-            Retidos
-          </div>
-          <div className="px-3 py-2.5 text-center border-r border-border/50">
-            Cancelados
-          </div>
-          <div className="px-3 py-2.5 text-center border-r border-border/50">
-            Pedidos
-          </div>
+          <div className={TABELA_HEADER_CELL_CLASS}>Retidos</div>
+          <div className={TABELA_HEADER_CELL_CLASS}>Cancelados</div>
+          <div className={TABELA_HEADER_CELL_CLASS}>Pedidos</div>
           <div
             className={cn(
               "px-3 py-2.5 text-center",
@@ -129,9 +133,7 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
             Tx Retenção
           </div>
           {showRvDiario && (
-            <div className="px-3 py-2.5 text-center">
-              RV Diário
-            </div>
+            <div className={TABELA_HEADER_CELL_ULTIMA_CLASS}>RV Diário</div>
           )}
         </div>
 
@@ -146,11 +148,9 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
           return (
             <div
               key={key}
-              className="grid items-center gap-0 transition-colors hover:bg-muted/40"
+              className={TABELA_LINHA_CLASS}
               style={{
-                background: belowMeta
-                  ? "color-mix(in oklch, var(--danger) 5%, transparent)"
-                  : undefined,
+                background: fundoLinhaRuim(belowMeta),
                 borderBottom: isLast && hideTotais ? "none" : "1px solid var(--border)/40",
                 opacity: semAtendimentos ? 0.65 : 1,
                 gridTemplateColumns: showRvDiario
@@ -159,31 +159,25 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               }}
             >
               <div
-                className="ds-body truncate px-3 py-2 text-center border-r border-border/30 font-medium"
-                style={{
-                  color: semAtendimentos
-                    ? "var(--muted-foreground)"
-                    : belowMeta
-                      ? "var(--danger)"
-                      : "var(--foreground)",
-                }}
+                className={TABELA_NOME_CELL_CLASS}
+                style={{ color: corNomeOperador({ semDado: semAtendimentos, ruim: belowMeta }) }}
               >
                 {formatOperatorLabel(op.email)}
               </div>
               <div
-                className="ds-mono-sm px-3 py-2 text-center border-r border-border/30"
+                className={TABELA_VALOR_CELL_CLASS}
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {op.retidos}
               </div>
               <div
-                className="ds-mono-sm px-3 py-2 text-center border-r border-border/30"
+                className={TABELA_VALOR_CELL_CLASS}
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {op.cancelados}
               </div>
               <div
-                className="ds-mono-sm px-3 py-2 text-center border-r border-border/30"
+                className={TABELA_VALOR_CELL_CLASS}
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {op.pedidos}
@@ -195,30 +189,9 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                 )}
               >
                 {semAtendimentos ? (
-                  <span className="text-muted-foreground">—</span>
+                  <ValorSemDado />
                 ) : (
-                  <>
-                    <span
-                      style={{
-                        color: belowMeta
-                          ? "var(--danger)"
-                          : "var(--success)",
-                        fontWeight: 600,
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {formatTx(op.txRetencao)}
-                    </span>
-                    <span
-                      aria-hidden="true"
-                      className="inline-block h-1.5 w-1.5 rounded-full"
-                      style={{
-                        background: belowMeta
-                          ? "var(--danger)"
-                          : "var(--success)",
-                      }}
-                    />
-                  </>
+                  <ValorSemantico ruim={belowMeta}>{formatTx(op.txRetencao)}</ValorSemantico>
                 )}
               </div>
               {showRvDiario && (

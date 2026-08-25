@@ -3,9 +3,25 @@
 import { forwardRef } from "react";
 import { IconEye, IconEyeOff } from "@tabler/icons-react";
 
+import { cn } from "@/lib/utils";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import type { GestorIndispLinha } from "@/lib/google/gestor";
+import {
+  corNomeOperador,
+  fundoLinhaRuim,
+  TABELA_CONTAINER_CLASS,
+  TABELA_HEADER_BORDA,
+  TABELA_HEADER_CELL_CLASS,
+  TABELA_HEADER_CELL_ULTIMA_CLASS,
+  TABELA_HEADER_CLASS,
+  TABELA_LINHA_CLASS,
+  TABELA_NOME_CELL_CLASS,
+  TABELA_VALOR_BULLET_CLASS,
+  TABELA_VALOR_CELL_CLASS,
+  ValorSemantico,
+  ValorSemDado,
+} from "./tabela-padrao";
 
 const GRID_COLS = "2fr 1.8fr 1.6fr 2fr 1.8fr";
 
@@ -65,19 +81,13 @@ const ScreenTable = forwardRef<
     olhoAberto && nomeFantasia.ativo ? { ...nomeFantasia, ativo: false } : nomeFantasia;
 
   return (
-    <div
-      ref={ref}
-      className="elevation-1 overflow-hidden rounded-xl border border-border/80"
-    >
+    <div ref={ref} data-indisp-table className={TABELA_CONTAINER_CLASS}>
       {/* Cabeçalho */}
       <div
-        className="ds-mono-sm text-muted-foreground grid gap-0 font-semibold tracking-wider uppercase bg-muted/40"
-        style={{
-          gridTemplateColumns: GRID_COLS,
-          borderBottom: "1px solid var(--border)",
-        }}
+        className={TABELA_HEADER_CLASS}
+        style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA }}
       >
-        <div className="px-3 py-2.5 text-center border-r border-border/50 whitespace-nowrap flex items-center justify-center gap-1.5">
+        <div className={cn(TABELA_HEADER_CELL_CLASS, "flex items-center justify-center gap-1.5")}>
           Operador
           {onToggleOlho && nomeFantasia.ativo && (
             <button
@@ -90,18 +100,10 @@ const ScreenTable = forwardRef<
             </button>
           )}
         </div>
-        <div className="px-3 py-2.5 text-center border-r border-border/50 whitespace-nowrap">
-          Indisp. %
-        </div>
-        <div className="px-3 py-2.5 text-center border-r border-border/50 whitespace-nowrap">
-          NR17 %
-        </div>
-        <div className="px-3 py-2.5 text-center border-r border-border/50 whitespace-nowrap">
-          Pausa Part. %
-        </div>
-        <div className="px-3 py-2.5 text-center whitespace-nowrap">
-          Outras %
-        </div>
+        <div className={TABELA_HEADER_CELL_CLASS}>Indisp. %</div>
+        <div className={TABELA_HEADER_CELL_CLASS}>NR17 %</div>
+        <div className={TABELA_HEADER_CELL_CLASS}>Pausa Part. %</div>
+        <div className={TABELA_HEADER_CELL_ULTIMA_CLASS}>Outras %</div>
       </div>
 
       {/* Linhas */}
@@ -115,41 +117,35 @@ const ScreenTable = forwardRef<
         return (
           <div
             key={op.email}
-            className="grid items-center gap-0"
+            className={TABELA_LINHA_CLASS}
             style={{
               gridTemplateColumns: GRID_COLS,
-              background: acimaMeta
-                ? "color-mix(in oklch, var(--danger) 5%, transparent)"
-                : "transparent",
+              background: fundoLinhaRuim(acimaMeta) ?? "transparent",
               borderBottom: isLast ? "none" : "1px solid var(--border)/40",
               opacity: semDados ? 0.4 : 1,
             }}
           >
             <div
-              className="ds-body truncate px-3 py-2 text-center border-r border-border/30 font-medium"
-              style={{
-                color: acimaMeta ? "var(--danger)" : "var(--foreground)",
-              }}
+              className={TABELA_NOME_CELL_CLASS}
+              style={{ color: corNomeOperador({ ruim: acimaMeta }) }}
             >
               {resolverNomeExibicao(op.email, cfgDisplay)}
             </div>
-            <div
-              className="ds-mono-sm px-3 py-2 text-center border-r border-border/30"
-              style={{
-                fontVariantNumeric: "tabular-nums",
-                color: acimaMeta ? "var(--danger)" : "var(--foreground)",
-              }}
-            >
-              {fmtPct(op.indisponibilidade)}
+            <div className={TABELA_VALOR_BULLET_CLASS} style={{ fontVariantNumeric: "tabular-nums" }}>
+              {semDados ? (
+                <ValorSemDado />
+              ) : (
+                <ValorSemantico ruim={acimaMeta}>{fmtPct(op.indisponibilidade)}</ValorSemantico>
+              )}
             </div>
             <div
-              className="ds-mono-sm px-3 py-2 text-center border-r border-border/30 text-muted-foreground"
+              className={cn(TABELA_VALOR_CELL_CLASS, "text-muted-foreground")}
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {fmtPct(op.nr17Pct)}
             </div>
             <div
-              className="ds-mono-sm px-3 py-2 text-center border-r border-border/30 text-muted-foreground"
+              className={cn(TABELA_VALOR_CELL_CLASS, "text-muted-foreground")}
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {fmtPct(op.pausaParticularPct)}

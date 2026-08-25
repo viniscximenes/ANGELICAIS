@@ -3,6 +3,7 @@
 import { forwardRef } from "react";
 import { IconEye, IconEyeOff } from "@tabler/icons-react";
 
+import { cn } from "@/lib/utils";
 import type {
   NomeFantasiaSerial} from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
@@ -10,6 +11,21 @@ import type {
   GestorTempoLogadoLinha,
   StatusPresenca,
 } from "@/lib/google/gestor";
+import {
+  corNomeOperador,
+  fundoLinhaRuim,
+  TABELA_CONTAINER_CLASS,
+  TABELA_HEADER_BORDA,
+  TABELA_HEADER_CELL_CLASS,
+  TABELA_HEADER_CELL_ULTIMA_CLASS,
+  TABELA_HEADER_CLASS,
+  TABELA_LINHA_CLASS,
+  TABELA_NOME_CELL_CLASS,
+  TABELA_VALOR_BULLET_CLASS,
+  TABELA_VALOR_CELL_CLASS,
+  ValorSemantico,
+  ValorSemDado,
+} from "./tabela-padrao";
 
 const NO_FANTASIA: NomeFantasiaSerial = { ativo: false, mapa: {} };
 
@@ -74,20 +90,13 @@ const ScreenTable = forwardRef<
     olhoAberto && nomeFantasia.ativo ? { ...nomeFantasia, ativo: false } : nomeFantasia;
 
   return (
-    <div
-      ref={ref}
-      data-tempo-logado-table
-      className="elevation-1 overflow-hidden rounded-xl border border-border/80"
-    >
+    <div ref={ref} data-tempo-logado-table className={TABELA_CONTAINER_CLASS}>
       {/* Cabeçalho */}
       <div
-        className="ds-mono-sm text-muted-foreground grid gap-0 font-semibold tracking-wider uppercase bg-muted/40"
-        style={{
-          gridTemplateColumns: GRID_COLS,
-          borderBottom: "1px solid var(--border)",
-        }}
+        className={TABELA_HEADER_CLASS}
+        style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA }}
       >
-        <div className="px-3 py-2.5 text-center border-r border-border/50 whitespace-nowrap flex items-center justify-center gap-1.5">
+        <div className={cn(TABELA_HEADER_CELL_CLASS, "flex items-center justify-center gap-1.5")}>
           Operador
           {onToggleOlho && nomeFantasia.ativo && (
             <button
@@ -100,16 +109,10 @@ const ScreenTable = forwardRef<
             </button>
           )}
         </div>
-        <div className="px-3 py-2.5 text-center border-r border-border/50 whitespace-nowrap">
-          Tempo Logado
-        </div>
-        <div className="px-3 py-2.5 text-center border-r border-border/50 whitespace-nowrap">
-          Logout Est.
-        </div>
-        <div className="px-3 py-2.5 text-center border-r border-border/50 whitespace-nowrap">
-          Login
-        </div>
-        <div className="px-3 py-2.5 text-center whitespace-nowrap">Logout</div>
+        <div className={TABELA_HEADER_CELL_CLASS}>Tempo Logado</div>
+        <div className={TABELA_HEADER_CELL_CLASS}>Logout Est.</div>
+        <div className={TABELA_HEADER_CELL_CLASS}>Login</div>
+        <div className={TABELA_HEADER_CELL_ULTIMA_CLASS}>Logout</div>
       </div>
 
       {/* Linhas de operadores */}
@@ -125,41 +128,39 @@ const ScreenTable = forwardRef<
         return (
           <div
             key={op.email}
-            className="grid items-center gap-0"
+            className={TABELA_LINHA_CLASS}
             style={{
               gridTemplateColumns: GRID_COLS,
-              background: belowMeta
-                ? "color-mix(in oklch, var(--danger) 5%, transparent)"
-                : "transparent",
+              background: fundoLinhaRuim(belowMeta) ?? "transparent",
               borderBottom: isLast ? "none" : "1px solid var(--border)/40",
               opacity: isAusente ? 0.4 : 1,
             }}
           >
             <div
-              className="ds-body truncate px-3 py-2 text-center border-r border-border/30 font-medium"
-              style={{
-                color: belowMeta ? "var(--danger)" : "var(--foreground)",
-              }}
+              className={TABELA_NOME_CELL_CLASS}
+              style={{ color: corNomeOperador({ ruim: belowMeta }) }}
             >
               {resolverNomeExibicao(op.email, cfgDisplay)}
             </div>
-            <div
-              className="ds-mono-sm px-3 py-2 text-center border-r border-border/30"
-              style={{
-                fontVariantNumeric: "tabular-nums",
-                color: belowMeta ? "var(--danger)" : "var(--foreground)",
-              }}
-            >
-              {op.tempoLogado || "—"}
+            <div className={TABELA_VALOR_BULLET_CLASS} style={{ fontVariantNumeric: "tabular-nums" }}>
+              {isAusente ? (
+                <ValorSemDado />
+              ) : isAindaLogado ? (
+                // Ainda em andamento — não tem veredito (bom/ruim) ainda, então
+                // fica neutro, sem bullet (que aqui é reservado pra status final).
+                <span style={{ color: "var(--foreground)" }}>{op.tempoLogado}</span>
+              ) : (
+                <ValorSemantico ruim={belowMeta}>{op.tempoLogado}</ValorSemantico>
+              )}
             </div>
             <div
-              className="ds-mono-sm px-3 py-2 text-center border-r border-border/30 text-muted-foreground"
+              className={cn(TABELA_VALOR_CELL_CLASS, "text-muted-foreground")}
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {op.logoutEstimado || "—"}
             </div>
             <div
-              className="ds-mono-sm px-3 py-2 text-center border-r border-border/30 text-muted-foreground"
+              className={cn(TABELA_VALOR_CELL_CLASS, "text-muted-foreground")}
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {formatLogin(op.status, op.horaLogin)}

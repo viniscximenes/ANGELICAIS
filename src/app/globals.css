@@ -349,13 +349,17 @@
     font-weight: 600;
 }
 
-/* Customização e hierarquia da Tabela de Equipe */
-[data-theme="light"] [data-equipe-table] > div:first-child {
+/* Customização e hierarquia das Tabelas do Painel do Gestor (Equipe, Tempo Logado, Indisponibilidade) */
+[data-theme="light"] [data-equipe-table] > div:first-child,
+[data-theme="light"] [data-tempo-logado-table] > div:first-child,
+[data-theme="light"] [data-indisp-table] > div:first-child {
     background-color: var(--muted) !important;
     border-bottom: 2px solid var(--border) !important;
     color: var(--foreground) !important;
 }
-[data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover {
+[data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover,
+[data-theme="light"] [data-tempo-logado-table] > div:not(:first-child):not(.font-bold):hover,
+[data-theme="light"] [data-indisp-table] > div:not(:first-child):not(.font-bold):hover {
     background-color: var(--muted-hover-bg) !important;
 }
 
