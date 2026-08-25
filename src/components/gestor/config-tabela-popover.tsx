@@ -21,6 +21,7 @@ import {
   type OrdemTabela,
 } from "@/lib/gestor/config-tabela/types";
 import { cn } from "@/lib/utils";
+import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 
 interface ConfigTabelaPopoverProps {
   metaTxInicial: number;
@@ -73,14 +74,20 @@ export function ConfigTabelaPopover({
     }
 
     startTransition(async () => {
-      const result = await saveConfigTabelaAction(valor, ordem);
-      if (result.success) {
-        toast.success("Configurações salvas");
-        onSaved(valor, ordem);
-        setOpen(false);
-        onOpenChange?.(false);
-      } else {
-        toast.error("Erro ao salvar", { description: result.error });
+      try {
+        const result = await saveConfigTabelaAction(valor, ordem);
+        if (result.success) {
+          toast.success("Configurações salvas");
+          onSaved(valor, ordem);
+          setOpen(false);
+          onOpenChange?.(false);
+        } else {
+          toast.error("Erro ao salvar", { description: result.error });
+        }
+      } catch (err) {
+        if (handleStaleActionError(err)) return;
+        toast.error("Erro inesperado ao salvar");
+        console.error("[ConfigTabelaPopover] erro:", err);
       }
     });
   }

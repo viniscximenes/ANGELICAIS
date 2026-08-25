@@ -7,6 +7,7 @@ import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
 import { uploadConsolidadoAction } from "@/lib/d1-db/actions/upload-consolidado-action";
+import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 import { UploadProgressModal } from "./upload-progress-modal";
 
 export type UploadStep =
@@ -28,7 +29,21 @@ export function UploadDropzone() {
     await new Promise((r) => setTimeout(r, 400));
 
     setStep("replacing");
-    const uploadResult = await uploadConsolidadoAction(csvText);
+
+    let uploadResult;
+    try {
+      uploadResult = await uploadConsolidadoAction(csvText);
+    } catch (err) {
+      setStep(null);
+      // Server Action de um build anterior (hot reload em dev, ou deploy
+      // novo em produção com a aba aberta) — avisa e recarrega em vez de
+      // deixar o upload falhar silenciosamente no console.
+      if (handleStaleActionError(err)) return;
+      setErrorMessage("Erro inesperado ao enviar a base.");
+      toast.error("Falha ao atualizar base");
+      console.error("[upload] action error:", err);
+      return;
+    }
 
     if (!uploadResult.success) {
       setStep(null);

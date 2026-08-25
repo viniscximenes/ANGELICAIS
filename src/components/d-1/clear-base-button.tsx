@@ -5,6 +5,8 @@ import { IconLoader2, IconTrash } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
+
 type ClearActionResult =
   | { success: true }
   | { success: false; error: string };
@@ -29,13 +31,19 @@ export function ClearBaseButton({ action, onCleared }: Props) {
 
   function handleClick() {
     startTransition(async () => {
-      const r = await action();
-      if (r.success) {
-        toast.success("Base limpa");
-        await onCleared?.();
-        router.refresh();
-      } else {
-        toast.error(r.error);
+      try {
+        const r = await action();
+        if (r.success) {
+          toast.success("Base limpa");
+          await onCleared?.();
+          router.refresh();
+        } else {
+          toast.error(r.error);
+        }
+      } catch (err) {
+        if (handleStaleActionError(err)) return;
+        toast.error("Erro inesperado ao limpar a base");
+        console.error("[ClearBaseButton] erro:", err);
       }
     });
   }
