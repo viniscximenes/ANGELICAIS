@@ -6,6 +6,7 @@ import { SnapshotsHistory } from "@/components/bases-kpi/snapshots-history";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
+import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getSnapshotsSummary } from "@/lib/kpi/bases/get-snapshots-summary";
 
 export const metadata: Metadata = {
@@ -22,23 +23,50 @@ export default async function BasesKpiPage() {
     redirect("/d-1");
   }
 
+  const userName = formatNomeProprio(user.profile.fullName);
+
   const snapshots = await getSnapshotsSummary();
   const existingMonths = snapshots.map((s) => s.mesRef);
 
   return (
     <PageTransition>
       <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
-        <div className="mx-auto max-w-5xl space-y-10">
-          <div className="space-y-1">
-            <div className="flex items-baseline gap-3">
-              <h1 className="ds-h1">Bases</h1>
-              <span className="ds-mono text-muted-foreground">/ KPI</span>
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              html, body {
+                scrollbar-width: thin !important;
+                scrollbar-color: var(--border) transparent !important;
+              }
+              html::-webkit-scrollbar, body::-webkit-scrollbar {
+                width: 8px !important;
+                height: 8px !important;
+              }
+              html::-webkit-scrollbar-track, body::-webkit-scrollbar-track {
+                background: transparent !important;
+              }
+              html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+                background: var(--border) !important;
+                border-radius: 4px !important;
+              }
+              html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
+                background: var(--muted-foreground) !important;
+              }
+            `,
+          }}
+        />
+        <div className="mx-auto max-w-5xl space-y-8">
+          <header className="border-border flex flex-col gap-2 border-b border-dashed pb-4">
+            <span className="text-muted-foreground text-xs tracking-wide uppercase">
+              PAINEL DO ADM
+            </span>
+            <div className="flex flex-wrap items-baseline gap-3">
+              <h1 className="ds-h1">KPI</h1>
+              <span className="ds-mono-sm text-muted-foreground">
+                / Bases · {userName}
+              </span>
             </div>
-            <p className="ds-small text-muted-foreground">
-              Cole os dados exportados da planilha do planejamento para
-              alimentar o painel de KPI.
-            </p>
-          </div>
+          </header>
 
           <BasesKpiCards existingMonths={existingMonths} />
 

@@ -165,7 +165,7 @@ export function OverrideMappingModal({
                     }
                     disabled={isPending}
                     placeholder="Digite o nome do cabeçalho exatamente como aparece na sua planilha"
-                    className="elevation-2 ds-mono w-full rounded-md px-3 py-2"
+                    className="elevation-2 ds-mono w-full rounded-md px-3 py-2 bg-background text-foreground focus:outline-none"
                     style={{
                       border: "1px solid var(--border)",
                       fontSize: "13px",

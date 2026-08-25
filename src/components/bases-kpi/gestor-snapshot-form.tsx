@@ -10,6 +10,7 @@ import {
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
+import { StyledCard } from "@/components/gestor/styled-card";
 import { Button } from "@/components/ui/button";
 import { formatDateBR, formatMonthLabel } from "@/lib/kpi/bases/format-date";
 import {
@@ -47,8 +48,8 @@ export function GestorSnapshotForm({
       });
       setResult(res);
       if (res.success) {
-        toast.success("Base de supervisores salva", {
-          description: `${res.totalSupervisors} supervisor(es) processado(s)`,
+        toast.success("Base de gestores salva", {
+          description: `${res.totalSupervisors} gestor(es) processado(s)`,
         });
         setClipboardText("");
       } else {
@@ -63,76 +64,77 @@ export function GestorSnapshotForm({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.2, ease: EASE_OUT_EXPO }}
-        className="elevation-1 space-y-4 rounded-xl p-5"
       >
-        <p className="ds-mono-sm text-muted-foreground">
-          Mês herdado:{" "}
-          <span className="text-foreground font-medium">
-            {mesRef ? formatMonthLabel(mesRef) : "—"}
-          </span>
-          {dataCorte && (
-            <>
-              {" · dados até "}
-              <span className="text-foreground font-medium">
-                {formatDateBR(dataCorte)}
-              </span>
-            </>
-          )}
-        </p>
-
-        <div className="flex items-start gap-2">
-          <IconClipboard
-            size={18}
-            className="text-muted-foreground mt-0.5"
-            aria-hidden="true"
-          />
-          <div className="flex-1">
-            <label
-              htmlFor="gestor-clipboard-textarea"
-              className="ds-body block"
-            >
-              Cole os dados aqui (Ctrl+V)
-            </label>
-            <p className="ds-mono-sm text-muted-foreground mt-1">
-              Inclua o cabeçalho. 1ª coluna: Supervisor (nome completo).
-            </p>
-          </div>
-        </div>
-
-        <textarea
-          id="gestor-clipboard-textarea"
-          value={clipboardText}
-          onChange={(e) => setClipboardText(e.target.value)}
-          disabled={isPending}
-          rows={8}
-          placeholder={"Supervisor\tPedidos\tChurn\t..."}
-          className="ds-mono-sm elevation-2 w-full rounded-md px-3 py-2"
-          style={{
-            border: "1px solid var(--border)",
-            fontFamily: "var(--font-geist-mono), monospace",
-            fontSize: "12px",
-            resize: "vertical",
-            minHeight: "160px",
-          }}
-        />
-
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isPending || !mesRef}
-            className="gap-2"
-          >
-            {isPending && (
-              <IconLoader2
-                size={16}
-                className="animate-spin"
-                aria-hidden="true"
-              />
+        <StyledCard withGradient className="gap-0 space-y-4">
+          <p className="ds-mono-sm text-muted-foreground">
+            Mês herdado:{" "}
+            <span className="text-foreground font-medium">
+              {mesRef ? formatMonthLabel(mesRef) : "—"}
+            </span>
+            {dataCorte && (
+              <>
+                {" · dados até "}
+                <span className="text-foreground font-medium">
+                  {formatDateBR(dataCorte)}
+                </span>
+              </>
             )}
-            {isPending ? "Processando..." : "Processar base de supervisores"}
-          </Button>
-        </div>
+          </p>
+
+          <div className="flex items-start gap-2">
+            <IconClipboard
+              size={18}
+              className="text-muted-foreground mt-0.5"
+              aria-hidden="true"
+            />
+            <div className="flex-1">
+              <label
+                htmlFor="gestor-clipboard-textarea"
+                className="ds-body block"
+              >
+                Cole os dados aqui (Ctrl+V)
+              </label>
+              <p className="ds-mono-sm text-muted-foreground mt-1">
+                Inclua o cabeçalho. 1ª coluna: Gestor (nome completo).
+              </p>
+            </div>
+          </div>
+
+          <textarea
+            id="gestor-clipboard-textarea"
+            value={clipboardText}
+            onChange={(e) => setClipboardText(e.target.value)}
+            disabled={isPending}
+            rows={8}
+            placeholder={"Gestor\tPedidos\tChurn\t..."}
+            className="ds-mono-sm elevation-2 w-full rounded-md px-3 py-2 bg-background text-foreground focus:outline-none"
+            style={{
+              border: "1px solid var(--border)",
+              fontFamily: "var(--font-geist-mono), monospace",
+              fontSize: "12px",
+              resize: "vertical",
+              minHeight: "160px",
+            }}
+          />
+
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isPending || !mesRef}
+              className="gap-2"
+            >
+              {isPending && (
+                <IconLoader2
+                  size={16}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
+              )}
+              {isPending ? "Processando..." : "Processar base de gestores"}
+            </Button>
+          </div>
+        </StyledCard>
       </motion.div>
 
       {result && <GestorResult result={result} />}
@@ -151,20 +153,21 @@ function GestorResult({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2, ease: EASE_OUT_EXPO }}
-        className="elevation-1 rounded-xl p-5"
         role="alert"
       >
-        <div className="flex items-start gap-3">
-          <IconAlertCircle
-            size={20}
-            style={{ color: "var(--danger)" }}
-            aria-hidden="true"
-          />
-          <div>
-            <p className="ds-body font-medium">Falha ao processar</p>
-            <p className="ds-small text-muted-foreground mt-1">{result.error}</p>
+        <StyledCard withGradient className="gap-0">
+          <div className="flex items-start gap-3">
+            <IconAlertCircle
+              size={20}
+              style={{ color: "var(--danger)" }}
+              aria-hidden="true"
+            />
+            <div>
+              <p className="ds-body font-medium">Falha ao processar</p>
+              <p className="ds-small text-muted-foreground mt-1">{result.error}</p>
+            </div>
           </div>
-        </div>
+        </StyledCard>
       </motion.div>
     );
   }
@@ -176,7 +179,7 @@ function GestorResult({
       transition={{ duration: 0.2, ease: EASE_OUT_EXPO }}
       className="space-y-4"
     >
-      <div className="elevation-1 rounded-xl p-5">
+      <StyledCard withGradient className="gap-0">
         <div className="flex items-start gap-3">
           <IconCheck
             size={20}
@@ -184,9 +187,9 @@ function GestorResult({
             aria-hidden="true"
           />
           <div className="flex-1">
-            <p className="ds-body font-medium">Snapshot de supervisores salvo</p>
+            <p className="ds-body font-medium">Snapshot de gestores salvo</p>
             <p className="ds-mono-sm text-muted-foreground mt-1">
-              {result.totalSupervisors} supervisor
+              {result.totalSupervisors} gestor
               {result.totalSupervisors === 1 ? "" : "es"} processado
               {result.totalSupervisors === 1 ? "" : "s"}
             </p>
@@ -204,7 +207,7 @@ function GestorResult({
             {result.supervisors.length > 0 && (
               <details className="mt-3">
                 <summary className="ds-mono-sm text-muted-foreground hover:text-foreground cursor-pointer">
-                  Ver supervisores salvos ({result.supervisors.length})
+                  Ver gestores salvos ({result.supervisors.length})
                 </summary>
                 <ul className="mt-2 space-y-0.5">
                   {result.supervisors.map((name) => (
@@ -217,10 +220,10 @@ function GestorResult({
             )}
           </div>
         </div>
-      </div>
+      </StyledCard>
 
       {result.missingKpis.length > 0 && (
-        <div className="elevation-1 rounded-xl p-5">
+        <StyledCard withGradient className="gap-0">
           <div className="flex items-start gap-3">
             <IconAlertCircle
               size={20}
@@ -292,11 +295,11 @@ function GestorResult({
               </details>
             </div>
           </div>
-        </div>
+        </StyledCard>
       )}
 
       {result.warnings.length > 0 && (
-        <div className="elevation-1 rounded-xl p-5">
+        <StyledCard withGradient className="gap-0">
           <p className="ds-body mb-2 font-medium">Avisos</p>
           <ul className="space-y-0.5">
             {result.warnings.map((w, idx) => (
@@ -305,7 +308,7 @@ function GestorResult({
               </li>
             ))}
           </ul>
-        </div>
+        </StyledCard>
       )}
     </motion.div>
   );

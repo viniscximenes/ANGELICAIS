@@ -7,6 +7,7 @@ import {
 } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 
+import { StyledCard } from "@/components/gestor/styled-card";
 import { formatMonthLabel } from "@/lib/kpi/bases/format-date";
 import type { ProcessSnapshotResult } from "@/lib/kpi/bases/process-snapshot-action";
 
@@ -23,22 +24,23 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2, ease: EASE_OUT_EXPO }}
-        className="elevation-1 rounded-xl p-5"
         role="alert"
       >
-        <div className="flex items-start gap-3">
-          <IconAlertCircle
-            size={20}
-            style={{ color: "var(--danger)" }}
-            aria-hidden="true"
-          />
-          <div>
-            <p className="ds-body font-medium">Falha ao processar</p>
-            <p className="ds-small text-muted-foreground mt-1">
-              {result.error}
-            </p>
+        <StyledCard withGradient className="gap-0">
+          <div className="flex items-start gap-3">
+            <IconAlertCircle
+              size={20}
+              style={{ color: "var(--danger)" }}
+              aria-hidden="true"
+            />
+            <div>
+              <p className="ds-body font-medium">Falha ao processar</p>
+              <p className="ds-small text-muted-foreground mt-1">
+                {result.error}
+              </p>
+            </div>
           </div>
-        </div>
+        </StyledCard>
       </motion.div>
     );
   }
@@ -50,7 +52,7 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
       transition={{ duration: 0.2, ease: EASE_OUT_EXPO }}
       className="space-y-4"
     >
-      <div className="elevation-1 rounded-xl p-5">
+      <StyledCard withGradient className="gap-0">
         <div className="flex items-start gap-3">
           <IconCheck
             size={20}
@@ -80,10 +82,10 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
             )}
           </div>
         </div>
-      </div>
+      </StyledCard>
 
       {result.missingKpis.length > 0 && (
-        <div className="elevation-1 rounded-xl p-5">
+        <StyledCard withGradient className="gap-0">
           <div className="flex items-start gap-3">
             <IconAlertCircle
               size={20}
@@ -158,11 +160,11 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
               </details>
             </div>
           </div>
-        </div>
+        </StyledCard>
       )}
 
       {result.missingMetadata.length > 0 && (
-        <div className="elevation-1 rounded-xl p-5">
+        <StyledCard withGradient className="gap-0">
           <div className="flex items-start gap-3">
             <IconAlertCircle
               size={20}
@@ -186,11 +188,11 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
               </ul>
             </div>
           </div>
-        </div>
+        </StyledCard>
       )}
 
       {result.naoCadastrados.length > 0 && (
-        <div className="elevation-1 rounded-xl p-5">
+        <StyledCard withGradient className="gap-0">
           <details>
             <summary className="flex cursor-pointer items-center gap-3">
               <IconUserOff
@@ -214,11 +216,11 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
               ))}
             </ul>
           </details>
-        </div>
+        </StyledCard>
       )}
 
       {result.warnings.length > 0 && (
-        <div className="elevation-1 rounded-xl p-5">
+        <StyledCard withGradient className="gap-0">
           <p className="ds-body mb-2 font-medium">Avisos</p>
           <ul className="space-y-0.5">
             {result.warnings.map((w, idx) => (
@@ -227,7 +229,7 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
               </li>
             ))}
           </ul>
-        </div>
+        </StyledCard>
       )}
     </motion.div>
   );

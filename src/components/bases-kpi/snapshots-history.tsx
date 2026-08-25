@@ -5,6 +5,16 @@ import { IconLoader2, IconTrash } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { StyledCard } from "@/components/gestor/styled-card";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { deleteMonthAction } from "@/lib/kpi/bases/delete-month-action";
 import {
   formatDateTimeBR,
@@ -52,95 +62,110 @@ export function SnapshotsHistory({ snapshots }: SnapshotsHistoryProps) {
   }
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-4" aria-hidden="true">
-        <div className="divider-gradient flex-1" />
-        <span className="ds-mono-sm text-muted-foreground">◆</span>
-        <div className="divider-gradient flex-1" />
+    <section className="space-y-4 pt-4">
+      <div className="flex items-center gap-3 pt-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+            Histórico
+          </span>
+          {snapshots.length > 0 && (
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted text-muted-foreground font-medium">
+              {snapshots.length}
+            </span>
+          )}
+        </div>
+        <div className="h-px flex-1 bg-border/40" aria-hidden="true" />
       </div>
 
-      <div className="space-y-3">
-        <h2 className="ds-h2">Histórico</h2>
+      <StyledCard withGradient className="p-6 gap-0">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
+              <TableHead className="ds-mono-sm text-muted-foreground px-3 py-3.5 font-semibold tracking-wider uppercase align-middle leading-none">
+                Mês
+              </TableHead>
+              <TableHead className="ds-mono-sm text-muted-foreground hidden px-3 py-3.5 font-semibold tracking-wider uppercase align-middle leading-none sm:table-cell">
+                Atualizado em
+              </TableHead>
+              <TableHead className="ds-mono-sm text-muted-foreground px-3 py-3.5 font-semibold tracking-wider uppercase align-middle leading-none">
+                Operadores
+              </TableHead>
+              <TableHead className="px-3 py-3.5 text-right align-middle" aria-label="Ações" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {snapshots.length === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={4} className="py-10 text-center">
+                  <p className="ds-body text-muted-foreground">
+                    Nenhum dado de KPI salvo ainda
+                  </p>
+                  <p className="ds-mono-sm text-muted-foreground mt-1">
+                    Cole sua primeira base acima.
+                  </p>
+                </TableCell>
+              </TableRow>
+            ) : (
+              snapshots.map((s) => {
+                const isCurrent = s.mesRef === currentMesRef;
+                const isDeleting = deletingMonth === s.mesRef;
 
-        {snapshots.length === 0 ? (
-          <div className="elevation-1 rounded-xl p-8 text-center">
-            <p className="ds-body text-muted-foreground">
-              Nenhum dado de KPI salvo ainda
-            </p>
-            <p className="ds-mono-sm text-muted-foreground mt-1">
-              Cole sua primeira base acima.
-            </p>
-          </div>
-        ) : (
-          <div className="elevation-1 space-y-1 rounded-xl p-3">
-            {snapshots.map((s) => {
-              const isCurrent = s.mesRef === currentMesRef;
-              const isDeleting = deletingMonth === s.mesRef;
-
-              return (
-                <div
-                  key={s.mesRef}
-                  className="flex items-center justify-between gap-4 px-3 py-2"
-                >
-                  <div className="flex min-w-0 items-baseline gap-2">
-                    <span className="ds-body font-medium">
-                      {formatMonthLabel(s.mesRef)}
-                    </span>
-                    {isCurrent && (
-                      <span
-                        className="ds-mono-sm"
-                        style={{ color: "var(--primary)" }}
-                      >
-                        (atual)
+                return (
+                  <TableRow key={s.mesRef} className="hover:bg-muted/10">
+                    <TableCell className="px-3 py-2 align-middle">
+                      <span className="ds-body font-medium">
+                        {formatMonthLabel(s.mesRef)}
                       </span>
-                    )}
-                  </div>
-
-                  <span className="ds-mono-sm text-muted-foreground hidden flex-1 text-right sm:block">
-                    atualizado em {formatDateTimeBR(s.updatedAt)}
-                  </span>
-
-                  <span className="ds-mono-sm text-muted-foreground">
-                    {s.totalOperators} op{s.totalOperators === 1 ? "" : "s"}
-                  </span>
-
-                  {isCurrent ? (
-                    <ClearCurrentMonthButton />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(s.mesRef)}
-                      disabled={isPending}
-                      className="ds-mono-sm flex items-center gap-1 rounded-md px-2 py-1 transition-colors"
-                      style={{
-                        color: "var(--muted-foreground)",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = "var(--danger)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = "var(--muted-foreground)";
-                      }}
-                      aria-label={`Apagar ${formatMonthLabel(s.mesRef)}`}
-                    >
-                      {isDeleting ? (
-                        <IconLoader2
-                          size={14}
-                          className="animate-spin"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <IconTrash size={14} aria-hidden="true" />
+                      {isCurrent && (
+                        <span className="ds-mono-sm text-primary ml-2">
+                          (atual)
+                        </span>
                       )}
-                      <span>Apagar</span>
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                    </TableCell>
+
+                    <TableCell className="ds-mono-sm text-muted-foreground hidden px-3 py-2 align-middle sm:table-cell">
+                      {formatDateTimeBR(s.updatedAt)}
+                    </TableCell>
+
+                    <TableCell className="ds-mono-sm text-muted-foreground px-3 py-2 align-middle">
+                      {s.totalOperators} op{s.totalOperators === 1 ? "" : "s"}
+                    </TableCell>
+
+                    <TableCell className="px-3 py-1.5 text-right align-middle">
+                      {isCurrent ? (
+                        <div className="flex justify-end">
+                          <ClearCurrentMonthButton />
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={isPending}
+                          onClick={() => handleDelete(s.mesRef)}
+                          aria-label={`Apagar ${formatMonthLabel(s.mesRef)}`}
+                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                        >
+                          {isDeleting ? (
+                            <IconLoader2
+                              size={14}
+                              className="animate-spin"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <IconTrash size={14} aria-hidden="true" />
+                          )}
+                          Apagar
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </StyledCard>
     </section>
   );
 }

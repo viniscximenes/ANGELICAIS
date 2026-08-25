@@ -24,10 +24,13 @@ export function BasesKpiCards({ existingMonths }: BasesKpiCardsProps) {
   );
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <section className="space-y-4">
-        <div>
-          <h2 className="ds-h2">Operadores</h2>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold tracking-wider text-foreground uppercase">
+            Operadores
+          </span>
+          <div className="h-px flex-1 bg-border/40" aria-hidden="true" />
         </div>
         <SnapshotForm
           existingMonths={existingMonths}
@@ -35,14 +38,17 @@ export function BasesKpiCards({ existingMonths }: BasesKpiCardsProps) {
         />
       </section>
 
-      <hr className="border-border" />
-
       <section className="space-y-4">
-        <div>
-          <h2 className="ds-h2">Supervisores</h2>
-          <p className="ds-small text-muted-foreground">
-            A data de referência é herdada do card de operadores acima.
-          </p>
+        <div className="flex items-center gap-3">
+          <div>
+            <span className="text-xs font-semibold tracking-wider text-foreground uppercase">
+              Gestores
+            </span>
+            <p className="ds-mono-sm text-muted-foreground mt-1">
+              A data de referência é herdada do card de operadores acima.
+            </p>
+          </div>
+          <div className="h-px flex-1 bg-border/40" aria-hidden="true" />
         </div>
         <GestorSnapshotForm mesRef={sharedMesRef} dataCorte={sharedDataCorte} />
       </section>
