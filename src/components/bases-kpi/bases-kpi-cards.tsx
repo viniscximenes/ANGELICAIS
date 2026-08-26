@@ -1,57 +1,119 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useEffect, useState } from "react";
+import { IconUser, IconUsersGroup } from "@tabler/icons-react";
 
-import { getCurrentMonthRef, getYesterday } from "@/lib/kpi/bases/format-date";
+import {
+  getCurrentMonthRef,
+  getLastDayOfMonth,
+  getYesterday,
+  toMonthRef,
+} from "@/lib/kpi/bases/format-date";
+import { cn } from "@/lib/utils";
+import type { MonthSummary } from "@/lib/kpi/bases/get-snapshots-summary";
 
 import { GestorSnapshotForm } from "./gestor-snapshot-form";
 import { SnapshotForm } from "./snapshot-form";
+import { SnapshotsHistory } from "./snapshots-history";
 
 interface BasesKpiCardsProps {
   existingMonths: string[];
+  snapshots: MonthSummary[];
+  gestorSnapshots: MonthSummary[];
 }
 
-export function BasesKpiCards({ existingMonths }: BasesKpiCardsProps) {
-  const [sharedMesRef, setSharedMesRef] = useState(getCurrentMonthRef);
-  const [sharedDataCorte, setSharedDataCorte] = useState(getYesterday);
+export function BasesKpiCards({
+  existingMonths,
+  snapshots,
+  gestorSnapshots,
+}: BasesKpiCardsProps) {
+  const [activeTab, setActiveTab] = useState<"operadores" | "gestores">("operadores");
 
-  const handleDateChange = useCallback(
-    (mesRef: string, dataCorte: string) => {
-      setSharedMesRef(mesRef);
-      setSharedDataCorte(dataCorte);
-    },
-    [],
-  );
+  const currentMesRef = getCurrentMonthRef();
+  const [selectedOption, setSelectedOption] = useState<string>(currentMesRef);
+  const [customMonth, setCustomMonth] = useState<string>("");
+  const [dataCorte, setDataCorte] = useState(getYesterday());
+
+  const effectiveMesRef =
+    selectedOption === "__other__"
+      ? customMonth
+        ? toMonthRef(customMonth)
+        : ""
+      : selectedOption;
+
+  const isCurrentMonth = effectiveMesRef === currentMesRef;
+  const isPastMonth = !!(effectiveMesRef && effectiveMesRef !== currentMesRef);
+
+  useEffect(() => {
+    if (!effectiveMesRef) return;
+    if (isCurrentMonth) {
+      setDataCorte(getYesterday());
+    } else {
+      setDataCorte(getLastDayOfMonth(effectiveMesRef));
+    }
+  }, [effectiveMesRef, isCurrentMonth]);
+
+  const dateProps = {
+    existingMonths,
+    selectedOption,
+    setSelectedOption,
+    customMonth,
+    setCustomMonth,
+    dataCorte,
+    setDataCorte,
+    effectiveMesRef,
+    isCurrentMonth,
+    isPastMonth,
+  };
 
   return (
-    <div className="space-y-8">
-      <section className="space-y-4">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold tracking-wider text-foreground uppercase">
-            Operadores
-          </span>
-          <div className="h-px flex-1 bg-border/40" aria-hidden="true" />
-        </div>
-        <SnapshotForm
-          existingMonths={existingMonths}
-          onDateChange={handleDateChange}
-        />
+    <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab("operadores")}
+          aria-pressed={activeTab === "operadores"}
+          className={cn(
+            "ds-mono-sm flex items-center gap-1.5 rounded-md border px-3 py-1.5 transition-all cursor-pointer shadow-sm select-none",
+            activeTab === "operadores"
+              ? "bg-primary text-primary-foreground border-primary hover:opacity-90"
+              : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/50 hover:text-foreground",
+          )}
+          style={{ fontSize: "12px" }}
+        >
+          <IconUser size={14} aria-hidden="true" />
+          <span>Operadores</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("gestores")}
+          aria-pressed={activeTab === "gestores"}
+          className={cn(
+            "ds-mono-sm flex items-center gap-1.5 rounded-md border px-3 py-1.5 transition-all cursor-pointer shadow-sm select-none",
+            activeTab === "gestores"
+              ? "bg-primary text-primary-foreground border-primary hover:opacity-90"
+              : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/50 hover:text-foreground",
+          )}
+          style={{ fontSize: "12px" }}
+        >
+          <IconUsersGroup size={14} aria-hidden="true" />
+          <span>Gestores</span>
+        </button>
+      </div>
+
+      <section>
+        {activeTab === "operadores" ? (
+          <SnapshotForm {...dateProps} />
+        ) : (
+          <GestorSnapshotForm {...dateProps} />
+        )}
       </section>
 
-      <section className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div>
-            <span className="text-xs font-semibold tracking-wider text-foreground uppercase">
-              Gestores
-            </span>
-            <p className="ds-mono-sm text-muted-foreground mt-1">
-              A data de referência é herdada do card de operadores acima.
-            </p>
-          </div>
-          <div className="h-px flex-1 bg-border/40" aria-hidden="true" />
-        </div>
-        <GestorSnapshotForm mesRef={sharedMesRef} dataCorte={sharedDataCorte} />
-      </section>
+      <SnapshotsHistory
+        snapshots={activeTab === "operadores" ? snapshots : gestorSnapshots}
+        type={activeTab}
+      />
     </div>
   );
 }

@@ -30,19 +30,29 @@ export async function deleteMonthAction(
 
   const supabase = await createClient();
 
-  const { error, count } = await supabase
+  const { error: errorOperadores, count: countOperadores } = await supabase
     .from("kpi_monthly_snapshots")
     .delete({ count: "exact" })
     .eq("mes_ref", mesRef);
 
-  if (error) {
-    console.error("[delete-month] erro:", error);
-    return { success: false, error: "Falha ao apagar no banco" };
+  if (errorOperadores) {
+    console.error("[delete-month] erro operadores:", errorOperadores);
+    return { success: false, error: "Falha ao apagar dados de operadores" };
+  }
+
+  const { error: errorGestores, count: countGestores } = await supabase
+    .from("kpi_gestor_snapshots")
+    .delete({ count: "exact" })
+    .eq("mes_ref", mesRef);
+
+  if (errorGestores) {
+    console.error("[delete-month] erro gestores:", errorGestores);
+    return { success: false, error: "Falha ao apagar dados de gestores" };
   }
 
   revalidatePath("/bases/kpi");
   revalidatePath("/kpi/atual-principal");
   revalidatePath("/kpi/atual-secundario");
 
-  return { success: true, rowsDeleted: count ?? 0 };
+  return { success: true, rowsDeleted: (countOperadores ?? 0) + (countGestores ?? 0) };
 }

@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { BasesKpiCards } from "@/components/bases-kpi/bases-kpi-cards";
-import { SnapshotsHistory } from "@/components/bases-kpi/snapshots-history";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
-import { getSnapshotsSummary } from "@/lib/kpi/bases/get-snapshots-summary";
+import {
+  getSnapshotsSummary,
+  getGestorSnapshotsSummary,
+} from "@/lib/kpi/bases/get-snapshots-summary";
 
 export const metadata: Metadata = {
   title: "Base KPI — ANGELICAIS",
@@ -25,7 +27,10 @@ export default async function BasesKpiPage() {
 
   const userName = formatNomeProprio(user.profile.fullName);
 
-  const snapshots = await getSnapshotsSummary();
+  const [snapshots, gestorSnapshots] = await Promise.all([
+    getSnapshotsSummary(),
+    getGestorSnapshotsSummary(),
+  ]);
   const existingMonths = snapshots.map((s) => s.mesRef);
 
   return (
@@ -68,9 +73,11 @@ export default async function BasesKpiPage() {
             </div>
           </header>
 
-          <BasesKpiCards existingMonths={existingMonths} />
-
-          <SnapshotsHistory snapshots={snapshots} />
+          <BasesKpiCards
+            existingMonths={existingMonths}
+            snapshots={snapshots}
+            gestorSnapshots={gestorSnapshots}
+          />
         </div>
       </div>
     </PageTransition>

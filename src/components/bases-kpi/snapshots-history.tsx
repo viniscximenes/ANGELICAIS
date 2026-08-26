@@ -23,13 +23,12 @@ import {
 } from "@/lib/kpi/bases/format-date";
 import type { MonthSummary } from "@/lib/kpi/bases/get-snapshots-summary";
 
-import { ClearCurrentMonthButton } from "./clear-current-month-button";
-
 interface SnapshotsHistoryProps {
   snapshots: MonthSummary[];
+  type?: "operadores" | "gestores";
 }
 
-export function SnapshotsHistory({ snapshots }: SnapshotsHistoryProps) {
+export function SnapshotsHistory({ snapshots, type = "operadores" }: SnapshotsHistoryProps) {
   const router = useRouter();
   const currentMesRef = getCurrentMonthRef();
   const [deletingMonth, setDeletingMonth] = useState<string | null>(null);
@@ -88,7 +87,7 @@ export function SnapshotsHistory({ snapshots }: SnapshotsHistoryProps) {
                 Atualizado em
               </TableHead>
               <TableHead className="ds-mono-sm text-muted-foreground px-3 py-3.5 font-semibold tracking-wider uppercase align-middle leading-none">
-                Operadores
+                {type === "gestores" ? "Gestores" : "Operadores"}
               </TableHead>
               <TableHead className="px-3 py-3.5 text-right align-middle" aria-label="Ações" />
             </TableRow>
@@ -98,7 +97,7 @@ export function SnapshotsHistory({ snapshots }: SnapshotsHistoryProps) {
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={4} className="py-10 text-center">
                   <p className="ds-body text-muted-foreground">
-                    Nenhum dado de KPI salvo ainda
+                    Nenhum dado de KPI de {type === "gestores" ? "gestores" : "operadores"} salvo ainda
                   </p>
                   <p className="ds-mono-sm text-muted-foreground mt-1">
                     Cole sua primeira base acima.
@@ -116,11 +115,6 @@ export function SnapshotsHistory({ snapshots }: SnapshotsHistoryProps) {
                       <span className="ds-body font-medium">
                         {formatMonthLabel(s.mesRef)}
                       </span>
-                      {isCurrent && (
-                        <span className="ds-mono-sm text-primary ml-2">
-                          (atual)
-                        </span>
-                      )}
                     </TableCell>
 
                     <TableCell className="ds-mono-sm text-muted-foreground hidden px-3 py-2 align-middle sm:table-cell">
@@ -128,36 +122,38 @@ export function SnapshotsHistory({ snapshots }: SnapshotsHistoryProps) {
                     </TableCell>
 
                     <TableCell className="ds-mono-sm text-muted-foreground px-3 py-2 align-middle">
-                      {s.totalOperators} op{s.totalOperators === 1 ? "" : "s"}
+                      {type === "gestores" ? (
+                        <>
+                          {s.totalOperators} gestor{s.totalOperators === 1 ? "" : "es"}
+                        </>
+                      ) : (
+                        <>
+                          {s.totalOperators} op{s.totalOperators === 1 ? "" : "s"}
+                        </>
+                      )}
                     </TableCell>
 
                     <TableCell className="px-3 py-1.5 text-right align-middle">
-                      {isCurrent ? (
-                        <div className="flex justify-end">
-                          <ClearCurrentMonthButton />
-                        </div>
-                      ) : (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled={isPending}
-                          onClick={() => handleDelete(s.mesRef)}
-                          aria-label={`Apagar ${formatMonthLabel(s.mesRef)}`}
-                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5"
-                        >
-                          {isDeleting ? (
-                            <IconLoader2
-                              size={14}
-                              className="animate-spin"
-                              aria-hidden="true"
-                            />
-                          ) : (
-                            <IconTrash size={14} aria-hidden="true" />
-                          )}
-                          Apagar
-                        </Button>
-                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() => handleDelete(s.mesRef)}
+                        aria-label={`Apagar ${formatMonthLabel(s.mesRef)}`}
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                      >
+                        {isDeleting ? (
+                          <IconLoader2
+                            size={14}
+                            className="animate-spin"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <IconTrash size={14} aria-hidden="true" />
+                        )}
+                        Apagar
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
