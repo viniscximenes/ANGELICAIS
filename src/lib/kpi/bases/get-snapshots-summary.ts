@@ -42,3 +42,76 @@ export async function getSnapshotsSummary(): Promise<MonthSummary[]> {
     }),
   );
 }
+
+type GestorRow = {
+  mes_ref: string;
+  data_corte: string;
+  supervisor_name: string;
+  updated_at?: string;
+};
+
+function processGestorRows(rows: GestorRow[]): MonthSummary[] {
+  const groups = new Map<
+    string,
+    {
+      mesRef: string;
+      dataCorte: string;
+      updatedAt: string;
+      supervisors: Set<string>;
+    }
+  >();
+
+  for (const row of rows) {
+    const mesRef = row.mes_ref;
+    const dataCorte = row.data_corte;
+    const updatedAt = row.updated_at || row.data_corte;
+    const supervisor = row.supervisor_name;
+
+    const existing = groups.get(mesRef);
+    if (!existing) {
+      groups.set(mesRef, {
+        mesRef,
+        dataCorte,
+        updatedAt,
+        supervisors: new Set([supervisor]),
+      });
+    } else {
+      if (dataCorte > existing.dataCorte) {
+        existing.dataCorte = dataCorte;
+      }
+      if (updatedAt > existing.updatedAt) {
+        existing.updatedAt = updatedAt;
+      }
+      existing.supervisors.add(supervisor);
+    }
+  }
+
+  const result = Array.from(groups.values()).map((g) => ({
+    mesRef: g.mesRef,
+    dataCorte: g.dataCorte,
+    updatedAt: g.updatedAt,
+    totalOperators: g.supervisors.size,
+  }));
+
+  result.sort((a, b) => (a.mesRef < b.mesRef ? 1 : a.mesRef > b.mesRef ? -1 : 0));
+  return result;
+}
+
+export async function getGestorSnapshotsSummary(): Promise<MonthSummary[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("kpi_gestor_snapshots")
+    .select("mes_ref, data_corte, supervisor_name, updated_at");
+
+  if (error) {
+    console.error(
+      "[gestor-snapshots-summary] erro:",
+      error.message,
+      `(code: ${error.code}, details: ${error.details}, hint: ${error.hint})`,
+    );
+    return [];
+  }
+
+  return processGestorRows((data as unknown as GestorRow[]) || []);
+}
