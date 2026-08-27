@@ -1,3 +1,12 @@
+import { StyledCard } from "@/components/gestor/styled-card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { UserProfile } from "@/lib/users/types";
 
 import { RoleBadge } from "./role-badge";
@@ -11,91 +20,86 @@ interface Props {
 export function UsersTable({ users, currentUserId }: Props) {
   if (users.length === 0) {
     return (
-      <div className="elevation-1 rounded-xl p-8 text-center">
+      <StyledCard withGradient className="p-8 text-center">
         <p className="ds-body text-muted-foreground">
           Nenhum usuário cadastrado
         </p>
-      </div>
+      </StyledCard>
     );
   }
 
   return (
-    <div className="elevation-1 overflow-hidden rounded-xl">
-      <div
-        className="ds-mono-sm text-muted-foreground grid grid-cols-12 gap-3 border-b px-4 py-3"
-        style={{ borderColor: "var(--border)" }}
-      >
-        <div className="col-span-3">Nome</div>
-        <div className="col-span-2">Login</div>
-        <div className="col-span-3">Email Corp.</div>
-        <div className="col-span-1">Role</div>
-        <div className="col-span-1">Status</div>
-        <div className="col-span-2 text-right">Ações</div>
-      </div>
+    <StyledCard withGradient={false} className="p-0 overflow-hidden">
+      <Table className="table-fixed">
+        <TableHeader>
+          <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
+            <TableHead className="ds-mono-sm text-foreground/90 w-[30%] px-4 py-3.5 font-bold tracking-wider uppercase align-middle leading-none">
+              Login
+            </TableHead>
+            <TableHead className="ds-mono-sm text-foreground/90 w-[20%] px-4 py-3.5 font-bold tracking-wider uppercase align-middle leading-none">
+              Role
+            </TableHead>
+            <TableHead className="ds-mono-sm text-foreground/90 w-[15%] px-4 py-3.5 font-bold tracking-wider uppercase align-middle leading-none">
+              Status
+            </TableHead>
+            <TableHead className="w-[35%] px-4 py-3.5 text-right align-middle font-bold uppercase ds-mono-sm text-foreground/90 leading-none">
+              Ações
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {users.map((u) => {
+            const isMe = u.id === currentUserId;
 
-      {users.map((u) => {
-        const isMe = u.id === currentUserId;
-
-        return (
-          <div
-            key={u.id}
-            className="grid grid-cols-12 items-center gap-3 border-b px-4 py-3 last:border-b-0"
-            style={{
-              borderColor: "var(--border)",
-              opacity: u.isActive ? 1 : 0.6,
-            }}
-          >
-            <div className="col-span-3 min-w-0">
-              <p
-                className="ds-body truncate"
+            return (
+              <TableRow
+                key={u.id}
+                className="hover:bg-muted/10 border-b border-border/40 last:border-b-0"
                 style={{
-                  textDecoration: u.isActive ? "none" : "line-through",
+                  opacity: u.isActive ? 1 : 0.6,
                 }}
               >
-                {u.fullName}
-                {isMe && (
-                  <span className="ds-mono-sm text-muted-foreground ml-2">
-                    (você)
+                <TableCell className="overflow-hidden truncate px-4 py-2 align-middle">
+                  <span
+                    className="ds-mono-sm font-medium"
+                    style={{
+                      textDecoration: u.isActive ? "none" : "line-through",
+                    }}
+                  >
+                    {u.username}
                   </span>
-                )}
-                {u.role === "GESTOR" && (
-                  <span className="ds-mono-sm text-muted-foreground ml-2">
-                    (gestora)
+
+                </TableCell>
+                <TableCell className="px-4 py-2 align-middle">
+                  <div className="flex items-center gap-1">
+                    <RoleBadge role={u.role} />
+                    {u.role === "GESTOR" && u.isAdminSkill && (
+                      <RoleBadge role="ADM" />
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="px-4 py-2 align-middle">
+                  <span
+                    className="ds-mono-sm"
+                    style={{
+                      color: u.isActive
+                        ? "var(--success)"
+                        : "var(--muted-foreground)",
+                    }}
+                  >
+                    {u.isActive ? "Ativo" : "Inativo"}
                   </span>
-                )}
-              </p>
-            </div>
-            <div className="col-span-2 min-w-0">
-              <p className="ds-mono-sm text-muted-foreground truncate">
-                {u.username}
-              </p>
-            </div>
-            <div className="col-span-3 min-w-0">
-              <p className="ds-mono-sm text-muted-foreground truncate">
-                {u.emailCorporativo}
-              </p>
-            </div>
-            <div className="col-span-1">
-              <RoleBadge role={u.role} />
-            </div>
-            <div className="col-span-1">
-              <span
-                className="ds-mono-sm"
-                style={{
-                  color: u.isActive
-                    ? "var(--success)"
-                    : "var(--muted-foreground)",
-                }}
-              >
-                {u.isActive ? "Ativo" : "Inativo"}
-              </span>
-            </div>
-            <div className="col-span-2 flex justify-end">
-              <UserActionsMenu user={u} isSelf={isMe} />
-            </div>
-          </div>
-        );
-      })}
-    </div>
+                </TableCell>
+                <TableCell className="px-4 py-1.5 text-right align-middle">
+                  <div className="flex justify-end">
+                    <UserActionsMenu user={u} isSelf={isMe} />
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </StyledCard>
   );
 }
