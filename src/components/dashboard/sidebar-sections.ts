@@ -58,19 +58,6 @@ const ALL_SECTIONS: SidebarSection[] = [
   //   ],
   // },
   {
-    id: "chat",
-    label: "IA Beedoo",
-    iconName: "chat",
-    basePath: "/chat",
-    permission: "view_gestor_panel",
-    // Oculto pro GESTOR a pedido — o ADM continua vendo (rota /chat segue
-    // acessível via URL direta pra quem não vê o item no menu).
-    onlyRoles: ["ADM"],
-    items: [
-      { label: "Assistente", href: "/chat" },
-    ],
-  },
-  {
     id: "configuracoes-gestor",
     label: "Configurações",
     iconName: "settings",
@@ -146,7 +133,7 @@ const ALL_SECTIONS: SidebarSection[] = [
     divider: "PAINEL ADM",
     items: [
       { label: "KPI", href: "/bases/kpi" },
-      { label: "Pausas Programadas", href: "/bases/pausas" },
+      { label: "Pausas", href: "/bases/pausas" },
     ],
   },
   {
@@ -155,20 +142,34 @@ const ALL_SECTIONS: SidebarSection[] = [
     iconName: "settings",
     basePath: "/config",
     permission: "manage_system",
-    items: [
-      { label: "KPI", href: "/config/kpi" },
-      { label: "RV", href: "/config/rv" },
-      { label: "Usuários", href: "/config/usuarios" },
-      { label: "Diário de Bordo", href: "/config/db" },
-      { label: "Base de Conhecimento", href: "/config/base-conhecimento" },
-    ],
+    // "Diário de Bordo" e "Base de Conhecimento" saíram do menu de propósito
+    // (rotas continuam acessíveis via URL direta) — ver /config/db e
+    // /config/base-conhecimento. KPI e RV foram removidos por completo: a
+    // RV agora é gerenciada direto via código/banco.
+    items: [{ label: "Usuários", href: "/configuracoes/usuarios" }],
   },
 ];
 
-export function getSidebarSectionsForRole(role: UserRole): SidebarSection[] {
+/**
+ * @param isAdminSkill Flag aditiva (profiles.is_admin_skill): um GESTOR com
+ * essa flag acumula também o que o ADM exclusivo vê, sem perder nada do que
+ * já via como GESTOR — nunca substitui o role, só soma. Irrelevante pra
+ * qualquer role que não seja GESTOR.
+ */
+export function getSidebarSectionsForRole(
+  role: UserRole,
+  isAdminSkill = false,
+): SidebarSection[] {
+  // GESTOR com is_admin_skill "acumula" o role ADM pra fins de onlyRoles —
+  // além da própria permissão (já coberta por can() com isAdminSkill), ele
+  // passa a bater também nas seções marcadas onlyRoles: ["ADM"].
+  const alsoMatchesAdmin = role === "GESTOR" && isAdminSkill;
+
   return ALL_SECTIONS.filter(
     (section) =>
-      can(role, section.permission) &&
-      (!section.onlyRoles || section.onlyRoles.includes(role)),
+      can(role, section.permission, isAdminSkill) &&
+      (!section.onlyRoles ||
+        section.onlyRoles.includes(role) ||
+        (alsoMatchesAdmin && section.onlyRoles.includes("ADM"))),
   );
 }
