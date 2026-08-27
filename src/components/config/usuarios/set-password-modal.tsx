@@ -89,7 +89,7 @@ export function SetPasswordModal({ open, onClose, user }: Props) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.2, ease: EASE_OUT_EXPO }}
-            className="elevation-3 w-full max-w-xl rounded-xl p-6"
+            className="elevation-3 w-full max-w-xl rounded-xl p-6 whitespace-normal"
             style={{ border: "1px solid var(--border)" }}
             role="dialog"
             aria-modal="true"
@@ -99,7 +99,7 @@ export function SetPasswordModal({ open, onClose, user }: Props) {
               <h2 className="ds-h2" style={{ fontSize: "1.25rem" }}>
                 {definedPassword
                   ? "Senha definida"
-                  : `Definir senha de ${user.fullName}`}
+                  : `Definir senha de ${user.username}`}
               </h2>
               <button
                 type="button"
@@ -116,7 +116,7 @@ export function SetPasswordModal({ open, onClose, user }: Props) {
               <>
                 <PasswordRevealCard
                   password={definedPassword}
-                  userName={user.fullName}
+                  userName={user.username}
                 />
                 <div className="mt-6 flex justify-end">
                   <Button type="button" onClick={handleClose}>
@@ -127,24 +127,17 @@ export function SetPasswordModal({ open, onClose, user }: Props) {
             ) : (
               <>
                 <div
-                  className="mb-4 flex items-start gap-2 rounded-lg p-3"
-                  style={{
-                    background:
-                      "color-mix(in oklch, var(--warning) 10%, transparent)",
-                    border:
-                      "1px solid color-mix(in oklch, var(--warning) 30%, transparent)",
-                  }}
+                  // Tema claro: fundo sólido + texto branco (o token
+                  // --warning-bg é quase branco no claro, ilegível). Tema
+                  // escuro mantém os tokens translúcidos originais.
+                  className="mb-4 flex items-start gap-2 rounded-lg border p-3 bg-amber-700 border-amber-800 dark:bg-[var(--warning-bg)] dark:border-[var(--warning-border)]"
                 >
                   <IconAlertTriangle
                     size={16}
-                    style={{ color: "var(--warning)" }}
-                    className="mt-0.5 shrink-0"
+                    className="mt-0.5 shrink-0 text-white dark:text-[var(--warning)]"
                     aria-hidden="true"
                   />
-                  <p
-                    className="ds-mono-sm"
-                    style={{ color: "var(--warning)" }}
-                  >
+                  <p className="ds-mono-sm text-white dark:text-[var(--warning)]">
                     A senha atual será substituída e não poderá ser
                     recuperada.
                   </p>

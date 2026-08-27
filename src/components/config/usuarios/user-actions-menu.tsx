@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { IconKey, IconPencil } from "@tabler/icons-react";
+import { IconKey, IconPencil, IconTrash } from "@tabler/icons-react";
 
 import type { UserProfile } from "@/lib/users/types";
 
-import { ChangeRoleButton } from "./change-role-button";
+import { DeleteUserModal } from "./delete-user-modal";
 import { EditUserModal } from "./edit-user-modal";
 import { SetPasswordModal } from "./set-password-modal";
 import { ToggleActiveButton } from "./toggle-active-button";
@@ -18,6 +18,7 @@ interface Props {
 export function UserActionsMenu({ user, isSelf = false }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   return (
     <>
@@ -46,11 +47,24 @@ export function UserActionsMenu({ user, isSelf = false }: Props) {
           <span className="ds-mono-sm">Senha</span>
         </button>
 
-        {!isSelf && (user.role === "OP" || user.role === "AUX") && (
-          <ChangeRoleButton user={user} />
-        )}
+        {!isSelf && !user.isActive && <ToggleActiveButton user={user} />}
 
-        {!isSelf && <ToggleActiveButton user={user} />}
+        {!isSelf && user.isActive && (
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            className="hover:bg-destructive/10 elevation-2 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 transition-colors"
+            style={{
+              border: "1px solid var(--border)",
+              fontSize: "12px",
+              color: "var(--destructive)",
+            }}
+            aria-label="Excluir usuário"
+          >
+            <IconTrash size={14} aria-hidden="true" />
+            <span className="ds-mono-sm">Deletar</span>
+          </button>
+        )}
       </div>
 
       <EditUserModal
@@ -61,6 +75,11 @@ export function UserActionsMenu({ user, isSelf = false }: Props) {
       <SetPasswordModal
         open={passwordOpen}
         onClose={() => setPasswordOpen(false)}
+        user={user}
+      />
+      <DeleteUserModal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
         user={user}
       />
     </>
