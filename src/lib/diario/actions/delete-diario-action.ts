@@ -15,7 +15,7 @@ export async function deleteDiarioAction(
 ): Promise<DeleteDiarioResult> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Não autenticado" };
-  if (!can(user.profile.role, "manage_system")) {
+  if (!can(user.profile.role, "manage_system", user.profile.isAdminSkill)) {
     return { success: false, error: "Sem permissão" };
   }
 

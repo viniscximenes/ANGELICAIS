@@ -66,7 +66,7 @@ export default async function DiarioOperatorPage({
     redirect("/d-1");
   }
 
-  const isAdm = can(user.profile.role, "manage_system");
+  const isAdm = can(user.profile.role, "manage_system", user.profile.isAdminSkill);
 
   const currentMonth = month ?? getCurrentMesRef();
   if (!/^\d{4}-\d{2}$/.test(currentMonth)) {

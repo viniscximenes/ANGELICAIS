@@ -20,7 +20,7 @@ export async function deleteMonthAction(
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Não autenticado" };
 
-  if (!can(user.profile.role, "manage_base")) {
+  if (!can(user.profile.role, "manage_base", user.profile.isAdminSkill)) {
     return { success: false, error: "Sem permissão para apagar dados" };
   }
 

@@ -6,18 +6,23 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export type ToggleActiveInput = {
+export type UpdateAdminSkillInput = {
   id: string;
-  newIsActive: boolean;
+  isAdminSkill: boolean;
 };
 
-export type ToggleActiveResult =
+export type UpdateAdminSkillResult =
   | { success: true }
   | { success: false; error: string };
 
-export async function toggleUserActiveAction(
-  input: ToggleActiveInput,
-): Promise<ToggleActiveResult> {
+/**
+ * Liga/desliga profiles.is_admin_skill — flag aditiva que só faz sentido
+ * pra GESTOR (acumula o Painel Adm sem perder o que já tinha). Nunca
+ * substitui profiles.role; ver getSidebarSectionsForRole/can().
+ */
+export async function updateAdminSkillAction(
+  input: UpdateAdminSkillInput,
+): Promise<UpdateAdminSkillResult> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Não autenticado" };
   if (!can(user.profile.role, "manage_system", user.profile.isAdminSkill)) {
@@ -25,7 +30,7 @@ export async function toggleUserActiveAction(
   }
 
   if (input.id === user.profile.id) {
-    return { success: false, error: "Você não pode desativar a si próprio" };
+    return { success: false, error: "Você não pode alterar a si próprio" };
   }
 
   let adminClient;
@@ -44,24 +49,28 @@ export async function toggleUserActiveAction(
     .eq("id", input.id)
     .maybeSingle();
 
-  if (target?.role === "GESTOR") {
+  if (!target) {
+    return { success: false, error: "Usuário não encontrado" };
+  }
+
+  if (target.role !== "GESTOR") {
     return {
       success: false,
-      error: "Não é possível desativar a gestora pelo painel",
+      error: "Skill de administrador só pode ser atribuída a um GESTOR",
     };
   }
 
   const { error } = await adminClient
     .from("profiles")
     .update({
-      is_active: input.newIsActive,
+      is_admin_skill: input.isAdminSkill,
       updated_at: new Date().toISOString(),
     })
     .eq("id", input.id);
 
   if (error) {
-    console.error("[toggle-active] erro:", error);
-    return { success: false, error: "Erro ao atualizar status" };
+    console.error("[update-admin-skill] erro:", error);
+    return { success: false, error: "Erro ao atualizar" };
   }
 
   revalidatePath("/configuracoes/usuarios");

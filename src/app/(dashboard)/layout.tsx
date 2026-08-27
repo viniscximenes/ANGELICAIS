@@ -18,8 +18,13 @@ export default async function DashboardLayout({
   }
 
   // O GESTOR também recebe a sidebar — filtrada por permissão, ela mostra só a
-  // seção "Painel do Gestor" (view_gestor_panel), sem D-1/KPI/RV/etc.
-  const sections = getSidebarSectionsForRole(user.profile.role);
+  // seção "Painel do Gestor" (view_gestor_panel), sem D-1/KPI/RV/etc. Um
+  // GESTOR com is_admin_skill acumula, além disso, as seções que só o ADM
+  // exclusivo vê (ver getSidebarSectionsForRole).
+  const sections = getSidebarSectionsForRole(
+    user.profile.role,
+    user.profile.isAdminSkill,
+  );
 
   // Header e sidebar compartilham o mesmo usuário resolvido aqui — o header
   // não faz mais a própria chamada de auth (era uma segunda ida ao Supabase
@@ -27,6 +32,7 @@ export default async function DashboardLayout({
   const sidebarUser: SidebarUser = {
     fullName: user.profile.fullName,
     role: user.profile.role,
+    isAdminSkill: user.profile.isAdminSkill,
   };
 
   return (

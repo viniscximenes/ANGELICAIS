@@ -39,7 +39,7 @@ export default async function MonitoriaDetailPage({ params }: Props) {
   const monitoria = await getMonitoriaById(id);
   if (!monitoria) notFound();
 
-  const isAdm = can(user.profile.role, "manage_system");
+  const isAdm = can(user.profile.role, "manage_system", user.profile.isAdminSkill);
   const isAux = user.profile.role === "AUX";
   const isResponsible =
     monitoria.auxResponsibleEmail.toLowerCase() ===

@@ -25,6 +25,20 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   GESTOR: ["view_gestor_panel", "manage_d1_base"],
 };
 
-export function can(role: UserRole, permission: Permission): boolean {
-  return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
+/**
+ * @param isAdminSkill Flag aditiva (profiles.is_admin_skill): um GESTOR com
+ * essa flag acumula, além das próprias permissões, as do ADM exclusivo —
+ * sem perder nada do que já tinha como GESTOR. Irrelevante pra qualquer
+ * role que não seja GESTOR (em especial, não afeta o ADM puro).
+ */
+export function can(
+  role: UserRole,
+  permission: Permission,
+  isAdminSkill = false,
+): boolean {
+  if (ROLE_PERMISSIONS[role]?.includes(permission)) return true;
+  if (role === "GESTOR" && isAdminSkill) {
+    return ROLE_PERMISSIONS.ADM.includes(permission);
+  }
+  return false;
 }

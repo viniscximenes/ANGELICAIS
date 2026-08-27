@@ -20,7 +20,7 @@ export async function updateUserRoleAction(
 ): Promise<UpdateRoleResult> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Não autenticado" };
-  if (!can(user.profile.role, "manage_system")) {
+  if (!can(user.profile.role, "manage_system", user.profile.isAdminSkill)) {
     return { success: false, error: "Sem permissão" };
   }
 
@@ -82,6 +82,6 @@ export async function updateUserRoleAction(
     return { success: false, error: "Erro ao alterar role" };
   }
 
-  revalidatePath("/config/usuarios");
+  revalidatePath("/configuracoes/usuarios");
   return { success: true };
 }

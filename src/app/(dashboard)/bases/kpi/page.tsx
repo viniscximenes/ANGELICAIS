@@ -21,7 +21,7 @@ export default async function BasesKpiPage() {
 
   if (user.profile.role === "GESTOR") redirect("/reports/consolidado");
 
-  if (!can(user.profile.role, "manage_base")) {
+  if (!can(user.profile.role, "manage_base", user.profile.isAdminSkill)) {
     redirect("/d-1");
   }
 

@@ -8,6 +8,13 @@ export type UserProfile = {
   emailCorporativo: string;
   fullName: string;
   role: UserRole;
+  /**
+   * Flag aditiva: GESTOR que também acumula acesso administrativo (Painel
+   * Adm), sem perder o que já tinha como GESTOR. Não confundir com
+   * role === "ADM" (admin exclusivo, sem acesso operacional) — irrelevante
+   * pra qualquer role que não seja GESTOR.
+   */
+  isAdminSkill: boolean;
   themePreference: "dark" | "light";
 };
 
@@ -36,7 +43,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select(
-      "id, username, email_corporativo, full_name, role, is_active, theme_preference",
+      "id, username, email_corporativo, full_name, role, is_active, theme_preference, is_admin_skill",
     )
     .eq("id", user.id)
     .single();
@@ -63,6 +70,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       emailCorporativo: profile.email_corporativo,
       fullName: profile.full_name,
       role: profile.role as UserRole,
+      isAdminSkill: profile.is_admin_skill === true,
       themePreference: profile.theme_preference as "dark" | "light",
     },
   };

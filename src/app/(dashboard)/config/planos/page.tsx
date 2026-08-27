@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export default async function ConfigPlanosPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!can(user.profile.role, "manage_system")) redirect("/d-1");
+  if (!can(user.profile.role, "manage_system", user.profile.isAdminSkill)) redirect("/d-1");
 
   const [marcas, planos, regras] = await Promise.all([
     getAllMarcas(),

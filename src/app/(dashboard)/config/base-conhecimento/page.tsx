@@ -17,7 +17,7 @@ export default async function BaseConhecimentoPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (user.profile.role === "GESTOR") redirect("/reports/consolidado");
-  if (!can(user.profile.role, "manage_system")) redirect("/d-1");
+  if (!can(user.profile.role, "manage_system", user.profile.isAdminSkill)) redirect("/d-1");
 
   const [artigos, config] = await Promise.all([getArtigos(), getConfigAction()]);
 

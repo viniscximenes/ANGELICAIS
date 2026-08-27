@@ -19,7 +19,7 @@ export async function getDiasDisponiveisAction(): Promise<DiaDisponivel[]> {
   // ADM tem manage_system, então checa os dois papéis explicitamente.
   if (
     !user ||
-    (!can(user.profile.role, "manage_system") && user.profile.role !== "GESTOR")
+    (!can(user.profile.role, "manage_system", user.profile.isAdminSkill) && user.profile.role !== "GESTOR")
   ) {
     return [];
   }

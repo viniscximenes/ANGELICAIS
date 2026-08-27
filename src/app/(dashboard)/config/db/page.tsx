@@ -24,7 +24,7 @@ export default async function ConfigDiarioDeBordoPage() {
     redirect("/reports/consolidado");
   }
 
-  if (!can(user.profile.role, "manage_system")) {
+  if (!can(user.profile.role, "manage_system", user.profile.isAdminSkill)) {
     redirect("/d-1");
   }
 

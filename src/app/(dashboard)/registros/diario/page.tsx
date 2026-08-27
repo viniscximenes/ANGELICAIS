@@ -39,7 +39,7 @@ export default async function DiarioPage({ searchParams }: Props) {
     redirect("/d-1");
   }
 
-  const isAdm = can(user.profile.role, "manage_system");
+  const isAdm = can(user.profile.role, "manage_system", user.profile.isAdminSkill);
   const currentMonth = params.month ?? getCurrentMesRef();
 
   if (!/^\d{4}-\d{2}$/.test(currentMonth)) {

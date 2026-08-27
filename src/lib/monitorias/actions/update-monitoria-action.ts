@@ -28,7 +28,7 @@ export async function updateMonitoriaAction(
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Não autenticado" };
 
-  const isAdm = can(user.profile.role, "manage_system");
+  const isAdm = can(user.profile.role, "manage_system", user.profile.isAdminSkill);
   const isAux = user.profile.role === "AUX";
 
   if (!isAdm && !isAux) {

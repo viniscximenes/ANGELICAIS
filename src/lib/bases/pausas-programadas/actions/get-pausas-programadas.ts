@@ -16,7 +16,7 @@ export async function getPausasProgramadas(): Promise<PausaProgramadaDb[]> {
   if (!user) return [];
 
   if (
-    !can(user.profile.role, "manage_system") &&
+    !can(user.profile.role, "manage_system", user.profile.isAdminSkill) &&
     !can(user.profile.role, "view_gestor_panel")
   ) {
     return [];

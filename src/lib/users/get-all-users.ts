@@ -8,7 +8,7 @@ export async function getAllUsers(): Promise<UserProfile[]> {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, username, full_name, email_corporativo, email_corporativo_alias_kpi, role, is_active, theme_preference, created_at, updated_at",
+      "id, username, full_name, email_corporativo, email_corporativo_alias_kpi, role, is_admin_skill, is_active, theme_preference, created_at, updated_at",
     )
     .order("full_name");
 
@@ -25,6 +25,7 @@ export async function getAllUsers(): Promise<UserProfile[]> {
     emailCorporativo: r.email_corporativo,
     emailCorporativoAliasKpi: r.email_corporativo_alias_kpi,
     role: r.role as UserRole,
+    isAdminSkill: r.is_admin_skill === true,
     isActive: r.is_active,
     themePreference: r.theme_preference as "dark" | "light",
     createdAt: r.created_at,

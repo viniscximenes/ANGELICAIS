@@ -32,6 +32,13 @@ export function AppHeader({ user, sections }: AppHeaderProps) {
     setMobileOpen(false);
   }, [pathname]);
 
+  // GESTOR com is_admin_skill acumula as duas funções — o cabeçalho reflete
+  // isso concatenando o label do ADM ao do GESTOR, sem trocar de role.
+  const roleLabel =
+    user.role === "GESTOR" && user.isAdminSkill
+      ? `${ROLE_LABEL.GESTOR} / ${ROLE_LABEL.ADM}`
+      : ROLE_LABEL[user.role];
+
   return (
     <header className="border-border bg-background/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] sticky top-0 z-30 h-[60px] border-b backdrop-blur-md dark:border-border/50 dark:shadow-none">
       <div className="flex h-[60px] items-center justify-between gap-4 px-6">
@@ -51,7 +58,7 @@ export function AppHeader({ user, sections }: AppHeaderProps) {
               CRM
             </span>
             <span className="text-muted-foreground/70 text-xs leading-tight tracking-wide">
-              {ROLE_LABEL[user.role]}
+              {roleLabel}
             </span>
           </div>
         </div>

@@ -24,7 +24,7 @@ export default async function MonitoriaPage() {
     redirect("/d-1");
   }
 
-  const isAdm = can(user.profile.role, "manage_system");
+  const isAdm = can(user.profile.role, "manage_system", user.profile.isAdminSkill);
 
   if (isAdm) {
     const [monitorias, operators, auxOperators] = await Promise.all([

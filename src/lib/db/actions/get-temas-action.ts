@@ -11,7 +11,7 @@ export async function getTemasAction(tipo: TemaTipo): Promise<Tema[]> {
   // tem manage_system, então checa os dois papéis explicitamente.
   if (
     !user ||
-    (!can(user.profile.role, "manage_system") && user.profile.role !== "GESTOR")
+    (!can(user.profile.role, "manage_system", user.profile.isAdminSkill) && user.profile.role !== "GESTOR")
   ) {
     return [];
   }
@@ -43,7 +43,7 @@ export async function getTemasAction(tipo: TemaTipo): Promise<Tema[]> {
  */
 export async function getTemasVazioAction(): Promise<boolean> {
   const user = await getCurrentUser();
-  if (!user || !can(user.profile.role, "manage_system")) return false;
+  if (!user || !can(user.profile.role, "manage_system", user.profile.isAdminSkill)) return false;
 
   const supabase = createAdminClient();
   const { count, error } = await supabase

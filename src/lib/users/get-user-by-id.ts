@@ -8,7 +8,7 @@ export async function getUserById(id: string): Promise<UserProfile | null> {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, username, full_name, email_corporativo, email_corporativo_alias_kpi, role, is_active, theme_preference, created_at, updated_at",
+      "id, username, full_name, email_corporativo, email_corporativo_alias_kpi, role, is_admin_skill, is_active, theme_preference, created_at, updated_at",
     )
     .eq("id", id)
     .maybeSingle();
@@ -26,6 +26,7 @@ export async function getUserById(id: string): Promise<UserProfile | null> {
     emailCorporativo: data.email_corporativo,
     emailCorporativoAliasKpi: data.email_corporativo_alias_kpi,
     role: data.role as UserRole,
+    isAdminSkill: data.is_admin_skill === true,
     isActive: data.is_active,
     themePreference: data.theme_preference as "dark" | "light",
     createdAt: data.created_at,

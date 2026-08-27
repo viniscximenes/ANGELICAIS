@@ -8,6 +8,8 @@ export type UserProfile = {
   emailCorporativo: string;
   emailCorporativoAliasKpi: string | null;
   role: UserRole;
+  /** GESTOR que também acumula acesso administrativo — ver sidebar-sections.ts. */
+  isAdminSkill: boolean;
   isActive: boolean;
   themePreference: "dark" | "light";
   createdAt: string | null;
