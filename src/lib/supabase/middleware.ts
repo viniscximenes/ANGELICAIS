@@ -5,14 +5,14 @@ import { NextResponse, type NextRequest } from "next/server";
 // getPostLoginPath() (src/lib/auth/post-login-path.ts), que já manda ADM pra
 // cá no pós-login. Path completo (não só prefixo) porque é o alvo do
 // redirect, não um filtro de entrada.
-const ADMIN_DEFAULT_PATH = "/config/usuarios";
+const ADMIN_DEFAULT_PATH = "/configuracoes/usuarios";
 
 // Único critério de "é rota administrativa": tudo que já é gated por
 // manage_base ou manage_system nas próprias páginas (ver sidebar-sections.ts
 // e permissions.ts). ADM só pode navegar dentro destes dois prefixos —
 // qualquer outra rota (incluindo novas rotas futuras que alguém esqueça de
 // checar na própria página) é bloqueada por padrão aqui.
-const ADMIN_ALLOWED_PREFIXES = ["/config", "/bases"];
+const ADMIN_ALLOWED_PREFIXES = ["/config", "/bases", "/configuracoes"];
 
 // Rotas que nunca precisam da checagem de role — ou porque são públicas
 // (login), ou porque não são navegação de página (API/server actions têm sua
