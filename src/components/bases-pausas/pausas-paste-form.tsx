@@ -5,9 +5,10 @@ import { IconClipboard, IconLoader2 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { StyledCard } from "@/components/gestor/styled-card";
 import { salvarPausasAction } from "@/lib/bases/pausas-programadas/actions/salvar-pausas-action";
 import { parsePausasClipboard } from "@/lib/bases/pausas-programadas/parse-pausas-clipboard";
+import { cn } from "@/lib/utils";
 
 export function PausasPasteForm() {
   const router = useRouter();
@@ -39,22 +40,39 @@ export function PausasPasteForm() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="elevation-1 space-y-4 rounded-xl p-5">
-        <div className="flex items-start gap-2">
-          <IconClipboard
-            size={18}
-            className="text-muted-foreground mt-0.5"
-            aria-hidden="true"
-          />
-          <div className="flex-1">
-            <label htmlFor="pausas-textarea" className="ds-body block">
-              Cole a planilha de pausas aqui (Ctrl+V)
+    <div className="space-y-6">
+      <StyledCard withGradient className="gap-0 space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-start gap-2">
+            <IconClipboard
+              size={18}
+              className="text-muted-foreground mt-0.5"
+              aria-hidden="true"
+            />
+            <label htmlFor="pausas-textarea" className="ds-body font-medium block">
+              COLAR PAUSAS PROGRAMADAS
             </label>
-            <p className="ds-mono-sm text-muted-foreground mt-1">
-              Agente · Célula · Login · Logout · Descanso 1 · Pausa 20 · Descanso 2
-            </p>
           </div>
+          <button
+            type="button"
+            onClick={handleSalvar}
+            disabled={isPending || linhas.length === 0}
+            className={cn(
+              "bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-all cursor-pointer shadow-sm select-none disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
+            style={{ fontSize: "12px" }}
+          >
+            {isPending && (
+              <IconLoader2
+                size={14}
+                className="animate-spin"
+                aria-hidden="true"
+              />
+            )}
+            <span className="ds-mono-sm font-medium">
+              {isPending ? "Processando..." : "Enviar dados"}
+            </span>
+          </button>
         </div>
 
         <textarea
@@ -62,15 +80,15 @@ export function PausasPasteForm() {
           value={clipboardText}
           onChange={(e) => setClipboardText(e.target.value)}
           disabled={isPending}
-          rows={10}
-          placeholder={"Agente\tCélula\tLogin\tLogout\tDescanso 1\tPausa 20\tDescanso 2\nalice.santos\tRETENÇÃO\t07:40\t14:00\t08:40:00\t09:50:00\t11:30:00"}
-          className="ds-mono-sm elevation-2 w-full rounded-md px-3 py-2"
+          rows={4}
+          placeholder=""
+          className="ds-mono-sm elevation-2 w-full rounded-md px-3 py-2 bg-background text-foreground focus:outline-none"
           style={{
             border: "1px solid var(--border)",
             fontFamily: "var(--font-geist-mono), monospace",
             fontSize: "12px",
-            resize: "vertical",
-            minHeight: "200px",
+            resize: "none",
+            minHeight: "100px",
           }}
         />
 
@@ -80,7 +98,7 @@ export function PausasPasteForm() {
             {ignoradas === 1 ? "" : "s"} (faltam agente, login ou logout).
           </p>
         )}
-      </div>
+      </StyledCard>
 
       {linhas.length > 0 && (
         <div className="space-y-2">
@@ -89,7 +107,7 @@ export function PausasPasteForm() {
             {linhas.length === 1 ? "" : "s"}
           </p>
 
-          <div className="elevation-1 overflow-hidden rounded-xl">
+          <StyledCard className="p-0 overflow-hidden" withGradient={false}>
             <div
               className="ds-mono-sm text-muted-foreground grid grid-cols-12 gap-3 border-b px-4 py-3"
               style={{ borderColor: "var(--border)" }}
@@ -107,7 +125,7 @@ export function PausasPasteForm() {
               {linhas.map((l) => (
                 <div
                   key={l.operatorEmail}
-                  className="grid grid-cols-12 items-center gap-3 border-b px-4 py-2 last:border-b-0"
+                  className="grid grid-cols-12 items-center gap-3 border-b px-4 py-2 last:border-b-0 animate-in fade-in-0 duration-200"
                   style={{ borderColor: "var(--border)" }}
                 >
                   <div className="col-span-3 min-w-0">
@@ -142,25 +160,9 @@ export function PausasPasteForm() {
                 </div>
               ))}
             </div>
-          </div>
+          </StyledCard>
         </div>
       )}
-
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          onClick={handleSalvar}
-          disabled={isPending || linhas.length === 0}
-          className="gap-2"
-        >
-          {isPending && (
-            <IconLoader2 size={16} className="animate-spin" aria-hidden="true" />
-          )}
-          {isPending
-            ? "Salvando..."
-            : `Salvar ${linhas.length} operador${linhas.length === 1 ? "" : "es"}`}
-        </Button>
-      </div>
     </div>
   );
 }
