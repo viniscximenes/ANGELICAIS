@@ -7,10 +7,9 @@
  *   - src/lib/evolucao/compute-consolidado.ts
  *
  * Existe apenas no caminho do gestor (/operacional/kpi). NÃO é injetado em
- * getKpiDefinitions() de propósito: aquela lista alimenta /config/kpi (que
- * edita e grava por `id` real) e os processadores de snapshot — um registro
- * sintético lá viraria um card ineditável e poderia bagunçar o mapeamento
- * de cabeçalhos na importação.
+ * getKpiDefinitions() de propósito: aquela lista alimenta os processadores
+ * de snapshot (que gravam por `id` real) — um registro sintético lá poderia
+ * bagunçar o mapeamento de cabeçalhos na importação.
  */
 
 export const RETIDOS_BRUTOS_SLUG = "retidos_brutos";

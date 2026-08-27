@@ -40,7 +40,7 @@ export async function getDeflatorApplications(
 
 /**
  * Aplicações de deflator manual de todos os operadores num mês.
- * Usado na tab "Aplicar Deflator" de /config/rv.
+ * Usado por get-rv-para-equipe.ts (RV da equipe no painel do gestor).
  */
 export async function getAllDeflatorApplicationsForMonth(
   mesRef: string,

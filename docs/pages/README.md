@@ -39,13 +39,12 @@ Quando a página justificar, adicionar:
 | [`d-1-consolidado.md`](./d-1-consolidado.md) | D-1 Consolidado | `/d-1/consolidado` | documentada |
 | [`d-1-tempo-logado.md`](./d-1-tempo-logado.md) | D-1 Tempo Logado | `/d-1/tempo-logado` | documentada |
 | [`d-1-indisponibilidade.md`](./d-1-indisponibilidade.md) | D-1 Indisponibilidade | `/d-1/indisponibilidade` | documentada |
-| [`config-kpi.md`](./config-kpi.md) | Configurações — KPI | `/config/kpi` | documentada |
 | [`bases-kpi.md`](./bases-kpi.md) | Bases — KPI | `/bases/kpi` | documentada |
 | [`kpi-atual-principal.md`](./kpi-atual-principal.md) | KPI Atual Principal | `/kpi/atual-principal` | documentada |
 | [`kpi-atual-secundario.md`](./kpi-atual-secundario.md) | KPI Atual Secundário | `/kpi/atual-secundario` | documentada |
 | [`kpi-passado-principal.md`](./kpi-passado-principal.md) | KPI Passado Principal | `/kpi/passado-principal` | documentada |
 | [`kpi-passado-secundario.md`](./kpi-passado-secundario.md) | KPI Passado Secundário | `/kpi/passado-secundario` | documentada |
-| [`rv.md`](./rv.md) | RV — Remuneração Variável | `/config/rv`, `/rv/atual`, `/rv/passado` | documentada |
+| [`rv.md`](./rv.md) | RV — Remuneração Variável | `/rv/atual`, `/rv/passado` | documentada |
 | [`registros-monitoria.md`](./registros-monitoria.md) | Monitoria de Ligações | `/registros/monitoria` | documentada |
 | [`registros-diario.md`](./registros-diario.md) | Diário de Bordo | `/registros/diario`, `/registros/diario/[operator_email]` | documentada |
 | [`config-usuarios.md`](./config-usuarios.md) | Gerenciar Usuários | `/config/usuarios` | documentada |

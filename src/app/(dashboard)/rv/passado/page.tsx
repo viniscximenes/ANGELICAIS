@@ -83,7 +83,7 @@ export default async function RvPassadoPage() {
           {calculation?.status === "sem_dados" && (
             <RvEmptyState
               title="Sem dados do mês passado"
-              description={`Não há registro de KPI para ${monthLabel} no seu histórico, ou as regras do mês passado ainda não foram definidas. Quando o administrador clicar em "Promover atual → passado" em /config/rv, os dados aparecerão aqui.`}
+              description={`Não há registro de KPI para ${monthLabel} no seu histórico, ou as regras do mês passado ainda não foram definidas pelo administrador.`}
             />
           )}
 
