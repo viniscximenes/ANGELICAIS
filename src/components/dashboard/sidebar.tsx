@@ -9,6 +9,7 @@ import {
   IconHeadset,
   IconLogout,
   IconSettings,
+  IconUsers,
 } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -46,7 +47,7 @@ const SUBITENS_CONTEXTUAIS: Record<string, { label: string; href: string }[]> = 
 export type SidebarSection = {
   id: string;
   label: string;
-  iconName: "chart" | "database" | "settings" | "headset";
+  iconName: "chart" | "database" | "settings" | "headset" | "users";
   basePath: string;
   permission: Permission;
   items: { label: string; href: string }[];
@@ -83,6 +84,7 @@ const ICONS: Record<
   database: IconDatabase,
   settings: IconSettings,
   headset: IconHeadset,
+  users: IconUsers,
 };
 
 interface SidebarNavProps {
