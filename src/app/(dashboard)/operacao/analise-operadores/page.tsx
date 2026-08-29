@@ -6,9 +6,10 @@ import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
-import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
-import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
-import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
+import {
+  deriveNomeOperador,
+  formatNomeProprio,
+} from "@/lib/gestor/derive-nome-operador";
 import { getSnapshotsSummary } from "@/lib/kpi/bases/get-snapshots-summary";
 
 export const metadata: Metadata = {
@@ -27,24 +28,18 @@ export default async function AnaliseOperadoresPage() {
     redirect(getPostLoginPath(user.profile.role));
   }
 
-  const [roster, nomeFantasiaConfig, snapshotsSummary] = await Promise.all([
+  const [roster, snapshotsSummary] = await Promise.all([
     getRosterOperadoresGestor(user.profile.id),
-    getNomeFantasiaConfig(user.profile.id),
     getSnapshotsSummary(),
   ]);
 
-  const nomeFantasia = {
-    ativo: nomeFantasiaConfig.ativo,
-    mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
-  };
-
   // Operadores selecionáveis = EXATAMENTE o roster de /configuracoes/equipe.
-  // Rótulo com nome fantasia / nome derivado (resolverNomeExibicao), igual
-  // às demais telas de operador.
+  // Rótulo = "nome.sobrenome" da parte local do e-mail (deriveNomeOperador).
+  // Esta página NÃO usa nome fantasia (o roster é 100% nome.sobrenome@alloha.com).
   const operadores = roster
     .map((email) => ({
       email,
-      nome: resolverNomeExibicao(email, nomeFantasia),
+      nome: deriveNomeOperador(email),
     }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 

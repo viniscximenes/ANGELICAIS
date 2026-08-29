@@ -3,6 +3,7 @@ import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
 import type { KpiDefinition, KpiValueType } from "@/lib/kpi/types";
 import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
 
+import { TX_RETENCAO_SLUG } from "./constants";
 import { formatMesRefCurto } from "./format-mes-ref";
 import { getHistoricoOperador } from "./get-historico-operador";
 import {
@@ -48,9 +49,17 @@ export type AnaliseOperadorSerial = {
   /** Se o mês atual estava entre os dados do período (antes de eventual exclusão). */
   mesAtualTinhaDado: boolean;
   incluirMesAtual: boolean;
+  /** Meta de tx_retencao_bruta efetivamente aplicada (override do gestor OU threshold padrão). */
+  metaTxRetencao: number | null;
+  /** true quando `metaTxRetencao` veio do override desta página (não do kpi_definitions). */
+  metaTxRetencaoEhOverride: boolean;
+  /** Threshold padrão de tx_retencao_bruta em kpi_definitions (para o "usar padrão"). */
+  metaTxRetencaoPadrao: number | null;
   principais: KpiSerie[];
   secundarios: KpiSerie[];
 };
+
+export { TX_RETENCAO_SLUG } from "./constants";
 
 /** `YYYY-MM-01` do mês calendário corrente em Brasília. */
 export function mesRefAtual(): string {
@@ -86,9 +95,12 @@ export async function buildAnaliseOperadorSerial(params: {
   mesMaisRecenteDisponivel: string | null;
   /** default true — inclui o mês calendário corrente (ainda não fechado) no histórico/quartil/média. */
   incluirMesAtual?: boolean;
+  /** Override de meta de tx_retencao_bruta desta página (null = usa kpi_definitions). */
+  metaOverrideTxRetencao?: number | null;
 }): Promise<AnaliseOperadorSerial> {
   const { operatorEmailCandidates, periodo, mesMaisRecenteDisponivel } = params;
   const incluirMesAtual = params.incluirMesAtual ?? true;
+  const metaOverrideTxRetencao = params.metaOverrideTxRetencao ?? null;
   const mesAtualRef = mesRefAtual();
 
   const primaryEmail = operatorEmailCandidates[0] ?? "";
@@ -102,6 +114,9 @@ export async function buildAnaliseOperadorSerial(params: {
       mesAtualRef,
       mesAtualTinhaDado: false,
       incluirMesAtual,
+      metaTxRetencao: metaOverrideTxRetencao,
+      metaTxRetencaoEhOverride: metaOverrideTxRetencao !== null,
+      metaTxRetencaoPadrao: null,
       principais: [],
       secundarios: [],
     };
@@ -137,11 +152,23 @@ export async function buildAnaliseOperadorSerial(params: {
     ? mesesComDado
     : mesesComDado.filter((m) => m !== mesAtualRef);
 
+  const txDef = definitions.find((d) => d.slug === TX_RETENCAO_SLUG) ?? null;
+  const metaTxRetencaoPadrao = txDef ? metaLinhaDaDefinicao(txDef) : null;
+  const metaTxRetencao = metaOverrideTxRetencao ?? metaTxRetencaoPadrao;
+
   const buildSerie = (
     def: KpiDefinition,
     grupo: "principal" | "secundario",
   ): KpiSerie => {
     const ranqueavel = grupo === "principal" && isRanqueavel(def);
+
+    // Override de meta só do tx_retencao_bruta desta página: troca a
+    // ReferenceLine e recalcula o semáforo do card (binário vs. o override).
+    const usaOverride =
+      def.slug === TX_RETENCAO_SLUG && metaOverrideTxRetencao !== null;
+    const metaLinha = usaOverride
+      ? metaOverrideTxRetencao
+      : metaLinhaDaDefinicao(def);
 
     const pontos: PontoSerie[] = meses.map((mesRef) => {
       const valuesBySlug = historico.porMes.get(mesRef) ?? new Map();
@@ -162,11 +189,20 @@ export async function buildAnaliseOperadorSerial(params: {
         ? quartis.get(mesRef)?.get(def.slug)
         : undefined;
 
+      const valor = cell?.valor ?? valuesBySlug.get(def.slug) ?? null;
+      const status: PontoSerie["status"] = usaOverride
+        ? valor === null
+          ? "neutral"
+          : valor >= (metaOverrideTxRetencao as number)
+            ? "success"
+            : "danger"
+        : (cell?.status ?? "neutral");
+
       return {
         mesRef,
         label: formatMesRefCurto(mesRef),
-        valor: cell?.valor ?? valuesBySlug.get(def.slug) ?? null,
-        status: cell?.status ?? "neutral",
+        valor,
+        status,
         metaPonto: cell?.metaPorLinha ?? null,
         quartil: quartilMes ? quartilMes.quartil : null,
       };
@@ -178,7 +214,7 @@ export async function buildAnaliseOperadorSerial(params: {
       valueType: def.valueType,
       direction: def.direction,
       grupo,
-      metaLinha: metaLinhaDaDefinicao(def),
+      metaLinha,
       temQuartil: ranqueavel,
       pontos,
     };
@@ -192,6 +228,9 @@ export async function buildAnaliseOperadorSerial(params: {
     mesAtualRef,
     mesAtualTinhaDado,
     incluirMesAtual,
+    metaTxRetencao,
+    metaTxRetencaoEhOverride: metaOverrideTxRetencao !== null,
+    metaTxRetencaoPadrao,
     principais: principaisDefs.map((d) => buildSerie(d, "principal")),
     secundarios: secundariosDefs.map((d) => buildSerie(d, "secundario")),
   };

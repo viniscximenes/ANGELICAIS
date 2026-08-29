@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import {
   Area,
   CartesianGrid,
@@ -52,12 +52,15 @@ export function KpiPrincipalCard({
   serie,
   estatico = false,
   forceLight = false,
+  acoes,
 }: {
   serie: KpiSerie;
   /** Desliga animação — usado na captura offscreen do PDF/PNG, pra não capturar mid-frame. */
   estatico?: boolean;
   /** Resolve as cores contra o tema claro (captura). */
   forceLight?: boolean;
+  /** Slot à direita do título (ex.: engrenagem de meta). Omitido na captura. */
+  acoes?: ReactNode;
 }) {
   const cores = useChartColors(forceLight);
   const rawId = useId().replace(/[:]/g, "");
@@ -133,7 +136,10 @@ export function KpiPrincipalCard({
     <div className="space-y-3">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h3 className="ds-h3 text-foreground font-semibold">{displayName}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="ds-h3 text-foreground font-semibold">{displayName}</h3>
+            {acoes}
+          </div>
           <p className="ds-small text-muted-foreground mt-0.5 text-xs">
             {metaLinha !== null
               ? `Meta: ${formatKpiValue(metaLinha, valueType)}`

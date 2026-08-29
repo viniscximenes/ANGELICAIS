@@ -5,6 +5,8 @@ import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
 import { getSnapshotsSummary } from "@/lib/kpi/bases/get-snapshots-summary";
 import { resolveKpiEmailCandidatesForProfiles } from "@/lib/profile/get-kpi-email-for-profile";
 
+import { getAnaliseMetaTxRetencao } from "./get-meta-tx-retencao";
+
 import { isPeriodo, type Periodo } from "./periodo";
 import {
   buildAnaliseOperadorSerial,
@@ -50,9 +52,10 @@ export async function getAnaliseOperadorAction(input: {
     return { success: false, error: "Operador fora da equipe" };
   }
 
-  const [candidatosMap, summary] = await Promise.all([
+  const [candidatosMap, summary, metaOverrideTxRetencao] = await Promise.all([
     resolveKpiEmailCandidatesForProfiles([operatorEmail]),
     getSnapshotsSummary(),
+    getAnaliseMetaTxRetencao(user.profile.id),
   ]);
 
   const operatorEmailCandidates =
@@ -64,6 +67,7 @@ export async function getAnaliseOperadorAction(input: {
     periodo,
     mesMaisRecenteDisponivel,
     incluirMesAtual: input.incluirMesAtual ?? true,
+    metaOverrideTxRetencao,
   });
 
   return { success: true, data };

@@ -26,6 +26,7 @@ import {
   PERIODO_VALUES,
   type Periodo,
 } from "@/lib/kpi/analise-operadores/periodo";
+import { TX_RETENCAO_SLUG } from "@/lib/kpi/analise-operadores/constants";
 import type { AnaliseOperadorSerial } from "@/lib/kpi/analise-operadores/serial-types";
 import { formatDateBR, formatDateTimeBR } from "@/lib/utils/format-datetime-br";
 
@@ -34,6 +35,7 @@ import { ExportPngButton } from "./export-png-button";
 import type { IdentificacaoMeta } from "./identificacao-bloco";
 import { IdentificacaoBloco } from "./identificacao-bloco";
 import { KpiPrincipalCard } from "./kpi-principal-card";
+import { MetaTxRetencaoPopover } from "./meta-tx-retencao-popover";
 import { KpiSecundariosGrid } from "./kpi-secundarios-grid";
 import { RelatorioPdfLayout } from "./relatorio-pdf-layout";
 
@@ -64,6 +66,8 @@ export function AnaliseOperadoresSection({
   const [operatorEmail, setOperatorEmail] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState<Periodo>(PERIODO_PADRAO);
   const [incluirMesAtual, setIncluirMesAtual] = useState(true);
+  // Bump para forçar refetch após salvar a meta de retenção desta página.
+  const [metaVersion, setMetaVersion] = useState(0);
   const [data, setData] = useState<AnaliseOperadorSerial | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [geradoEm, setGeradoEm] = useState<string>("");
@@ -101,7 +105,7 @@ export function AnaliseOperadoresSection({
         toast.error(res.error);
       }
     });
-  }, [operatorEmail, periodo, incluirMesAtual]);
+  }, [operatorEmail, periodo, incluirMesAtual, metaVersion]);
 
   const operadoresFiltrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -283,7 +287,20 @@ export function AnaliseOperadoresSection({
 
             <div className="space-y-10">
               {data.principais.map((serie) => (
-                <KpiPrincipalCard key={serie.slug} serie={serie} />
+                <KpiPrincipalCard
+                  key={serie.slug}
+                  serie={serie}
+                  acoes={
+                    serie.slug === TX_RETENCAO_SLUG ? (
+                      <MetaTxRetencaoPopover
+                        metaAtual={data.metaTxRetencao}
+                        ehOverride={data.metaTxRetencaoEhOverride}
+                        metaPadrao={data.metaTxRetencaoPadrao}
+                        onSaved={() => setMetaVersion((v) => v + 1)}
+                      />
+                    ) : undefined
+                  }
+                />
               ))}
             </div>
 
