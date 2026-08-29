@@ -220,7 +220,15 @@ export function GestorTempoLogadoIndispSection({
       </div>
 
       {/*
-        Wrappers offscreen usados SÓ pela captura do PNG (variant excel).
+        Wrappers INVISÍVEIS usados SÓ pela captura do PNG. Vivem off-screen
+        pra não afetar o layout. Renderizam o MESMO StyledCard + tabela do
+        site (variant "screen" padrão, com as cantoneiras e o --shadow-sm) —
+        nada de template "excel" hardcoded à parte, pra imagem exportada sair
+        idêntica ao que está na tela, nos dois temas. O respiro ao redor e o
+        --background do tema atual são aplicados pelo `capturarComoPng`.
+        `olhoAberto` NÃO é repassado de propósito: a exportação sempre força
+        o nome fantasia, nunca revela nomes reais só porque o gestor estava
+        com o olho aberto na tela no momento do clique.
         Selectors distintos ([data-tabela-png] / [data-indisp-png]) —
         CopyTempoLogadoButton e CopyIndisponibilidadeButton cada um procura
         o seu, sem colisão.
@@ -235,12 +243,18 @@ export function GestorTempoLogadoIndispSection({
         }}
       >
         <div data-tabela-png>
-          <TempoLogadoTable
-            key="gestor-tempo-logado-png"
-            operadores={operadoresTL}
-            variant="excel"
-            nomeFantasia={nomeFantasia}
-          />
+          <StyledCard withGradient className="p-3">
+            <div className="mb-2">
+              <span className="text-muted-foreground block text-xs font-semibold uppercase tracking-wider">
+                Tempo Logado
+              </span>
+            </div>
+            <TempoLogadoTable
+              key="gestor-tempo-logado-png"
+              operadores={operadoresTL}
+              nomeFantasia={nomeFantasia}
+            />
+          </StyledCard>
         </div>
       </div>
       <div
@@ -253,11 +267,17 @@ export function GestorTempoLogadoIndispSection({
         }}
       >
         <div data-indisp-png>
-          <IndisponibilidadeTable
-            operadores={operadoresIndisp}
-            variant="excel"
-            nomeFantasia={nomeFantasia}
-          />
+          <StyledCard withGradient className="p-3">
+            <div className="mb-2">
+              <span className="text-muted-foreground block text-xs font-semibold uppercase tracking-wider">
+                Indisponibilidade
+              </span>
+            </div>
+            <IndisponibilidadeTable
+              operadores={operadoresIndisp}
+              nomeFantasia={nomeFantasia}
+            />
+          </StyledCard>
         </div>
       </div>
     </motion.section>
