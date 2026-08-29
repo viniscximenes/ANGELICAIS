@@ -1,10 +1,9 @@
 import type { MotivosBreakdown } from "./types";
 
 /**
- * Bucket de motivo em 6 categorias — MESMA taxonomia usada em
- * src/lib/retencao/get-contribuicao-queda.ts (retencao_atendimentos.motivo é
- * texto livre da fonte externa; isso agrupa nas 6 categorias do D-1
- * Consolidado histórico).
+ * Bucket de motivo em 6 categorias (retencao_atendimentos.motivo é texto
+ * livre da fonte externa; isso agrupa nas 6 categorias do D-1 Consolidado
+ * histórico).
  */
 export function bucketMotivo(motivoRaw: string | null): keyof MotivosBreakdown {
   const mot = (motivoRaw || "").trim();

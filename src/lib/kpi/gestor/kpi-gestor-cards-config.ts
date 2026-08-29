@@ -2,7 +2,7 @@ import type { KpiValueType } from "@/lib/kpi/types";
 
 export type KpiGestorSecao = "principais" | "complementares";
 
-export type KpiGestorCardConfig = {
+type KpiGestorCardConfig = {
   /** Chave em gestor_config_fantasia.kpi_gestor_metas (jsonb). */
   configSlug: string;
   /** kpi_slug real em kpi_gestor_snapshots/kpi_monthly_snapshots — diverge do configSlug em alguns casos (ver comentário abaixo). */

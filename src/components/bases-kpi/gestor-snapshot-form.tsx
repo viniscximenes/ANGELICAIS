@@ -12,7 +12,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
 } from "@tabler/icons-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { toast } from "sonner";
 
 import { StyledCard } from "@/components/gestor/styled-card";
@@ -20,7 +20,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import {
   formatDateBR,
-  formatMonthLabel,
   getCurrentMonthRef,
   getLastDayOfMonth,
   getToday,

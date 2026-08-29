@@ -73,14 +73,10 @@ Scaffolding inicial: Next.js 15 (App Router) + TypeScript + Tailwind CSS v4 + Su
 src/
 ├── app/             # rotas (App Router)
 │   ├── (auth)/      # route group para fluxos de autenticação
-│   ├── (dashboard)/ # route group para área autenticada
-│   └── api/         # route handlers
+│   └── (dashboard)/ # route group para área autenticada
 ├── components/
-│   ├── ui/          # primitivos visuais (futuramente shadcn/ui)
-│   └── layout/      # cabeçalho, sidebar, etc.
+│   └── ui/          # primitivos visuais (shadcn/ui)
 ├── lib/
-│   └── supabase/    # clients (browser, server, middleware helper)
-├── hooks/
-├── types/
+│   └── supabase/    # clients (server, admin, middleware helper)
 └── middleware.ts    # session refresh do Supabase
 ```

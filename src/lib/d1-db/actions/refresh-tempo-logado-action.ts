@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getGestorTempoLogado } from "../get-gestor-tempo-logado";
 import type { GestorTempoLogadoLinha } from "../types";
 
-export type RefreshTempoLogadoResult =
+type RefreshTempoLogadoResult =
   | {
       success: true;
       operadores: GestorTempoLogadoLinha[];

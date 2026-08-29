@@ -2,7 +2,7 @@
 
 import { forwardRef } from "react";
 
-import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
+import type { OperadorConsolidado, ResumoEquipe } from "@/lib/d1-db/types";
 import { formatBRL } from "@/lib/rv/format-money";
 import { cn } from "@/lib/utils";
 import {

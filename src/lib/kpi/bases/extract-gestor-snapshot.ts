@@ -49,12 +49,12 @@ const GESTOR_NORMALIZED_MAP = new Map<string, string>(
 
 const SUPERVISOR_CANDIDATES = ["supervisor"] as const;
 
-export type GestorSnapshotRow = {
+type GestorSnapshotRow = {
   supervisorName: string;
   values: Map<string, number | null>;
 };
 
-export type GestorExtractionResult = {
+type GestorExtractionResult = {
   supervisors: GestorSnapshotRow[];
   missingKpis: string[];
   warnings: string[];

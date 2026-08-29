@@ -8,13 +8,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { sanitizeEmailLocal } from "../sanitize-email-local";
 
-export type UpdateUserInput = {
+type UpdateUserInput = {
   id: string;
   fullName: string;
   emailCorporativoLocal: string;
 };
 
-export type UpdateUserResult =
+type UpdateUserResult =
   | { success: true }
   | { success: false; error: string };
 

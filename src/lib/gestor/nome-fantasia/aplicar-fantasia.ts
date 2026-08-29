@@ -15,8 +15,8 @@ export function resolverNomeExibicao(
   if (config.mapa[email]) return config.mapa[email];
 
   // O gestor sempre cadastra o apelido em @alloha.com, mas o email vindo do
-  // D-1 (Google Sheets) pode ser de um domínio legado (@sumicity.net.br) —
-  // tenta as variantes antes de cair no nome derivado.
+  // D-1 pode ser de um domínio legado (@sumicity.net.br) — tenta as
+  // variantes antes de cair no nome derivado.
   for (const variante of getEmailVariants(email)) {
     if (config.mapa[variante]) return config.mapa[variante];
   }

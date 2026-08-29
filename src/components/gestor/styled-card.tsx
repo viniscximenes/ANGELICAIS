@@ -42,7 +42,7 @@ function CardDecorator({ corners = "all" }: { corners?: CardCorners }) {
   );
 }
 
-export interface StyledCardProps {
+interface StyledCardProps {
   children: ReactNode;
   className?: string;
   /**
@@ -63,7 +63,7 @@ export interface StyledCardProps {
 
 /**
  * Card com cantos marcados + bordas retas, usado só no painel do gestor
- * (`/gestor/d-1`). Não reaproveitar em páginas do operador — é uma variante
+ * (`/reports/consolidado`). Não reaproveitar em páginas do operador — é uma variante
  * visual própria deste painel, por cima do `Card` (shadcn) compartilhado.
  */
 export function StyledCard({

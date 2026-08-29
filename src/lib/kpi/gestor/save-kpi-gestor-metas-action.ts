@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { MetaGestorConfig } from "./avaliar-meta-gestor";
 import { KPI_GESTOR_CARDS } from "./kpi-gestor-cards-config";
 
-export type SaveKpiGestorMetasResult =
+type SaveKpiGestorMetasResult =
   | { success: true }
   | { success: false; error: string };
 

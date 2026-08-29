@@ -4,18 +4,13 @@ import type { ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  IconCash,
   IconChartBar,
-  IconClipboardCheck,
   IconDatabase,
   IconHeadset,
   IconLogout,
-  IconMessage2,
   IconSettings,
-  IconTargetArrow,
-  IconTrendingUp,
 } from "@tabler/icons-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 
 import { BlurFade } from "@/components/ui/blur-fade";
 import {
@@ -50,16 +45,7 @@ const SUBITENS_CONTEXTUAIS: Record<string, { label: string; href: string }[]> = 
 export type SidebarSection = {
   id: string;
   label: string;
-  iconName:
-    | "chart"
-    | "target"
-    | "cash"
-    | "clipboard"
-    | "database"
-    | "settings"
-    | "headset"
-    | "trending"
-    | "message";
+  iconName: "chart" | "database" | "settings" | "headset";
   basePath: string;
   permission: Permission;
   items: { label: string; href: string }[];
@@ -93,14 +79,9 @@ const ICONS: Record<
   }>
 > = {
   chart: IconChartBar,
-  target: IconTargetArrow,
-  cash: IconCash,
-  clipboard: IconClipboardCheck,
   database: IconDatabase,
   settings: IconSettings,
   headset: IconHeadset,
-  trending: IconTrendingUp,
-  message: IconMessage2,
 };
 
 interface SidebarNavProps {

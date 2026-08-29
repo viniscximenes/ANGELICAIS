@@ -20,7 +20,7 @@ export default async function BasesPausasPage() {
   if (user.profile.role === "GESTOR") redirect("/reports/consolidado");
 
   if (!can(user.profile.role, "manage_system", user.profile.isAdminSkill)) {
-    redirect("/d-1");
+    redirect("/reports/consolidado");
   }
 
   const userName = formatNomeProprio(user.profile.fullName);

@@ -3,7 +3,7 @@ import { classificarAtendimento } from "./classificar-atendimento";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
 import { aplicarFiltroEscopo } from "./escopo";
 
-export type OperadorItem = {
+type OperadorItem = {
   login: string;
   nome: string;
   total: number;

@@ -4,15 +4,15 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
-export type DeleteMonthResult =
+type DeleteMonthResult =
   | { success: true; rowsDeleted: number }
   | { success: false; error: string };
 
 /**
  * Apaga todas as linhas de um mês específico do kpi_monthly_snapshots.
- * Apenas ADM/AUX (manage_base).
+ * Apenas quem tem manage_base.
  */
 export async function deleteMonthAction(
   mesRef: string,
@@ -28,7 +28,7 @@ export async function deleteMonthAction(
     return { success: false, error: "Mês de referência inválido" };
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { error: errorOperadores, count: countOperadores } = await supabase
     .from("kpi_monthly_snapshots")
@@ -51,8 +51,6 @@ export async function deleteMonthAction(
   }
 
   revalidatePath("/bases/kpi");
-  revalidatePath("/kpi/atual-principal");
-  revalidatePath("/kpi/atual-secundario");
 
   return { success: true, rowsDeleted: (countOperadores ?? 0) + (countGestores ?? 0) };
 }

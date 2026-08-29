@@ -10,8 +10,7 @@ export type GestorProprioData = {
 /**
  * Busca os KPIs próprios do gestor em kpi_gestor_snapshots.
  *
- * Usa as 2 primeiras palavras do fullName em uppercase como filtro ILIKE —
- * mesmo padrão de getOperadoresDoGestor para consistência.
+ * Usa as 2 primeiras palavras do fullName em uppercase como filtro ILIKE.
  */
 export async function getKpiGestorProprio(
   fullName: string,

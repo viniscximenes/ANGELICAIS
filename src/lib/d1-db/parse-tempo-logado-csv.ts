@@ -1,12 +1,9 @@
 import Papa from "papaparse";
 
 /**
- * Parser da BASE - 2 (CSV de tempo logado / pausas, mesmo formato de 11
- * colunas do CSV do Diário de Bordo — ver docs/pages/diario-de-bordo.md e
- * docs/pages/gestor-tempo-logado.md). Implementação própria (não reaproveita
- * src/lib/db/parse-csv-pausas.ts) porque aqui também precisamos de LOGIN
- * TIMESTAMP / LOGOUT TIMESTAMP (hora de login/logout do operador), que o
- * parser do Diário de Bordo não captura.
+ * Parser da BASE - 2: CSV de tempo logado / pausas, 11 colunas. Além das
+ * pausas, captura LOGIN TIMESTAMP / LOGOUT TIMESTAMP (hora de login e logout
+ * do operador).
  */
 
 export type TempoLogadoCsvRow = {
@@ -31,7 +28,7 @@ export type TempoLogadoCsvRow = {
   hora_inicio: string | null;
 };
 
-export type ParseTempoLogadoCsvResult = {
+type ParseTempoLogadoCsvResult = {
   linhas: TempoLogadoCsvRow[];
   lidas: number;
   validas: number;

@@ -31,7 +31,7 @@ export type HoraEvolucaoData = {
 /**
  * Horas de operação (08h–19h). Usado pelos alertas para varrer hora a hora.
  */
-export const HORAS_OPERACAO = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+const HORAS_OPERACAO = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
 const BUCKET_ANTES = 7;
 const BUCKET_DEPOIS = 20;

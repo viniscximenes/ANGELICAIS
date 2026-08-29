@@ -4,8 +4,7 @@ import type { PausaProgramadaDb } from "@/lib/bases/pausas-programadas/types";
 /**
  * Aderência de horários do analítico de Tempo/Indisp — compara os horários
  * REAIS do dia (d1_tempo_logado + d1_indisponibilidade) com os horários
- * PROGRAMADOS (base_pausas_programadas). Sem relação com db_pausas_diario
- * nem com a config de aderência do Diário de Bordo.
+ * PROGRAMADOS (base_pausas_programadas).
  *
  * A hora real de cada pausa vem de d1_indisponibilidade.pausa10_1_hora_inicio
  * / pausa10_2_hora_inicio / pausa20_hora_inicio, extraídas do CSV a partir do
@@ -23,7 +22,7 @@ export type HorasReaisAderencia = {
   pausa10Segunda: string | null;
 };
 
-export type AderenciaItem = {
+type AderenciaItem = {
   label: string;
   horaForecast: string | null;
   horaReal: string | null;

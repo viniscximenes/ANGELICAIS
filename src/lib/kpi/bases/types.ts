@@ -1,6 +1,6 @@
 import type { KpiDefinition } from "../types";
 
-export type ParsedRow = {
+type ParsedRow = {
   cells: string[];
 };
 
@@ -11,7 +11,7 @@ export type ParsedClipboard = {
   rawFirstLineSample: string;
 };
 
-export type OperatorSnapshot = {
+type OperatorSnapshot = {
   operatorEmail: string;
   values: Map<string, number | string | null>;
 };

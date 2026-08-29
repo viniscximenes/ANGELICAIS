@@ -6,7 +6,7 @@ import { IconEye, IconEyeOff } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
-import type { GestorIndispLinha } from "@/lib/google/gestor";
+import type { GestorIndispLinha } from "@/lib/d1-db/types";
 import {
   corNomeOperador,
   fundoLinhaRuim,

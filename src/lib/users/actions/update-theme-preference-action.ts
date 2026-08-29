@@ -5,11 +5,11 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { createClient } from "@/lib/supabase/server";
 
-export type UpdateThemeInput = {
+type UpdateThemeInput = {
   theme: "dark" | "light";
 };
 
-export type UpdateThemeResult =
+type UpdateThemeResult =
   | { success: true }
   | { success: false; error: string };
 

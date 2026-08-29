@@ -7,20 +7,11 @@ import { can } from "./permissions";
  * futuro. Centralizado aqui para que login-action, a página raiz e a página de
  * login compartilhem exatamente a mesma lógica.
  * - é ADM         → /configuracoes/usuarios (ADM é exclusivamente administrativo)
- * - tem KPI       → /kpi/atual-principal (AUX/OP)
- * - tem D-1       → /d-1/consolidado (quem só tem D-1)
- * - tem gestor    → /gestor/d-1 (GESTOR)
- * - fallback      → /d-1/consolidado
+ * - tem gestor    → /reports/consolidado (GESTOR)
+ * - fallback      → /reports/consolidado
  */
 export function getPostLoginPath(role: UserRole): string {
-  // Checado antes de tudo: ADM não tem mais view_kpi/view_d1_personal/
-  // view_gestor_panel (só manage_base/manage_system), então cairia no
-  // fallback operacional errado se não fosse tratado explicitamente aqui.
   if (can(role, "manage_system")) return "/configuracoes/usuarios";
-  if (can(role, "view_kpi")) return "/kpi/atual-principal";
-  if (can(role, "view_d1_personal") || can(role, "view_d1_team")) {
-    return "/d-1/consolidado";
-  }
   if (can(role, "view_gestor_panel")) return "/reports/consolidado";
-  return "/d-1/consolidado";
+  return "/reports/consolidado";
 }

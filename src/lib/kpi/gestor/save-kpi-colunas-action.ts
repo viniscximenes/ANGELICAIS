@@ -7,12 +7,12 @@ import { createClient } from "@/lib/supabase/server";
 
 import { isKpiColunaSlug } from "./kpi-colunas-config";
 
-export type SaveKpiColunasResult =
+type SaveKpiColunasResult =
   | { success: true }
   | { success: false; error: string };
 
 /**
- * Salva as colunas de KPI visíveis na tabela de /operacional/kpi
+ * Salva as colunas de KPI visíveis na tabela de /kpi/operadores
  * (gestor_config_fantasia.kpi_colunas_visiveis — mesma linha do módulo de
  * nome fantasia e da config-tabela do D-1).
  */
@@ -49,7 +49,6 @@ export async function saveKpiColunasAction(
     return { success: false, error: "Erro ao salvar configuração." };
   }
 
-  revalidatePath("/operacional/kpi");
   revalidatePath("/kpi/operadores");
 
   return { success: true };

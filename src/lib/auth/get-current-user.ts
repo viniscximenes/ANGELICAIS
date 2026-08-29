@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 
-export type UserRole = "OP" | "AUX" | "ADM" | "GESTOR";
+export type UserRole = "ADM" | "GESTOR";
 
-export type UserProfile = {
+type UserProfile = {
   id: string;
   username: string;
   emailCorporativo: string;
@@ -18,7 +18,7 @@ export type UserProfile = {
   themePreference: "dark" | "light";
 };
 
-export type CurrentUser = {
+type CurrentUser = {
   authId: string;
   emailInterno: string;
   profile: UserProfile;

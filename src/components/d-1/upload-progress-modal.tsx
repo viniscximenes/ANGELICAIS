@@ -1,7 +1,7 @@
 "use client";
 
 import { IconCheck, IconLoader2 } from "@tabler/icons-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 
 import type { UploadStep } from "./upload-dropzone";
 

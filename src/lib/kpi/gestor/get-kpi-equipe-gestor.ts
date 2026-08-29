@@ -1,13 +1,11 @@
 import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
 import { enrichWithDefinitions } from "@/lib/kpi/atual/enrich-with-definitions";
 import type { EnrichedKpiValue } from "@/lib/kpi/atual/types";
-import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
 import type { KpiDefinition } from "@/lib/kpi/types";
 import type { NeutralKpiValue } from "@/lib/kpi/passado/types";
 import { resolveKpiEmailCandidatesForProfiles } from "@/lib/profile/get-kpi-email-for-profile";
 import { createClient } from "@/lib/supabase/server";
 
-import { getOperadoresDoGestor } from "./get-operadores-do-gestor";
 import type { KpiEquipeGestorData, OperadorKpiEquipe } from "./types";
 
 /**
@@ -142,20 +140,4 @@ export async function getKpiEquipePorEmails(
   operadores.sort((a, b) => a.nome.localeCompare(b.nome));
 
   return { operadores, mesRef, isMesPassado, dataCorte };
-}
-
-/**
- * Wrapper de conveniência: resolve a equipe do gestor no mês dado e chama
- * getKpiEquipePorEmails. Usado pelo quartil (que opera só no mês atual).
- */
-export async function getKpiEquipeGestor(
-  fullName: string,
-  mesRef: string,
-  isMesPassado: boolean,
-): Promise<KpiEquipeGestorData> {
-  const [emailsOriginal, definitions] = await Promise.all([
-    getOperadoresDoGestor(fullName, mesRef),
-    getKpiDefinitions(),
-  ]);
-  return getKpiEquipePorEmails(emailsOriginal, definitions, mesRef, isMesPassado);
 }

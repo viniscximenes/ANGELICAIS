@@ -4,12 +4,12 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export type SetPasswordInput = {
+type SetPasswordInput = {
   id: string;
   newPassword: string;
 };
 
-export type SetPasswordResult =
+type SetPasswordResult =
   | { success: true; password: string }
   | { success: false; error: string };
 

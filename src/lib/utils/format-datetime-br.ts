@@ -42,41 +42,6 @@ export function formatDateBR(input: string | Date): string {
 }
 
 /**
- * "HH:MM" em Brasília.
- */
-export function formatTimeBR(input: string | Date): string {
-  const date = typeof input === "string" ? new Date(input) : input;
-  return date.toLocaleTimeString("pt-BR", {
-    timeZone: TIMEZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
-
-/**
- * "DD/MM às HH:MM" em Brasília.
- */
-export function formatShortDateTimeBR(input: string | Date): string {
-  const date = typeof input === "string" ? new Date(input) : input;
-
-  const dateStr = date.toLocaleDateString("pt-BR", {
-    timeZone: TIMEZONE,
-    day: "2-digit",
-    month: "2-digit",
-  });
-
-  const timeStr = date.toLocaleTimeString("pt-BR", {
-    timeZone: TIMEZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-
-  return `${dateStr} às ${timeStr}`;
-}
-
-/**
  * Componentes (year/month/day) da data atual em Brasília.
  */
 export function getDatePartsInBR(input: Date = new Date()): {
@@ -96,26 +61,5 @@ export function getDatePartsInBR(input: Date = new Date()): {
     year: parseInt(map.year),
     month: parseInt(map.month),
     day: parseInt(map.day),
-  };
-}
-
-/**
- * Componentes (hour/minute) da hora atual em Brasília.
- */
-export function getTimePartsInBR(input: Date = new Date()): {
-  hour: number;
-  minute: number;
-} {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: TIMEZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  const parts = formatter.formatToParts(input);
-  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
-  return {
-    hour: parseInt(map.hour),
-    minute: parseInt(map.minute),
   };
 }

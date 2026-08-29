@@ -7,7 +7,7 @@ import { can } from "@/lib/auth/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { dataRefHojeBR } from "../parse";
 
-export type ClearConsolidadoResult =
+type ClearConsolidadoResult =
   | { success: true }
   | { success: false; error: string };
 
@@ -28,16 +28,6 @@ export async function clearConsolidadoAction(): Promise<ClearConsolidadoResult> 
 
     const { error } = await admin.from("d1_consolidado").delete().eq("data_ref", dataRef);
     if (error) throw new Error(error.message);
-
-    // Limpa histórico de evolução do dia (falha silenciosa — complementar).
-    try {
-      await admin
-        .from("d1_evolucao_tx")
-        .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000");
-    } catch (e) {
-      console.error("[clear-consolidado] erro ao limpar histórico:", e);
-    }
 
     // Limpa a base do Analítico, alimentada pelo MESMO upload do consolidado
     // (uploadConsolidadoAction grava nas duas). Sem isso, /reports/consolidado
@@ -61,8 +51,6 @@ export async function clearConsolidadoAction(): Promise<ClearConsolidadoResult> 
       );
     }
 
-    revalidatePath("/d-1");
-    revalidatePath("/gestor/d-1");
     revalidatePath("/reports/consolidado");
     revalidatePath("/reports/consolidado/analitico");
     return { success: true };

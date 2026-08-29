@@ -11,7 +11,7 @@ import { toKpiEquipeSerial, type KpiEquipeSerial } from "./serial-types";
 
 const MES_REF_REGEX = /^\d{4}-\d{2}-01$/;
 
-export type GetKpiMesHistoricoResult =
+type GetKpiMesHistoricoResult =
   | { success: true; data: KpiEquipeSerial }
   | { success: false; error: string };
 

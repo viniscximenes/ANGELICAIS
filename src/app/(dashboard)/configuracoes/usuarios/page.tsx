@@ -17,7 +17,7 @@ export default async function ConfigUsuariosPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (user.profile.role === "GESTOR") redirect("/reports/consolidado");
-  if (!can(user.profile.role, "manage_system", user.profile.isAdminSkill)) redirect("/d-1");
+  if (!can(user.profile.role, "manage_system", user.profile.isAdminSkill)) redirect("/reports/consolidado");
 
   const userName = formatNomeProprio(user.profile.fullName);
   const users = await getAllUsers();

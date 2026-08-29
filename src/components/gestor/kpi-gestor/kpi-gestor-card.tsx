@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 import type { KpiGestorCardSerial } from "@/lib/kpi/gestor/build-kpi-gestor-cards";
 import type { DefasadoGestorInfo } from "@/lib/kpi/gestor/get-defasados-gestor-por-kpi";

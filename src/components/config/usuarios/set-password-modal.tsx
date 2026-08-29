@@ -7,7 +7,7 @@ import {
   IconLoader2,
   IconX,
 } from "@tabler/icons-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 

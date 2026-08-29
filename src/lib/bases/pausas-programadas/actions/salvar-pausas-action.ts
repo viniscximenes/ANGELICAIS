@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import type { PausaProgramadaRow } from "../types";
 
-export type SalvarPausasResult =
+type SalvarPausasResult =
   | { success: true; total: number }
   | { success: false; error: string };
 

@@ -17,7 +17,7 @@ export async function loginAction(
 ): Promise<LoginResult | void> {
   const email = `${username}@interno.angelicais.app`;
 
-  let redirectPath = "/kpi/atual-principal";
+  let redirectPath = "/reports/consolidado";
 
   try {
     const supabase = await createClient();

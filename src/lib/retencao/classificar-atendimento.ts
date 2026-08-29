@@ -13,11 +13,11 @@
 
 export const STATUS_RETENCAO_ABORTADO = "Abortado";
 
-export function isStatusAbortado(statusRetencao: string | null | undefined): boolean {
+function isStatusAbortado(statusRetencao: string | null | undefined): boolean {
   return (statusRetencao ?? "").trim().toLowerCase() === STATUS_RETENCAO_ABORTADO.toLowerCase();
 }
 
-export type ClassificacaoAtendimento = "retido" | "cancelado" | "abortado";
+type ClassificacaoAtendimento = "retido" | "cancelado" | "abortado";
 
 /**
  * Classifica uma linha em "retido", "cancelado" ou "abortado".

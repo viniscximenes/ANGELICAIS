@@ -10,7 +10,7 @@ import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasi
 import type {
   GestorTempoLogadoLinha,
   StatusPresenca,
-} from "@/lib/google/gestor";
+} from "@/lib/d1-db/types";
 import {
   corNomeOperador,
   fundoLinhaRuim,

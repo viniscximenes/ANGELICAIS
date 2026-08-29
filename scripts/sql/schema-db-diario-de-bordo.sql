@@ -1,10 +1,9 @@
 -- Diário de Bordo (DB) — Fatia 1: banco para o CSV de pausas + temas.
--- Ver docs/pages/diario-de-bordo.md.
 -- Rodar uma vez no SQL Editor do Supabase (dashboard do projeto).
 
 -- db_pausas_diario: linhas do CSV de login/logout/pausas, guardadas por dia.
--- Um novo upload do mesmo data_ref sobrescreve (delete+insert seguro, ver
--- src/lib/db/salvar-csv-pausas.ts); dias diferentes coexistem.
+-- Um novo upload do mesmo data_ref sobrescreve (delete+insert seguro);
+-- dias diferentes coexistem.
 create table db_pausas_diario (
   id uuid primary key default gen_random_uuid(),
   data_ref date not null,

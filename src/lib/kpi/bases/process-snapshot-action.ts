@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getKpiDefinitions } from "../get-definitions";
 import { extractSnapshot } from "./extract-snapshot";
@@ -12,7 +12,7 @@ import { parseClipboard } from "./parse-clipboard";
 import { enforceRetention } from "./retention";
 import { METADATA_SLUGS } from "./types";
 
-export type ProcessSnapshotInput = {
+type ProcessSnapshotInput = {
   clipboardText: string;
   mesRef: string;
   dataCorte: string;
@@ -88,7 +88,7 @@ export async function processSnapshotAction(
 
   const monthsDeleted = await enforceRetention(input.mesRef);
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: profilesData, error: profilesError } = await supabase
     .from("profiles")
     .select("email_corporativo");
@@ -162,7 +162,6 @@ export async function processSnapshotAction(
   }
 
   revalidatePath("/bases/kpi");
-  revalidatePath("/kpi/painel");
 
   return {
     success: true,

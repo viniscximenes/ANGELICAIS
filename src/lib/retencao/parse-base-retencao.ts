@@ -22,7 +22,7 @@ export type RetencaoAtendimentoInput = {
   comprador_nome: string | null;
 };
 
-export type ParseResult = {
+type ParseResult = {
   linhas: RetencaoAtendimentoInput[];
   lidas: number;
   validas: number;
@@ -172,7 +172,7 @@ export function parseBaseRetencao(csvText: string): ParseResult {
       comprador_nome: null,
     };
 
-    normalizedHeaders.forEach((header, index) => {
+    normalizedHeaders.forEach((_, index) => {
       const dbKey = mappedIndexes[index];
       if (dbKey) {
         const val = (row[index] || "").trim();

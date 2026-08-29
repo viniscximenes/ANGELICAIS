@@ -2,8 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Resolve o profiles.id de um GESTOR a partir do username OU do email
- * corporativo (qualquer um dos dois) — mesma convenção de identificador do
- * antigo resolveGuiaGestor (Sheets). Retorna null se não achar ou se o
+ * corporativo (qualquer um dos dois). Retorna null se não achar ou se o
  * perfil encontrado não for GESTOR.
  */
 export async function resolveGestorId(identificador: string): Promise<string | null> {

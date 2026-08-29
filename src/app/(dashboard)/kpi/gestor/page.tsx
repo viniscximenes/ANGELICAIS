@@ -135,7 +135,6 @@ export default async function KpiGestorPage() {
           </header>
 
           <KpiGestorSection
-            nomeGestor={nomeGestor}
             dataAtual={dataAtual}
             dataPassado={dataPassado}
             dataRetrasado={dataRetrasado}

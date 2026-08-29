@@ -2,8 +2,7 @@
  * Operadores antigos aparecem com domínios diferentes em bases diferentes
  * (a maioria em @alloha.com, alguns legados em @sumicity.net.br, mesma
  * pessoa). Sempre que uma query filtra dados por email de operador, deve
- * considerar as duas variantes — ver docs/pages do módulo de retenção e
- * nome-fantasia.
+ * considerar as duas variantes.
  */
 const DOMAIN_VARIANTS = ["@alloha.com", "@sumicity.net.br"];
 
@@ -16,9 +15,4 @@ export function getEmailPrefix(email: string): string {
 export function getEmailVariants(emailOrUsername: string): string[] {
   const prefix = getEmailPrefix(emailOrUsername);
   return DOMAIN_VARIANTS.map((domain) => `${prefix}${domain}`);
-}
-
-/** Verifica se dois emails são do mesmo operador (mesmo prefixo, domínio ignorado). */
-export function isSameOperator(email1: string, email2: string): boolean {
-  return getEmailPrefix(email1) === getEmailPrefix(email2);
 }

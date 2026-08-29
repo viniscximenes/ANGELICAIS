@@ -5,7 +5,7 @@ import {
   IconCheck,
   IconUserOff,
 } from "@tabler/icons-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import { formatMonthLabel } from "@/lib/kpi/bases/format-date";

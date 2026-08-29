@@ -11,13 +11,13 @@ import type {
 /**
  * Status possíveis do RV calculado.
  */
-export type RvStatus =
+type RvStatus =
   | "indisponivel_status"
   | "nao_elegivel"
   | "sem_dados"
   | "ok";
 
-export type IndisponibilidadeMotivo = {
+type IndisponibilidadeMotivo = {
   status: string;
   mensagem: string;
 };

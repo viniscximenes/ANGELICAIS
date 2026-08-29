@@ -32,7 +32,7 @@ const SEM_DADOS: RvCalculation = {
   deflatorResults: [],
 };
 
-export type RvOperadorResultado = {
+type RvOperadorResultado = {
   normal: RvCalculation;
   contestacao: RvCalculation;
 };
@@ -71,8 +71,7 @@ function getOperatorStatus(rows: SnapshotRow[]): string | null {
  * query de snapshots pra equipe toda, 1 query de deflatores do mês.
  *
  * Busca valores BRUTOS de kpi_monthly_snapshots (não reaproveita
- * KpiEquipeSerial, que já vem filtrado pelas colunas configuradas) — mesmo
- * padrão de get-rv-for-operator.ts, agora em lote.
+ * KpiEquipeSerial, que já vem filtrado pelas colunas configuradas).
  */
 export async function getRvParaEquipe(
   emails: string[],

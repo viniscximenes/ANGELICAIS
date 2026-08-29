@@ -4,7 +4,7 @@ import { useState } from "react";
 import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
-import type { OperadorConsolidado, ResumoEquipe } from "@/lib/google/d1";
+import type { OperadorConsolidado, ResumoEquipe } from "@/lib/d1-db/types";
 import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 
 function getHoraReport(equipe: ResumoEquipe): string {

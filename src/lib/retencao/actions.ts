@@ -12,7 +12,7 @@ import {
   type QuartilOperador,
 } from "./get-quartil-operador";
 import { getMatrizVolumeTaxa, type MatrizResult } from "./get-matriz-volume-taxa";
-import { getMetaTxRetencao, salvarMetaTxRetencao } from "./meta";
+import { getMetaTxRetencao } from "./meta";
 import {
   getContratosFiltrados,
   type FiltroContratos,
@@ -24,27 +24,9 @@ import {
 } from "./get-por-operador-individual";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
-import type { ContribItem } from "./get-contribuicao-queda";
 import { getGestorConsolidado } from "@/lib/d1-db/get-gestor-consolidado";
 
-/**
- * Shape do bloco "Histórico De Quedas". O bloco foi retirado da tela, então
- * a action não busca mais esses dados — o tipo continua exportado porque
- * `lista-quedas.tsx` foi mantido como referência e ainda o consome.
- */
-export type QuedaComContribuicao = {
-  horaAnterior: number;
-  hora: number;
-  labelAnterior: string;
-  label: string;
-  txAnterior: number;
-  txAtual: number;
-  quedaPontos: number;
-  porMotivo: ContribItem[];
-  porOperador: ContribItem[];
-};
-
-export type DashboardRetencaoResult = {
+type DashboardRetencaoResult = {
   success: boolean;
   data?: {
     visaoGeral: VisaoGeralData;
@@ -154,25 +136,6 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
       success: false,
       error: "Ocorreu um erro ao processar os dados analíticos de retenção.",
     };
-  }
-}
-
-/**
- * Server Action para atualizar a meta de taxa de retenção do gestor.
- */
-export async function saveMetaAction(
-  valor: number,
-): Promise<{ success: boolean; error?: string }> {
-  const user = await getCurrentUser();
-  if (!user || user.profile.role !== "GESTOR") {
-    return { success: false, error: "Acesso não autorizado." };
-  }
-
-  try {
-    return await salvarMetaTxRetencao(user.profile.id, valor);
-  } catch (err) {
-    console.error("[saveMetaAction] erro ao atualizar meta:", err);
-    return { success: false, error: "Erro inesperado ao salvar a meta." };
   }
 }
 

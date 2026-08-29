@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { UploadProgressModal } from "@/components/d-1/upload-progress-modal";
 import { uploadTempoLogadoAction } from "@/lib/d1-db/actions/upload-tempo-logado-action";
 
-export type UploadStep =
+type UploadStep =
   | "attaching"
   | "deleting"
   | "replacing"

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { IconDice5, IconLoader2, IconX } from "@tabler/icons-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -27,7 +27,7 @@ export function NewUserModal({ open, onClose }: Props) {
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [emailLocal, setEmailLocal] = useState("");
-  const [role, setRole] = useState<UserRole>("OP");
+  const [role, setRole] = useState<UserRole>("GESTOR");
   const [password, setPassword] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -38,7 +38,7 @@ export function NewUserModal({ open, onClose }: Props) {
     setFullName("");
     setUsername("");
     setEmailLocal("");
-    setRole("OP");
+    setRole("GESTOR");
     setPassword("");
     setCreatedPassword(null);
     setCreatedUserName("");
@@ -222,7 +222,7 @@ export function NewUserModal({ open, onClose }: Props) {
                     >
                       {ALL_ROLES_FOR_CREATION.map((r) => (
                         <option key={r} value={r}>
-                          {r}
+                          {r === "ADM" ? "Administrador" : "Gestor"}
                         </option>
                       ))}
                     </select>

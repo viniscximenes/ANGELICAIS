@@ -91,40 +91,7 @@
     --elevation-3-border: var(--elevation-3-border);
     --glow-accent: var(--glow-accent);
     --glow-accent-strong: var(--glow-accent-strong);
-    --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
-    --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
-  @keyframes shimmer-slide {
-  to {
-    transform: translate(calc(100cqw - 100%), 0);
-        }
-    }
-  @keyframes spin-around {
-  0% {
-    transform: translateZ(0) rotate(0);
-        }
-  15%, 35% {
-    transform: translateZ(0) rotate(90deg);
-        }
-  65%, 85% {
-    transform: translateZ(0) rotate(270deg);
-        }
-  100% {
-    transform: translateZ(0) rotate(360deg);
-        }
-    }
-  --animate-marquee: marquee var(--duration) infinite linear;
-  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite
-;
-  @keyframes marquee {
-  from {
-    transform: translateX(0);}
-  to {
-    transform: translateX(calc(-100% - var(--gap)));}}
-  @keyframes marquee-vertical {
-  from {
-    transform: translateY(0);}
-  to {
-    transform: translateY(calc(-100% - var(--gap)));}}}
+}
 
 :root {
     --background: oklch(1 0 0);
@@ -555,74 +522,14 @@
     box-shadow: 0 0 60px var(--glow-accent);
   }
 
-  .elevation-glow {
-    background: var(--elevation-2-bg);
-    border: 1px solid var(--elevation-2-border);
-    box-shadow: 0 0 40px var(--glow-accent-strong);
-  }
-
   /* === Status utilities === */
-  .status-success {
-    color: var(--success);
-    background: var(--success-bg);
-    border: 1px solid var(--success-border);
-  }
-
-  .status-warning {
-    color: var(--warning);
-    background: var(--warning-bg);
-    border: 1px solid var(--warning-border);
-  }
-
   .status-danger {
     color: var(--danger);
     background: var(--danger-bg);
     border: 1px solid var(--danger-border);
   }
 
-  .ds-text-success { color: var(--success); }
-  .ds-text-warning { color: var(--warning); }
   .ds-text-danger  { color: var(--danger); }
-
-  /* === Decorative divider === */
-  .divider-gradient {
-    height: 1px;
-    width: 100%;
-    background: linear-gradient(
-      to right,
-      transparent,
-      var(--border),
-      transparent
-    );
-    border: none;
-  }
-
-  /* === Status dot with pulse === */
-  .status-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 9999px;
-    position: relative;
-  }
-
-  .status-dot::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: inherit;
-    animation: pulse-ring 2s var(--ease-out-expo) infinite;
-  }
-
-  @keyframes pulse-ring {
-    0%   { transform: scale(1);   opacity: 0.6; }
-    100% { transform: scale(2.5); opacity: 0;   }
-  }
-
-  .status-dot--success { background: var(--success); }
-  .status-dot--warning { background: var(--warning); }
-  .status-dot--danger  { background: var(--danger);  }
 
   /* === Scrollbar discreta no tema (claro/escuro via vars) === */
   .scrollbar-tema {
@@ -682,15 +589,6 @@ textarea:focus-visible {
 button:focus:not(:focus-visible),
 a:focus:not(:focus-visible) {
   outline: none;
-}
-
-/* ── Chat: remove todo outline/ring de foco do textarea de input ── */
-.chat-input-no-focus,
-.chat-input-no-focus:focus,
-.chat-input-no-focus:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-  border-color: transparent !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

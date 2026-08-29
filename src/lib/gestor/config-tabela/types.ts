@@ -1,4 +1,4 @@
-export const ORDEM_TABELA_VALUES = [
+const ORDEM_TABELA_VALUES = [
   "padrao",
   "tx_desc",
   "tx_asc",

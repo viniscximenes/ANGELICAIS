@@ -16,7 +16,7 @@ import { parseTempoLogadoCsv, type TempoLogadoCsvRow } from "../parse-tempo-loga
 import { COLUNAS_PAUSA, REASON_TO_COLUNA } from "../reason-codes-indisp";
 import { META_TEMPO_LOGADO_SEGUNDOS } from "../types";
 
-export type UploadTempoLogadoResult =
+type UploadTempoLogadoResult =
   | {
       success: true;
       rowsWritten: number;
@@ -259,9 +259,6 @@ export async function uploadTempoLogadoAction(
     );
   }
 
-  revalidatePath("/d-1/tempo-logado");
-  revalidatePath("/d-1/indisponibilidade");
-  revalidatePath("/gestor/tempo-logado");
   revalidatePath("/reports/tempo-indisponibilidade");
 
   return {

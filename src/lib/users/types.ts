@@ -1,4 +1,6 @@
-export type UserRole = "ADM" | "AUX" | "OP" | "GESTOR";
+import type { UserRole } from "@/lib/auth/get-current-user";
+
+export type { UserRole } from "@/lib/auth/get-current-user";
 
 export type UserProfile = {
   id: string;
@@ -16,6 +18,4 @@ export type UserProfile = {
   updatedAt: string | null;
 };
 
-export const EDITABLE_ROLES: UserRole[] = ["OP", "AUX"];
-
-export const ALL_ROLES_FOR_CREATION: UserRole[] = ["OP", "AUX", "ADM", "GESTOR"];
+export const ALL_ROLES_FOR_CREATION: UserRole[] = ["ADM", "GESTOR"];

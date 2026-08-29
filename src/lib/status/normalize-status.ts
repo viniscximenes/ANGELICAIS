@@ -18,13 +18,3 @@ export function normalizeStatus(s: string | null): string {
   }
   return normalized;
 }
-
-/**
- * Mês/operador "inativo": status preenchido e diferente de "ativo"
- * (férias, licença, desligado, etc). Status vazio/null = ativo — mesma
- * convenção do cálculo de RV.
- */
-export function isStatusInativo(status: string | null): boolean {
-  const norm = normalizeStatus(status);
-  return norm !== "" && norm !== "ativo";
-}

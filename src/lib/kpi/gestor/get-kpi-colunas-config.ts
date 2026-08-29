@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_KPI_COLUNAS_VISIVEIS, isKpiColunaSlug } from "./kpi-colunas-config";
 
 /**
- * Colunas de KPI visíveis na tabela de /operacional/kpi, configuradas pelo
+ * Colunas de KPI visíveis na tabela de /kpi/operadores, configuradas pelo
  * gestor (gestor_config_fantasia.kpi_colunas_visiveis — mesma linha usada
  * pelo módulo de nome fantasia e pela config-tabela do D-1). Vazio/não
  * configurado ainda → default (as 7 colunas principais originais).

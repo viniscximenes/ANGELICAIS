@@ -2,7 +2,7 @@ import type { PausaProgramadaRow } from "./types";
 
 const TIME_LIKE = /^\d{1,2}:\d{2}/;
 
-export type ParsePausasResult = {
+type ParsePausasResult = {
   linhas: PausaProgramadaRow[];
   ignoradas: number;
 };

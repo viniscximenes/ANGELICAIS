@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
-export type NomeFantasiaConfig = {
+type NomeFantasiaConfig = {
   ativo: boolean;
   mapa: Map<string, string>; // operador_email → nome_fantasia
   olhoConsolidado: boolean;

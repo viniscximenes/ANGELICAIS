@@ -9,14 +9,3 @@ export type EnrichedKpiValue = {
   metaPorLinha: number | null;
   status: "success" | "warning" | "danger" | "neutral";
 };
-
-/**
- * Snapshot completo do operador no mês corrente, com todos os KPIs principais.
- */
-export type CurrentMonthSnapshot = {
-  hasData: boolean;
-  mesRef: string;
-  dataCorte: string | null;
-  updatedAt: string | null;
-  kpis: Map<string, EnrichedKpiValue>;
-};

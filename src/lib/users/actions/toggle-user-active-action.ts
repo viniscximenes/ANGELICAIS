@@ -6,12 +6,12 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export type ToggleActiveInput = {
+type ToggleActiveInput = {
   id: string;
   newIsActive: boolean;
 };
 
-export type ToggleActiveResult =
+type ToggleActiveResult =
   | { success: true }
   | { success: false; error: string };
 

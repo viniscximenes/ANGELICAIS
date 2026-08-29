@@ -19,7 +19,6 @@ import { deleteMonthAction } from "@/lib/kpi/bases/delete-month-action";
 import {
   formatDateTimeBR,
   formatMonthLabel,
-  getCurrentMonthRef,
 } from "@/lib/kpi/bases/format-date";
 import type { MonthSummary } from "@/lib/kpi/bases/get-snapshots-summary";
 
@@ -30,7 +29,6 @@ interface SnapshotsHistoryProps {
 
 export function SnapshotsHistory({ snapshots, type = "operadores" }: SnapshotsHistoryProps) {
   const router = useRouter();
-  const currentMesRef = getCurrentMonthRef();
   const [deletingMonth, setDeletingMonth] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -106,7 +104,6 @@ export function SnapshotsHistory({ snapshots, type = "operadores" }: SnapshotsHi
               </TableRow>
             ) : (
               snapshots.map((s) => {
-                const isCurrent = s.mesRef === currentMesRef;
                 const isDeleting = deletingMonth === s.mesRef;
 
                 return (

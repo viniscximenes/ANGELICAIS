@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getGestorIndisponibilidade } from "../get-gestor-indisponibilidade";
 import type { GestorIndispLinha } from "../types";
 
-export type RefreshIndisponibilidadeResult =
+type RefreshIndisponibilidadeResult =
   | {
       success: true;
       operadores: GestorIndispLinha[];

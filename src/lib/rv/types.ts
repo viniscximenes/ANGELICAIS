@@ -67,7 +67,7 @@ export type BinaryIndicator = {
   displayOrder: number;
 };
 
-export type BonusCondition = {
+type BonusCondition = {
   kpiSlug: string;
   comparison: Comparison;
   threshold: number;

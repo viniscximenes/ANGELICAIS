@@ -5,7 +5,7 @@ import { aplicarFiltroEscopo } from "./escopo";
 import { BUCKETS, bucketDe, type HoraEvolucaoData } from "./get-evolucao-hora";
 import { normalizarTema } from "./normalizar-tema";
 
-export type MotivoOperador = {
+type MotivoOperador = {
   motivo: string;
   retidos: number;
   cancelados: number;

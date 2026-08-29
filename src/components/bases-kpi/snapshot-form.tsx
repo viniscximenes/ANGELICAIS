@@ -11,7 +11,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
 } from "@tabler/icons-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { toast } from "sonner";
 
 import { StyledCard } from "@/components/gestor/styled-card";
@@ -22,8 +22,6 @@ import {
   getCurrentMonthRef,
   getLastDayOfMonth,
   getToday,
-  getYesterday,
-  toMonthRef,
 } from "@/lib/kpi/bases/format-date";
 import {
   processSnapshotAction,

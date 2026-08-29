@@ -2,7 +2,7 @@
  * Tipos da base de pausas programadas (base_pausas_programadas) — horários
  * programados de login/logout/pausas de cada operador, colados pelo ADM a
  * partir da planilha de escala. Sem relação com d1_indisponibilidade (pausas
- * realizadas) nem com db_pausas_diario (Diário de Bordo).
+ * realizadas).
  */
 
 /** Uma linha parseada da colagem (TSV) — ainda não salva no banco. */

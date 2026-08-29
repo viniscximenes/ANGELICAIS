@@ -7,21 +7,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getEmailVariants } from "@/lib/utils/email-variants";
 
 /**
- * Ações da página unificada /configuracoes/equipe.
+ * Ações da página /configuracoes/equipe, sobre d1_operadores_gestor.
  *
- * Substitui os dois caminhos antigos, que liam a MESMA tabela
- * (d1_operadores_gestor) por rotas diferentes:
- *   - /configuracoes/operadores-d1 → operadores-gestor-actions.ts
- *   - /configuracoes/operadores    → get-operadores-para-config.ts, que
- *     re-resolvia o gestorId por username/email (2 queries extras)
- *
- * Aqui o gestorId vem sempre de getCurrentUser().profile.id — uma query só.
- * E a remoção apaga o apelido junto, o que impede o acúmulo de registros
- * órfãos em operador_nome_fantasia (eram 30 antes da limpeza).
+ * O gestorId vem sempre de getCurrentUser().profile.id — uma query só. E a
+ * remoção apaga o apelido junto, o que impede o acúmulo de registros órfãos
+ * em operador_nome_fantasia.
  */
 
-// Aceita nome.sobrenome@alloha.com (pelo menos um ponto no local-part) —
-// mesma regra do fluxo antigo.
+// Aceita nome.sobrenome@alloha.com (pelo menos um ponto no local-part).
 const EMAIL_REGEX = /^[a-z0-9][a-z0-9._-]*\.[a-z0-9][a-z0-9._-]*@alloha\.com$/i;
 
 export type OperadorEquipe = {
@@ -30,7 +23,7 @@ export type OperadorEquipe = {
   apelido: string;
 };
 
-export type EquipeData = {
+type EquipeData = {
   ativo: boolean;
   operadores: OperadorEquipe[];
 };

@@ -17,7 +17,7 @@ export type KpiGestorMesData = {
   defasados: Record<string, DefasadoGestorInfo>;
 };
 
-export type GetKpiGestorMesHistoricoResult =
+type GetKpiGestorMesHistoricoResult =
   | { success: true; data: KpiGestorMesData }
   | { success: false; error: string };
 

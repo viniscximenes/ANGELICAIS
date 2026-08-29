@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { RetencaoAtendimentoInput } from "./parse-base-retencao";
 
-export type SaveResult = {
+type SaveResult = {
   success: boolean;
   rowsWritten: number;
   error?: string;

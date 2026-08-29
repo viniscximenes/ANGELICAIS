@@ -3,10 +3,8 @@
  * kpi_monthly_snapshots. É sempre derivado de `pedidos − churn`, a mesma
  * fórmula já usada em:
  *   - src/lib/rv/calculate-rv.ts (countSource "derived_retido")
- *   - src/lib/atendimento/get-performance-operador.ts
- *   - src/lib/evolucao/compute-consolidado.ts
  *
- * Existe apenas no caminho do gestor (/operacional/kpi). NÃO é injetado em
+ * Existe apenas no caminho do gestor (/kpi/operadores). NÃO é injetado em
  * getKpiDefinitions() de propósito: aquela lista alimenta os processadores
  * de snapshot (que gravam por `id` real) — um registro sintético lá poderia
  * bagunçar o mapeamento de cabeçalhos na importação.

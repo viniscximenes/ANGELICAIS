@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
-import { saveEvolucaoAction } from "@/lib/d1/evolucao/actions/save-evolucao-action";
 import { classificarAtendimento } from "@/lib/retencao/classificar-atendimento";
 import { parseBaseRetencao } from "@/lib/retencao/parse-base-retencao";
 import { salvarBaseRetencao } from "@/lib/retencao/salvar-base-retencao";
@@ -13,7 +12,7 @@ import { getEmailPrefix } from "@/lib/utils/email-variants";
 import { bucketMotivo, dataRefHojeBR, horaAtualBR, zeroBreakdown } from "../parse";
 import type { ContratoItem, MotivosBreakdown } from "../types";
 
-export type UploadConsolidadoResult =
+type UploadConsolidadoResult =
   | {
       success: true;
       rowsWritten: number;
@@ -212,38 +211,6 @@ export async function uploadConsolidadoAction(
     );
   }
 
-  // 5. Snapshot da evolução da TX da empresa (complementar, best-effort com
-  // timeout — mesmo padrão do fluxo antigo).
-  try {
-    let totalRetidos = 0;
-    let totalPedidos = 0;
-    for (const agg of porOperador.values()) {
-      totalRetidos += agg.retidos;
-      totalPedidos += agg.retidos + agg.cancelados;
-    }
-    const tx = totalPedidos > 0 ? totalRetidos / totalPedidos : null;
-    if (tx !== null && !isNaN(tx)) {
-      const savePromise = saveEvolucaoAction(tx * 100);
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(
-          () => reject(new Error("Timeout de 2s excedido ao tentar salvar snapshot de evolução")),
-          2000,
-        ),
-      );
-      const snapshotResult = await Promise.race([savePromise, timeoutPromise]);
-      if (!snapshotResult.success) {
-        console.error(
-          "[upload-consolidado] falha ao salvar snapshot evolução:",
-          snapshotResult.error,
-        );
-      }
-    }
-  } catch (err) {
-    console.error("[upload-consolidado] erro ao processar snapshot (isolado):", err);
-  }
-
-  revalidatePath("/d-1");
-  revalidatePath("/gestor/d-1");
   revalidatePath("/reports/consolidado");
 
   return {

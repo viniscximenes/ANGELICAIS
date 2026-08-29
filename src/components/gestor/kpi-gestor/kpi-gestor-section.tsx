@@ -76,7 +76,6 @@ function SecaoTitulo({
 }
 
 interface KpiGestorSectionProps {
-  nomeGestor: string;
   dataAtual: KpiGestorMesData;
   dataPassado: KpiGestorMesData;
   dataRetrasado: KpiGestorMesData;
@@ -86,7 +85,6 @@ interface KpiGestorSectionProps {
 }
 
 export function KpiGestorSection({
-  nomeGestor,
   dataAtual,
   dataPassado,
   dataRetrasado,

@@ -1,1 +1,0 @@
-export { fetchConsolidado } from "./index";

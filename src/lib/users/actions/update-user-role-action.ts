@@ -6,12 +6,12 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export type UpdateRoleInput = {
+type UpdateRoleInput = {
   id: string;
-  newRole: "OP" | "AUX";
+  newRole: "ADM" | "GESTOR";
 };
 
-export type UpdateRoleResult =
+type UpdateRoleResult =
   | { success: true }
   | { success: false; error: string };
 
@@ -31,10 +31,10 @@ export async function updateUserRoleAction(
     };
   }
 
-  if (!["OP", "AUX"].includes(input.newRole)) {
+  if (!["ADM", "GESTOR"].includes(input.newRole)) {
     return {
       success: false,
-      error: "Role inválida (apenas OP ou AUX são permitidos)",
+      error: "Role inválida (apenas ADM ou GESTOR são permitidos)",
     };
   }
 
@@ -56,17 +56,6 @@ export async function updateUserRoleAction(
 
   if (!target) {
     return { success: false, error: "Usuário não encontrado" };
-  }
-
-  if (
-    target.role === "GESTOR" ||
-    target.role === "ADM"
-  ) {
-    return {
-      success: false,
-      error:
-        "Não é possível alterar role de ADM ou GESTOR pelo painel",
-    };
   }
 
   const { error } = await adminClient

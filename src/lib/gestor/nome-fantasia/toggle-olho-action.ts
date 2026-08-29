@@ -3,13 +3,13 @@
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { createClient } from "@/lib/supabase/server";
 
-export type TabelaOlho =
+type TabelaOlho =
   | "consolidado"
   | "tempo_logado"
   | "indisponibilidade"
   | "operacional";
 
-export type ToggleOlhoResult =
+type ToggleOlhoResult =
   | { success: true }
   | { success: false; error: string };
 

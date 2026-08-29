@@ -1,6 +1,6 @@
 import { getEmailVariants } from "@/lib/utils/email-variants";
 
-export type EscopoFiltroParams = {
+type EscopoFiltroParams = {
   /**
    * Padrão "equipe". O dashboard não tem mais o toggle Equipe/Polo — tudo é
    * lido no escopo da equipe do gestor.

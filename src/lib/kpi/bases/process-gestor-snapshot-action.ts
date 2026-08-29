@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getKpiDefinitions } from "../get-definitions";
 import { extractGestorSnapshot } from "./extract-gestor-snapshot";
@@ -27,7 +27,7 @@ export type ProcessGestorSnapshotResult =
     }
   | { success: false; error: string };
 
-export type ProcessGestorSnapshotInput = {
+type ProcessGestorSnapshotInput = {
   clipboardText: string;
   mesRef: string;
   dataCorte: string;
@@ -36,7 +36,7 @@ export type ProcessGestorSnapshotInput = {
 const MAX_MONTHS = 2;
 
 async function enforceGestorRetention(newMesRef: string): Promise<string[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("kpi_gestor_snapshots")
@@ -113,7 +113,7 @@ export async function processGestorSnapshotAction(
 
   const monthsDeleted = await enforceGestorRetention(input.mesRef);
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const upsertRows: Array<{
     supervisor_name: string;

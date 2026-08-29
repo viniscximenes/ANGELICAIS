@@ -7,7 +7,7 @@ import {
   IconShieldCheck,
   IconX,
 } from "@tabler/icons-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -32,14 +32,10 @@ function extractLocal(email: string): string {
   return email.replace(CORP_DOMAIN, "");
 }
 
-// Troca de role só é permitida entre OP e AUX (mesma regra já aplicada por
-// updateUserRoleAction no servidor — ADM e GESTOR não são alteráveis pelo
-// painel).
-type EditableRole = "OP" | "AUX";
-
-function isRoleEditable(role: UserProfile["role"]): role is EditableRole {
-  return role === "OP" || role === "AUX";
-}
+const ROLE_LABEL: Record<UserProfile["role"], string> = {
+  ADM: "Administrador",
+  GESTOR: "Gestor",
+};
 
 /** Campo travado (nome/email da gestora) — visual de "informação", não de input. */
 function ReadOnlyField({
@@ -72,10 +68,10 @@ export function EditUserModal({ open, onClose, user }: Props) {
   const [emailLocal, setEmailLocal] = useState(
     extractLocal(user.emailCorporativo),
   );
-  const canChangeRole = isRoleEditable(user.role);
-  const [role, setRole] = useState<EditableRole>(
-    isRoleEditable(user.role) ? user.role : "OP",
-  );
+  // Só existem ADM e GESTOR — a troca é sempre válida em qualquer direção
+  // (a própria conta é bloqueada no servidor, ver updateUserRoleAction).
+  const canChangeRole = true;
+  const [role, setRole] = useState<UserProfile["role"]>(user.role);
   // Identidade (nome/email) não é editável pelo painel pra GESTOR — mesma
   // regra já aplicada por updateUserAction no servidor. A skill de admin é
   // a única coisa editável nesse caso, e por isso é o elemento em destaque
@@ -88,7 +84,7 @@ export function EditUserModal({ open, onClose, user }: Props) {
   useEffect(() => {
     setFullName(user.fullName);
     setEmailLocal(extractLocal(user.emailCorporativo));
-    setRole(isRoleEditable(user.role) ? user.role : "OP");
+    setRole(user.role);
     setIsAdminSkill(user.isAdminSkill);
   }, [user]);
 
@@ -320,7 +316,7 @@ export function EditUserModal({ open, onClose, user }: Props) {
                     Role
                   </label>
                   <div className="flex gap-2">
-                    {(["OP", "AUX"] as const).map((option) => (
+                    {(["ADM", "GESTOR"] as const).map((option) => (
                       <button
                         key={option}
                         type="button"
@@ -339,15 +335,15 @@ export function EditUserModal({ open, onClose, user }: Props) {
                               : "var(--muted-foreground)",
                         }}
                       >
-                        {option}
+                        {ROLE_LABEL[option]}
                       </button>
                     ))}
                   </div>
                   {roleChanged && (
                     <p className="ds-mono-sm text-muted-foreground mt-1.5">
-                      {role === "AUX"
-                        ? "Vai ganhar acesso a Monitoria e Diário de Bordo."
-                        : "Vai perder acesso a Monitoria e Diário de Bordo."}
+                      {role === "ADM"
+                        ? "Vai perder o Painel do Gestor e ganhar o Painel Administrativo (Usuários, Bases)."
+                        : "Vai perder o Painel Administrativo e ganhar o Painel do Gestor (Equipe, KPI, D-1)."}
                     </p>
                   )}
                 </div>

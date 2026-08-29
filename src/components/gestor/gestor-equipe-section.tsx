@@ -9,7 +9,7 @@ import {
   IconUsersGroup,
   IconCoin,
 } from "@tabler/icons-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 import { CopyTableButton } from "@/components/d-1/copy-table-button";
 import { EquipeTable } from "@/components/d-1/equipe-table";

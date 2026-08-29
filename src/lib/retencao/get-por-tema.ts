@@ -3,7 +3,7 @@ import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
 import { normalizarTema } from "./normalizar-tema";
 
-export type SubmotivoData = {
+type SubmotivoData = {
   submotivo: string;
   total: number;
   retidos: number;

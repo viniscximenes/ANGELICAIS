@@ -32,8 +32,7 @@ export default async function AnaliticoTempoIndisponibilidadePage() {
     : "Equipe";
 
   // Fonte de dados: d1_tempo_logado + d1_indisponibilidade (reais do dia) +
-  // base_pausas_programadas (horários programados, pra aderência). ZERO
-  // referência a db_pausas_diario.
+  // base_pausas_programadas (horários programados, pra aderência).
   const [dataTempoLogado, dataIndisponibilidade, roster, pausasProgramadas, configAderencia] =
     await Promise.all([
       getGestorTempoLogado(user.profile.id),

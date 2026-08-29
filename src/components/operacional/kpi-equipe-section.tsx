@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "motion/react";
 import {
-  IconX,
   IconSelector,
   IconChevronUp,
   IconChevronDown,
@@ -66,135 +65,6 @@ function toggleBtnClass(active: boolean): string {
       ? "bg-primary text-primary-foreground hover:opacity-90"
       : "bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70 border border-border/60",
   ].join(" ");
-}
-
-interface OperatorDetailModalProps {
-  operador: OperadorKpiSerial;
-  isMesPassado: boolean;
-  onClose: () => void;
-}
-
-function SecondaryKpiCard({ kpi, isMesPassado }: { kpi: KpiCelulaSerial; isMesPassado: boolean }) {
-  const status = kpi.status;
-  const isVariation = kpi.valueType === "percent_negative";
-
-  const hasStatusColor = !isMesPassado && !isVariation && status !== "neutral";
-  let statusColor = "var(--muted-foreground)";
-  if (hasStatusColor) {
-    if (status === "success") statusColor = "var(--success)";
-    else if (status === "warning") statusColor = "var(--warning)";
-    else if (status === "danger") statusColor = "var(--danger)";
-  }
-
-  const valueColor = hasStatusColor ? statusColor : "var(--foreground)";
-
-  return (
-    <div className="elevation-1 relative overflow-hidden rounded-lg p-5 border border-border/50 bg-muted/10">
-      <div
-        aria-hidden="true"
-        className="absolute top-0 left-0 h-full w-[3px]"
-        style={{
-          background: hasStatusColor ? statusColor : "var(--muted-foreground)",
-        }}
-      />
-      <p className="ds-small text-muted-foreground mb-1.5 tracking-wider uppercase font-semibold text-[10px]">
-        {kpi.displayName}
-      </p>
-      <p
-        className="ds-display font-semibold"
-        style={{
-          fontSize: "1.75rem",
-          color: valueColor,
-        }}
-      >
-        {kpi.valor === null ? (
-          <span className="text-muted-foreground">N/D</span>
-        ) : (
-          formatKpiValue(kpi.valor, kpi.valueType)
-        )}
-      </p>
-    </div>
-  );
-}
-
-// Não renderizado atualmente (nome do operador não é mais clicável) —
-// mantido de propósito para uma eventual reativação futura.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function OperatorDetailModal({
-  operador,
-  isMesPassado,
-  onClose,
-}: OperatorDetailModalProps) {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.15 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style={{
-          background: "color-mix(in oklch, var(--background) 80%, transparent)",
-          backdropFilter: "blur(8px)",
-        }}
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 8 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 8 }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="elevation-3 w-full max-w-3xl rounded-xl p-6"
-          style={{ border: "1px solid var(--border)", background: "var(--card)" }}
-          role="dialog"
-          aria-modal="true"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="mb-5 flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
-                {operador.nome.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <h2 className="ds-h2 font-semibold text-lg leading-none">
-                  {operador.nome}
-                </h2>
-                <p className="ds-mono-sm text-muted-foreground text-xs mt-1">
-                  KPIs Secundários · {isMesPassado ? "Mês Passado (Neutro)" : "Mês Atual"}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-muted-foreground hover:text-foreground rounded-md p-1 transition-colors cursor-pointer"
-              aria-label="Fechar"
-            >
-              <IconX size={20} aria-hidden="true" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {operador.secundarios.map((kpi) => (
-              <SecondaryKpiCard
-                key={kpi.slug}
-                kpi={kpi}
-                isMesPassado={isMesPassado}
-              />
-            ))}
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  );
 }
 
 /** Nome da CSS var de status — null quando não há cor a aplicar (neutro/nulo/mês passado). */

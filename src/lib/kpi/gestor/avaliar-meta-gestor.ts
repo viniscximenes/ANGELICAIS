@@ -7,13 +7,13 @@ export type MetaGestorConfig = {
   direcao: MetaDirecao;
 };
 
-export type MetaContexto = {
+type MetaContexto = {
   forecastChurn: number | null;
   txRetencaoBruta: number | null;
 };
 
 /** "12:11" (MM:SS) ou "01:02:03" (HH:MM:SS) → segundos. null se inválido. */
-export function parseMetaTempoSegundos(str: string): number | null {
+function parseMetaTempoSegundos(str: string): number | null {
   const partes = str.trim().split(":").map((p) => parseInt(p, 10));
   if (partes.some((p) => Number.isNaN(p))) return null;
 

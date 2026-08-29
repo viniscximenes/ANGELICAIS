@@ -1,7 +1,7 @@
 import { getEmailPrefix } from "@/lib/utils/email-variants";
 import type { OperadorQuartilItem } from "./get-quartil-operadores";
 
-export type QuartilInfo = {
+type QuartilInfo = {
   /** null quando o operador não teve atendimento no dia (fora do ranking). */
   quartil: "Q1" | "Q2" | "Q3" | "Q4" | null;
   tx: number | null;
@@ -80,7 +80,7 @@ const INFO_VAZIA: QuartilInfo = {
  * Operador sem atendimento no dia não entra em ranking nenhum. Em vez de
  * sumir com a seção, devolvemos um quartil vazio para a tela exibir "—".
  */
-export const QUARTIL_VAZIO: QuartilOperador = {
+const QUARTIL_VAZIO: QuartilOperador = {
   equipe: INFO_VAZIA,
   empresa: INFO_VAZIA,
 };

@@ -12,13 +12,11 @@ const ADMIN_DEFAULT_PATH = "/configuracoes/usuarios";
 // e permissions.ts). ADM só pode navegar dentro destes dois prefixos —
 // qualquer outra rota (incluindo novas rotas futuras que alguém esqueça de
 // checar na própria página) é bloqueada por padrão aqui.
-const ADMIN_ALLOWED_PREFIXES = ["/config", "/bases", "/configuracoes"];
+const ADMIN_ALLOWED_PREFIXES = ["/bases", "/configuracoes"];
 
 // Rotas que nunca precisam da checagem de role — ou porque são públicas
-// (login), ou porque não são navegação de página (API/server actions têm sua
-// própria checagem de permissão por endpoint), ou porque já são os próprios
-// prefixos administrativos acima.
-const SKIP_ROLE_CHECK_PREFIXES = ["/login", "/api", ...ADMIN_ALLOWED_PREFIXES];
+// (login), ou porque já são os próprios prefixos administrativos acima.
+const SKIP_ROLE_CHECK_PREFIXES = ["/login", ...ADMIN_ALLOWED_PREFIXES];
 
 function pathMatchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
@@ -58,12 +56,12 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // RBAC: ADM só navega dentro de /config e /bases — reforça a regra em
-  // permissions.ts a nível de rota, pra ninguém acessar uma tela operacional
-  // digitando a URL direto (ou via link antigo/favorito), mesmo que a
-  // própria página não faça essa checagem. Pulado pra caminhos públicos/API
-  // e pros próprios prefixos administrativos, pra não gastar uma query de
-  // profile em toda navegação de todo mundo.
+  // RBAC: ADM só navega dentro de /bases e /configuracoes — reforça a regra
+  // em permissions.ts a nível de rota, pra ninguém acessar uma tela
+  // operacional digitando a URL direto (ou via link antigo/favorito), mesmo
+  // que a própria página não faça essa checagem. Pulado pro login e pros
+  // próprios prefixos administrativos, pra não gastar uma query de profile
+  // em toda navegação de todo mundo.
   const pathname = request.nextUrl.pathname;
   const skipRoleCheck = SKIP_ROLE_CHECK_PREFIXES.some((prefix) =>
     pathMatchesPrefix(pathname, prefix),

@@ -22,9 +22,6 @@ export type ConfigAderencia = {
   toleranciaMin: number;
 };
 
-/** Só os campos de horário — exclui `toleranciaMin`, que é número. */
-export type ChaveHoraAderencia = Exclude<keyof ConfigAderencia, "toleranciaMin">;
-
 /** Espelha o DEFAULT da coluna no banco — os dois precisam concordar. */
 export const DEFAULT_CONFIG_ADERENCIA: ConfigAderencia = {
   metaLoginManha: "07:40",
@@ -36,7 +33,7 @@ export const DEFAULT_CONFIG_ADERENCIA: ConfigAderencia = {
 };
 
 /** Forma crua da coluna jsonb. */
-export type ConfigAderenciaRow = {
+type ConfigAderenciaRow = {
   meta_login_manha?: unknown;
   meta_login_tarde?: unknown;
   meta_p10_1?: unknown;
@@ -46,7 +43,7 @@ export type ConfigAderenciaRow = {
 };
 
 /** "HH:MM" (aceita "H:MM" e "HH:MM:SS", normalizando para "HH:MM"). */
-export function normalizarHoraMeta(valor: unknown): string | null {
+function normalizarHoraMeta(valor: unknown): string | null {
   if (typeof valor !== "string") return null;
   const m = valor.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
   if (!m) return null;
@@ -59,7 +56,7 @@ export function normalizarHoraMeta(valor: unknown): string | null {
 }
 
 /** Tolerância válida: inteiro de 0 a 120 minutos. */
-export function normalizarTolerancia(valor: unknown): number | null {
+function normalizarTolerancia(valor: unknown): number | null {
   const n = typeof valor === "string" ? parseInt(valor, 10) : valor;
   if (typeof n !== "number" || !Number.isFinite(n)) return null;
   const inteiro = Math.round(n);
@@ -88,17 +85,5 @@ export function parseConfigAderencia(raw: unknown): ConfigAderencia {
       normalizarHoraMeta(row.meta_p10_2) ?? DEFAULT_CONFIG_ADERENCIA.metaP10Segunda,
     toleranciaMin:
       normalizarTolerancia(row.tolerancia_min) ?? DEFAULT_CONFIG_ADERENCIA.toleranciaMin,
-  };
-}
-
-/** Tipo do app -> forma crua da coluna jsonb. */
-export function serializarConfigAderencia(cfg: ConfigAderencia): Record<string, unknown> {
-  return {
-    meta_login_manha: cfg.metaLoginManha,
-    meta_login_tarde: cfg.metaLoginTarde,
-    meta_p10_1: cfg.metaP10Primeira,
-    meta_p20: cfg.metaP20,
-    meta_p10_2: cfg.metaP10Segunda,
-    tolerancia_min: cfg.toleranciaMin,
   };
 }

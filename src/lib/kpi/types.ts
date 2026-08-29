@@ -1,11 +1,11 @@
-export type KpiGroupType = "principal" | "secundario";
+type KpiGroupType = "principal" | "secundario";
 export type KpiValueType = "percent" | "number" | "time" | "percent_negative";
-export type KpiDirection =
+type KpiDirection =
   | "higher_better"
   | "lower_better"
   | "closer_to_zero"
   | "none";
-export type KpiColoringType = "three_tier" | "binary" | "none" | "per_row";
+type KpiColoringType = "three_tier" | "binary" | "none" | "per_row";
 
 export type KpiDefinition = {
   id: string;
@@ -23,16 +23,3 @@ export type KpiDefinition = {
   metaColumnName: string | null;
   expectedHeader: string;
 };
-
-export type KpiDefinitionUpdate = {
-  id: string;
-  thresholdRed: number | null;
-  thresholdYellow: number | null;
-  thresholdGreen: number | null;
-  thresholdDiffPercent: number | null;
-  expectedHeader: string;
-};
-
-export type UpdateKpiResult =
-  | { success: true }
-  | { success: false; error: string };

@@ -1,13 +1,12 @@
--- Configuração da tabela do painel do gestor (/gestor/d-1): meta de TX +
--- ordenação customizável dos operadores.
+-- Configuração da tabela do painel do gestor (/reports/consolidado): meta
+-- de TX + ordenação customizável dos operadores.
 --
 -- IMPORTANTE: rodar no projeto Supabase REAL usado pelo app — confirme o
--- host antes de rodar (NEXT_PUBLIC_SUPABASE_URL em .env.local). Um
--- diagnóstico (scripts/_diagnose-gestor-config-fantasia.ts) mostrou que
--- NENHUMA das duas colunas existia no projeto real, apesar de
--- meta_tx_retencao já ser referenciada por src/lib/retencao/meta.ts — ou
--- seja, aquela feature também vinha falhando silenciosamente (erro
--- capturado + fallback pro default), não é algo novo desta migration.
+-- host antes de rodar (NEXT_PUBLIC_SUPABASE_URL em .env.local). Nenhuma
+-- das duas colunas existia no projeto real, apesar de meta_tx_retencao já
+-- ser referenciada por src/lib/retencao/meta.ts — ou seja, aquela feature
+-- também vinha falhando silenciosamente (erro capturado + fallback pro
+-- default), não é algo novo desta migration.
 --
 -- Rodar uma vez no SQL Editor do Supabase (dashboard do projeto CERTO).
 

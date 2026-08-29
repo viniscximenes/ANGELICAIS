@@ -51,7 +51,7 @@ function somarBreakdown(a: MotivosBreakdown, b: MotivosBreakdown | null): Motivo
   };
 }
 
-export type GestorConsolidadoResult = {
+type GestorConsolidadoResult = {
   data: GestorData;
   reportHora: string | null;
   reportNomeSupervisor: string | null;

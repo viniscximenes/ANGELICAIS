@@ -11,7 +11,7 @@ import { sanitizeEmailLocal } from "../sanitize-email-local";
 import type { UserRole } from "../types";
 import { isValidUsernameFormat } from "../validate-username";
 
-export type CreateUserInput = {
+type CreateUserInput = {
   fullName: string;
   username: string;
   emailCorporativoLocal: string;
@@ -19,7 +19,7 @@ export type CreateUserInput = {
   password: string;
 };
 
-export type CreateUserResult =
+type CreateUserResult =
   | { success: true; userId: string; password: string }
   | { success: false; error: string };
 
@@ -62,10 +62,8 @@ export async function createUserAction(
   if (!input.password || input.password.length < 8) {
     return { success: false, error: "Senha deve ter pelo menos 8 caracteres" };
   }
-  // GESTOR/ADM etc. Normalmente criados via script admin/SQL — NÃO pela UI
-  // (a regex de username acima exige o padrão nome.sobrenome).
-  if (!["OP", "AUX", "ADM", "GESTOR"].includes(input.role)) {
-    return { success: false, error: "Role inválida" };
+  if (!["ADM", "GESTOR"].includes(input.role)) {
+    return { success: false, error: "Role inválida (apenas ADM ou GESTOR são permitidos)" };
   }
 
   const username = input.username.trim().toLowerCase();

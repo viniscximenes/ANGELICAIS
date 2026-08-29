@@ -1,6 +1,6 @@
 import type { KpiDefinition } from "@/lib/kpi/types";
 
-export type QuartilResultado = {
+type QuartilResultado = {
   quartil: 1 | 2 | 3 | 4;
   rank: number;
   total: number; // total de operadores ranqueados naquele KPI (sem nulls)
@@ -10,32 +10,6 @@ export type OperadorParaQuartil = {
   email: string;
   valores: Map<string, number | null>; // slug → valor_numerico
 };
-
-export type OperadorQuartilData = {
-  email: string;
-  nome: string;
-  valores: Map<string, number | null>;    // para exibir o valor formatado
-  quartis: Map<string, QuartilResultado>; // só slugs ranqueados (com valor)
-};
-
-export type QuartilData = {
-  operadores: OperadorQuartilData[];
-  mesRef: string;
-  ranqueableSlugs: string[];
-  dataCorte?: string | null;
-};
-
-/**
- * Slugs ranqueáveis = aqueles com direction higher_better ou lower_better.
- * KPIs informativos (direction: "none" ou "closer_to_zero") ficam de fora.
- */
-export function getRanqueableSlugs(definitions: KpiDefinition[]): string[] {
-  return definitions
-    .filter(
-      (d) => d.direction === "higher_better" || d.direction === "lower_better",
-    )
-    .map((d) => d.slug);
-}
 
 /**
  * Função PURA: dado um conjunto de operadores e as definições de KPI, calcula

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const MAX_MONTHS = 2;
 
@@ -12,7 +12,7 @@ const MAX_MONTHS = 2;
 export async function enforceRetention(
   newMesRef: string,
 ): Promise<string[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("kpi_monthly_snapshots")

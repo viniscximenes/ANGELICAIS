@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { isOrdemTabela, type OrdemTabela } from "../types";
 
-export type SaveConfigTabelaResult =
+type SaveConfigTabelaResult =
   | { success: true }
   | { success: false; error: string };
 
@@ -51,7 +51,6 @@ export async function saveConfigTabelaAction(
     return { success: false, error: "Erro ao salvar configuração." };
   }
 
-  revalidatePath("/gestor/d-1");
   revalidatePath("/reports/consolidado");
 
   return { success: true };

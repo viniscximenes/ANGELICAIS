@@ -1,8 +1,8 @@
 import { getPorTema } from "./get-por-tema";
 
-export type Quadrante = "urgente" | "estavel" | "alerta" | "positivo";
+type Quadrante = "urgente" | "estavel" | "alerta" | "positivo";
 
-export type MatrizMotivoItem = {
+type MatrizMotivoItem = {
   motivo: string;
   total: number;
   retidos: number;

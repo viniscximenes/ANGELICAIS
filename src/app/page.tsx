@@ -10,7 +10,6 @@ export default async function RootPage() {
     redirect("/login");
   }
 
-  // Redireciona o usuário para a página padrão de entrada do perfil
-  // (ex.: OP/ADM em /kpi/atual-principal).
+  // Redireciona o usuário para a página padrão de entrada do perfil.
   redirect(getPostLoginPath(user.profile.role));
 }

@@ -9,7 +9,7 @@ import type { PerUnitFaixa } from "./types";
  * retidos do dia. null quando não há atendimento no dia (mesma convenção de
  * "—" usada nas outras colunas da tabela pra txRetencao null).
  */
-export function calcularRvDiario(
+function calcularRvDiario(
   txRetencao: number | null,
   retidos: number,
   faixas: PerUnitFaixa[],

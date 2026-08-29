@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { IconLoader2 } from "@tabler/icons-react";
 
 import { useTheme } from "./theme-provider";

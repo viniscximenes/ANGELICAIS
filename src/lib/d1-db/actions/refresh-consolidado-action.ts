@@ -8,7 +8,7 @@ import { getCurrentPerUnitFaixas } from "@/lib/rv/get-current-per-unit-faixas";
 import { getGestorConsolidado } from "../get-gestor-consolidado";
 import type { OperadorConsolidado, ResumoEquipe } from "../types";
 
-export type RefreshConsolidadoResult =
+type RefreshConsolidadoResult =
   | {
       success: true;
       operadores: OperadorConsolidado[];

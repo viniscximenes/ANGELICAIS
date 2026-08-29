@@ -13,8 +13,6 @@ import { ThemeToggle } from "./theme-toggle";
 const ROLE_LABEL: Record<UserRole, string> = {
   GESTOR: "GESTOR",
   ADM: "ADMINISTRADOR",
-  AUX: "AUXILIAR",
-  OP: "OPERADOR",
 };
 
 interface AppHeaderProps {

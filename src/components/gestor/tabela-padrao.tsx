@@ -30,17 +30,10 @@ export const TABELA_HEADER_CELL_ULTIMA_CLASS = "px-3 py-2.5 text-center whitespa
 
 export const TABELA_LINHA_CLASS = "grid items-center gap-0 transition-colors hover:bg-muted/40";
 
-export const TABELA_LINHA_BORDA: CSSProperties = {
-  borderBottom: "1px solid var(--border)/40",
-};
-
 export const TABELA_NOME_CELL_CLASS =
   "ds-body truncate px-3 py-2 text-center border-r border-border/30 font-medium";
 
 export const TABELA_VALOR_CELL_CLASS = "ds-mono-sm px-3 py-2 text-center border-r border-border/30";
-
-/** Última célula de valor (sem coluna à direita) não leva border-r. */
-export const TABELA_VALOR_CELL_ULTIMA_CLASS = "ds-mono-sm px-3 py-2 text-center";
 
 export const TABELA_VALOR_BULLET_CLASS =
   "ds-mono-sm flex items-center justify-center gap-1.5 px-3 py-2 text-center border-r border-border/30";
@@ -57,7 +50,7 @@ export function fundoLinhaRuim(ruim: boolean): string | undefined {
 }
 
 /** Cor do valor/bullet semântico: vermelho quando ruim, verde quando bom. */
-export function corSemantica(ruim: boolean): string {
+function corSemantica(ruim: boolean): string {
   return ruim ? "var(--danger)" : "var(--success)";
 }
 

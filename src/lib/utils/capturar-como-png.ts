@@ -4,7 +4,7 @@ import { resolverTokenCss } from "./resolver-token-css";
 
 const PADDING_PADRAO_PX = 28;
 
-export interface CapturarComoPngOpcoes {
+interface CapturarComoPngOpcoes {
   /** Pixel ratio da captura (padrão 3, igual ao já usado em todo o sistema). */
   scale?: number;
   /** Respiro ao redor do conteúdo, em px, preenchido com --background do tema atual (padrão 28). */

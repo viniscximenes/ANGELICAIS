@@ -14,7 +14,7 @@ export type OperadorQuartilItem = {
 };
 
 // Volume mínimo de atendimentos para ranquear o operador no quartil
-export const QUARTIL_VOLUME_MINIMO = 0;
+const QUARTIL_VOLUME_MINIMO = 0;
 
 /**
  * Retorna os operadores do escopo com seus respectivos ranks e quartis baseados na taxa de retenção.

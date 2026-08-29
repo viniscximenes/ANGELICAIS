@@ -1,4 +1,4 @@
-import type { OperadorConsolidado } from "@/lib/google/d1";
+import type { OperadorConsolidado } from "@/lib/d1-db/types";
 
 import type { OrdemTabela } from "./types";
 

@@ -7,7 +7,7 @@ import type { RvScope } from "@/lib/rv/types";
 
 const MES_REF_REGEX = /^\d{4}-\d{2}-01$/;
 
-export type GetRvOperadoresResult =
+type GetRvOperadoresResult =
   | { success: true; data: RvEquipeResultado }
   | { success: false; error: string };
 
