@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const MAX_MONTHS = 2;
+const MAX_MONTHS = 24;
 
 /**
  * Mantém apenas os últimos MAX_MONTHS meses únicos. Apaga qualquer mês
