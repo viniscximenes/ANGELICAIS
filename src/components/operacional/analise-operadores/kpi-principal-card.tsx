@@ -83,7 +83,13 @@ export function KpiPrincipalCard({
     ];
   }
 
-  const strokeLinha = stops ? `url(#${gradId})` : cores.mutedFg;
+  // SVG <paint>: só é válido ter "url(#x) <cor-fallback>" quando o primeiro
+  // token é um url(). Sem gradiente (KPI sem meta: pedidos/churn/
+  // variacao_ticket), o stroke é uma cor só — concatenar duas cores gera
+  // um paint inválido e a LINHA SOME.
+  const strokeLinha = stops
+    ? `url(#${gradId}) ${cores.mutedFg}`
+    : cores.mutedFg;
 
   return (
     <div className="space-y-3">
@@ -201,7 +207,7 @@ export function KpiPrincipalCard({
               <Line
                 type="monotone"
                 dataKey="valor"
-                stroke={`${strokeLinha} ${cores.mutedFg}`}
+                stroke={strokeLinha}
                 strokeWidth={2.5}
                 isAnimationActive={!estatico}
                 animationDuration={estatico ? 0 : 350}
