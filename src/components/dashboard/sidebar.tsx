@@ -22,6 +22,7 @@ import {
 import type { UserRole } from "@/lib/auth/get-current-user";
 import { logoutAction } from "@/lib/auth/logout-action";
 import type { Permission } from "@/lib/auth/permissions";
+import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
@@ -238,9 +239,9 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
       <div className="border-border mt-auto flex items-center justify-between gap-2 border-t pt-3">
         <span
           className="ds-small text-muted-foreground min-w-0 flex-1 truncate px-1"
-          title={user.fullName}
+          title={formatNomeProprio(user.fullName)}
         >
-          {user.fullName}
+          {formatNomeProprio(user.fullName)}
         </span>
 
         <TooltipProvider>
