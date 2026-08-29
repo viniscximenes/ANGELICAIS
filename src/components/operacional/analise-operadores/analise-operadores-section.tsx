@@ -31,7 +31,6 @@ import type { AnaliseOperadorSerial } from "@/lib/kpi/analise-operadores/serial-
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 
 import { ExportPdfButton } from "./export-pdf-button";
-import { ExportPngButton } from "./export-png-button";
 import type { IdentificacaoMeta } from "./identificacao-bloco";
 import { IdentificacaoBloco } from "./identificacao-bloco";
 import { KpiPrincipalCard } from "./kpi-principal-card";
@@ -222,11 +221,6 @@ export function AnaliseOperadoresSection({
               aria-hidden="true"
             />
           )}
-          <ExportPngButton
-            targetRef={pdfRef}
-            filenameBase={filenameBase}
-            disabled={!temRelatorio || isPending}
-          />
           <ExportPdfButton
             pagesRootRef={pdfRef}
             meta={meta}

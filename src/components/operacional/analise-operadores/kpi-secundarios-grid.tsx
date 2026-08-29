@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { IconChevronDown } from "@tabler/icons-react";
-import { Line, LineChart, ResponsiveContainer } from "recharts";
+import { Line, LineChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
@@ -56,12 +56,29 @@ function SecundarioCard({
               data={serie.pontos}
               margin={{ top: 2, right: 2, left: 2, bottom: 2 }}
             >
+              <Tooltip
+                cursor={{ stroke: cores.border, strokeWidth: 1 }}
+                wrapperStyle={{ outline: "none", zIndex: 30 }}
+                content={({ active, payload }) => {
+                  if (!active || !payload || !payload.length) return null;
+                  const p = payload[0].payload as PontoSerie;
+                  return (
+                    <div className="bg-popover border-border/80 rounded-md border px-2 py-1 font-sans text-[11px] shadow-md">
+                      <span className="text-muted-foreground">{p.label}: </span>
+                      <strong className={classeTextoStatus(p.status)}>
+                        {formatKpiValue(p.valor, serie.valueType)}
+                      </strong>
+                    </div>
+                  );
+                }}
+              />
               <Line
                 type="monotone"
                 dataKey="valor"
                 stroke={corLinha}
                 strokeWidth={1.75}
                 dot={false}
+                activeDot={{ r: 3 }}
                 isAnimationActive={false}
                 connectNulls
               />
