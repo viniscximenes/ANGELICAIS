@@ -33,7 +33,7 @@ type ProcessGestorSnapshotInput = {
   dataCorte: string;
 };
 
-const MAX_MONTHS = 2;
+const MAX_MONTHS = 24;
 
 async function enforceGestorRetention(newMesRef: string): Promise<string[]> {
   const supabase = createAdminClient();
