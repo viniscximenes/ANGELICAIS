@@ -254,19 +254,14 @@ export function KpiPrincipalCard({
               />
 
               {metaLinha !== null && (
+                // Sem label dentro do gráfico: o valor da meta já está no
+                // header do card ("Meta: X"). Evita a sobreposição do texto
+                // com os ticks do eixo X (e a redundância visual).
                 <ReferenceLine
                   y={metaLinha}
                   stroke={cores.mutedFg}
                   strokeDasharray="6 4"
                   strokeWidth={1.5}
-                  label={{
-                    value: `Meta ${formatKpiValue(metaLinha, valueType)}`,
-                    position: "insideTopRight",
-                    fill: cores.mutedFg,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    dy: -4,
-                  }}
                 />
               )}
 

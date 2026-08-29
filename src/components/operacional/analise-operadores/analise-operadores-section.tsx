@@ -28,7 +28,7 @@ import {
 } from "@/lib/kpi/analise-operadores/periodo";
 import { TX_RETENCAO_SLUG } from "@/lib/kpi/analise-operadores/constants";
 import type { AnaliseOperadorSerial } from "@/lib/kpi/analise-operadores/serial-types";
-import { formatDateBR, formatDateTimeBR } from "@/lib/utils/format-datetime-br";
+import { formatDateBR } from "@/lib/utils/format-datetime-br";
 
 import { ExportPdfButton } from "./export-pdf-button";
 import { ExportPngButton } from "./export-png-button";
@@ -98,7 +98,7 @@ export function AnaliseOperadoresSection({
       if (res.success) {
         setData(res.data);
         setErro(null);
-        setGeradoEm(formatDateTimeBR(new Date()));
+        setGeradoEm(formatDateBR(new Date()));
       } else {
         setData(null);
         setErro(res.error);

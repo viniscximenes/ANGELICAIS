@@ -3,7 +3,7 @@ import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
 import type { KpiDefinition, KpiValueType } from "@/lib/kpi/types";
 import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
 
-import { TX_RETENCAO_SLUG } from "./constants";
+import { PRINCIPAIS_SLUGS, TX_RETENCAO_SLUG } from "./constants";
 import { formatMesRefCurto } from "./format-mes-ref";
 import { getHistoricoOperador } from "./get-historico-operador";
 import {
@@ -125,12 +125,23 @@ export async function buildAnaliseOperadorSerial(params: {
   const mesRefInicial = resolveMesRefInicial(mesMaisRecenteDisponivel, periodo);
   const definitions = await getKpiDefinitions();
 
+  // Split LOCAL desta feature (PRINCIPAIS_SLUGS), não kpi_definitions.group_type.
+  const ordemPrincipal = (slug: string) => {
+    const i = PRINCIPAIS_SLUGS.indexOf(slug);
+    return i === -1 ? 999 : i;
+  };
   const principaisDefs = definitions
-    .filter((d) => d.groupType === "principal")
-    .sort((a, b) => a.displayOrder - b.displayOrder);
+    .filter((d) => PRINCIPAIS_SLUGS.includes(d.slug))
+    .sort((a, b) => ordemPrincipal(a.slug) - ordemPrincipal(b.slug));
   const secundariosDefs = definitions
-    .filter((d) => d.groupType === "secundario")
-    .sort((a, b) => a.displayOrder - b.displayOrder);
+    .filter((d) => !PRINCIPAIS_SLUGS.includes(d.slug))
+    // Nativos de group_type "secundario" primeiro (na ordem deles); os
+    // rebaixados daqui (pedidos/churn/variacao_ticket) vão para o fim.
+    .sort((a, b) => {
+      const ga = a.groupType === "secundario" ? 0 : 1;
+      const gb = b.groupType === "secundario" ? 0 : 1;
+      return ga - gb || a.displayOrder - b.displayOrder;
+    });
   const ranqueaveisDefs = principaisDefs.filter(isRanqueavel);
 
   const [historico, quartis] = await Promise.all([
@@ -173,6 +184,9 @@ export async function buildAnaliseOperadorSerial(params: {
     const pontos: PontoSerie[] = meses.map((mesRef) => {
       const valuesBySlug = historico.porMes.get(mesRef) ?? new Map();
 
+      // Status/semáforo pelo group_type REAL da definição (não pelo split
+      // local): pedidos/churn/variacao_ticket viram "secundários" nesta tela
+      // mas continuam com o mesmo cálculo de cor do resto do site.
       const enriched = enrichWithDefinitions(
         definitions,
         valuesBySlug,
@@ -181,7 +195,7 @@ export async function buildAnaliseOperadorSerial(params: {
           forecastChurn: valuesBySlug.get("forecast_churn") ?? null,
           txRetencaoBruta: valuesBySlug.get("tx_retencao_bruta") ?? null,
         },
-        grupo,
+        def.groupType,
       );
       const cell = enriched.get(def.slug);
 

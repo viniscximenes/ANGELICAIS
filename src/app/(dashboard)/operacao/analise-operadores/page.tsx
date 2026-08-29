@@ -13,7 +13,7 @@ import {
 import { getSnapshotsSummary } from "@/lib/kpi/bases/get-snapshots-summary";
 
 export const metadata: Metadata = {
-  title: "Análise de Operadores",
+  title: "Operação - Análise de Operadores",
 };
 
 // Página personalizada por gestor — nunca cacheada entre usuários.
