@@ -1,9 +1,10 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Único destino permitido pra role ADM — mantido em sincronia com
-// getPostLoginPath() (src/lib/auth/post-login-path.ts), que já manda ADM pra
-// cá no pós-login. Path completo (não só prefixo) porque é o alvo do
+// Destino do redirect quando um ADM tenta sair dos prefixos administrativos.
+// É uma rota administrativa qualquer dentro de ADMIN_ALLOWED_PREFIXES; não
+// precisa coincidir com a landing pós-login (getPostLoginPath manda o ADM
+// puro pra /bases/kpi). Path completo (não só prefixo) porque é o alvo do
 // redirect, não um filtro de entrada.
 const ADMIN_DEFAULT_PATH = "/configuracoes/usuarios";
 
