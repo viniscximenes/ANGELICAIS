@@ -10,15 +10,16 @@ import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getPausasProgramadas } from "@/lib/bases/pausas-programadas/actions/get-pausas-programadas";
 
 export const metadata: Metadata = {
-  title: "Pausas Programadas — ANGELICAIS",
+  title: "Bases - Pausas",
 };
 
 export default async function BasesPausasPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  if (user.profile.role === "GESTOR") redirect("/reports/consolidado");
-
+  // Acesso governado só por can(): ADM puro passa; GESTOR só passa se
+  // acumular a skill de admin (is_admin_skill). Sem checagem exclusiva de
+  // role antes, pra não barrar o caso multi-role.
   if (!can(user.profile.role, "manage_system", user.profile.isAdminSkill)) {
     redirect("/reports/consolidado");
   }

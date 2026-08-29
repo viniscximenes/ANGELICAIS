@@ -12,15 +12,16 @@ import {
 } from "@/lib/kpi/bases/get-snapshots-summary";
 
 export const metadata: Metadata = {
-  title: "Base KPI — ANGELICAIS",
+  title: "Bases - KPI",
 };
 
 export default async function BasesKpiPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  if (user.profile.role === "GESTOR") redirect("/reports/consolidado");
-
+  // Acesso governado só por can(): ADM puro passa; GESTOR só passa se
+  // acumular a skill de admin (is_admin_skill). Sem checagem exclusiva de
+  // role antes, pra não barrar o caso multi-role.
   if (!can(user.profile.role, "manage_base", user.profile.isAdminSkill)) {
     redirect("/reports/consolidado");
   }
