@@ -37,7 +37,10 @@ export function ExportPngButton({
     try {
       // Deixa os gráficos assentarem antes de capturar.
       await new Promise((r) => setTimeout(r, 450));
-      const dataUrl = await capturarComoPng(target, { scale: 2 });
+      // padding 0: o wrapper offscreen (data-theme="light") já tem respiro
+      // interno e fundo claro próprio — o padding padrão de capturarComoPng
+      // usaria o --background do tema da SESSÃO (possivelmente escuro).
+      const dataUrl = await capturarComoPng(target, { scale: 2, padding: 0 });
 
       const link = document.createElement("a");
       link.href = dataUrl;

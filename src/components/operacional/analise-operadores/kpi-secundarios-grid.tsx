@@ -17,8 +17,14 @@ function classeTextoStatus(status: PontoSerie["status"]): string {
   return "text-foreground";
 }
 
-function SecundarioCard({ serie }: { serie: KpiSerie }) {
-  const cores = useChartColors();
+function SecundarioCard({
+  serie,
+  forceLight,
+}: {
+  serie: KpiSerie;
+  forceLight?: boolean;
+}) {
+  const cores = useChartColors(forceLight);
   const ultimo = [...serie.pontos].reverse().find((p) => p.valor !== null);
   const temSerie = serie.pontos.some((p) => p.valor !== null);
 
@@ -70,10 +76,13 @@ function SecundarioCard({ serie }: { serie: KpiSerie }) {
 export function KpiSecundariosGrid({
   series,
   forcarAberto = false,
+  forceLight = false,
 }: {
   series: KpiSerie[];
-  /** Sempre expandido (captura do PDF). */
+  /** Sempre expandido (captura do PDF/PNG). */
   forcarAberto?: boolean;
+  /** Resolve cores da sparkline contra o tema claro (captura). */
+  forceLight?: boolean;
 }) {
   const [aberto, setAberto] = useState(forcarAberto);
 
@@ -96,7 +105,11 @@ export function KpiSecundariosGrid({
       {aberto && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {series.map((serie) => (
-            <SecundarioCard key={serie.slug} serie={serie} />
+            <SecundarioCard
+              key={serie.slug}
+              serie={serie}
+              forceLight={forceLight}
+            />
           ))}
         </div>
       )}

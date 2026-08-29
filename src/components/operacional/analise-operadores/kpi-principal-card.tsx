@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import {
+  Area,
   CartesianGrid,
   ComposedChart,
   Line,
@@ -17,14 +18,11 @@ import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import type { KpiSerie, PontoSerie } from "@/lib/kpi/analise-operadores/serial-types";
 
 import { QuartilFaixa } from "./quartil-faixa";
-import { useChartColors } from "./use-chart-colors";
+import { useChartColors, type ChartColors } from "./use-chart-colors";
 
 type StatusKpi = PontoSerie["status"];
 
-function corDoStatus(
-  status: StatusKpi,
-  cores: ReturnType<typeof useChartColors>,
-): string {
+function corDoStatus(status: StatusKpi, cores: ChartColors): string {
   if (status === "success") return cores.success;
   if (status === "danger") return cores.danger;
   if (status === "warning") return cores.warning;
@@ -38,16 +36,33 @@ function classeTextoStatus(status: StatusKpi): string {
   return "text-foreground";
 }
 
+/** Semáforo simples da MÉDIA contra a meta (mesma regra binária de enrich-with-definitions). */
+function statusDaMedia(
+  media: number | null,
+  metaLinha: number | null,
+  direction: KpiSerie["direction"],
+): StatusKpi {
+  if (media === null || metaLinha === null) return "neutral";
+  if (direction === "higher_better") return media >= metaLinha ? "success" : "danger";
+  if (direction === "lower_better") return media <= metaLinha ? "success" : "danger";
+  return "neutral";
+}
+
 export function KpiPrincipalCard({
   serie,
   estatico = false,
+  forceLight = false,
 }: {
   serie: KpiSerie;
-  /** Desliga animação — usado na captura offscreen do PDF, pra não capturar mid-frame. */
+  /** Desliga animação — usado na captura offscreen do PDF/PNG, pra não capturar mid-frame. */
   estatico?: boolean;
+  /** Resolve as cores contra o tema claro (captura). */
+  forceLight?: boolean;
 }) {
-  const cores = useChartColors();
-  const gradId = useId().replace(/[:]/g, "");
+  const cores = useChartColors(forceLight);
+  const rawId = useId().replace(/[:]/g, "");
+  const gradId = `g-${rawId}`;
+  const areaId = `a-${rawId}`;
 
   const { pontos, metaLinha, valueType, direction, displayName } = serie;
 
@@ -55,11 +70,34 @@ export function KpiPrincipalCard({
     .map((p) => p.valor)
     .filter((v): v is number => v !== null);
 
-  const ultimoComValor = [...pontos].reverse().find((p) => p.valor !== null);
+  // ── Cabeçalho: MÉDIA do período (item 7) ────────────────────────────
+  const media =
+    valoresValidos.length > 0
+      ? valoresValidos.reduce((a, b) => a + b, 0) / valoresValidos.length
+      : null;
+  const statusMedia = statusDaMedia(media, metaLinha, direction);
 
-  // Gradiente vertical que troca de cor na meta — mesmo mecanismo de
-  // retencao/grafico-evolucao.tsx, com as cores JÁ resolvidas (useChartColors)
-  // pro PNG não sair quebrado.
+  // ── Domínio dinâmico do eixo Y (item 4) ────────────────────────────
+  // Padding proporcional à amplitude REAL dos pontos — faz a variação de
+  // poucos pontos aparecer mesmo em janelas curtas. A meta só estica a
+  // borda (sem ganhar padding), pra ReferenceLine continuar visível.
+  let yDomain: [number, number] | [string, string] = ["auto", "auto"];
+  if (valoresValidos.length > 0) {
+    const lo = Math.min(...valoresValidos);
+    const hi = Math.max(...valoresValidos);
+    const amp = hi - lo;
+    const pad = amp === 0 ? Math.max(Math.abs(hi) * 0.1, 1) : amp * 0.15;
+    let dLo = lo - pad;
+    let dHi = hi + pad;
+    if (metaLinha !== null) {
+      dLo = Math.min(dLo, metaLinha);
+      dHi = Math.max(dHi, metaLinha);
+    }
+    if (valueType !== "percent_negative" && dLo < 0) dLo = 0;
+    yDomain = [dLo, dHi];
+  }
+
+  // ── Gradiente vertical que troca de cor na meta (stroke da linha) ──
   let stops: { offset: number; cor: string }[] | null = null;
   if (metaLinha !== null && valoresValidos.length > 0) {
     const dataMax = Math.max(...valoresValidos, metaLinha);
@@ -67,14 +105,8 @@ export function KpiPrincipalCard({
     let offset =
       dataMax === dataMin ? 0.5 : (dataMax - metaLinha) / (dataMax - dataMin);
     offset = Math.min(1, Math.max(0, offset));
-
-    // higher_better → acima da meta (topo do gráfico) é verde;
-    // lower_better → acima da meta é vermelho.
-    const corTopo =
-      direction === "higher_better" ? cores.success : cores.danger;
-    const corBase =
-      direction === "higher_better" ? cores.danger : cores.success;
-
+    const corTopo = direction === "higher_better" ? cores.success : cores.danger;
+    const corBase = direction === "higher_better" ? cores.danger : cores.success;
     stops = [
       { offset: 0, cor: corTopo },
       { offset, cor: corTopo },
@@ -82,14 +114,20 @@ export function KpiPrincipalCard({
       { offset: 1, cor: corBase },
     ];
   }
+  // SVG <paint>: "url(#x) <cor>" só é válido com url() como 1º token.
+  const strokeLinha = stops ? `url(#${gradId}) ${cores.mutedFg}` : cores.mutedFg;
+  const corArea = corDoStatus(statusMedia, cores);
 
-  // SVG <paint>: só é válido ter "url(#x) <cor-fallback>" quando o primeiro
-  // token é um url(). Sem gradiente (KPI sem meta: pedidos/churn/
-  // variacao_ticket), o stroke é uma cor só — concatenar duas cores gera
-  // um paint inválido e a LINHA SOME.
-  const strokeLinha = stops
-    ? `url(#${gradId}) ${cores.mutedFg}`
-    : cores.mutedFg;
+  // ── Marcadores de máximo e mínimo do período (item 4) ─────────────
+  let idxMax = -1;
+  let idxMin = -1;
+  pontos.forEach((p, i) => {
+    if (p.valor === null) return;
+    if (idxMax === -1 || p.valor > (pontos[idxMax].valor ?? -Infinity)) idxMax = i;
+    if (idxMin === -1 || p.valor < (pontos[idxMin].valor ?? Infinity)) idxMin = i;
+  });
+  const mesMax = idxMax >= 0 ? pontos[idxMax].mesRef : null;
+  const mesMin = idxMin >= 0 ? pontos[idxMin].mesRef : null;
 
   return (
     <div className="space-y-3">
@@ -102,17 +140,17 @@ export function KpiPrincipalCard({
               : "Histórico mensal"}
           </p>
         </div>
-        {ultimoComValor && (
+        {media !== null && (
           <div className="text-right">
             <p
               className={`ds-display text-2xl font-semibold tabular-nums ${classeTextoStatus(
-                ultimoComValor.status,
+                statusMedia,
               )}`}
             >
-              {formatKpiValue(ultimoComValor.valor, valueType)}
+              {formatKpiValue(media, valueType)}
             </p>
             <p className="text-muted-foreground text-[10px] tracking-wider uppercase">
-              {ultimoComValor.label}
+              média
             </p>
           </div>
         )}
@@ -123,7 +161,7 @@ export function KpiPrincipalCard({
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={pontos}
-              margin={{ top: 10, right: 12, left: -8, bottom: 0 }}
+              margin={{ top: 12, right: 16, left: -4, bottom: 0 }}
             >
               <defs>
                 {stops && (
@@ -133,6 +171,10 @@ export function KpiPrincipalCard({
                     ))}
                   </linearGradient>
                 )}
+                <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor={corArea} stopOpacity={0.26} />
+                  <stop offset="1" stopColor={corArea} stopOpacity={0} />
+                </linearGradient>
               </defs>
 
               <CartesianGrid
@@ -150,8 +192,8 @@ export function KpiPrincipalCard({
               />
 
               <YAxis
-                width={64}
-                domain={["auto", "auto"]}
+                width={70}
+                domain={yDomain}
                 tickFormatter={(v: number) => formatKpiValue(v, valueType)}
                 tickLine={false}
                 axisLine={false}
@@ -162,10 +204,17 @@ export function KpiPrincipalCard({
                 content={({ active, payload }) => {
                   if (!active || !payload || !payload.length) return null;
                   const p = payload[0].payload as PontoSerie;
+                  const extremo =
+                    p.mesRef === mesMax
+                      ? " · máx do período"
+                      : p.mesRef === mesMin
+                        ? " · mín do período"
+                        : "";
                   return (
                     <div className="bg-popover border-border/80 space-y-1 rounded-lg border p-3 font-sans shadow-md">
                       <p className="text-foreground text-[11px] font-semibold tracking-wider uppercase">
                         {p.label}
+                        {extremo}
                       </p>
                       <div className="bg-border/60 my-1 h-px" />
                       <p className="text-muted-foreground text-xs">
@@ -187,19 +236,30 @@ export function KpiPrincipalCard({
                 }}
               />
 
+              <Area
+                type="monotone"
+                dataKey="valor"
+                stroke="none"
+                fill={`url(#${areaId})`}
+                isAnimationActive={!estatico}
+                animationDuration={estatico ? 0 : 350}
+                connectNulls
+                activeDot={false}
+              />
+
               {metaLinha !== null && (
                 <ReferenceLine
                   y={metaLinha}
-                  stroke={cores.border}
-                  strokeDasharray="4 4"
-                  strokeOpacity={0.8}
+                  stroke={cores.mutedFg}
+                  strokeDasharray="6 4"
+                  strokeWidth={1.5}
                   label={{
-                    value: `Meta: ${formatKpiValue(metaLinha, valueType)}`,
-                    position: "insideBottomLeft",
+                    value: `Meta ${formatKpiValue(metaLinha, valueType)}`,
+                    position: "insideTopRight",
                     fill: cores.mutedFg,
-                    fontSize: 10,
-                    fontWeight: 600,
-                    offset: 5,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    dy: -4,
                   }}
                 />
               )}
@@ -208,7 +268,7 @@ export function KpiPrincipalCard({
                 type="monotone"
                 dataKey="valor"
                 stroke={strokeLinha}
-                strokeWidth={2.5}
+                strokeWidth={3}
                 isAnimationActive={!estatico}
                 animationDuration={estatico ? 0 : 350}
                 animationEasing="ease-out"
@@ -227,16 +287,30 @@ export function KpiPrincipalCard({
                   ) {
                     return <g key={`empty-${props.cx}-${props.cy}`} />;
                   }
+                  const cor = corDoStatus(payload.status, cores);
+                  const ehExtremo =
+                    payload.mesRef === mesMax || payload.mesRef === mesMin;
                   return (
-                    <circle
-                      key={`dot-${payload.mesRef}`}
-                      cx={cx}
-                      cy={cy}
-                      r={4}
-                      stroke={cores.background}
-                      strokeWidth={2}
-                      fill={corDoStatus(payload.status, cores)}
-                    />
+                    <g key={`dot-${payload.mesRef}`}>
+                      {ehExtremo && (
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={9}
+                          fill="none"
+                          stroke={cores.mutedFg}
+                          strokeWidth={1.5}
+                        />
+                      )}
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={ehExtremo ? 5.5 : 3.5}
+                        stroke={cores.background}
+                        strokeWidth={2}
+                        fill={cor}
+                      />
+                    </g>
                   );
                 }}
                 activeDot={{ r: 6 }}

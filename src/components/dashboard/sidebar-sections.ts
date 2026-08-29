@@ -58,7 +58,10 @@ const ALL_SECTIONS: SidebarSection[] = [
     divider: "OUTROS DADOS",
     items: [
       { label: "Diário", href: "/operacao/diario" },
-      { label: "Análise de Operadores", href: "/operacao/analise-operadores" },
+      {
+        label: "Operação - Análise de Operadores",
+        href: "/operacao/analise-operadores",
+      },
     ],
   },
   {

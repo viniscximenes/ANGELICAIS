@@ -11,6 +11,7 @@ export type ChartColors = {
   border: string;
   mutedFg: string;
   background: string;
+  primary: string;
 };
 
 const FALLBACK: ChartColors = {
@@ -20,28 +21,72 @@ const FALLBACK: ChartColors = {
   border: "#3f3f46",
   mutedFg: "#71717a",
   background: "#0a0a0a",
+  primary: "#2563eb",
+};
+
+const TOKENS: (keyof ChartColors)[] = [
+  "success",
+  "danger",
+  "warning",
+  "border",
+  "mutedFg",
+  "background",
+  "primary",
+];
+
+const CSS_VAR: Record<keyof ChartColors, string> = {
+  success: "--success",
+  danger: "--danger",
+  warning: "--warning",
+  border: "--border",
+  mutedFg: "--muted-foreground",
+  background: "--background",
+  primary: "--primary",
 };
 
 /**
- * Cores do tema atual já RESOLVIDAS (valor computado, não `var(--x)`) — os
- * gráficos deste relatório são serializados isoladamente num <img> pela
- * exportação PNG/PDF, e `var()` não resolve dentro do SVG nesse contexto
- * (mesmo motivo do tratamento em retencao/operador-detalhe-dialog.tsx).
- * Use estas cores em TODA cor passada ao Recharts (stroke, fill, <stop>).
+ * Lê os tokens do tema CLARO (`[data-theme="light"]` de globals.css) a partir
+ * de um elemento-sonda destacado — sem tocar em `<html>` nem no tema da
+ * sessão. Usado na captura PNG/PDF, que é sempre forçada em tema claro.
  */
-export function useChartColors(): ChartColors {
+function lerTokensTemaClaro(): ChartColors {
+  if (typeof document === "undefined") return FALLBACK;
+  const probe = document.createElement("div");
+  probe.setAttribute("data-theme", "light");
+  probe.style.display = "none";
+  document.body.appendChild(probe);
+  const cs = getComputedStyle(probe);
+  const cores = { ...FALLBACK };
+  for (const t of TOKENS) {
+    cores[t] = cs.getPropertyValue(CSS_VAR[t]).trim() || FALLBACK[t];
+  }
+  probe.remove();
+  return cores;
+}
+
+/**
+ * Cores do tema já RESOLVIDAS (valor computado, não `var(--x)`) — os gráficos
+ * deste relatório são serializados isoladamente num <img> pela exportação
+ * PNG/PDF, e `var()` não resolve dentro do SVG nesse contexto (mesmo motivo
+ * do tratamento em retencao/operador-detalhe-dialog.tsx).
+ *
+ * @param forceLight quando true, resolve contra os tokens de `[data-theme="light"]`
+ * (a captura sempre sai em tema claro), independente do tema da sessão.
+ */
+export function useChartColors(forceLight = false): ChartColors {
   const [cores, setCores] = useState<ChartColors>(FALLBACK);
 
   useEffect(() => {
-    setCores({
-      success: resolverTokenCss("--success", FALLBACK.success),
-      danger: resolverTokenCss("--danger", FALLBACK.danger),
-      warning: resolverTokenCss("--warning", FALLBACK.warning),
-      border: resolverTokenCss("--border", FALLBACK.border),
-      mutedFg: resolverTokenCss("--muted-foreground", FALLBACK.mutedFg),
-      background: resolverTokenCss("--background", FALLBACK.background),
-    });
-  }, []);
+    if (forceLight) {
+      setCores(lerTokensTemaClaro());
+      return;
+    }
+    const cs = { ...FALLBACK };
+    for (const t of TOKENS) {
+      cs[t] = resolverTokenCss(CSS_VAR[t], FALLBACK[t]);
+    }
+    setCores(cs);
+  }, [forceLight]);
 
   return cores;
 }

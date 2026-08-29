@@ -14,7 +14,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { formatIntervaloMesRef } from "@/lib/kpi/analise-operadores/format-mes-ref";
+import { Switch } from "@/components/ui/switch";
+import {
+  formatIntervaloMesRef,
+  formatMesRefCurto,
+} from "@/lib/kpi/analise-operadores/format-mes-ref";
 import { getAnaliseOperadorAction } from "@/lib/kpi/analise-operadores/get-analise-operador-action";
 import {
   PERIODO_LABELS,
@@ -59,6 +63,7 @@ export function AnaliseOperadoresSection({
 }: Props) {
   const [operatorEmail, setOperatorEmail] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState<Periodo>(PERIODO_PADRAO);
+  const [incluirMesAtual, setIncluirMesAtual] = useState(true);
   const [data, setData] = useState<AnaliseOperadorSerial | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [geradoEm, setGeradoEm] = useState<string>("");
@@ -67,7 +72,7 @@ export function AnaliseOperadoresSection({
   const [popoverAberto, setPopoverAberto] = useState(false);
   const [busca, setBusca] = useState("");
 
-  const reportRef = useRef<HTMLDivElement>(null);
+  // Raiz do layout offscreen (tema claro) capturado por PNG e PDF.
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const operadorSelecionado = operadores.find((o) => o.email === operatorEmail);
@@ -81,7 +86,11 @@ export function AnaliseOperadoresSection({
     }
 
     startTransition(async () => {
-      const res = await getAnaliseOperadorAction({ operatorEmail, periodo });
+      const res = await getAnaliseOperadorAction({
+        operatorEmail,
+        periodo,
+        incluirMesAtual,
+      });
       if (res.success) {
         setData(res.data);
         setErro(null);
@@ -92,7 +101,7 @@ export function AnaliseOperadoresSection({
         toast.error(res.error);
       }
     });
-  }, [operatorEmail, periodo]);
+  }, [operatorEmail, periodo, incluirMesAtual]);
 
   const operadoresFiltrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -210,7 +219,7 @@ export function AnaliseOperadoresSection({
             />
           )}
           <ExportPngButton
-            targetRef={reportRef}
+            targetRef={pdfRef}
             filenameBase={filenameBase}
             disabled={!temRelatorio || isPending}
           />
@@ -222,6 +231,24 @@ export function AnaliseOperadoresSection({
           />
         </div>
       </div>
+
+      {/* ── Linha auxiliar: incluir mês atual ─────────────────── */}
+      <label className="flex w-fit cursor-pointer items-center gap-2 text-xs">
+        <Switch
+          checked={incluirMesAtual}
+          onCheckedChange={setIncluirMesAtual}
+          aria-label="Incluir mês atual (ainda não fechado)"
+        />
+        <span className="text-muted-foreground">
+          Incluir mês atual (ainda não fechado)
+        </span>
+        {data && !incluirMesAtual && data.mesAtualTinhaDado && (
+          <span className="text-muted-foreground/70">
+            — {formatMesRefCurto(data.mesAtualRef)} oculto do gráfico, quartil e
+            média
+          </span>
+        )}
+      </label>
 
       {/* ── Estados ───────────────────────────────────────────── */}
       {!mesMaisRecenteDisponivel && (
@@ -251,12 +278,7 @@ export function AnaliseOperadoresSection({
       {/* ── Relatório ─────────────────────────────────────────── */}
       {temRelatorio && data && (
         <>
-          <div
-            ref={reportRef}
-            data-analise-png
-            style={{ backgroundColor: "var(--background)" }}
-            className="space-y-8"
-          >
+          <div className="space-y-8">
             <IdentificacaoBloco meta={meta} />
 
             <div className="space-y-10">

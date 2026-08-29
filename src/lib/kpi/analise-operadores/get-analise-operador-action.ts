@@ -26,6 +26,8 @@ type GetAnaliseOperadorResult =
 export async function getAnaliseOperadorAction(input: {
   operatorEmail: string;
   periodo: string;
+  /** default true — inclui o mês calendário corrente (ainda não fechado). */
+  incluirMesAtual?: boolean;
 }): Promise<GetAnaliseOperadorResult> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Não autenticado" };
@@ -61,6 +63,7 @@ export async function getAnaliseOperadorAction(input: {
     operatorEmailCandidates,
     periodo,
     mesMaisRecenteDisponivel,
+    incluirMesAtual: input.incluirMesAtual ?? true,
   });
 
   return { success: true, data };
