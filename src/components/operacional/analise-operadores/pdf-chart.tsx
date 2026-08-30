@@ -14,21 +14,39 @@ import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import { foraDeOperacao } from "@/lib/kpi/analise-operadores/meta-status";
 import type { KpiSerie, PontoSerie } from "@/lib/kpi/analise-operadores/serial-types";
 
-import { useChartColors } from "./use-chart-colors";
-
 /**
- * Gráfico compacto (500×180, sem card/header/fundo do site) capturado como
- * imagem e colado no PDF. Mesma coloração POR SEGMENTO (linear, sólida, sem
- * gradiente) do KpiPrincipalCard — mantida em sincronia manualmente com
- * `kpi-principal-card.tsx`. Cores sempre em tema claro (`useChartColors(true)`).
+ * Gráfico REAL (Recharts) dos dados do operador, dimensionado pequeno para
+ * caber na `.chart-area` do documento PDF. Paleta FIXA passada por prop (o
+ * documento é standalone em light — não usa tokens do tema do site). Mesma
+ * coloração POR SEGMENTO (linear, sólida, quebra exata no cruzamento da
+ * meta) do KpiPrincipalCard da tela — mantida em sincronia manualmente.
  */
-const W = 500;
-const H = 180;
+export type PdfChartPalette = {
+  /** cor de "dentro da meta" (verde). */
+  ok: string;
+  /** cor de "fora da meta" (vermelho). */
+  bad: string;
+  /** linhas de grade. */
+  grid: string;
+  /** texto de eixo / cor neutra da linha sem meta. */
+  muted: string;
+  /** linha tracejada da meta. */
+  meta: string;
+};
 
 type PontoXY = PontoSerie & { x: number };
 
-export function PdfChart({ serie }: { serie: KpiSerie }) {
-  const cores = useChartColors(true);
+export function PdfChart({
+  serie,
+  width,
+  height,
+  palette,
+}: {
+  serie: KpiSerie;
+  width: number;
+  height: number;
+  palette: PdfChartPalette;
+}) {
   const { pontos, metaLinha, valueType, direction } = serie;
   const n = pontos.length;
 
@@ -63,9 +81,9 @@ export function PdfChart({ serie }: { serie: KpiSerie }) {
   const corPonto = (v: number) =>
     temMetaBinaria
       ? dentroDaMeta(v)
-        ? cores.success
-        : cores.danger
-      : cores.mutedFg;
+        ? palette.ok
+        : palette.bad
+      : palette.muted;
 
   const idxPlot = pontos
     .map((p, i) => (p.valorPlot !== null ? i : -1))
@@ -84,7 +102,7 @@ export function PdfChart({ serie }: { serie: KpiSerie }) {
           { x: ia, y: va },
           { x: ib, y: vb },
         ],
-        cor: cores.mutedFg,
+        cor: palette.muted,
       });
       continue;
     }
@@ -97,7 +115,7 @@ export function PdfChart({ serie }: { serie: KpiSerie }) {
           { x: ia, y: va },
           { x: ib, y: vb },
         ],
-        cor: da ? cores.success : cores.danger,
+        cor: da ? palette.ok : palette.bad,
       });
     } else {
       const t = (meta - va) / (vb - va);
@@ -107,14 +125,14 @@ export function PdfChart({ serie }: { serie: KpiSerie }) {
           { x: ia, y: va },
           { x: xc, y: meta },
         ],
-        cor: da ? cores.success : cores.danger,
+        cor: da ? palette.ok : palette.bad,
       });
       segmentos.push({
         pts: [
           { x: xc, y: meta },
           { x: ib, y: vb },
         ],
-        cor: db ? cores.success : cores.danger,
+        cor: db ? palette.ok : palette.bad,
       });
     }
   }
@@ -137,23 +155,19 @@ export function PdfChart({ serie }: { serie: KpiSerie }) {
 
   return (
     <ComposedChart
-      width={W}
-      height={H}
+      width={width}
+      height={height}
       data={chartData}
-      margin={{ top: 16, right: 14, left: 2, bottom: 2 }}
+      margin={{ top: 16, right: 12, left: 0, bottom: 2 }}
     >
       <defs>
         <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={cores.mutedFg} stopOpacity={0.1} />
-          <stop offset="1" stopColor={cores.mutedFg} stopOpacity={0} />
+          <stop offset="0" stopColor={palette.muted} stopOpacity={0.08} />
+          <stop offset="1" stopColor={palette.muted} stopOpacity={0} />
         </linearGradient>
       </defs>
 
-      <CartesianGrid
-        vertical={false}
-        stroke={cores.border}
-        strokeOpacity={0.35}
-      />
+      <CartesianGrid vertical={false} stroke={palette.grid} />
 
       <XAxis
         type="number"
@@ -164,15 +178,15 @@ export function PdfChart({ serie }: { serie: KpiSerie }) {
         tickFormatter={(i: number) => chartData[i]?.label ?? ""}
         tickLine={false}
         axisLine={false}
-        tick={{ fill: cores.mutedFg, fontSize: 10 }}
+        tick={{ fill: palette.muted, fontSize: 9.5 }}
       />
       <YAxis
-        width={58}
+        width={54}
         domain={yDomain}
         tickFormatter={(v: number) => formatKpiValue(v, valueType)}
         tickLine={false}
         axisLine={false}
-        tick={{ fill: cores.mutedFg, fontSize: 9 }}
+        tick={{ fill: palette.muted, fontSize: 9 }}
       />
 
       <Area
@@ -188,9 +202,15 @@ export function PdfChart({ serie }: { serie: KpiSerie }) {
       {metaLinha !== null && (
         <ReferenceLine
           y={metaLinha}
-          stroke={cores.mutedFg}
-          strokeDasharray="6 4"
-          strokeWidth={1.25}
+          stroke={palette.meta}
+          strokeDasharray="4 3"
+          strokeWidth={1.2}
+          label={{
+            value: `Meta ${formatKpiValue(metaLinha, valueType)}`,
+            position: "insideTopRight",
+            fill: palette.muted,
+            fontSize: 9,
+          }}
         />
       )}
 
@@ -198,16 +218,13 @@ export function PdfChart({ serie }: { serie: KpiSerie }) {
         <ReferenceLine
           key={`fora-${p.mesRef}`}
           x={p.x}
-          stroke={
-            p.statusOperador === "desligado" ? cores.mutedFg : cores.warning
-          }
+          stroke={palette.muted}
           strokeDasharray="3 3"
           strokeWidth={1}
           label={{
             value: p.metaStatusRotulo ?? "",
             position: "top",
-            fill:
-              p.statusOperador === "desligado" ? cores.mutedFg : cores.warning,
+            fill: palette.muted,
             fontSize: 8,
             fontWeight: 700,
           }}
@@ -221,7 +238,7 @@ export function PdfChart({ serie }: { serie: KpiSerie }) {
           dataKey="y"
           type="linear"
           stroke={seg.cor}
-          strokeWidth={2.5}
+          strokeWidth={2.2}
           dot={false}
           activeDot={false}
           isAnimationActive={false}
@@ -246,17 +263,26 @@ export function PdfChart({ serie }: { serie: KpiSerie }) {
           ) {
             return <g key={`empty-${props.cx}-${props.cy}`} />;
           }
+          const cor = corPonto(payload.valorPlot);
           const ehExtremo =
             payload.mesRef === mesMax || payload.mesRef === mesMin;
-          return (
+          return ehExtremo ? (
             <circle
               key={`dot-${payload.mesRef}`}
               cx={cx}
               cy={cy}
-              r={ehExtremo ? 4 : 2.75}
-              stroke="#ffffff"
-              strokeWidth={1.5}
-              fill={corPonto(payload.valorPlot)}
+              r={4}
+              fill="#ffffff"
+              stroke={cor}
+              strokeWidth={2.5}
+            />
+          ) : (
+            <circle
+              key={`dot-${payload.mesRef}`}
+              cx={cx}
+              cy={cy}
+              r={3}
+              fill={cor}
             />
           );
         }}
