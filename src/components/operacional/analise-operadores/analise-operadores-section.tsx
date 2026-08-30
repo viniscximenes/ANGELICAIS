@@ -36,7 +36,7 @@ import { IdentificacaoBloco } from "./identificacao-bloco";
 import { KpiPrincipalCard } from "./kpi-principal-card";
 import { MetaTxRetencaoPopover } from "./meta-tx-retencao-popover";
 import { KpiSecundariosGrid } from "./kpi-secundarios-grid";
-import { RelatorioPdfLayout } from "./relatorio-pdf-layout";
+import { PdfChartsLayout } from "./pdf-charts-layout";
 
 type Operador = { email: string; nome: string };
 
@@ -222,8 +222,9 @@ export function AnaliseOperadoresSection({
             />
           )}
           <ExportPdfButton
-            pagesRootRef={pdfRef}
+            data={data}
             meta={meta}
+            chartsRootRef={pdfRef}
             filenameBase={filenameBase}
             disabled={!temRelatorio || isPending}
           />
@@ -301,7 +302,7 @@ export function AnaliseOperadoresSection({
             <KpiSecundariosGrid series={data.secundarios} />
           </div>
 
-          <RelatorioPdfLayout ref={pdfRef} data={data} meta={meta} />
+          <PdfChartsLayout ref={pdfRef} data={data} />
         </>
       )}
     </div>

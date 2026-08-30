@@ -16,6 +16,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lenis": "^1.3.23",
     "modern-screenshot": "^4.7.0",
     "motion": "^12.43.0",
