@@ -15,7 +15,7 @@ import {
   getQuartisHistoricoOperador,
   type QuartilPonto,
 } from "./get-quartis-historico";
-import { resolveMesRefInicial, type Periodo } from "./periodo";
+import { resolveJanela, type Periodo } from "./periodo";
 
 type StatusKpi = "success" | "warning" | "danger" | "neutral";
 
@@ -136,7 +136,15 @@ export async function buildAnaliseOperadorSerial(params: {
     };
   }
 
-  const mesRefInicial = resolveMesRefInicial(mesMaisRecenteDisponivel, periodo);
+  // Janela de N meses. O toggle desliza o FIM (inclui ou não o mês atual) —
+  // não corta um mês de uma janela fixa. `meses` é a sequência completa de
+  // N meses; a mesma janela alimenta histórico, quartil e média.
+  const janela = resolveJanela({
+    mesMaisRecenteDisponivel,
+    periodo,
+    incluirMesAtual,
+    mesAtualRef,
+  });
   const definitions = await getKpiDefinitions();
 
   // Split LOCAL desta feature (PRINCIPAIS_SLUGS), não kpi_definitions.group_type.
@@ -159,23 +167,23 @@ export async function buildAnaliseOperadorSerial(params: {
   const ranqueaveisDefs = principaisDefs.filter(isRanqueavel);
 
   const [historico, quartis] = await Promise.all([
-    getHistoricoOperador({ operatorEmailCandidates, mesRefInicial }),
+    getHistoricoOperador({
+      operatorEmailCandidates,
+      mesRefInicial: janela.inicio,
+      mesRefFinal: janela.fim,
+    }),
     getQuartisHistoricoOperador({
       operatorEmailCandidates,
-      mesRefInicial,
+      mesRefInicial: janela.inicio,
+      mesRefFinal: janela.fim,
       ranqueaveisDefs,
     }),
   ]);
 
-  const mesesComDado = [...historico.porMes.keys()].sort();
-  const mesAtualTinhaDado = mesesComDado.includes(mesAtualRef);
-
-  // Toggle "Incluir mês atual (ainda não fechado)": quando desligado, o mês
-  // calendário corrente some do histórico, do quartil e da média — como se
-  // não existisse no período.
-  const meses = incluirMesAtual
-    ? mesesComDado
-    : mesesComDado.filter((m) => m !== mesAtualRef);
+  // Sempre N meses (a sequência completa da janela), mesmo os sem snapshot
+  // (viram gap no gráfico). O toggle já deslizou a janela em resolveJanela.
+  const meses = janela.meses;
+  const mesAtualTinhaDado = historico.porMes.has(mesAtualRef);
 
   const txDef = definitions.find((d) => d.slug === TX_RETENCAO_SLUG) ?? null;
   const metaTxRetencaoPadrao = txDef ? metaLinhaDaDefinicao(txDef) : null;

@@ -242,8 +242,8 @@ export function AnaliseOperadoresSection({
         </span>
         {data && !incluirMesAtual && data.mesAtualTinhaDado && (
           <span className="text-muted-foreground/70">
-            — {formatMesRefCurto(data.mesAtualRef)} oculto do gráfico, quartil e
-            média
+            — janela termina antes de {formatMesRefCurto(data.mesAtualRef)} (
+            {formatIntervaloMesRef(data.meses)})
           </span>
         )}
       </label>

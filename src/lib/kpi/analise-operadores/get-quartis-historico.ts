@@ -43,9 +43,11 @@ const PAGE_SIZE = 1000;
 export async function getQuartisHistoricoOperador(params: {
   operatorEmailCandidates: string[];
   mesRefInicial: string | null;
+  mesRefFinal?: string | null;
   ranqueaveisDefs: KpiDefinition[];
 }): Promise<QuartisHistorico> {
-  const { operatorEmailCandidates, mesRefInicial, ranqueaveisDefs } = params;
+  const { operatorEmailCandidates, mesRefInicial, mesRefFinal, ranqueaveisDefs } =
+    params;
   const resultado: QuartisHistorico = new Map();
 
   if (ranqueaveisDefs.length === 0 || operatorEmailCandidates.length === 0) {
@@ -90,6 +92,9 @@ export async function getQuartisHistoricoOperador(params: {
 
     if (mesRefInicial) {
       query = query.gte("mes_ref", mesRefInicial);
+    }
+    if (mesRefFinal) {
+      query = query.lte("mes_ref", mesRefFinal);
     }
 
     const { data, error } = await query;

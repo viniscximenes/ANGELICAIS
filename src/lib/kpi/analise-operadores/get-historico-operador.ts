@@ -22,8 +22,9 @@ type HistoricoOperador = {
 export async function getHistoricoOperador(params: {
   operatorEmailCandidates: string[];
   mesRefInicial: string | null;
+  mesRefFinal?: string | null;
 }): Promise<HistoricoOperador> {
-  const { operatorEmailCandidates, mesRefInicial } = params;
+  const { operatorEmailCandidates, mesRefInicial, mesRefFinal } = params;
   const porMes = new Map<string, Map<string, number | null>>();
   const statusPorMes = new Map<string, string | null>();
 
@@ -38,6 +39,9 @@ export async function getHistoricoOperador(params: {
 
   if (mesRefInicial) {
     query = query.gte("mes_ref", mesRefInicial);
+  }
+  if (mesRefFinal) {
+    query = query.lte("mes_ref", mesRefFinal);
   }
 
   const { data, error } = await query;
