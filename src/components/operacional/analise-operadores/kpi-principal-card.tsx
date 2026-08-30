@@ -231,7 +231,7 @@ export function KpiPrincipalCard({
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={chartData}
-              margin={{ top: 14, right: 18, left: -4, bottom: 0 }}
+              margin={{ top: 16, right: 14, left: -4, bottom: 0 }}
             >
               <defs>
                 <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
@@ -250,7 +250,12 @@ export function KpiPrincipalCard({
               <XAxis
                 type="number"
                 dataKey="x"
-                domain={[-0.3, n - 0.7]}
+                // Domínio EXATO [0, n-1]: 1º ponto rente à esquerda, último
+                // rente à direita, independente de n (3/6/12). O respiro
+                // para as bolinhas das pontas vem da `margin` em px (fixa),
+                // não de padding no domínio — que seria proporcionalmente
+                // enorme com poucos pontos e deixava vazio à esquerda.
+                domain={n > 1 ? [0, n - 1] : [-0.5, 0.5]}
                 ticks={chartData.map((_, i) => i)}
                 interval={0}
                 tickFormatter={(i: number) => chartData[i]?.label ?? ""}
