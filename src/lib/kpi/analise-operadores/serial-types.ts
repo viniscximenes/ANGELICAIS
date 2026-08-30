@@ -9,6 +9,7 @@ import { getHistoricoOperador } from "./get-historico-operador";
 import {
   classificarStatusOperadorMes,
   foraDeOperacao,
+  rotuloMetaStatus,
   type StatusOperadorMes,
 } from "./meta-status";
 import {
@@ -31,8 +32,14 @@ export type PontoSerie = {
    */
   valorPlot: number | null;
   status: StatusKpi;
-  /** Status do operador NAQUELE mês (ativo / afastado / desligado). */
+  /** GRUPO interno do status do operador no mês (só p/ decidir exclusão de média/quartil e cor). */
   statusOperador: StatusOperadorMes;
+  /**
+   * Texto EXIBIDO no marcador — mapeado 1:1 do meta_status ORIGINAL do mês
+   * ("Férias", "Afastamento", "Afastamento (Previdência)", "Licença",
+   * "Licença Maternidade", "Movimentação", "Desligado"). null = mês ativo.
+   */
+  metaStatusRotulo: string | null;
   /** Meta "por linha" quando o KPI é per_row (pedidos → forecast_pedidos, churn → forecast_churn). */
   metaPonto: number | null;
   /** Q1 (melhor) … Q4 (pior). null quando o KPI não é ranqueável, o operador não tem valor, ou está fora de operação no mês. */
@@ -205,9 +212,9 @@ export async function buildAnaliseOperadorSerial(params: {
 
     const pontos: PontoSerie[] = meses.map((mesRef) => {
       const valuesBySlug = historico.porMes.get(mesRef) ?? new Map();
-      const statusOperador = classificarStatusOperadorMes(
-        historico.statusPorMes.get(mesRef),
-      );
+      const metaStatusRaw = historico.statusPorMes.get(mesRef);
+      const statusOperador = classificarStatusOperadorMes(metaStatusRaw);
+      const metaStatusRotulo = rotuloMetaStatus(metaStatusRaw);
       const mesForaDeOperacao = foraDeOperacao(statusOperador);
 
       // Status/semáforo pelo group_type REAL da definição (não pelo split
@@ -245,6 +252,7 @@ export async function buildAnaliseOperadorSerial(params: {
         valorPlot: mesForaDeOperacao ? null : valor,
         status,
         statusOperador,
+        metaStatusRotulo,
         metaPonto: cell?.metaPorLinha ?? null,
         quartil: mesForaDeOperacao || !quartilMes ? null : quartilMes.quartil,
       };

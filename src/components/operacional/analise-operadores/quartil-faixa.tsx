@@ -59,12 +59,7 @@ export function QuartilFaixa({ pontos }: { pontos: PontoSerie[] }) {
           const nivel = p.quartil;
           const estilo = nivel ? ESTILO_POR_NIVEL[nivel] : null;
           const fora = foraDeOperacao(p.statusOperador);
-          const textoFora =
-            p.statusOperador === "desligado"
-              ? "Desl."
-              : p.statusOperador === "afastado"
-                ? "Afast."
-                : null;
+          const textoFora = p.metaStatusRotulo;
 
           const cellStyle: CSSProperties = estilo
             ? {
@@ -92,7 +87,7 @@ export function QuartilFaixa({ pontos }: { pontos: PontoSerie[] }) {
                 nivel
                   ? `${p.label}: Q${nivel}`
                   : fora
-                    ? `${p.label}: fora de operação (${textoFora})`
+                    ? `${p.label}: fora de operação (${textoFora ?? "afastado"})`
                     : `${p.label}: sem quartil (KPI não ranqueável ou sem valor)`
               }
             >

@@ -72,8 +72,11 @@ function SecundarioCard({
                       <strong className={classeTextoStatus(p.status)}>
                         {formatKpiValue(p.valor, serie.valueType)}
                       </strong>
-                      {p.statusOperador !== "ativo" && (
-                        <span className="text-[var(--warning)]"> · afastado</span>
+                      {p.metaStatusRotulo && (
+                        <span className="text-[var(--warning)]">
+                          {" "}
+                          · {p.metaStatusRotulo}
+                        </span>
                       )}
                     </div>
                   );

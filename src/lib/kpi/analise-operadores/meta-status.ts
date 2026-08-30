@@ -48,11 +48,25 @@ export function foraDeOperacao(status: StatusOperadorMes): boolean {
   return status === "afastado" || status === "desligado";
 }
 
-/** Rótulo do marcador no gráfico (null para meses ativos). */
-export function rotuloStatusOperadorMes(
-  status: StatusOperadorMes,
+/**
+ * Rótulo amigável do marcador — mapeado 1:1 do valor_texto ORIGINAL
+ * normalizado daquele mês, NÃO do nome do grupo. `null` = mês ativo (sem
+ * marcador). Ordem importa: "AF.PREV"/"AFASTAMENTO PREVIDENCIA" antes de
+ * "AFASTAMENTO"; "LICENCA MATERNIDADE" antes de "LICENCA".
+ */
+export function rotuloMetaStatus(
+  valorTexto: string | null | undefined,
 ): string | null {
-  if (status === "afastado") return "Afastado";
-  if (status === "desligado") return "Desligado";
+  const v = normalizar(valorTexto);
+  if (!v) return null;
+  if (v.startsWith("DESLIGADO")) return "Desligado";
+  if (v.startsWith("FERIAS")) return "Férias";
+  if (v.startsWith("AF.PREV") || v.startsWith("AFASTAMENTO PREV")) {
+    return "Afastamento (Previdência)";
+  }
+  if (v.startsWith("AFASTAMENTO")) return "Afastamento";
+  if (v.startsWith("LICENCA MATERNIDADE")) return "Licença Maternidade";
+  if (v.startsWith("LICENCA")) return "Licença";
+  if (v.startsWith("MOVIMENTACAO")) return "Movimentação";
   return null;
 }

@@ -15,10 +15,7 @@ import {
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
-import {
-  foraDeOperacao,
-  rotuloStatusOperadorMes,
-} from "@/lib/kpi/analise-operadores/meta-status";
+import { foraDeOperacao } from "@/lib/kpi/analise-operadores/meta-status";
 import type { KpiSerie, PontoSerie } from "@/lib/kpi/analise-operadores/serial-types";
 
 import { QuartilFaixa } from "./quartil-faixa";
@@ -285,7 +282,7 @@ export function KpiPrincipalCard({
                       (pp.payload as Partial<PontoSerie>).mesRef !== undefined,
                   )?.payload as PontoSerie | undefined;
                   if (!pt) return null;
-                  const rotuloFora = rotuloStatusOperadorMes(pt.statusOperador);
+                  const rotuloFora = pt.metaStatusRotulo;
                   const extremo =
                     pt.mesRef === mesMax
                       ? " · máx do período"
@@ -357,7 +354,7 @@ export function KpiPrincipalCard({
                   strokeDasharray="3 3"
                   strokeWidth={1}
                   label={{
-                    value: rotuloStatusOperadorMes(p.statusOperador) ?? "",
+                    value: p.metaStatusRotulo ?? "",
                     position: "top",
                     fill:
                       p.statusOperador === "desligado"
