@@ -9,7 +9,7 @@ import type { DiarioCsvRow } from "./parse-diario-csv";
  *
  * REGRA 1 — TEMPO LOGADO
  *   Por operador+dia, soma LOGIN TIME de todas as linhas STATE=Login. Se o
- *   total < 06:20:00, gera uma linha citando o TEMPO FALTANTE (deficit).
+ *   total < 06:20:00, gera uma linha citando o TEMPO REAL LOGADO no dia.
  *
  * REGRA 2 — PAUSAS ATÍPICAS
  *   Só linhas STATE="Not Ready". REASON CODE é classificado em isento /
@@ -74,8 +74,8 @@ export type ReportDiario =
       tema: "Tempo Logado";
       dia: string;
       op: string;
-      /** Deficit HH:MM:SS = 06:20:00 − total logado. */
-      tempoFaltante: string;
+      /** Total real logado HH:MM:SS = soma de LOGIN TIME do operador no dia. */
+      tempoLogado: string;
     };
 
 /** Segundos -> "HH:MM:SS" (hora com no mínimo 2 dígitos). */
@@ -96,7 +96,7 @@ export function textoTempoLogado(
   const j = justificativa.trim() || PLACEHOLDER_JUSTIFICATIVA;
   // Sem pontuação final automática — o texto termina onde a justificativa
   // termina; se quiser um ponto, o gestor digita.
-  return `No dia ${r.dia} o operador ${r.op} registrou ${r.tempoFaltante} de tempo logado devido a ${j}`;
+  return `No dia ${r.dia} o operador ${r.op} registrou ${r.tempoLogado} de tempo logado devido a ${j}`;
 }
 
 type Grupo = {
@@ -179,7 +179,7 @@ export function gerarReportsDiario(
         tema: "Tempo Logado",
         dia: g.dataBr,
         op: g.op,
-        tempoFaltante: formatHMS(META_TEMPO_LOGADO_SEG - g.loginSeg),
+        tempoLogado: formatHMS(g.loginSeg),
       });
     }
   }

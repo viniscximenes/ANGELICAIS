@@ -264,7 +264,7 @@ export function DiarioSection({
                         ) : (
                           <>
                             No dia {r.dia} o operador {r.op} registrou{" "}
-                            {r.tempoFaltante} de tempo logado devido a{" "}
+                            {r.tempoLogado} de tempo logado devido a{" "}
                             <span
                               key={`${r.id}__${resetKey}`}
                               role="textbox"
