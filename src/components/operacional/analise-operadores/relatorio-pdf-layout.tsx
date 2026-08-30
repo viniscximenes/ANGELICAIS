@@ -56,7 +56,7 @@ export const RelatorioPdfLayout = forwardRef<
         <div className="grid grid-cols-2 gap-3">
           {data.principais.map((serie) => {
             const validos = serie.pontos
-              .map((p) => p.valor)
+              .map((p) => p.valorPlot)
               .filter((v): v is number => v !== null);
             const media =
               validos.length > 0

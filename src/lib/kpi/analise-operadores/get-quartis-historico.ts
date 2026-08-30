@@ -5,6 +5,13 @@ import {
 } from "@/lib/kpi/gestor/compute-quartis";
 import type { KpiDefinition } from "@/lib/kpi/types";
 
+import {
+  classificarStatusOperadorMes,
+  foraDeOperacao,
+} from "./meta-status";
+
+const META_STATUS_SLUG = "meta_status";
+
 export type QuartilPonto = {
   /** Q1 = melhor desempenho relativo, Q4 = pior — convenção nativa de computeQuartis. */
   quartil: 1 | 2 | 3 | 4;
@@ -45,7 +52,11 @@ export async function getQuartisHistoricoOperador(params: {
     return resultado;
   }
 
-  const slugs = ranqueaveisDefs.map((d) => d.slug);
+  const slugsRanqueaveis = ranqueaveisDefs.map((d) => d.slug);
+  // Puxa meta_status junto para tirar do ranking os operadores fora de
+  // operação (férias/afastamento/desligado) NAQUELE mês — senão o ranking
+  // continua comparando todo mundo contra posições infladas/rebaixadas.
+  const slugs = [...slugsRanqueaveis, META_STATUS_SLUG];
   const candidatosSet = new Set(
     operatorEmailCandidates.map((e) => e.trim().toLowerCase()),
   );
@@ -54,6 +65,8 @@ export async function getQuartisHistoricoOperador(params: {
 
   // mes_ref → (operator_email → (slug → valor))
   const porMes = new Map<string, Map<string, Map<string, number | null>>>();
+  // mes_ref → (operator_email → valor_texto de meta_status)
+  const statusPorMes = new Map<string, Map<string, string | null>>();
 
   let page = 0;
   let hasMore = true;
@@ -62,10 +75,17 @@ export async function getQuartisHistoricoOperador(params: {
     const from = page * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
+    // Ordem TOTAL determinística (bate com o índice único
+    // operator_email+mes_ref+kpi_slug) — sem ela, .range()/OFFSET pula ou
+    // duplica linhas entre páginas e o ranking sai calculado contra uma
+    // população incompleta.
     let query = supabase
       .from("kpi_monthly_snapshots")
-      .select("operator_email, mes_ref, kpi_slug, valor_numerico")
+      .select("operator_email, mes_ref, kpi_slug, valor_numerico, valor_texto")
       .in("kpi_slug", slugs)
+      .order("mes_ref", { ascending: true })
+      .order("operator_email", { ascending: true })
+      .order("kpi_slug", { ascending: true })
       .range(from, to);
 
     if (mesRefInicial) {
@@ -84,6 +104,15 @@ export async function getQuartisHistoricoOperador(params: {
     for (const row of rows) {
       const mesRef = row.mes_ref as string;
       const email = (row.operator_email as string).trim().toLowerCase();
+
+      if (row.kpi_slug === META_STATUS_SLUG) {
+        if (!statusPorMes.has(mesRef)) statusPorMes.set(mesRef, new Map());
+        statusPorMes
+          .get(mesRef)!
+          .set(email, (row.valor_texto as string | null) ?? null);
+        continue;
+      }
+
       if (!porMes.has(mesRef)) porMes.set(mesRef, new Map());
       const porOperador = porMes.get(mesRef)!;
       if (!porOperador.has(email)) porOperador.set(email, new Map());
@@ -97,9 +126,20 @@ export async function getQuartisHistoricoOperador(params: {
   }
 
   for (const [mesRef, porOperador] of porMes.entries()) {
+    const statusDoMes = statusPorMes.get(mesRef);
+
     const lista: OperadorParaQuartil[] = [];
     for (const [email, valores] of porOperador.entries()) {
-      lista.push({ email, valores });
+      // Operador fora de operação neste mês → zera todos os valores dele
+      // (computeQuartis já ignora nulls) para não poluir o ranking.
+      const status = classificarStatusOperadorMes(statusDoMes?.get(email));
+      if (foraDeOperacao(status)) {
+        const zerado = new Map<string, number | null>();
+        for (const s of slugsRanqueaveis) zerado.set(s, null);
+        lista.push({ email, valores: zerado });
+      } else {
+        lista.push({ email, valores });
+      }
     }
 
     const quartisDoMes = computeQuartis(lista, ranqueaveisDefs);

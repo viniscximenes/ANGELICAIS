@@ -7,6 +7,11 @@ import { PRINCIPAIS_SLUGS, TX_RETENCAO_SLUG } from "./constants";
 import { formatMesRefCurto } from "./format-mes-ref";
 import { getHistoricoOperador } from "./get-historico-operador";
 import {
+  classificarStatusOperadorMes,
+  foraDeOperacao,
+  type StatusOperadorMes,
+} from "./meta-status";
+import {
   getQuartisHistoricoOperador,
   type QuartilPonto,
 } from "./get-quartis-historico";
@@ -17,11 +22,20 @@ type StatusKpi = "success" | "warning" | "danger" | "neutral";
 export type PontoSerie = {
   mesRef: string;
   label: string;
+  /** Valor bruto do mês (sempre presente se houver dado — usado no tooltip). */
   valor: number | null;
+  /**
+   * Valor a PLOTAR: igual a `valor`, exceto em meses fora de operação
+   * (férias/afastamento/desligado) onde vira null → gap no gráfico, fora da
+   * média. O valor bruto continua em `valor` para o tooltip.
+   */
+  valorPlot: number | null;
   status: StatusKpi;
+  /** Status do operador NAQUELE mês (ativo / afastado / desligado). */
+  statusOperador: StatusOperadorMes;
   /** Meta "por linha" quando o KPI é per_row (pedidos → forecast_pedidos, churn → forecast_churn). */
   metaPonto: number | null;
-  /** Q1 (melhor) … Q4 (pior). null quando o KPI não é ranqueável ou o operador não tem valor no mês. */
+  /** Q1 (melhor) … Q4 (pior). null quando o KPI não é ranqueável, o operador não tem valor, ou está fora de operação no mês. */
   quartil: 1 | 2 | 3 | 4 | null;
 };
 
@@ -183,6 +197,10 @@ export async function buildAnaliseOperadorSerial(params: {
 
     const pontos: PontoSerie[] = meses.map((mesRef) => {
       const valuesBySlug = historico.porMes.get(mesRef) ?? new Map();
+      const statusOperador = classificarStatusOperadorMes(
+        historico.statusPorMes.get(mesRef),
+      );
+      const mesForaDeOperacao = foraDeOperacao(statusOperador);
 
       // Status/semáforo pelo group_type REAL da definição (não pelo split
       // local): pedidos/churn/variacao_ticket viram "secundários" nesta tela
@@ -216,9 +234,11 @@ export async function buildAnaliseOperadorSerial(params: {
         mesRef,
         label: formatMesRefCurto(mesRef),
         valor,
+        valorPlot: mesForaDeOperacao ? null : valor,
         status,
+        statusOperador,
         metaPonto: cell?.metaPorLinha ?? null,
-        quartil: quartilMes ? quartilMes.quartil : null,
+        quartil: mesForaDeOperacao || !quartilMes ? null : quartilMes.quartil,
       };
     });
 

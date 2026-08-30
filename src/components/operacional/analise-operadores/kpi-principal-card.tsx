@@ -15,6 +15,10 @@ import {
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
+import {
+  foraDeOperacao,
+  rotuloStatusOperadorMes,
+} from "@/lib/kpi/analise-operadores/meta-status";
 import type { KpiSerie, PontoSerie } from "@/lib/kpi/analise-operadores/serial-types";
 
 import { QuartilFaixa } from "./quartil-faixa";
@@ -64,30 +68,29 @@ export function KpiPrincipalCard({
 }) {
   const cores = useChartColors(forceLight);
   const rawId = useId().replace(/[:]/g, "");
-  const gradId = `g-${rawId}`;
+  const segId = `seg-${rawId}`;
   const areaId = `a-${rawId}`;
 
   const { pontos, metaLinha, valueType, direction, displayName } = serie;
 
-  const valoresValidos = pontos
-    .map((p) => p.valor)
+  // Meses fora de operação (férias/afastamento/desligado) não entram em
+  // média nem no gráfico — só no tooltip. `valorPlot` já vem null nesses.
+  const valoresPlot = pontos
+    .map((p) => p.valorPlot)
     .filter((v): v is number => v !== null);
 
-  // ── Cabeçalho: MÉDIA do período (item 7) ────────────────────────────
+  // ── Cabeçalho: MÉDIA do período ────────────────────────────────────
   const media =
-    valoresValidos.length > 0
-      ? valoresValidos.reduce((a, b) => a + b, 0) / valoresValidos.length
+    valoresPlot.length > 0
+      ? valoresPlot.reduce((a, b) => a + b, 0) / valoresPlot.length
       : null;
   const statusMedia = statusDaMedia(media, metaLinha, direction);
 
-  // ── Domínio dinâmico do eixo Y (item 4) ────────────────────────────
-  // Padding proporcional à amplitude REAL dos pontos — faz a variação de
-  // poucos pontos aparecer mesmo em janelas curtas. A meta só estica a
-  // borda (sem ganhar padding), pra ReferenceLine continuar visível.
+  // ── Domínio dinâmico do eixo Y ────────────────────────────────────
   let yDomain: [number, number] | [string, string] = ["auto", "auto"];
-  if (valoresValidos.length > 0) {
-    const lo = Math.min(...valoresValidos);
-    const hi = Math.max(...valoresValidos);
+  if (valoresPlot.length > 0) {
+    const lo = Math.min(...valoresPlot);
+    const hi = Math.max(...valoresPlot);
     const amp = hi - lo;
     const pad = amp === 0 ? Math.max(Math.abs(hi) * 0.1, 1) : amp * 0.15;
     let dLo = lo - pad;
@@ -100,37 +103,53 @@ export function KpiPrincipalCard({
     yDomain = [dLo, dHi];
   }
 
-  // ── Gradiente vertical que troca de cor na meta (stroke da linha) ──
-  let stops: { offset: number; cor: string }[] | null = null;
-  if (metaLinha !== null && valoresValidos.length > 0) {
-    const dataMax = Math.max(...valoresValidos, metaLinha);
-    const dataMin = Math.min(...valoresValidos, metaLinha);
-    let offset =
-      dataMax === dataMin ? 0.5 : (dataMax - metaLinha) / (dataMax - dataMin);
-    offset = Math.min(1, Math.max(0, offset));
-    const corTopo = direction === "higher_better" ? cores.success : cores.danger;
-    const corBase = direction === "higher_better" ? cores.danger : cores.success;
-    stops = [
-      { offset: 0, cor: corTopo },
-      { offset, cor: corTopo },
-      { offset, cor: corBase },
-      { offset: 1, cor: corBase },
-    ];
-  }
-  // SVG <paint>: "url(#x) <cor>" só é válido com url() como 1º token.
-  const strokeLinha = stops ? `url(#${gradId}) ${cores.mutedFg}` : cores.mutedFg;
+  // ── Coloração POR SEGMENTO pelo status de cada ponto ──────────────
+  // Gradiente HORIZONTAL (eixo X): um stop por ponto plotado, com troca
+  // seca no ponto médio entre pontos de status diferente. Cobre todo o
+  // span de pontos plotados (até o último dado real).
+  const idxPlot = pontos
+    .map((p, i) => (p.valorPlot !== null ? i : -1))
+    .filter((i) => i >= 0);
+  const first = idxPlot[0] ?? 0;
+  const last = idxPlot[idxPlot.length - 1] ?? 0;
+  const span = last - first || 1;
+  const frac = (i: number) => (i - first) / span;
+
+  const segStops: { offset: number; cor: string }[] = [];
+  idxPlot.forEach((i, k) => {
+    const cor = corDoStatus(pontos[i].status, cores);
+    if (k > 0) {
+      const prev = idxPlot[k - 1];
+      const corPrev = corDoStatus(pontos[prev].status, cores);
+      if (corPrev !== cor) {
+        const mid = (frac(prev) + frac(i)) / 2;
+        segStops.push({ offset: mid, cor: corPrev });
+        segStops.push({ offset: mid, cor });
+      }
+    }
+    segStops.push({ offset: frac(i), cor });
+  });
+
+  const strokeLinha =
+    idxPlot.length >= 2
+      ? `url(#${segId})`
+      : idxPlot.length === 1
+        ? corDoStatus(pontos[idxPlot[0]].status, cores)
+        : cores.mutedFg;
   const corArea = corDoStatus(statusMedia, cores);
 
-  // ── Marcadores de máximo e mínimo do período (item 4) ─────────────
+  // ── Marcadores de máx/mín (só entre pontos plotados) ──────────────
   let idxMax = -1;
   let idxMin = -1;
-  pontos.forEach((p, i) => {
-    if (p.valor === null) return;
-    if (idxMax === -1 || p.valor > (pontos[idxMax].valor ?? -Infinity)) idxMax = i;
-    if (idxMin === -1 || p.valor < (pontos[idxMin].valor ?? Infinity)) idxMin = i;
-  });
+  for (const i of idxPlot) {
+    const v = pontos[i].valorPlot as number;
+    if (idxMax === -1 || v > (pontos[idxMax].valorPlot as number)) idxMax = i;
+    if (idxMin === -1 || v < (pontos[idxMin].valorPlot as number)) idxMin = i;
+  }
   const mesMax = idxMax >= 0 ? pontos[idxMax].mesRef : null;
   const mesMin = idxMin >= 0 ? pontos[idxMin].mesRef : null;
+
+  const mesesForaOperacao = pontos.filter((p) => foraDeOperacao(p.statusOperador));
 
   return (
     <div className="space-y-3">
@@ -167,18 +186,22 @@ export function KpiPrincipalCard({
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={pontos}
-              margin={{ top: 12, right: 16, left: -4, bottom: 0 }}
+              margin={{ top: 14, right: 16, left: -4, bottom: 0 }}
             >
               <defs>
-                {stops && (
-                  <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                    {stops.map((s, i) => (
-                      <stop key={i} offset={s.offset} stopColor={s.cor} />
+                {idxPlot.length >= 2 && (
+                  <linearGradient id={segId} x1="0" y1="0" x2="1" y2="0">
+                    {segStops.map((s, i) => (
+                      <stop
+                        key={i}
+                        offset={Math.min(1, Math.max(0, s.offset))}
+                        stopColor={s.cor}
+                      />
                     ))}
                   </linearGradient>
                 )}
                 <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor={corArea} stopOpacity={0.26} />
+                  <stop offset="0" stopColor={corArea} stopOpacity={0.24} />
                   <stop offset="1" stopColor={corArea} stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -192,6 +215,7 @@ export function KpiPrincipalCard({
 
               <XAxis
                 dataKey="label"
+                interval="preserveStartEnd"
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: cores.mutedFg, fontSize: 11 }}
@@ -210,6 +234,7 @@ export function KpiPrincipalCard({
                 content={({ active, payload }) => {
                   if (!active || !payload || !payload.length) return null;
                   const p = payload[0].payload as PontoSerie;
+                  const rotuloFora = rotuloStatusOperadorMes(p.statusOperador);
                   const extremo =
                     p.mesRef === mesMax
                       ? " · máx do período"
@@ -229,22 +254,41 @@ export function KpiPrincipalCard({
                           {formatKpiValue(p.valor, valueType)}
                         </strong>
                       </p>
-                      {serie.temQuartil && (
-                        <p className="text-muted-foreground text-xs">
-                          Quartil:{" "}
-                          <strong className="text-foreground">
-                            {p.quartil ? `Q${p.quartil}` : "—"}
-                          </strong>
+                      {rotuloFora ? (
+                        <p className="text-[var(--warning)] text-[11px]">
+                          {rotuloFora} — fora da média e do quartil
                         </p>
+                      ) : (
+                        serie.temQuartil && (
+                          <p className="text-muted-foreground text-xs">
+                            Quartil:{" "}
+                            <strong className="text-foreground">
+                              {p.quartil ? `Q${p.quartil}` : "—"}
+                            </strong>
+                          </p>
+                        )
                       )}
                     </div>
                   );
                 }}
               />
 
-              <Area
+              {/* Série invisível com o valor BRUTO (inclui meses fora de
+                  operação) só para alimentar o tooltip nesses meses. */}
+              <Line
                 type="monotone"
                 dataKey="valor"
+                stroke="transparent"
+                strokeWidth={0}
+                dot={false}
+                activeDot={false}
+                isAnimationActive={false}
+                connectNulls
+              />
+
+              <Area
+                type="monotone"
+                dataKey="valorPlot"
                 stroke="none"
                 fill={`url(#${areaId})`}
                 isAnimationActive={!estatico}
@@ -254,9 +298,6 @@ export function KpiPrincipalCard({
               />
 
               {metaLinha !== null && (
-                // Sem label dentro do gráfico: o valor da meta já está no
-                // header do card ("Meta: X"). Evita a sobreposição do texto
-                // com os ticks do eixo X (e a redundância visual).
                 <ReferenceLine
                   y={metaLinha}
                   stroke={cores.mutedFg}
@@ -265,9 +306,33 @@ export function KpiPrincipalCard({
                 />
               )}
 
+              {mesesForaOperacao.map((p) => (
+                <ReferenceLine
+                  key={`fora-${p.mesRef}`}
+                  x={p.label}
+                  stroke={
+                    p.statusOperador === "desligado"
+                      ? cores.mutedFg
+                      : cores.warning
+                  }
+                  strokeDasharray="3 3"
+                  strokeWidth={1}
+                  label={{
+                    value: rotuloStatusOperadorMes(p.statusOperador) ?? "",
+                    position: "top",
+                    fill:
+                      p.statusOperador === "desligado"
+                        ? cores.mutedFg
+                        : cores.warning,
+                    fontSize: 9,
+                    fontWeight: 700,
+                  }}
+                />
+              ))}
+
               <Line
                 type="monotone"
-                dataKey="valor"
+                dataKey="valorPlot"
                 stroke={strokeLinha}
                 strokeWidth={3}
                 isAnimationActive={!estatico}
@@ -284,7 +349,7 @@ export function KpiPrincipalCard({
                     cx === undefined ||
                     cy === undefined ||
                     !payload ||
-                    payload.valor === null
+                    payload.valorPlot === null
                   ) {
                     return <g key={`empty-${props.cx}-${props.cy}`} />;
                   }

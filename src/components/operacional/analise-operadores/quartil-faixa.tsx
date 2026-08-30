@@ -1,3 +1,4 @@
+import { foraDeOperacao } from "@/lib/kpi/analise-operadores/meta-status";
 import type { PontoSerie } from "@/lib/kpi/analise-operadores/serial-types";
 
 type QuartilNivel = 1 | 2 | 3 | 4;
@@ -39,6 +40,13 @@ export function QuartilFaixa({ pontos }: { pontos: PontoSerie[] }) {
         {pontos.map((p) => {
           const nivel = p.quartil;
           const estilo = nivel ? ESTILO_POR_NIVEL[nivel] : null;
+          const fora = foraDeOperacao(p.statusOperador);
+          const textoFora =
+            p.statusOperador === "desligado"
+              ? "Desl."
+              : p.statusOperador === "afastado"
+                ? "Afast."
+                : null;
           return (
             <div
               key={p.mesRef}
@@ -46,7 +54,9 @@ export function QuartilFaixa({ pontos }: { pontos: PontoSerie[] }) {
               title={
                 nivel
                   ? `${p.label}: Q${nivel}`
-                  : `${p.label}: sem quartil (KPI não ranqueável ou sem valor)`
+                  : fora
+                    ? `${p.label}: fora de operação (${textoFora})`
+                    : `${p.label}: sem quartil (KPI não ranqueável ou sem valor)`
               }
             >
               <div
@@ -59,14 +69,20 @@ export function QuartilFaixa({ pontos }: { pontos: PontoSerie[] }) {
                         borderColor: estilo.bd,
                         opacity: estilo.opacity,
                       }
-                    : {
-                        backgroundColor: "transparent",
-                        color: "var(--muted-foreground)",
-                        borderColor: "var(--border)",
-                      }
+                    : fora
+                      ? {
+                          backgroundColor: "var(--warning-bg)",
+                          color: "var(--warning)",
+                          borderColor: "var(--warning-border)",
+                        }
+                      : {
+                          backgroundColor: "transparent",
+                          color: "var(--muted-foreground)",
+                          borderColor: "var(--border)",
+                        }
                 }
               >
-                {nivel ? `Q${nivel}` : "—"}
+                {nivel ? `Q${nivel}` : fora ? "•" : "—"}
               </div>
               <span className="text-muted-foreground text-[9px] tabular-nums">
                 {p.label}

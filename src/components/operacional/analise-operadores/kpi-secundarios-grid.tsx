@@ -25,8 +25,12 @@ function SecundarioCard({
   forceLight?: boolean;
 }) {
   const cores = useChartColors(forceLight);
-  const ultimo = [...serie.pontos].reverse().find((p) => p.valor !== null);
-  const temSerie = serie.pontos.some((p) => p.valor !== null);
+  // Valor "mais recente" ignora meses fora de operação (férias/afastamento/
+  // desligado) — 0%/100% de afastado não é performance.
+  const ultimo = [...serie.pontos]
+    .reverse()
+    .find((p) => p.valorPlot !== null);
+  const temSerie = serie.pontos.some((p) => p.valorPlot !== null);
 
   const corLinha =
     ultimo?.status === "success"
@@ -68,13 +72,16 @@ function SecundarioCard({
                       <strong className={classeTextoStatus(p.status)}>
                         {formatKpiValue(p.valor, serie.valueType)}
                       </strong>
+                      {p.statusOperador !== "ativo" && (
+                        <span className="text-[var(--warning)]"> · afastado</span>
+                      )}
                     </div>
                   );
                 }}
               />
               <Line
                 type="monotone"
-                dataKey="valor"
+                dataKey="valorPlot"
                 stroke={corLinha}
                 strokeWidth={1.75}
                 dot={false}
