@@ -240,11 +240,14 @@ export function KpiPrincipalCard({
                 </linearGradient>
               </defs>
 
+              {/* Grade SÓLIDA e discreta (mesmo valor nos dois temas). A
+                  única linha tracejada do gráfico é a ReferenceLine da meta
+                  — antes a grade também era tracejada e competia com ela
+                  (bem visível no tema escuro). */}
               <CartesianGrid
                 vertical={false}
                 stroke={cores.border}
-                strokeOpacity={0.4}
-                strokeDasharray="4 4"
+                strokeOpacity={0.35}
               />
 
               <XAxis
