@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import { foraDeOperacao } from "@/lib/kpi/analise-operadores/meta-status";
 import type { PontoSerie } from "@/lib/kpi/analise-operadores/serial-types";
 
@@ -9,22 +11,38 @@ type QuartilNivel = 1 | 2 | 3 | 4;
  * operadores da empresa. Só a posição do operador — nunca nomes/valores de
  * terceiros.
  *
- * `var(--x)` inline aqui é seguro: este bloco é HTML normal (não SVG
- * serializado), o modern-screenshot resolve na captura.
+ * 4 cores ordenadas e distintas: Q1 verde · Q2 amarelo · Q3 laranja · Q4
+ * vermelho. Não há token global de "laranja" — é derivado localmente com
+ * `color-mix(--warning, --danger)` (fica coerente em claro e escuro, sem
+ * mexer em globals.css). `var()`/`color-mix` inline aqui é seguro: HTML
+ * normal, o modern-screenshot resolve na captura (mesmo padrão do StyledCard).
  */
+const LARANJA = "color-mix(in oklch, var(--warning), var(--danger))";
+
 const ESTILO_POR_NIVEL: Record<
   QuartilNivel,
-  { bg: string; fg: string; bd: string; opacity?: number }
+  { bg: string; fg: string; bd: string }
 > = {
-  1: { bg: "var(--success-bg)", fg: "var(--success)", bd: "var(--success-border)" },
-  2: {
+  1: {
     bg: "var(--success-bg)",
     fg: "var(--success)",
     bd: "var(--success-border)",
-    opacity: 0.55,
   },
-  3: { bg: "var(--warning-bg)", fg: "var(--warning)", bd: "var(--warning-border)" },
-  4: { bg: "var(--danger-bg)", fg: "var(--danger)", bd: "var(--danger-border)" },
+  2: {
+    bg: "var(--warning-bg)",
+    fg: "var(--warning)",
+    bd: "var(--warning-border)",
+  },
+  3: {
+    bg: `color-mix(in srgb, ${LARANJA} 15%, transparent)`,
+    fg: LARANJA,
+    bd: `color-mix(in srgb, ${LARANJA} 38%, transparent)`,
+  },
+  4: {
+    bg: "var(--danger-bg)",
+    fg: "var(--danger)",
+    bd: "var(--danger-border)",
+  },
 };
 
 export function QuartilFaixa({ pontos }: { pontos: PontoSerie[] }) {
@@ -47,6 +65,25 @@ export function QuartilFaixa({ pontos }: { pontos: PontoSerie[] }) {
               : p.statusOperador === "afastado"
                 ? "Afast."
                 : null;
+
+          const cellStyle: CSSProperties = estilo
+            ? {
+                backgroundColor: estilo.bg,
+                color: estilo.fg,
+                borderColor: estilo.bd,
+              }
+            : fora
+              ? {
+                  backgroundColor: "var(--warning-bg)",
+                  color: "var(--warning)",
+                  borderColor: "var(--warning-border)",
+                }
+              : {
+                  backgroundColor: "transparent",
+                  color: "var(--muted-foreground)",
+                  borderColor: "var(--border)",
+                };
+
           return (
             <div
               key={p.mesRef}
@@ -61,26 +98,7 @@ export function QuartilFaixa({ pontos }: { pontos: PontoSerie[] }) {
             >
               <div
                 className="ds-mono-sm flex h-6 w-full items-center justify-center rounded border text-[11px] font-semibold tabular-nums"
-                style={
-                  estilo
-                    ? {
-                        backgroundColor: estilo.bg,
-                        color: estilo.fg,
-                        borderColor: estilo.bd,
-                        opacity: estilo.opacity,
-                      }
-                    : fora
-                      ? {
-                          backgroundColor: "var(--warning-bg)",
-                          color: "var(--warning)",
-                          borderColor: "var(--warning-border)",
-                        }
-                      : {
-                          backgroundColor: "transparent",
-                          color: "var(--muted-foreground)",
-                          borderColor: "var(--border)",
-                        }
-                }
+                style={cellStyle}
               >
                 {nivel ? `Q${nivel}` : fora ? "•" : "—"}
               </div>

@@ -40,7 +40,6 @@ function classeTextoStatus(status: StatusKpi): string {
   return "text-foreground";
 }
 
-/** Semáforo simples da MÉDIA contra a meta (mesma regra binária de enrich-with-definitions). */
 function statusDaMedia(
   media: number | null,
   metaLinha: number | null,
@@ -52,6 +51,8 @@ function statusDaMedia(
   return "neutral";
 }
 
+type PontoXY = PontoSerie & { x: number };
+
 export function KpiPrincipalCard({
   serie,
   estatico = false,
@@ -59,27 +60,23 @@ export function KpiPrincipalCard({
   acoes,
 }: {
   serie: KpiSerie;
-  /** Desliga animação — usado na captura offscreen do PDF/PNG, pra não capturar mid-frame. */
   estatico?: boolean;
-  /** Resolve as cores contra o tema claro (captura). */
   forceLight?: boolean;
-  /** Slot à direita do título (ex.: engrenagem de meta). Omitido na captura. */
   acoes?: ReactNode;
 }) {
   const cores = useChartColors(forceLight);
-  const rawId = useId().replace(/[:]/g, "");
-  const segId = `seg-${rawId}`;
-  const areaId = `a-${rawId}`;
+  const areaId = `area-${useId().replace(/[:]/g, "")}`;
 
   const { pontos, metaLinha, valueType, direction, displayName } = serie;
+  const n = pontos.length;
 
-  // Meses fora de operação (férias/afastamento/desligado) não entram em
-  // média nem no gráfico — só no tooltip. `valorPlot` já vem null nesses.
+  const chartData: PontoXY[] = pontos.map((p, i) => ({ ...p, x: i }));
+
   const valoresPlot = pontos
     .map((p) => p.valorPlot)
     .filter((v): v is number => v !== null);
 
-  // ── Cabeçalho: MÉDIA do período ────────────────────────────────────
+  // ── Média do período (ignora meses fora de operação) ──────────────
   const media =
     valoresPlot.length > 0
       ? valoresPlot.reduce((a, b) => a + b, 0) / valoresPlot.length
@@ -103,42 +100,88 @@ export function KpiPrincipalCard({
     yDomain = [dLo, dHi];
   }
 
-  // ── Coloração POR SEGMENTO pelo status de cada ponto ──────────────
-  // Gradiente HORIZONTAL (eixo X): um stop por ponto plotado, com troca
-  // seca no ponto médio entre pontos de status diferente. Cobre todo o
-  // span de pontos plotados (até o último dado real).
+  // ── Coloração da linha: type="linear", segmento a segmento ────────
+  // Para cada par de pontos plotados consecutivos, se o segmento cruza a
+  // meta (mudança de sinal de valor-meta), quebra no ponto de cruzamento
+  // exato (interpolação linear) — dois sub-segmentos SÓLIDOS, um verde
+  // (dentro da meta) e um vermelho (fora). Sem gradiente. type="linear"
+  // garante que a reta desenhada coincide com a interpolação usada aqui.
+  const temMetaBinaria =
+    metaLinha !== null &&
+    (direction === "higher_better" || direction === "lower_better");
+
+  const dentroDaMeta = (v: number) =>
+    direction === "higher_better"
+      ? v >= (metaLinha as number)
+      : v <= (metaLinha as number);
+
+  const corPonto = (v: number) =>
+    temMetaBinaria
+      ? dentroDaMeta(v)
+        ? cores.success
+        : cores.danger
+      : cores.mutedFg;
+
   const idxPlot = pontos
     .map((p, i) => (p.valorPlot !== null ? i : -1))
     .filter((i) => i >= 0);
-  const first = idxPlot[0] ?? 0;
-  const last = idxPlot[idxPlot.length - 1] ?? 0;
-  const span = last - first || 1;
-  const frac = (i: number) => (i - first) / span;
 
-  const segStops: { offset: number; cor: string }[] = [];
-  idxPlot.forEach((i, k) => {
-    const cor = corDoStatus(pontos[i].status, cores);
-    if (k > 0) {
-      const prev = idxPlot[k - 1];
-      const corPrev = corDoStatus(pontos[prev].status, cores);
-      if (corPrev !== cor) {
-        const mid = (frac(prev) + frac(i)) / 2;
-        segStops.push({ offset: mid, cor: corPrev });
-        segStops.push({ offset: mid, cor });
-      }
+  type SubSeg = { pts: { x: number; y: number }[]; cor: string };
+  const segmentos: SubSeg[] = [];
+
+  for (let k = 0; k < idxPlot.length - 1; k++) {
+    const ia = idxPlot[k];
+    const ib = idxPlot[k + 1];
+    const va = pontos[ia].valorPlot as number;
+    const vb = pontos[ib].valorPlot as number;
+
+    if (!temMetaBinaria) {
+      segmentos.push({
+        pts: [
+          { x: ia, y: va },
+          { x: ib, y: vb },
+        ],
+        cor: cores.mutedFg,
+      });
+      continue;
     }
-    segStops.push({ offset: frac(i), cor });
-  });
 
-  const strokeLinha =
-    idxPlot.length >= 2
-      ? `url(#${segId})`
-      : idxPlot.length === 1
-        ? corDoStatus(pontos[idxPlot[0]].status, cores)
-        : cores.mutedFg;
+    const da = dentroDaMeta(va);
+    const db = dentroDaMeta(vb);
+    const meta = metaLinha as number;
+
+    if (da === db || va === vb) {
+      segmentos.push({
+        pts: [
+          { x: ia, y: va },
+          { x: ib, y: vb },
+        ],
+        cor: da ? cores.success : cores.danger,
+      });
+    } else {
+      // t no eixo X (0..1) onde a reta va→vb cruza `meta`.
+      const t = (meta - va) / (vb - va);
+      const xc = ia + t * (ib - ia);
+      segmentos.push({
+        pts: [
+          { x: ia, y: va },
+          { x: xc, y: meta },
+        ],
+        cor: da ? cores.success : cores.danger,
+      });
+      segmentos.push({
+        pts: [
+          { x: xc, y: meta },
+          { x: ib, y: vb },
+        ],
+        cor: db ? cores.success : cores.danger,
+      });
+    }
+  }
+
   const corArea = corDoStatus(statusMedia, cores);
 
-  // ── Marcadores de máx/mín (só entre pontos plotados) ──────────────
+  // ── Máx / mín entre pontos plotados ──────────────────────────────
   let idxMax = -1;
   let idxMin = -1;
   for (const i of idxPlot) {
@@ -149,7 +192,9 @@ export function KpiPrincipalCard({
   const mesMax = idxMax >= 0 ? pontos[idxMax].mesRef : null;
   const mesMin = idxMin >= 0 ? pontos[idxMin].mesRef : null;
 
-  const mesesForaOperacao = pontos.filter((p) => foraDeOperacao(p.statusOperador));
+  const mesesForaOperacao = chartData.filter((p) =>
+    foraDeOperacao(p.statusOperador),
+  );
 
   return (
     <div className="space-y-3">
@@ -185,23 +230,12 @@ export function KpiPrincipalCard({
         <div className="h-[240px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
-              data={pontos}
-              margin={{ top: 14, right: 16, left: -4, bottom: 0 }}
+              data={chartData}
+              margin={{ top: 14, right: 18, left: -4, bottom: 0 }}
             >
               <defs>
-                {idxPlot.length >= 2 && (
-                  <linearGradient id={segId} x1="0" y1="0" x2="1" y2="0">
-                    {segStops.map((s, i) => (
-                      <stop
-                        key={i}
-                        offset={Math.min(1, Math.max(0, s.offset))}
-                        stopColor={s.cor}
-                      />
-                    ))}
-                  </linearGradient>
-                )}
                 <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor={corArea} stopOpacity={0.24} />
+                  <stop offset="0" stopColor={corArea} stopOpacity={0.22} />
                   <stop offset="1" stopColor={corArea} stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -214,8 +248,12 @@ export function KpiPrincipalCard({
               />
 
               <XAxis
-                dataKey="label"
-                interval="preserveStartEnd"
+                type="number"
+                dataKey="x"
+                domain={[-0.3, n - 0.7]}
+                ticks={chartData.map((_, i) => i)}
+                interval={0}
+                tickFormatter={(i: number) => chartData[i]?.label ?? ""}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: cores.mutedFg, fontSize: 11 }}
@@ -233,25 +271,30 @@ export function KpiPrincipalCard({
               <Tooltip
                 content={({ active, payload }) => {
                   if (!active || !payload || !payload.length) return null;
-                  const p = payload[0].payload as PontoSerie;
-                  const rotuloFora = rotuloStatusOperadorMes(p.statusOperador);
+                  const pt = payload.find(
+                    (pp) =>
+                      pp.payload &&
+                      (pp.payload as Partial<PontoSerie>).mesRef !== undefined,
+                  )?.payload as PontoSerie | undefined;
+                  if (!pt) return null;
+                  const rotuloFora = rotuloStatusOperadorMes(pt.statusOperador);
                   const extremo =
-                    p.mesRef === mesMax
+                    pt.mesRef === mesMax
                       ? " · máx do período"
-                      : p.mesRef === mesMin
+                      : pt.mesRef === mesMin
                         ? " · mín do período"
                         : "";
                   return (
                     <div className="bg-popover border-border/80 space-y-1 rounded-lg border p-3 font-sans shadow-md">
                       <p className="text-foreground text-[11px] font-semibold tracking-wider uppercase">
-                        {p.label}
+                        {pt.label}
                         {extremo}
                       </p>
                       <div className="bg-border/60 my-1 h-px" />
                       <p className="text-muted-foreground text-xs">
                         {displayName}:{" "}
-                        <strong className={classeTextoStatus(p.status)}>
-                          {formatKpiValue(p.valor, valueType)}
+                        <strong className={classeTextoStatus(pt.status)}>
+                          {formatKpiValue(pt.valor, valueType)}
                         </strong>
                       </p>
                       {rotuloFora ? (
@@ -263,7 +306,7 @@ export function KpiPrincipalCard({
                           <p className="text-muted-foreground text-xs">
                             Quartil:{" "}
                             <strong className="text-foreground">
-                              {p.quartil ? `Q${p.quartil}` : "—"}
+                              {pt.quartil ? `Q${pt.quartil}` : "—"}
                             </strong>
                           </p>
                         )
@@ -273,28 +316,16 @@ export function KpiPrincipalCard({
                 }}
               />
 
-              {/* Série invisível com o valor BRUTO (inclui meses fora de
-                  operação) só para alimentar o tooltip nesses meses. */}
-              <Line
-                type="monotone"
-                dataKey="valor"
-                stroke="transparent"
-                strokeWidth={0}
-                dot={false}
-                activeDot={false}
-                isAnimationActive={false}
-                connectNulls
-              />
-
               <Area
-                type="monotone"
+                type="linear"
                 dataKey="valorPlot"
                 stroke="none"
                 fill={`url(#${areaId})`}
                 isAnimationActive={!estatico}
-                animationDuration={estatico ? 0 : 350}
+                animationDuration={estatico ? 0 : 300}
                 connectNulls
                 activeDot={false}
+                tooltipType="none"
               />
 
               {metaLinha !== null && (
@@ -309,7 +340,7 @@ export function KpiPrincipalCard({
               {mesesForaOperacao.map((p) => (
                 <ReferenceLine
                   key={`fora-${p.mesRef}`}
-                  x={p.label}
+                  x={p.x}
                   stroke={
                     p.statusOperador === "desligado"
                       ? cores.mutedFg
@@ -330,19 +361,35 @@ export function KpiPrincipalCard({
                 />
               ))}
 
+              {/* Linha visível: um <Line> sólido por sub-segmento. */}
+              {segmentos.map((seg, i) => (
+                <Line
+                  key={`seg-${i}`}
+                  data={seg.pts}
+                  dataKey="y"
+                  type="linear"
+                  stroke={seg.cor}
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={false}
+                  isAnimationActive={false}
+                  legendType="none"
+                  tooltipType="none"
+                />
+              ))}
+
+              {/* Série transparente sobre os dados brutos: dots + tooltip
+                  (inclui meses fora de operação, cujo valorPlot é null). */}
               <Line
-                type="monotone"
-                dataKey="valorPlot"
-                stroke={strokeLinha}
-                strokeWidth={3}
-                isAnimationActive={!estatico}
-                animationDuration={estatico ? 0 : 350}
-                animationEasing="ease-out"
+                dataKey="valor"
+                stroke="transparent"
+                strokeWidth={0}
+                isAnimationActive={false}
                 connectNulls
                 dot={(props: {
                   cx?: number;
                   cy?: number;
-                  payload?: PontoSerie;
+                  payload?: PontoXY;
                 }) => {
                   const { cx, cy, payload } = props;
                   if (
@@ -353,7 +400,7 @@ export function KpiPrincipalCard({
                   ) {
                     return <g key={`empty-${props.cx}-${props.cy}`} />;
                   }
-                  const cor = corDoStatus(payload.status, cores);
+                  const cor = corPonto(payload.valorPlot);
                   const ehExtremo =
                     payload.mesRef === mesMax || payload.mesRef === mesMin;
                   return (
