@@ -1,70 +1,79 @@
 import type { KpiSerie } from "./serial-types";
 
 /**
- * Tendência de uma série no período: compara o PRIMEIRO com o ÚLTIMO ponto
- * não-afastado (valorPlot), com faixa morta de 2% pra não classificar ruído
- * como movimento.
+ * Tendência de desempenho no período.
+ *
+ * A SETA reflete se o DESEMPENHO melhorou ou piorou (conforme `direction`
+ * do KPI), NUNCA o sinal bruto do número:
+ *  - ↑ verde  = desempenho melhorou (higher_better: valor subiu;
+ *               lower_better: valor caiu; closer_to_zero: |valor| diminuiu)
+ *  - ↓ vermelho = desempenho piorou
+ *  - –  cinza  = estável (variação relativa < 2% entre o 1º e o último
+ *               ponto não-afastado — evita classificar ruído)
  */
-export type Tendencia = "subindo" | "caindo" | "estavel";
+type MovimentoBruto = "subiu" | "caiu" | "estavel";
 
-export function calcularTendencia(
-  pontos: { valorPlot: number | null }[],
-): Tendencia {
+const LIMIAR_RELATIVO = 0.02; // 2% — vale bem p/ percent, time (seg) e number
+
+function movimentoBruto(pontos: { valorPlot: number | null }[]): {
+  mov: MovimentoBruto;
+  primeiro: number | null;
+  ultimo: number | null;
+} {
   const vals = pontos
     .map((p) => p.valorPlot)
     .filter((v): v is number => v !== null);
-  if (vals.length < 2) return "estavel";
+  if (vals.length < 2) return { mov: "estavel", primeiro: null, ultimo: null };
 
   const primeiro = vals[0];
   const ultimo = vals[vals.length - 1];
   const delta = ultimo - primeiro;
   const base = Math.max(Math.abs(primeiro), Math.abs(ultimo), 1e-9);
 
-  if (Math.abs(delta) / base < 0.02) return "estavel";
-  return delta > 0 ? "subindo" : "caindo";
+  if (Math.abs(delta) / base < LIMIAR_RELATIVO) {
+    return { mov: "estavel", primeiro, ultimo };
+  }
+  return { mov: delta > 0 ? "subiu" : "caiu", primeiro, ultimo };
 }
 
-/** Seta do movimento bruto do valor (independe de ser bom ou ruim). */
-export function setaTendencia(t: Tendencia): string {
-  if (t === "subindo") return "↑";
-  if (t === "caindo") return "↓";
-  return "→";
-}
+export type TendenciaResolvida = {
+  seta: "↑" | "↓" | "–";
+  /** classe CSS do template: .trend.good / .bad / .flat */
+  cls: "good" | "bad" | "flat";
+  rotulo: "Melhorando" | "Piorando" | "Estável";
+};
 
-export type Favorabilidade = "favoravel" | "desfavoravel" | "neutro";
+const ESTAVEL: TendenciaResolvida = {
+  seta: "–",
+  cls: "flat",
+  rotulo: "Estável",
+};
+const MELHOROU: TendenciaResolvida = {
+  seta: "↑",
+  cls: "good",
+  rotulo: "Melhorando",
+};
+const PIOROU: TendenciaResolvida = {
+  seta: "↓",
+  cls: "bad",
+  rotulo: "Piorando",
+};
 
-/**
- * A tendência é BOA ou RUIM pro KPI, conforme `direction`:
- * higher_better → subir é favorável; lower_better → cair é favorável;
- * closer_to_zero → aproximar-se de zero (|último| < |primeiro|) é favorável.
- */
-export function favorabilidadeTendencia(
+export function resolverTendencia(
   pontos: { valorPlot: number | null }[],
   direction: KpiSerie["direction"],
-  t: Tendencia,
-): Favorabilidade {
-  if (t === "estavel") return "neutro";
+): TendenciaResolvida {
+  const { mov, primeiro, ultimo } = movimentoBruto(pontos);
+  if (mov === "estavel") return ESTAVEL;
 
   if (direction === "higher_better") {
-    return t === "subindo" ? "favoravel" : "desfavoravel";
+    return mov === "subiu" ? MELHOROU : PIOROU;
   }
   if (direction === "lower_better") {
-    return t === "caindo" ? "favoravel" : "desfavoravel";
+    return mov === "caiu" ? MELHOROU : PIOROU;
   }
-  if (direction === "closer_to_zero") {
-    const vals = pontos
-      .map((p) => p.valorPlot)
-      .filter((v): v is number => v !== null);
-    if (vals.length < 2) return "neutro";
-    return Math.abs(vals[vals.length - 1]) < Math.abs(vals[0])
-      ? "favoravel"
-      : "desfavoravel";
+  if (direction === "closer_to_zero" && primeiro !== null && ultimo !== null) {
+    return Math.abs(ultimo) < Math.abs(primeiro) ? MELHOROU : PIOROU;
   }
-  return "neutro";
-}
-
-export function rotuloTendencia(f: Favorabilidade): string {
-  if (f === "favoravel") return "Melhorando";
-  if (f === "desfavoravel") return "Piorando";
-  return "Estável";
+  return ESTAVEL;
 }

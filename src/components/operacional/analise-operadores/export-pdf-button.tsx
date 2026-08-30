@@ -57,6 +57,9 @@ export function ExportPdfButton({
       const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
+      // Respiro físico entre a imagem e a borda do papel (pt). ~22pt ≈ 29px
+      // no equivalente de 794px do componente. Igual em todas as páginas.
+      const MARGIN = 22;
 
       for (let i = 0; i < paginas.length; i++) {
         if (i > 0) doc.addPage();
@@ -65,8 +68,11 @@ export function ExportPdfButton({
           padding: 0,
         });
         const img = await carregarImagem(dataUrl);
-        // A imagem tem ~proporção A4 (794×1123). Encaixa na página inteira.
-        const ratio = Math.min(pageW / img.width, pageH / img.height);
+        // A imagem tem ~proporção A4 (794×1123). Encaixa dentro da área útil
+        // (página menos as 4 margens), centralizada.
+        const availW = pageW - MARGIN * 2;
+        const availH = pageH - MARGIN * 2;
+        const ratio = Math.min(availW / img.width, availH / img.height);
         const w = img.width * ratio;
         const h = img.height * ratio;
         doc.addImage(dataUrl, "PNG", (pageW - w) / 2, (pageH - h) / 2, w, h);

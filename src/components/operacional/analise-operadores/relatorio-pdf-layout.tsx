@@ -8,12 +8,7 @@ import type {
   KpiSerie,
   PontoSerie,
 } from "@/lib/kpi/analise-operadores/serial-types";
-import {
-  calcularTendencia,
-  favorabilidadeTendencia,
-  rotuloTendencia,
-  setaTendencia,
-} from "@/lib/kpi/analise-operadores/tendencia";
+import { resolverTendencia } from "@/lib/kpi/analise-operadores/tendencia";
 
 import { PdfChart, type PdfChartPalette } from "./pdf-chart";
 import type { IdentificacaoMeta } from "./identificacao-bloco";
@@ -217,13 +212,11 @@ function Footer({ meta, n }: { meta: IdentificacaoMeta; n: number }) {
 }
 
 function TrendCell({ serie }: { serie: KpiSerie }) {
-  const t = calcularTendencia(serie.pontos);
-  const f = favorabilidadeTendencia(serie.pontos, serie.direction, t);
-  const cls = f === "favoravel" ? "good" : f === "desfavoravel" ? "bad" : "flat";
+  const { seta, cls, rotulo } = resolverTendencia(serie.pontos, serie.direction);
   return (
     <span className={`trend ${cls}`}>
-      <span className="arrow">{setaTendencia(t)}</span>
-      {rotuloTendencia(f)}
+      <span className="arrow">{seta}</span>
+      {rotulo}
     </span>
   );
 }
@@ -281,7 +274,10 @@ function KpiBlock({ serie }: { serie: KpiSerie }) {
               return (
                 <tr key={p.mesRef} className="off-row">
                   <td>{p.label}</td>
-                  <td className="num">
+                  <td
+                    className="num"
+                    style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}
+                  >
                     {p.valor !== null
                       ? formatKpiValue(p.valor, serie.valueType)
                       : "—"}
@@ -295,7 +291,10 @@ function KpiBlock({ serie }: { serie: KpiSerie }) {
             return (
               <tr key={p.mesRef}>
                 <td>{p.label}</td>
-                <td className="num">
+                <td
+                  className="num"
+                  style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}
+                >
                   {p.valor !== null
                     ? formatKpiValue(p.valor, serie.valueType)
                     : "—"}

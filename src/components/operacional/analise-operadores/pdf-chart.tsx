@@ -205,11 +205,25 @@ export function PdfChart({
           stroke={palette.meta}
           strokeDasharray="4 3"
           strokeWidth={1.2}
-          label={{
-            value: `Meta ${formatKpiValue(metaLinha, valueType)}`,
-            position: "insideTopRight",
-            fill: palette.muted,
-            fontSize: 9,
+          label={(props: {
+            viewBox?: { x: number; y: number; width: number; height: number };
+          }) => {
+            const vb = props.viewBox;
+            if (!vb) return <g />;
+            // Rótulo ACIMA da linha pontilhada, alinhado à direita (igual
+            // ao template). Clamp pra não sair do topo do gráfico.
+            return (
+              <text
+                x={vb.x + vb.width - 4}
+                y={Math.max(vb.y - 4, 9)}
+                textAnchor="end"
+                fontSize={9}
+                fill={palette.muted}
+                fontFamily="Arial, sans-serif"
+              >
+                {`Meta ${formatKpiValue(metaLinha, valueType)}`}
+              </text>
+            );
           }}
         />
       )}
