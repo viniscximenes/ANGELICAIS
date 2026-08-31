@@ -27,6 +27,7 @@ import {
   processSnapshotAction,
   type ProcessSnapshotResult,
 } from "@/lib/kpi/bases/process-snapshot-action";
+import { registrarKpiOperadoresAtualizacaoAction } from "@/lib/kpi/atualizacoes/registrar-atualizacao-action";
 
 import {
   OverrideMappingModal,
@@ -317,6 +318,11 @@ export function SnapshotForm({
         });
         setClipboardText("");
         setModalOpen(false);
+
+        // Aba OPERADORES: avisa os gestores que o KPI foi atualizado até a
+        // data de corte. Fire-and-forget e fail-safe — nunca trava o salvar.
+        // (A aba Gestores usa GestorSnapshotForm e não chama isto.)
+        void registrarKpiOperadoresAtualizacaoAction(dataCorte);
       }
     } else {
       toast.error("Falha ao salvar", { description: res.error });

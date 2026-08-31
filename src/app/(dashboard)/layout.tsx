@@ -5,6 +5,7 @@ import { AppHeader } from "@/components/dashboard/app-header";
 import { Sidebar, type SidebarUser } from "@/components/dashboard/sidebar";
 import { getSidebarSectionsForRole } from "@/components/dashboard/sidebar-sections";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { NotificacoesCantoProvider } from "@/components/notificacoes-canto/notificacoes-canto-provider";
 
 export default async function DashboardLayout({
   children,
@@ -40,7 +41,11 @@ export default async function DashboardLayout({
       <AppHeader user={sidebarUser} sections={sections} />
       <div className="flex">
         <Sidebar sections={sections} user={sidebarUser} />
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1">
+          <NotificacoesCantoProvider role={user.profile.role}>
+            {children}
+          </NotificacoesCantoProvider>
+        </main>
       </div>
     </div>
   );

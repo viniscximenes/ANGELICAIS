@@ -1,66 +1,42 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useRef } from "react";
 
-import { Button } from "@/components/ui/button";
-import { StyledCard } from "@/components/gestor/styled-card";
+import { useNotificacoesCanto } from "@/components/notificacoes-canto/notificacoes-canto-provider";
 
 interface ComparativoPopupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
-
 /**
  * Convite pontual (1x por gestor por dia) para ver o comparativo entre
  * equipes, disparado no primeiro report do dia em /reports/consolidado.
  *
- * Não-modal: card fixo no canto inferior esquerdo, sem overlay/blur — o
- * conteúdo por trás segue visível e interativo. Fechar sem clicar em "Ver
- * comparativo" já conta como exibido (o registro é feito na server action
- * antes deste card abrir; fechar aqui não desfaz nada).
+ * Toda a lógica de negócio (registro de exibição, 1x/dia, timezone) continua
+ * no chamador (upload-dropzone.tsx). Aqui só mudou "como decidir se posso
+ * aparecer agora": em vez de se renderizar sozinho no canto, este componente
+ * delega ao NotificacoesCantoProvider, que garante um único aviso no canto
+ * inferior esquerdo por vez e dá prioridade ao comparativo sobre o de KPI.
+ *
+ * Não renderiza nada — o card é desenhado pelo provider.
  */
-export function ComparativoPopupDialog({ open, onOpenChange }: ComparativoPopupDialogProps) {
-  const router = useRouter();
+export function ComparativoPopupDialog({
+  open,
+  onOpenChange,
+}: ComparativoPopupDialogProps) {
+  const { mostrarComparativo, esconderComparativo } = useNotificacoesCanto();
 
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0, x: -16, y: 8 }}
-          animate={{ opacity: 1, x: 0, y: 0 }}
-          exit={{ opacity: 0, x: -16, y: 8 }}
-          transition={{ duration: 0.2, ease: EASE_OUT_EXPO }}
-          className="fixed bottom-4 left-4 z-50 w-[calc(100vw-2rem)] max-w-sm"
-          role="dialog"
-          aria-label="Comparativo com outras equipes"
-        >
-          <StyledCard className="p-4 space-y-3" withGradient corners="all">
-            <div className="space-y-1">
-              <h2 className="ds-h3 text-foreground font-semibold">
-                Comparativo com outras equipes
-              </h2>
-              <p className="ds-small text-muted-foreground">
-                Dá uma olhada em como sua equipe está em relação às outras hoje.
-              </p>
-            </div>
+  // onOpenChange costuma ser uma arrow inline no chamador — guarda em ref pra
+  // não reexecutar o efeito (e piscar o card) a cada render.
+  const onOpenChangeRef = useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
 
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-                Agora não
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => router.push("/operacao/comparativo-consolidado")}
-              >
-                Ver comparativo
-              </Button>
-            </div>
-          </StyledCard>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+  useEffect(() => {
+    if (!open) return;
+    mostrarComparativo({ onFechar: () => onOpenChangeRef.current(false) });
+    return () => esconderComparativo();
+  }, [open, mostrarComparativo, esconderComparativo]);
+
+  return null;
 }
