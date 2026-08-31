@@ -7,6 +7,8 @@ import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
 import { uploadConsolidadoAction } from "@/lib/d1-db/actions/upload-consolidado-action";
+import { registrarExibicaoPopupComparativoAction } from "@/lib/retencao/comparativo/registrar-exibicao-popup-action";
+import { ComparativoPopupDialog } from "@/components/operacional/comparativo-consolidado/comparativo-popup-dialog";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 import { UploadProgressModal } from "./upload-progress-modal";
 
@@ -22,6 +24,7 @@ export function UploadDropzone() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [rowsWritten, setRowsWritten] = useState<number>(0);
   const [isHovering, setIsHovering] = useState(false);
+  const [showComparativoPopup, setShowComparativoPopup] = useState(false);
 
   // Executa o upload de fato (etapas + action + reload).
   const processUpload = useCallback(async (csvText: string) => {
@@ -59,6 +62,19 @@ export function UploadDropzone() {
     toast.success("Base updated", {
       description: `${uploadResult.rowsWritten} linhas inseridas`,
     });
+
+    // Efeito posterior ao report, nunca bloqueante: no PRIMEIRO report do dia
+    // civil, convida o gestor a ver o comparativo entre equipes. A action é
+    // fail-safe (qualquer erro → mostrar:false), então isso nunca trava o
+    // fluxo de geração do report.
+    const { mostrar } = await registrarExibicaoPopupComparativoAction();
+    if (mostrar) {
+      // Sem o reload automático: a página é mantida para o popup sobreviver.
+      // O refresh dos dados passa a ser feito ao fechar o popup.
+      setStep(null);
+      setShowComparativoPopup(true);
+      return;
+    }
 
     setTimeout(() => {
       setStep(null);
@@ -223,6 +239,16 @@ export function UploadDropzone() {
       </div>
 
       <UploadProgressModal step={step} rowsWritten={rowsWritten} />
+
+      <ComparativoPopupDialog
+        open={showComparativoPopup}
+        onOpenChange={(open) => {
+          setShowComparativoPopup(open);
+          // Fechar sem navegar ("Agora não" ou clique fora): recarrega para
+          // refletir o report recém-gerado, como fazia o fluxo original.
+          if (!open) window.location.reload();
+        }}
+      />
     </>
   );
 }

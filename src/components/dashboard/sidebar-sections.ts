@@ -59,6 +59,7 @@ const ALL_SECTIONS: SidebarSection[] = [
     items: [
       { label: "Diário", href: "/operacao/diario" },
       { label: "Análise Operadores", href: "/operacao/analise-operadores" },
+      { label: "Comparativo Consolidado", href: "/operacao/comparativo-consolidado" },
     ],
   },
   {
