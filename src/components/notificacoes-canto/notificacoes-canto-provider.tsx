@@ -59,6 +59,8 @@ export function useNotificacoesCanto(): NotificacoesCantoApi {
 const KPI_AUTO_DISMISS_MS = 10_000;
 const POLL_INTERVAL_MS = 45_000;
 
+const LOG = "[NotificacoesCantoProvider]";
+
 export function NotificacoesCantoProvider({
   role,
   children,
@@ -76,49 +78,78 @@ export function NotificacoesCantoProvider({
 
   const mostrarComparativo = useCallback((pedido: ComparativoPedido) => {
     // Comparativo vence: fecha o de KPI imediatamente e assume o canto.
+    console.info(`${LOG} mostrarComparativo() — assume o canto, fecha KPI se visível.`);
     setKpiDataRef(null);
     setComparativo(pedido);
   }, []);
 
   const esconderComparativo = useCallback(() => {
+    console.info(`${LOG} esconderComparativo().`);
     setComparativo(null);
   }, []);
 
   const mostrarKpiAtualizado = useCallback((dataReferencia: string) => {
     // Nunca sobrepõe o comparativo.
-    if (comparativoAtivoRef.current) return;
+    if (comparativoAtivoRef.current) {
+      console.info(
+        `${LOG} mostrarKpiAtualizado(${dataReferencia}) IGNORADO — comparativo está ativo.`,
+      );
+      return;
+    }
+    console.info(`${LOG} mostrarKpiAtualizado(${dataReferencia}) — abrindo toast.`);
     setKpiDataRef(dataReferencia);
   }, []);
 
   // Auto-dismiss do "KPI atualizado" — sempre 10s, ao vivo ou no login.
   useEffect(() => {
     if (kpiDataRef === null) return;
-    const id = setTimeout(() => setKpiDataRef(null), KPI_AUTO_DISMISS_MS);
+    const id = setTimeout(() => {
+      console.info(`${LOG} auto-dismiss do toast de KPI (10s).`);
+      setKpiDataRef(null);
+    }, KPI_AUTO_DISMISS_MS);
     return () => clearTimeout(id);
   }, [kpiDataRef]);
+
+  // Rastro de qual aviso ocupa o canto a cada mudança de estado.
+  useEffect(() => {
+    console.info(
+      `${LOG} estado do canto → ${
+        comparativo ? "comparativo" : kpiDataRef ? `kpi(${kpiDataRef})` : "nenhum"
+      }`,
+    );
+  }, [comparativo, kpiDataRef]);
 
   // Watcher do GESTOR: checa "tem atualização não vista?" ao montar (login)
   // e em polling leve enquanto alguma aba está aberta. A própria action
   // marca como visto assim que retorna mostrar:true.
   useEffect(() => {
-    if (role !== "GESTOR") return;
+    if (role !== "GESTOR") {
+      console.info(`${LOG} watcher inativo — role=${role} (só GESTOR faz polling).`);
+      return;
+    }
 
+    console.info(`${LOG} watcher ativo — check inicial + polling a cada ${POLL_INTERVAL_MS}ms.`);
     let cancelado = false;
 
-    const checar = async () => {
-      if (typeof document !== "undefined" && document.hidden) return;
+    const checar = async (origem: "mount" | "polling") => {
+      if (typeof document !== "undefined" && document.hidden) {
+        console.info(`${LOG} check (${origem}) pulado — aba em background.`);
+        return;
+      }
       try {
         const r = await checarKpiAtualizacaoNaoVistaAction();
-        if (!cancelado && r.mostrar && r.dataReferencia) {
+        console.info(`${LOG} check (${origem}) retornou:`, r, `| cancelado=${cancelado}`);
+        if (cancelado) return;
+        if (r.mostrar && r.dataReferencia) {
           mostrarKpiAtualizado(r.dataReferencia);
         }
-      } catch {
-        // action é fail-safe; ignora aqui também.
+      } catch (err) {
+        console.error(`${LOG} check (${origem}) lançou:`, err);
       }
     };
 
-    checar();
-    const id = setInterval(checar, POLL_INTERVAL_MS);
+    void checar("mount");
+    const id = setInterval(() => void checar("polling"), POLL_INTERVAL_MS);
     return () => {
       cancelado = true;
       clearInterval(id);
@@ -138,7 +169,14 @@ export function NotificacoesCantoProvider({
     >
       {children}
 
-      <AnimatePresence mode="wait">
+      {/*
+        Sem `mode="wait"`: a lógica de prioridade já garante que só um dos
+        dois estados fica truthy por vez (mostrarComparativo zera o de KPI;
+        mostrarKpiAtualizado desiste se o comparativo está ativo), então
+        nunca há dois cards. `mode="wait"` só adicionava o risco de uma
+        saída "presa" segurar a entrada do próximo card pra sempre.
+      */}
+      <AnimatePresence>
         {comparativo ? (
           <ComparativoCard key="comparativo" onFechar={handleComparativoFechar} />
         ) : kpiDataRef ? (
