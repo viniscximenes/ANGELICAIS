@@ -1,4 +1,5 @@
 import { enrichWithDefinitions } from "@/lib/kpi/atual/enrich-with-definitions";
+import { SLUGS_SOMENTE_ESPELHO } from "@/lib/kpi/detalhado/colunas-kpi-detalhado";
 import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
 import type { KpiDefinition, KpiValueType } from "@/lib/kpi/types";
 import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
@@ -159,10 +160,14 @@ export async function buildAnaliseOperadorSerial(params: {
     const i = PRINCIPAIS_SLUGS.indexOf(slug);
     return i === -1 ? 999 : i;
   };
-  const principaisDefs = definitions
+  // Ignora os slugs que existem só para o espelho de /operacao/kpi-detalhado.
+  const defsRelevantes = definitions.filter(
+    (d) => !SLUGS_SOMENTE_ESPELHO.has(d.slug),
+  );
+  const principaisDefs = defsRelevantes
     .filter((d) => PRINCIPAIS_SLUGS.includes(d.slug))
     .sort((a, b) => ordemPrincipal(a.slug) - ordemPrincipal(b.slug));
-  const secundariosDefs = definitions
+  const secundariosDefs = defsRelevantes
     .filter((d) => !PRINCIPAIS_SLUGS.includes(d.slug))
     // Nativos de group_type "secundario" primeiro (na ordem deles); os
     // rebaixados daqui (pedidos/churn/variacao_ticket) vão para o fim.

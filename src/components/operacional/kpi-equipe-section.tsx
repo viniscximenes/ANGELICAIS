@@ -21,6 +21,10 @@ import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
+import {
+  celulaStyle as celulaStyleShared,
+  statusColorVar as statusColorVarShared,
+} from "@/lib/kpi/atual/status-color";
 import { getKpiMesHistoricoAction } from "@/lib/kpi/gestor/get-kpi-mes-historico-action";
 import { getRvOperadoresAction } from "@/lib/kpi/gestor/get-rv-operadores-action";
 import { toggleShowRvOperadoresAction } from "@/lib/kpi/gestor/toggle-show-rv-operadores-action";
@@ -67,27 +71,18 @@ function toggleBtnClass(active: boolean): string {
   ].join(" ");
 }
 
-/** Nome da CSS var de status — null quando não há cor a aplicar (neutro/nulo/mês passado). */
-function statusColorVar(
-  kpi: KpiCelulaSerial,
-  isMesPassado: boolean,
-): string | null {
-  if (isMesPassado || kpi.status === "neutral" || kpi.valor === null) return null;
-  if (kpi.status === "success") return "--success";
-  if (kpi.status === "warning") return "--warning";
-  return "--danger";
+// Coloração das células vem de @/lib/kpi/atual/status-color (fonte única,
+// compartilhada com a tabela de /operacao/kpi-detalhado). Wrappers finos
+// aqui só pra manter a assinatura `(kpi, isMesPassado)` dos call sites.
+function statusColorVar(kpi: KpiCelulaSerial, isMesPassado: boolean): string | null {
+  return statusColorVarShared(kpi.status, kpi.valor === null, isMesPassado);
 }
 
 function celulaStyle(
   kpi: KpiCelulaSerial,
   isMesPassado: boolean,
 ): React.CSSProperties {
-  const v = statusColorVar(kpi, isMesPassado);
-  if (!v) return {};
-  return {
-    color: `var(${v})`,
-    fontWeight: 600,
-  };
+  return celulaStyleShared(kpi.status, kpi.valor === null, isMesPassado);
 }
 
 function celulaVazia(h: { slug: string; displayName: string }): KpiCelulaSerial {
