@@ -1,5 +1,6 @@
 import type { KpiDefinition } from "../types";
 import { normalizeHeader } from "./normalize-header";
+import { parseNumeric } from "./parse-numeric";
 import { METADATA_HEADERS, METADATA_SLUGS } from "./types";
 import type { ExtractionResult, ParsedClipboard } from "./types";
 
@@ -13,50 +14,6 @@ function findColumnIndex(
     if (idx !== -1) return idx;
   }
   return -1;
-}
-
-function parseNumeric(value: string): number | null {
-  if (
-    !value ||
-    value === "—" ||
-    value === "-" ||
-    value.toLowerCase() === "n/a"
-  ) {
-    return null;
-  }
-
-  const stripped = value.trim().replace(/%/g, "");
-
-  // Time format takes priority: HH:MM:SS
-  const timeMatch = stripped.match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
-  if (timeMatch) {
-    const [, h, m, s] = timeMatch;
-    return parseInt(h) * 3600 + parseInt(m) * 60 + parseInt(s);
-  }
-
-  // BR number format: comma = decimal separator, dot = thousands separator.
-  // Examples: "4.223" = 4223, "63,8" = 63.8, "1.234,56" = 1234.56
-  const hasComma = stripped.includes(",");
-  const hasDot = stripped.includes(".");
-
-  let normalized: string;
-
-  if (hasComma) {
-    // Comma is decimal; dots (if any) are thousands separators.
-    normalized = stripped.replace(/\./g, "").replace(",", ".");
-  } else if (hasDot) {
-    // No comma. Dot is thousands separator if exactly 3 digits follow the last dot;
-    // otherwise treat as decimal point (e.g., "63.8").
-    const segments = stripped.split(".");
-    const lastSegLen = (segments[segments.length - 1] ?? "").length;
-    normalized =
-      lastSegLen === 3 ? stripped.replace(/\./g, "") : stripped;
-  } else {
-    normalized = stripped;
-  }
-
-  const num = parseFloat(normalized);
-  return isNaN(num) ? null : num;
 }
 
 /**

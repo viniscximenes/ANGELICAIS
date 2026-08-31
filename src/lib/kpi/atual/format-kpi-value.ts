@@ -5,7 +5,10 @@ import type { KpiDefinition } from "../types";
  * - percent: "62.5%"
  * - percent_negative: "-3.2%" / "+0.0%" (sempre com sinal)
  * - number: inteiro sem decimais; senão 1 casa
- * - time: segundos → "HH:MM:SS"
+ * - time: segundos →
+ *     • < 1h  → "MM:SS"    (ex.: TMA, sempre < 25min — como sempre foi)
+ *     • ≥ 1h  → "HHH:MM"   (acumulados mensais como tempo_login/tempo_projetado
+ *                           chegam a ~100h; 3 dígitos de hora, SEM wrap em 24h)
  */
 export function formatKpiValue(
   valor: number | null,
@@ -26,11 +29,17 @@ export function formatKpiValue(
       return Number.isInteger(valor) ? String(valor) : valor.toFixed(1);
 
     case "time": {
-      const total = Math.round(valor);
+      const total = Math.max(0, Math.round(valor));
       const h = Math.floor(total / 3600);
       const m = Math.floor((total % 3600) / 60);
       const s = total % 60;
-      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+      // ≥ 1h: horas acumuladas do mês (tempo_login/tempo_projetado vão a
+      // ~100h) — HHH:MM, 3 dígitos de hora, sem relógio de 24h / wraparound.
+      if (h >= 1) {
+        return `${String(h).padStart(3, "0")}:${String(m).padStart(2, "0")}`;
+      }
+      // < 1h: MM:SS (TMA e afins).
+      return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     }
 
     default:
