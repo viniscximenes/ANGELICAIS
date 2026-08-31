@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -10,6 +8,7 @@ import { getKpiDefinitions } from "../get-definitions";
 import { extractSnapshot } from "./extract-snapshot";
 import { parseClipboard } from "./parse-clipboard";
 import { enforceRetention } from "./retention";
+import { revalidateKpiSnapshots } from "./revalidate-kpi";
 import { METADATA_SLUGS } from "./types";
 
 type ProcessSnapshotInput = {
@@ -161,7 +160,7 @@ export async function processSnapshotAction(
     }
   }
 
-  revalidatePath("/bases/kpi");
+  revalidateKpiSnapshots();
 
   return {
     success: true,

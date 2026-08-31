@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -9,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getKpiDefinitions } from "../get-definitions";
 import { extractGestorSnapshot } from "./extract-gestor-snapshot";
 import { parseClipboard } from "./parse-clipboard";
+import { revalidateKpiSnapshots } from "./revalidate-kpi";
 
 export type ProcessGestorSnapshotResult =
   | {
@@ -148,7 +147,7 @@ export async function processGestorSnapshotAction(
     }
   }
 
-  revalidatePath("/bases/kpi");
+  revalidateKpiSnapshots();
 
   return {
     success: true,

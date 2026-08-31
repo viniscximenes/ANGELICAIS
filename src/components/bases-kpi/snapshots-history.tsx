@@ -32,10 +32,16 @@ export function SnapshotsHistory({ snapshots, type = "operadores" }: SnapshotsHi
   const [deletingMonth, setDeletingMonth] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // Cada histórico apaga só a SUA base — o de operadores não encosta em
+  // kpi_gestor_snapshots e vice-versa.
+  const scope = type === "gestores" ? "gestores" : "operadores";
+  const baseLabel = type === "gestores" ? "GESTORES" : "OPERADORES";
+
   function handleDelete(mesRef: string) {
     if (
       !confirm(
-        `Tem certeza que deseja apagar todos os dados de ${formatMonthLabel(mesRef)}?\n\nEsta ação não pode ser desfeita.`,
+        `Apagar os dados de ${baseLabel} de ${formatMonthLabel(mesRef)}?\n\n` +
+          `Só a base de ${baseLabel.toLowerCase()} é afetada. Esta ação não pode ser desfeita.`,
       )
     ) {
       return;
@@ -44,17 +50,24 @@ export function SnapshotsHistory({ snapshots, type = "operadores" }: SnapshotsHi
     setDeletingMonth(mesRef);
 
     startTransition(async () => {
-      const result = await deleteMonthAction(mesRef);
+      const result = await deleteMonthAction(mesRef, scope);
       setDeletingMonth(null);
 
-      if (result.success) {
-        toast.success("Mês apagado", {
-          description: `${result.rowsDeleted} registros removidos`,
-        });
-        router.refresh();
-      } else {
+      if (!result.success) {
         toast.error("Não foi possível apagar", { description: result.error });
+        return;
       }
+
+      if (result.rowsDeleted === 0) {
+        toast.info("Nada para apagar", {
+          description: `Nenhum registro de ${baseLabel.toLowerCase()} em ${formatMonthLabel(mesRef)}.`,
+        });
+      } else {
+        toast.success(`${formatMonthLabel(mesRef)} apagado`, {
+          description: `${result.rowsDeleted} registro${result.rowsDeleted === 1 ? "" : "s"} de ${baseLabel.toLowerCase()} removido${result.rowsDeleted === 1 ? "" : "s"}`,
+        });
+      }
+      router.refresh();
     });
   }
 

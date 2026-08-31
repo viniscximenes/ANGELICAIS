@@ -15,6 +15,10 @@ export const metadata: Metadata = {
   title: "Bases - KPI",
 };
 
+// Reflete na hora upload/delete de KPI — sem janela de cache estático em
+// que o histórico de meses fica desatualizado depois de apagar/colar.
+export const dynamic = "force-dynamic";
+
 export default async function BasesKpiPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
