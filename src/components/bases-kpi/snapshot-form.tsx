@@ -305,6 +305,18 @@ export function SnapshotForm({
     setResult(res);
 
     if (res.success) {
+      // Aba OPERADORES: avisa os gestores que o KPI foi atualizado até a
+      // data de corte. Neste ponto o snapshot JÁ foi gravado no banco (o
+      // upsert roda antes da checagem de headers em processSnapshotAction),
+      // então notificamos em TODO sucesso — inclusive quando o modal de
+      // mapeamento de header abre — pra não deixar base salva sem aviso caso
+      // o ADM não conclua o modal. O reprocessamento com overrides chama de
+      // novo, mas a action faz dedupe por data_referencia. É awaited (não
+      // fire-and-forget) pra não ser abortada pelo refresh de RSC do
+      // revalidatePath e pra o erro real aparecer no log do servidor.
+      // (A aba Gestores usa GestorSnapshotForm e não chama isto.)
+      await registrarKpiOperadoresAtualizacaoAction(dataCorte);
+
       if (res.missingKpis.length > 0 && !overrides) {
         setMissingKpisForModal(res.missingKpisFull);
         setDetectedHeadersForModal(res.detectedHeaders);
@@ -318,11 +330,6 @@ export function SnapshotForm({
         });
         setClipboardText("");
         setModalOpen(false);
-
-        // Aba OPERADORES: avisa os gestores que o KPI foi atualizado até a
-        // data de corte. Fire-and-forget e fail-safe — nunca trava o salvar.
-        // (A aba Gestores usa GestorSnapshotForm e não chama isto.)
-        void registrarKpiOperadoresAtualizacaoAction(dataCorte);
       }
     } else {
       toast.error("Falha ao salvar", { description: res.error });
