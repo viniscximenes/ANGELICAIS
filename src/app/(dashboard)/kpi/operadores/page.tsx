@@ -133,30 +133,6 @@ export default async function KpiOperadoresPage() {
   return (
     <PageTransition>
       <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
-              html, body {
-                scrollbar-width: thin !important;
-                scrollbar-color: var(--border) transparent !important;
-              }
-              html::-webkit-scrollbar, body::-webkit-scrollbar {
-                width: 8px !important;
-                height: 8px !important;
-              }
-              html::-webkit-scrollbar-track, body::-webkit-scrollbar-track {
-                background: transparent !important;
-              }
-              html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
-                background: var(--border) !important;
-                border-radius: 4px !important;
-              }
-              html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
-                background: var(--muted-foreground) !important;
-              }
-            `,
-          }}
-        />
         <div className="mx-auto max-w-7xl">
           <header className="border-border flex flex-col gap-2 border-b border-dashed pb-4">
             <span className="text-muted-foreground text-xs tracking-wide uppercase">

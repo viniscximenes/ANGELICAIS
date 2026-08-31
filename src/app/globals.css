@@ -568,6 +568,42 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   Scrollbar da PÁGINA (html/body) — discreta, segue o tema.
+   Global: antes era um bloco <style> duplicado em ~6 páginas
+   (reports/consolidado, kpi/*, bases/kpi, operacao/analise-operadores...).
+   Agora vale pra todas as rotas. Para containers com overflow interno,
+   use a classe utilitária `.scrollbar-tema`.
+   ═══════════════════════════════════════════════════════════════════ */
+
+html,
+body {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--border) transparent;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    Focus rings de acessibilidade (Tab navigation)
    ═══════════════════════════════════════════════════════════════════ */
 
