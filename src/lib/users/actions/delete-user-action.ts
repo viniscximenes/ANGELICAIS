@@ -15,12 +15,12 @@ type DeleteUserResult =
   | { success: false; error: string };
 
 /**
- * Exclusão física (auth.users, que cascateia pra profiles). Bloqueada a
- * priori se o usuário tiver registros vinculados via FK NO ACTION
- * (rv_deflator_applications) — sem essa checagem o Postgres rejeitaria a
- * exclusão com um erro de FK cru. Histórico de atendimento/retenção/KPI
- * (retencao_atendimentos, kpi_monthly_snapshots, d1_*) não tem FK pra
- * profiles — não é afetado.
+ * Exclusão física via Auth Admin (auth.users), que cascateia para profiles
+ * e, agora, para todo o histórico vinculado ao gestor: d1_consolidado,
+ * d1_indisponibilidade, d1_tempo_logado, kpi_operadores_atualizacoes e
+ * rv_deflator_applications tiveram suas FKs migradas para ON DELETE CASCADE.
+ * Essa perda de histórico é intencional — não há mais checagem que barre a
+ * exclusão de um GESTOR.
  */
 export async function deleteUserAction(
   input: DeleteUserInput,
@@ -47,7 +47,7 @@ export async function deleteUserAction(
 
   const { data: target } = await adminClient
     .from("profiles")
-    .select("role")
+    .select("id")
     .eq("id", input.id)
     .maybeSingle();
 
@@ -55,28 +55,10 @@ export async function deleteUserAction(
     return { success: false, error: "Usuário não encontrado" };
   }
 
-  if (target.role === "GESTOR") {
-    return {
-      success: false,
-      error: "Não é possível excluir a gestora pelo painel",
-    };
-  }
-
-  const { count: deflatores } = await adminClient
-    .from("rv_deflator_applications")
-    .select("id", { count: "exact", head: true })
-    .eq("applied_by", input.id);
-
-  if ((deflatores ?? 0) > 0) {
-    return {
-      success: false,
-      error: `Não é possível excluir: usuário tem ${deflatores} aplicação(ões) de deflator de RV vinculada(s) por autoria. Reatribua ou remova esses registros antes de excluir.`,
-    };
-  }
-
   // Deleta via Auth Admin (não profiles diretamente) — profiles_id_fkey é
-  // ON DELETE CASCADE de auth.users, então isso já apaga o profile junto e
-  // não deixa a conta órfã no Supabase Auth.
+  // ON DELETE CASCADE de auth.users, então isso apaga o profile junto, não
+  // deixa a conta órfã no Supabase Auth e cascateia para todo o histórico
+  // (D1, KPIs, RV) vinculado ao usuário.
   const { error } = await adminClient.auth.admin.deleteUser(input.id);
 
   if (error) {

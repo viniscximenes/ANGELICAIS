@@ -106,6 +106,14 @@ export function DeleteUserModal({ open, onClose, user }: Props) {
                 dados e não poderá ser recuperada.
               </p>
 
+              <p className="ds-body">
+                Se for um <strong>gestor</strong>, todo o histórico vinculado
+                a ele é apagado em cascata: importações diárias do D1
+                (consolidado, indisponibilidade, tempo logado), atualizações
+                de KPI e aplicações de deflator de RV. Isso <strong>não</strong>{" "}
+                é desativação — é exclusão real, sem soft delete.
+              </p>
+
               <div>
                 <label className="ds-mono-sm text-muted-foreground mb-1 block">
                   Digite <strong className="text-foreground">{user.username}</strong>{" "}
