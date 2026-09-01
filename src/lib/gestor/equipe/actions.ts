@@ -104,11 +104,14 @@ export async function adicionarOperadorAction(email: string): Promise<VoidResult
 
   const admin = createAdminClient();
 
-  // Um operador só pode estar em UMA equipe — checa as duas variantes de
-  // domínio pra não duplicar a mesma pessoa sob um email legado.
+  // Um mesmo operador pode estar em várias equipes ao mesmo tempo — cada
+  // gestor tem sua própria linha em d1_operadores_gestor. A única checagem
+  // que resta é impedir a duplicata na equipe DESTE gestor (nas duas
+  // variantes de domínio, pra não duplicar sob um email legado).
   const { data: existente, error: checkErr } = await admin
     .from("d1_operadores_gestor")
     .select("gestor_id")
+    .eq("gestor_id", user.profile.id)
     .in("operador_email", getEmailVariants(emailNorm))
     .maybeSingle();
 
@@ -118,13 +121,7 @@ export async function adicionarOperadorAction(email: string): Promise<VoidResult
   }
 
   if (existente) {
-    return {
-      ok: false,
-      error:
-        existente.gestor_id === user.profile.id
-          ? "Operador já está na equipe."
-          : "Operador já está em outra equipe.",
-    };
+    return { ok: false, error: "Operador já está na equipe." };
   }
 
   const { error } = await admin
