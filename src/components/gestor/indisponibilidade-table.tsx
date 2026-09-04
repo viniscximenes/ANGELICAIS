@@ -23,7 +23,16 @@ import {
   ValorSemDado,
 } from "./tabela-padrao";
 
-const GRID_COLS = "2fr 1.8fr 1.6fr 2fr 1.8fr 1.8fr";
+// minmax(0, Nfr) em vez de só "Nfr": header e cada linha do corpo são grids
+// SEPARADOS (um <div className="grid"> por linha), então cada um calcula sua
+// própria largura de coluna. Com "Nfr" puro, o mínimo de cada trilha é
+// "auto" (min-content) — um label longo como "Monitoramento %" força a
+// coluna do header a ficar mais larga que a mesma coluna nas linhas de
+// dado (só um número curto), desalinhando header e corpo. minmax(0, Nfr)
+// zera esse mínimo: a largura vira sempre a fração proporcional do
+// container, igual nos dois lados.
+const GRID_COLS =
+  "minmax(0,2fr) minmax(0,1.8fr) minmax(0,1.6fr) minmax(0,2fr) minmax(0,1.8fr) minmax(0,1.8fr)";
 
 const NO_FANTASIA: NomeFantasiaSerial = { ativo: false, mapa: {} };
 
@@ -103,8 +112,15 @@ const ScreenTable = forwardRef<
         <div className={TABELA_HEADER_CELL_CLASS}>Indisp. %</div>
         <div className={TABELA_HEADER_CELL_CLASS}>NR17 %</div>
         <div className={TABELA_HEADER_CELL_CLASS}>Pausa Part. %</div>
-        <div className={TABELA_HEADER_CELL_CLASS}>Monitoramento %</div>
-        <div className={TABELA_HEADER_CELL_ULTIMA_CLASS}>Feedback %</div>
+        {/* "Monitoramento %"/"Feedback %" são mais longos que os demais
+            labels — permite quebrar em 2 linhas em vez de "whitespace-nowrap"
+            forçar a coluna a ficar mais larga que a linha de dado abaixo. */}
+        <div className={cn(TABELA_HEADER_CELL_CLASS, "whitespace-normal leading-tight")}>
+          Monitoramento %
+        </div>
+        <div className={cn(TABELA_HEADER_CELL_ULTIMA_CLASS, "whitespace-normal leading-tight")}>
+          Feedback %
+        </div>
       </div>
 
       {/* Linhas */}
@@ -245,10 +261,12 @@ const ExcelTable = forwardRef<
         <div style={{ ...EXCEL_HEADER_CELL, ...EXCEL_HEADER_DIVIDER }}>
           Pausa Part. %
         </div>
-        <div style={{ ...EXCEL_HEADER_CELL, ...EXCEL_HEADER_DIVIDER }}>
+        <div
+          style={{ ...EXCEL_HEADER_CELL, ...EXCEL_HEADER_DIVIDER, whiteSpace: "normal" }}
+        >
           Monitoramento %
         </div>
-        <div style={EXCEL_HEADER_CELL}>Feedback %</div>
+        <div style={{ ...EXCEL_HEADER_CELL, whiteSpace: "normal" }}>Feedback %</div>
       </div>
 
       {/* Linhas */}

@@ -75,7 +75,13 @@ export const TempoLogadoTable = forwardRef<
    SCREEN — visual padrão do site (tema escuro/claro adaptativo)
    ──────────────────────────────────────────────────────────────────── */
 
-const GRID_COLS = "2.2fr 2.6fr 1.9fr 1.9fr";
+// minmax(0, Nfr) — mesma correção aplicada em indisponibilidade-table.tsx:
+// header e cada linha do corpo são grids separados, então usar "Nfr" puro
+// (mínimo "auto"/min-content) deixa a largura de coluna do header divergir
+// da largura no corpo quando o conteúdo de um lado é mais longo que o
+// outro. minmax(0, Nfr) trava a largura na fração proporcional do
+// container nos dois casos.
+const GRID_COLS = "minmax(0,2.2fr) minmax(0,2.6fr) minmax(0,1.9fr) minmax(0,1.9fr)";
 
 const ScreenTable = forwardRef<
   HTMLDivElement,
