@@ -167,7 +167,10 @@ export type GestorIndispLinha = {
   cumpriuMeta: boolean;
   nr17Pct: number | null;
   pausaParticularPct: number | null;
-  outrasPausasPct: number | null;
+  /** % de pausa_mon_taref (monitoramento/tarefa) sobre o tempo logado. */
+  monitoramentoPct: number | null;
+  /** % de pausa_feedback sobre o tempo logado. */
+  feedbackPct: number | null;
   pausas: PausasDetalhe;
   /**
    * Hora real de início de cada pausa, "HH:MM:SS" — de d1_indisponibilidade

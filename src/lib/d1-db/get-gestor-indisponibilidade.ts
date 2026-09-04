@@ -44,11 +44,13 @@ const PAUSAS_ZERADAS: PausasDetalhe = {
  * operador cadastrado mas sem upload de hoje aparece com tudo zerado. Só
  * retorna `operadores: []` quando o roster está vazio.
  *
- * NR17%/Particular%/Outras% são percentuais ABSOLUTOS — cada um é o tempo
- * daquela pausa ÷ tempo logado, não ÷ tempo indisponível (isso daria a
- * proporção relativa dentro da indisponibilidade, ex: NR17 aparecendo como
- * 100% quando na verdade é só 10% da jornada). A soma dos três fica ≈
- * indisponibilidade total (a menos de arredondamento).
+ * NR17%/Particular%/Monitoramento%/Feedback% são percentuais ABSOLUTOS —
+ * cada um é o tempo daquela pausa ÷ tempo logado, não ÷ tempo indisponível
+ * (isso daria a proporção relativa dentro da indisponibilidade, ex: NR17
+ * aparecendo como 100% quando na verdade é só 10% da jornada). A soma dos
+ * quatro NÃO cobre toda a indisponibilidade — há outras pausas (treinamento,
+ * pré-pausa, ativo, take blip, email, sistema) que entram no total mas não
+ * têm coluna própria na tabela.
  *
  * O denominador é só tempo_logado (SEM somar tempo_indisponivel de novo):
  * o "tempo logado" já é o span completo da sessão (login → logout) no CSV
@@ -113,7 +115,8 @@ export async function getGestorIndisponibilidade(gestorId: string): Promise<Gest
         cumpriuMeta: false,
         nr17Pct: null,
         pausaParticularPct: null,
-        outrasPausasPct: null,
+        monitoramentoPct: null,
+        feedbackPct: null,
         pausas: PAUSAS_ZERADAS,
         pausa10PrimeiraHora: null,
         pausa10SegundaHora: null,
@@ -124,16 +127,8 @@ export async function getGestorIndisponibilidade(gestorId: string): Promise<Gest
     const pausa10Seg = horaParaSegundos(row.pausa10);
     const pausa20Seg = horaParaSegundos(row.pausa20);
     const particularSeg = horaParaSegundos(row.pausa_particular);
-    const outrasSeg =
-      horaParaSegundos(row.pausa_mon_taref) +
-      horaParaSegundos(row.pausa_treinamento) +
-      horaParaSegundos(row.pausa_feedback) +
-      horaParaSegundos(row.pausa_pre_pausa) +
-      horaParaSegundos(row.pausa_ativo) +
-      horaParaSegundos(row.pausa_take_blip) +
-      horaParaSegundos(row.pausa_email) +
-      horaParaSegundos(row.pausa_indisponivel) +
-      horaParaSegundos(row.pausa_sistema);
+    const monTarefSeg = horaParaSegundos(row.pausa_mon_taref);
+    const feedbackSeg = horaParaSegundos(row.pausa_feedback);
 
     const pausas: PausasDetalhe = {
       pausa10: row.pausa10 ?? ZERO_HORA,
@@ -163,7 +158,8 @@ export async function getGestorIndisponibilidade(gestorId: string): Promise<Gest
       cumpriuMeta: row.indisp_percent !== null && row.indisp_percent < META_INDISPONIBILIDADE,
       nr17Pct: pct(pausa10Seg + pausa20Seg, tempoLogadoSeg),
       pausaParticularPct: pct(particularSeg, tempoLogadoSeg),
-      outrasPausasPct: pct(outrasSeg, tempoLogadoSeg),
+      monitoramentoPct: pct(monTarefSeg, tempoLogadoSeg),
+      feedbackPct: pct(feedbackSeg, tempoLogadoSeg),
       pausas,
       pausa10PrimeiraHora: row.pausa10_1_hora_inicio ?? null,
       pausa10SegundaHora: row.pausa10_2_hora_inicio ?? null,

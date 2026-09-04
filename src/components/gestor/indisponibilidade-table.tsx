@@ -23,7 +23,7 @@ import {
   ValorSemDado,
 } from "./tabela-padrao";
 
-const GRID_COLS = "2fr 1.8fr 1.6fr 2fr 1.8fr";
+const GRID_COLS = "2fr 1.8fr 1.6fr 2fr 1.8fr 1.8fr";
 
 const NO_FANTASIA: NomeFantasiaSerial = { ativo: false, mapa: {} };
 
@@ -103,7 +103,8 @@ const ScreenTable = forwardRef<
         <div className={TABELA_HEADER_CELL_CLASS}>Indisp. %</div>
         <div className={TABELA_HEADER_CELL_CLASS}>NR17 %</div>
         <div className={TABELA_HEADER_CELL_CLASS}>Pausa Part. %</div>
-        <div className={TABELA_HEADER_CELL_ULTIMA_CLASS}>Outras %</div>
+        <div className={TABELA_HEADER_CELL_CLASS}>Monitoramento %</div>
+        <div className={TABELA_HEADER_CELL_ULTIMA_CLASS}>Feedback %</div>
       </div>
 
       {/* Linhas */}
@@ -151,10 +152,16 @@ const ScreenTable = forwardRef<
               {fmtPct(op.pausaParticularPct)}
             </div>
             <div
+              className={cn(TABELA_VALOR_CELL_CLASS, "text-muted-foreground")}
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
+              {fmtPct(op.monitoramentoPct)}
+            </div>
+            <div
               className="ds-mono-sm px-3 py-2 text-center text-muted-foreground"
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
-              {fmtPct(op.outrasPausasPct)}
+              {fmtPct(op.feedbackPct)}
             </div>
           </div>
         );
@@ -238,7 +245,10 @@ const ExcelTable = forwardRef<
         <div style={{ ...EXCEL_HEADER_CELL, ...EXCEL_HEADER_DIVIDER }}>
           Pausa Part. %
         </div>
-        <div style={EXCEL_HEADER_CELL}>Outras %</div>
+        <div style={{ ...EXCEL_HEADER_CELL, ...EXCEL_HEADER_DIVIDER }}>
+          Monitoramento %
+        </div>
+        <div style={EXCEL_HEADER_CELL}>Feedback %</div>
       </div>
 
       {/* Linhas */}
@@ -287,8 +297,13 @@ const ExcelTable = forwardRef<
             >
               {fmtPct(op.pausaParticularPct)}
             </div>
+            <div
+              style={{ ...EXCEL_TEXT_CELL, ...EXCEL_COL_DIVIDER, color: EXCEL_MUTED }}
+            >
+              {fmtPct(op.monitoramentoPct)}
+            </div>
             <div style={{ ...EXCEL_TEXT_CELL, color: EXCEL_MUTED }}>
-              {fmtPct(op.outrasPausasPct)}
+              {fmtPct(op.feedbackPct)}
             </div>
           </div>
         );
