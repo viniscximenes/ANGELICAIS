@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getEmailPrefix } from "@/lib/utils/email-variants";
+import { getEmailPrefix, getEmailVariants } from "@/lib/utils/email-variants";
 import { getRosterOperadoresGestor } from "./get-roster-gestor";
 import { dataRefHojeBR, horaParaSegundos } from "./parse";
 import {
@@ -28,19 +28,23 @@ function statusDe(horaLogin: string | null, horaLogout: string | null): StatusPr
 export async function getGestorTempoLogado(gestorId: string): Promise<GestorTempoLogadoData> {
   const admin = createAdminClient();
 
-  const [roster, { data, error }, { data: gestorProfile }] = await Promise.all([
-    getRosterOperadoresGestor(gestorId),
+  const roster = await getRosterOperadoresGestor(gestorId);
+  if (roster.length === 0) return { operadores: [] };
+
+  // Filtra por operator_email (via roster), NÃO por gestor_id — mesmo motivo
+  // de get-gestor-consolidado.ts.
+  const emailsComVariantes = roster.flatMap(getEmailVariants);
+
+  const [{ data, error }, { data: gestorProfile }] = await Promise.all([
     admin
       .from("d1_tempo_logado")
       .select(
         "operator_email, tempo_logado, logout_estimado, hora_login, hora_logout, report_hora, report_nome_supervisor",
       )
-      .eq("gestor_id", gestorId)
+      .in("operator_email", emailsComVariantes)
       .eq("data_ref", dataRefHojeBR()),
     admin.from("profiles").select("full_name").eq("id", gestorId).maybeSingle(),
   ]);
-
-  if (roster.length === 0) return { operadores: [] };
 
   if (error) {
     console.error("[get-gestor-tempo-logado] erro ao buscar d1_tempo_logado:", error.message);

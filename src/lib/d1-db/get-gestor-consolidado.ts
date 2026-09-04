@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getEmailPrefix } from "@/lib/utils/email-variants";
+import { getEmailPrefix, getEmailVariants } from "@/lib/utils/email-variants";
 import { dataRefHojeBR } from "./parse";
 import { getRosterOperadoresGestor } from "./get-roster-gestor";
 import type {
@@ -92,19 +92,27 @@ const EMPTY_RESULT: GestorConsolidadoResult = {
 export async function getGestorConsolidado(gestorId: string): Promise<GestorConsolidadoResult> {
   const admin = createAdminClient();
 
-  const [roster, { data, error }, { data: gestorProfile }] = await Promise.all([
-    getRosterOperadoresGestor(gestorId),
+  const roster = await getRosterOperadoresGestor(gestorId);
+  if (roster.length === 0) return EMPTY_RESULT;
+
+  // Filtra por operator_email (via roster de d1_operadores_gestor), NÃO por
+  // gestor_id — d1_consolidado tem índice único (data_ref, operator_email),
+  // então cada operador só tem UMA linha "dona" de um gestor_id, mesmo
+  // quando ele está na equipe de dois gestores. Filtrar por gestor_id faria
+  // o dado sumir pro segundo gestor. Inclui as variantes de domínio do
+  // roster (@alloha.com/@sumicity.net.br) pra não perder linhas do CSV.
+  const emailsComVariantes = roster.flatMap(getEmailVariants);
+
+  const [{ data, error }, { data: gestorProfile }] = await Promise.all([
     admin
       .from("d1_consolidado")
       .select(
         "operator_email, supervisor, retidos, cancelados, pedidos, tx_retencao, motivos_retidos, motivos_cancelados, contratos_retidos, contratos_cancelados, report_hora, report_nome_supervisor",
       )
-      .eq("gestor_id", gestorId)
+      .in("operator_email", emailsComVariantes)
       .eq("data_ref", dataRefHojeBR()),
     admin.from("profiles").select("full_name").eq("id", gestorId).maybeSingle(),
   ]);
-
-  if (roster.length === 0) return EMPTY_RESULT;
 
   if (error) {
     console.error("[get-gestor-consolidado] erro ao buscar d1_consolidado:", error.message);

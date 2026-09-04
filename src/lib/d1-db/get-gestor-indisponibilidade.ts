@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getEmailPrefix } from "@/lib/utils/email-variants";
+import { getEmailPrefix, getEmailVariants } from "@/lib/utils/email-variants";
 import { getRosterOperadoresGestor } from "./get-roster-gestor";
 import { dataRefHojeBR, horaParaSegundos } from "./parse";
 import {
@@ -61,25 +61,31 @@ const PAUSAS_ZERADAS: PausasDetalhe = {
 export async function getGestorIndisponibilidade(gestorId: string): Promise<GestorIndispData> {
   const admin = createAdminClient();
 
-  const [roster, { data, error }, { data: gestorProfile }, { data: tempoLogadoRows }] =
+  const roster = await getRosterOperadoresGestor(gestorId);
+  if (roster.length === 0) return { operadores: [] };
+
+  // Filtra por operator_email (via roster), NÃO por gestor_id — mesmo motivo
+  // de get-gestor-consolidado.ts: d1_indisponibilidade/d1_tempo_logado têm
+  // uma linha "dona" por operador/dia, então gestor_id não reflete operador
+  // em duas equipes.
+  const emailsComVariantes = roster.flatMap(getEmailVariants);
+
+  const [{ data, error }, { data: gestorProfile }, { data: tempoLogadoRows }] =
     await Promise.all([
-      getRosterOperadoresGestor(gestorId),
       admin
         .from("d1_indisponibilidade")
         .select(
           "operator_email, indisp_percent, tempo_indisponivel, pausa10, pausa20, pausa_particular, pausa_mon_taref, pausa_treinamento, pausa_feedback, pausa_pre_pausa, pausa_ativo, pausa_take_blip, pausa_email, pausa_indisponivel, pausa_sistema, pausa10_1_hora_inicio, pausa10_2_hora_inicio, pausa20_hora_inicio, report_hora, report_nome_supervisor",
         )
-        .eq("gestor_id", gestorId)
+        .in("operator_email", emailsComVariantes)
         .eq("data_ref", dataRefHojeBR()),
       admin.from("profiles").select("full_name").eq("id", gestorId).maybeSingle(),
       admin
         .from("d1_tempo_logado")
         .select("operator_email, tempo_logado")
-        .eq("gestor_id", gestorId)
+        .in("operator_email", emailsComVariantes)
         .eq("data_ref", dataRefHojeBR()),
     ]);
-
-  if (roster.length === 0) return { operadores: [] };
 
   if (error) {
     console.error("[get-gestor-indisponibilidade] erro ao buscar d1_indisponibilidade:", error.message);
