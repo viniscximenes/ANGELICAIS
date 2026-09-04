@@ -75,7 +75,7 @@ export const TempoLogadoTable = forwardRef<
    SCREEN — visual padrão do site (tema escuro/claro adaptativo)
    ──────────────────────────────────────────────────────────────────── */
 
-const GRID_COLS = "2.2fr 2.6fr 2.4fr 1.9fr 1.9fr";
+const GRID_COLS = "2.2fr 2.6fr 1.9fr 1.9fr";
 
 const ScreenTable = forwardRef<
   HTMLDivElement,
@@ -110,7 +110,6 @@ const ScreenTable = forwardRef<
           )}
         </div>
         <div className={TABELA_HEADER_CELL_CLASS}>Tempo Logado</div>
-        <div className={TABELA_HEADER_CELL_CLASS}>Logout Est.</div>
         <div className={TABELA_HEADER_CELL_CLASS}>Login</div>
         <div className={TABELA_HEADER_CELL_ULTIMA_CLASS}>Logout</div>
       </div>
@@ -152,12 +151,6 @@ const ScreenTable = forwardRef<
               ) : (
                 <ValorSemantico ruim={belowMeta}>{op.tempoLogado}</ValorSemantico>
               )}
-            </div>
-            <div
-              className={cn(TABELA_VALOR_CELL_CLASS, "text-muted-foreground")}
-              style={{ fontVariantNumeric: "tabular-nums" }}
-            >
-              {op.logoutEstimado || "—"}
             </div>
             <div
               className={cn(TABELA_VALOR_CELL_CLASS, "text-muted-foreground")}
@@ -255,9 +248,6 @@ const ExcelTable = forwardRef<
           Tempo Logado
         </div>
         <div style={{ ...EXCEL_HEADER_CELL, ...EXCEL_HEADER_DIVIDER }}>
-          Logout Est.
-        </div>
-        <div style={{ ...EXCEL_HEADER_CELL, ...EXCEL_HEADER_DIVIDER }}>
           Login
         </div>
         <div style={EXCEL_HEADER_CELL}>Logout</div>
@@ -298,15 +288,6 @@ const ExcelTable = forwardRef<
               }}
             >
               {op.tempoLogado || "—"}
-            </div>
-            <div
-              style={{
-                ...EXCEL_TEXT_CELL,
-                ...EXCEL_COL_DIVIDER,
-                color: EXCEL_MUTED,
-              }}
-            >
-              {op.logoutEstimado || "—"}
             </div>
             <div
               style={{
