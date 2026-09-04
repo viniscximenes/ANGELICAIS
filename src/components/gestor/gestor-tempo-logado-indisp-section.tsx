@@ -180,7 +180,10 @@ export function GestorTempoLogadoIndispSection({
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* Tempo Logado perdeu uma coluna (Logout Est.) e Indisponibilidade
+              ganhou uma (Feedback %) — a divisão 44/56 reflete a nova
+              proporção de colunas entre as duas tabelas. */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[44fr_56fr]">
             <div className="min-w-0">
               <StyledCard withGradient className="h-full p-3">
                 <div className="mb-2">
@@ -239,7 +242,7 @@ export function GestorTempoLogadoIndispSection({
           position: "fixed",
           top: "-99999px",
           left: "-99999px",
-          width: "650px",
+          width: "600px",
         }}
       >
         <div data-tabela-png>
@@ -263,7 +266,7 @@ export function GestorTempoLogadoIndispSection({
           position: "fixed",
           top: "-99999px",
           left: "-99999px",
-          width: "700px",
+          width: "760px",
         }}
       >
         <div data-indisp-png>
