@@ -140,6 +140,18 @@
     --danger-bg: oklch(0.65 0.22 25 / 0.12);
     --danger-border: oklch(0.65 0.22 25 / 0.3);
 
+    /* === TMA — paleta fixa por skill de retenção (donut do modal de
+       detalhamento) === Mapeamento skill → cor é global e igual pra
+       qualquer gestor (não gerado dinamicamente); hues escolhidos pra
+       diferenciação rápida entre as 7 colunas de "queda por skill". */
+    --tma-outros: oklch(0.65 0.03 240);
+    --tma-criticos: oklch(0.65 0.22 25);
+    --tma-mud-endereco: oklch(0.8 0.15 85);
+    --tma-financeiro: oklch(0.72 0.17 152);
+    --tma-qualidade: oklch(0.65 0.18 250);
+    --tma-concorrencia: oklch(0.65 0.2 300);
+    --tma-hotline-churn: oklch(0.7 0.2 340);
+
     /* === Elevation === */
     --elevation-1-bg: oklch(0.218 0.008 223.9);
     --elevation-1-border: oklch(1 0 0 / 0.06);
@@ -239,6 +251,16 @@
     --danger: oklch(0.52 0.16 25);
     --danger-bg: oklch(0.95 0.02 25);
     --danger-border: oklch(0.86 0.04 25);
+
+    /* ─── TMA — mesma paleta fixa, tons mais escuros/saturados pro
+       contraste sobre fundo branco ─── */
+    --tma-outros: oklch(0.5 0.03 240);
+    --tma-criticos: oklch(0.52 0.16 25);
+    --tma-mud-endereco: oklch(0.65 0.11 80);
+    --tma-financeiro: oklch(0.55 0.13 145);
+    --tma-qualidade: oklch(0.5 0.15 250);
+    --tma-concorrencia: oklch(0.5 0.17 300);
+    --tma-hotline-churn: oklch(0.55 0.17 340);
 
     /* ─── Elevation ─── */
     --elevation-1-bg: oklch(1.00 0.00 0);

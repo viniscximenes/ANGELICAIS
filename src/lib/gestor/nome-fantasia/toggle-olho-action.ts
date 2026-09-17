@@ -7,7 +7,8 @@ type TabelaOlho =
   | "consolidado"
   | "tempo_logado"
   | "indisponibilidade"
-  | "operacional";
+  | "operacional"
+  | "tma";
 
 type ToggleOlhoResult =
   | { success: true }
@@ -40,6 +41,11 @@ export async function toggleOlhoAction(
     const { error } = await supabase
       .from("gestor_config_fantasia")
       .upsert({ gestor_id: gestorId, olho_indisponibilidade: valor }, { onConflict: "gestor_id" });
+    dbError = error;
+  } else if (tabela === "tma") {
+    const { error } = await supabase
+      .from("gestor_config_fantasia")
+      .upsert({ gestor_id: gestorId, olho_tma: valor }, { onConflict: "gestor_id" });
     dbError = error;
   } else {
     const { error } = await supabase

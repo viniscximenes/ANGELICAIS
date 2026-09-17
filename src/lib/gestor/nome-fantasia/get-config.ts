@@ -7,6 +7,7 @@ type NomeFantasiaConfig = {
   olhoTempoLogado: boolean;
   olhoIndisponibilidade: boolean;
   olhoOperacional: boolean;
+  olhoTma: boolean;
 };
 
 export async function getNomeFantasiaConfig(
@@ -18,7 +19,7 @@ export async function getNomeFantasiaConfig(
     supabase
       .from("gestor_config_fantasia")
       .select(
-        "ativo, olho_consolidado, olho_tempo_logado, olho_indisponibilidade, olho_operacional",
+        "ativo, olho_consolidado, olho_tempo_logado, olho_indisponibilidade, olho_operacional, olho_tma",
       )
       .eq("gestor_id", gestorId)
       .maybeSingle(),
@@ -41,6 +42,7 @@ export async function getNomeFantasiaConfig(
     olho_tempo_logado?: boolean;
     olho_indisponibilidade?: boolean;
     olho_operacional?: boolean;
+    olho_tma?: boolean;
   } | null;
 
   const mapa = new Map<string, string>();
@@ -60,5 +62,6 @@ export async function getNomeFantasiaConfig(
     olhoTempoLogado: cfg?.olho_tempo_logado ?? false,
     olhoIndisponibilidade: cfg?.olho_indisponibilidade ?? false,
     olhoOperacional: cfg?.olho_operacional ?? false,
+    olhoTma: cfg?.olho_tma ?? false,
   };
 }
