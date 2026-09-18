@@ -7,8 +7,7 @@ import { can } from "@/lib/auth/permissions";
 import { dataRefHojeBR, horaAtualBR } from "@/lib/d1-db/parse";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { enforceRetentionTma } from "../enforce-retention-tma";
-import { parseTma } from "../parse-tma";
-import { bucketDaSkill, zeroSkillBuckets, type SkillBucket } from "../skills-retencao";
+import type { UploadTmaPayload } from "../parse-tma-client";
 
 type UploadTmaResult =
   | {
@@ -37,7 +36,13 @@ async function upsertEmLotes(
   return null;
 }
 
-export async function uploadTmaAction(csvText: string): Promise<UploadTmaResult> {
+/**
+ * Recebe só o agregado JÁ PROCESSADO no client (`parse-tma-client.ts`) —
+ * nunca o CSV bruto. O parse + matching por parte local rodam inteiramente
+ * no navegador (Web Worker); esta action só valida, estampa data_ref/report
+ * e grava. Isso é o que evita o 413 em produção com arquivos de ~10MB.
+ */
+export async function uploadTmaAction(payload: UploadTmaPayload): Promise<UploadTmaResult> {
   const user = await getCurrentUser();
   if (!user) {
     return { success: false, error: "Não autenticado" };
@@ -46,108 +51,16 @@ export async function uploadTmaAction(csvText: string): Promise<UploadTmaResult>
     return { success: false, error: "Sem permissão para atualizar a base" };
   }
 
-  const { linhas, lidas } = parseTma(csvText);
-
-  if (linhas.length === 0) {
+  if (payload.agregados.length === 0) {
     return { success: false, error: "Nenhum atendimento de retenção válido encontrado no CSV." };
   }
 
   const admin = createAdminClient();
-
-  // Roster GLOBAL (todas as equipes) — o CDR cobre a empresa toda, cada
-  // linha é resolvida pro gestor dono do operador, igual ao upload do
-  // Consolidado.
-  const { data: roster, error: rosterErr } = await admin
-    .from("d1_operadores_gestor")
-    .select("gestor_id, operador_email");
-
-  if (rosterErr) {
-    console.error("[upload-tma] erro ao buscar roster:", rosterErr.message);
-    return { success: false, error: "Erro ao buscar roster de operadores." };
-  }
-
-  // parte local (lowercase) -> lista de {gestor_id, operador_email} cadastrados.
-  // Mais de um operador distinto com a mesma parte local = colisão (defensivo).
-  const porParteLocal = new Map<string, { gestorId: string; operadorEmail: string }[]>();
-  for (const row of roster || []) {
-    if (!row.operador_email) continue;
-    const parteLocal = row.operador_email.trim().toLowerCase().split("@")[0];
-    const email = row.operador_email.trim().toLowerCase();
-    const lista = porParteLocal.get(parteLocal) ?? [];
-    if (!lista.some((r) => r.operadorEmail === email)) {
-      lista.push({ gestorId: row.gestor_id, operadorEmail: email });
-    }
-    porParteLocal.set(parteLocal, lista);
-  }
-
-  type Agregado = {
-    gestorId: string;
-    operatorEmail: string;
-    qtd: number;
-    talkTotal: number;
-    acwTotal: number;
-    buckets: Record<SkillBucket, number>;
-  };
-  const porOperador = new Map<string, Agregado>();
-  const detalhes: Record<string, unknown>[] = [];
-
-  let semMatch = 0;
-  let colisoes = 0;
-
-  for (const linha of linhas) {
-    const candidatos = porParteLocal.get(linha.emailLocal);
-    if (!candidatos || candidatos.length === 0) {
-      semMatch++;
-      continue;
-    }
-    if (candidatos.length > 1) {
-      colisoes++;
-      console.warn(
-        `[upload-tma] colisão de parte local "${linha.emailLocal}" entre operadores cadastrados — linha descartada.`,
-      );
-      continue;
-    }
-
-    const { gestorId, operadorEmail } = candidatos[0];
-
-    let agg = porOperador.get(operadorEmail);
-    if (!agg) {
-      agg = {
-        gestorId,
-        operatorEmail: operadorEmail,
-        qtd: 0,
-        talkTotal: 0,
-        acwTotal: 0,
-        buckets: zeroSkillBuckets(),
-      };
-      porOperador.set(operadorEmail, agg);
-    }
-    agg.qtd += 1;
-    agg.talkTotal += linha.talkSegundos;
-    agg.acwTotal += linha.acwSegundos;
-    const bucket = bucketDaSkill(linha.skill);
-    if (bucket) agg.buckets[bucket] += 1;
-
-    detalhes.push({
-      data_ref: dataRefHojeBR(),
-      gestor_id: gestorId,
-      operator_email: operadorEmail,
-      call_id: linha.callId,
-      call_segment_id: linha.callSegmentId,
-      hora: linha.hora,
-      telefone_cliente: linha.ani,
-      skill: linha.skill,
-      duracao_segundos: linha.talkSegundos + linha.acwSegundos,
-      talk_segundos: linha.talkSegundos,
-      acw_segundos: linha.acwSegundos,
-    });
-  }
-
   const dataRef = dataRefHojeBR();
   await enforceRetentionTma(dataRef);
 
   const reportHora = horaAtualBR();
-  const rowsAgregado: Record<string, unknown>[] = Array.from(porOperador.values()).map((agg) => ({
+  const rowsAgregado: Record<string, unknown>[] = payload.agregados.map((agg) => ({
     data_ref: dataRef,
     gestor_id: agg.gestorId,
     operator_email: agg.operatorEmail,
@@ -168,44 +81,51 @@ export async function uploadTmaAction(csvText: string): Promise<UploadTmaResult>
     report_nome_supervisor: user.profile.fullName,
   }));
 
-  if (rowsAgregado.length > 0) {
-    const { error: upsertErr } = await admin
-      .from("d1_tma")
-      .upsert(rowsAgregado, { onConflict: "data_ref,operator_email" });
-    if (upsertErr) {
-      console.error("[upload-tma] erro no upsert de d1_tma:", upsertErr.message);
-      return { success: false, error: `Erro ao gravar d1_tma: ${upsertErr.message}` };
-    }
+  const { error: upsertErr } = await admin
+    .from("d1_tma")
+    .upsert(rowsAgregado, { onConflict: "data_ref,operator_email" });
+  if (upsertErr) {
+    console.error("[upload-tma] erro no upsert de d1_tma:", upsertErr.message);
+    return { success: false, error: `Erro ao gravar d1_tma: ${upsertErr.message}` };
   }
 
-  if (detalhes.length > 0) {
-    const erro = await upsertEmLotes(
-      admin,
-      "d1_tma_atendimentos",
-      detalhes,
-      "data_ref,call_segment_id",
-    );
+  if (payload.detalhes.length > 0) {
+    const detalhes = payload.detalhes.map((d) => ({
+      data_ref: dataRef,
+      gestor_id: d.gestorId,
+      operator_email: d.operatorEmail,
+      call_id: d.callId,
+      call_segment_id: d.callSegmentId,
+      hora: d.hora,
+      telefone_cliente: d.ani,
+      skill: d.skill,
+      duracao_segundos: d.talkSegundos + d.acwSegundos,
+      talk_segundos: d.talkSegundos,
+      acw_segundos: d.acwSegundos,
+    }));
+
+    const erro = await upsertEmLotes(admin, "d1_tma_atendimentos", detalhes, "data_ref,call_segment_id");
     if (erro) {
       console.error("[upload-tma] erro no upsert de d1_tma_atendimentos:", erro);
       return { success: false, error: `Erro ao gravar d1_tma_atendimentos: ${erro}` };
     }
   }
 
-  if (semMatch > 0) {
-    console.info(`[upload-tma] ${semMatch} linha(s) sem operador de retenção cadastrado — ignoradas.`);
+  if (payload.semMatch > 0) {
+    console.info(`[upload-tma] ${payload.semMatch} linha(s) sem operador de retenção cadastrado — ignoradas.`);
   }
-  if (colisoes > 0) {
-    console.warn(`[upload-tma] ${colisoes} linha(s) descartadas por colisão de parte local.`);
+  if (payload.colisoes > 0) {
+    console.warn(`[upload-tma] ${payload.colisoes} linha(s) descartadas por colisão de parte local.`);
   }
 
   revalidatePath("/reports/tma");
 
   return {
     success: true,
-    linhasCsv: lidas,
-    atendimentosValidos: linhas.length,
-    semMatch,
-    colisoes,
+    linhasCsv: payload.linhasCsv,
+    atendimentosValidos: payload.atendimentosValidos,
+    semMatch: payload.semMatch,
+    colisoes: payload.colisoes,
     operadoresAtualizados: rowsAgregado.length,
   };
 }

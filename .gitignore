@@ -32,6 +32,9 @@ dev-server.pid
 *.tsbuildinfo
 next-env.d.ts
 
+# scratch (temp test files, scripts, not for commit)
+scratch/
+
 # IDE
 .idea/
 .vscode/

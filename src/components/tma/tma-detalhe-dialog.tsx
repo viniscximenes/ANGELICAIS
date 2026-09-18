@@ -5,7 +5,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import { ExportPopupPngButton } from "@/components/dashboard/export-popup-png-button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
+import { deriveNomeOperador, formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import {
   bucketDaSkill,
@@ -45,10 +45,12 @@ export function TmaDetalheDialog({ operador, atendimentos, onOpenChange }: TmaDe
 
   // Exceção documentada à convenção geral do site (nome fantasia sempre):
   // este modal de detalhamento por operador mostra o nome REAL (derivado do
-  // email, mesma lógica de "revelar nome real" usada no olho das outras
-  // tabelas) — inclusive no PNG exportado. Não trocar de volta pra
-  // nomeExibicao (fantasia) numa manutenção futura.
-  const nomeReal = operador ? deriveNomeOperador(operador.operatorEmail) : "";
+  // email + Title Case, mesma lógica de "revelar nome real" usada no olho
+  // das outras tabelas) — inclusive no PNG exportado. Não trocar de volta
+  // pra nomeExibicao (fantasia) numa manutenção futura.
+  const nomeReal = operador
+    ? formatNomeProprio(deriveNomeOperador(operador.operatorEmail).replace(/[._-]+/g, " "))
+    : "";
 
   return (
     <Dialog open={operador !== null} onOpenChange={onOpenChange}>

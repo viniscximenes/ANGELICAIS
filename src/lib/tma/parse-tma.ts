@@ -42,20 +42,13 @@ function hhmmssParaSegundosOuNull(val: string | null | undefined): number | null
 }
 
 /**
- * Parseia o relatório de voz (CDR) — uma linha por segmento de ligação.
- * Ver spec da feature TMA pra regra completa de linha válida.
+ * Aplica a regra de linha válida a linhas já parseadas (array de arrays de
+ * string, header na linha 0). Separado de `parseTma` pra poder ser chamado
+ * tanto pelo parse síncrono (server/testes) quanto pelo parse em Web Worker
+ * do client (`parse-tma-client.ts`), que só tem acesso ao resultado do
+ * `Papa.parse` assíncrono, não ao CSV bruto de novo.
  */
-export function parseTma(csvText: string): ParseTmaResult {
-  const parsed = Papa.parse<string[]>(csvText, {
-    delimiter: ";",
-    skipEmptyLines: true,
-  });
-
-  if (parsed.errors.length > 0) {
-    console.error("[parse-tma] erro no Papa.parse:", parsed.errors);
-  }
-
-  const rows = parsed.data;
+export function linhasValidasDeRows(rows: string[][]): ParseTmaResult {
   if (rows.length < 2) {
     return { linhas: [], lidas: 0, validas: 0, puladas: 0 };
   }
@@ -132,4 +125,25 @@ export function parseTma(csvText: string): ParseTmaResult {
   }
 
   return { linhas, lidas, validas, puladas };
+}
+
+/**
+ * Parseia o relatório de voz (CDR) — uma linha por segmento de ligação.
+ * Ver spec da feature TMA pra regra completa de linha válida.
+ *
+ * Uso só síncrono/pequeno volume (ex.: testes). O upload real do site NÃO
+ * chama isso — parseia no client via Web Worker (`parse-tma-client.ts`) pra
+ * nunca travar a thread principal nem mandar o CSV bruto pro servidor.
+ */
+export function parseTma(csvText: string): ParseTmaResult {
+  const parsed = Papa.parse<string[]>(csvText, {
+    delimiter: ";",
+    skipEmptyLines: true,
+  });
+
+  if (parsed.errors.length > 0) {
+    console.error("[parse-tma] erro no Papa.parse:", parsed.errors);
+  }
+
+  return linhasValidasDeRows(parsed.data);
 }

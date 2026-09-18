@@ -5,7 +5,9 @@ import { IconCloudUpload, IconFileSpreadsheet } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
+import { getTmaRosterAction } from "@/lib/tma/actions/get-tma-roster-action";
 import { uploadTmaAction } from "@/lib/tma/actions/upload-tma-action";
+import { parseTmaNoClient } from "@/lib/tma/parse-tma-client";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 
 interface TmaUploadDropzoneProps {
@@ -24,23 +26,24 @@ export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = 
     const toastId = toast.loading("Processando relatório de voz...");
 
     try {
-      const buffer = await file.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-
-      let csvText: string;
-      if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
-        csvText = new TextDecoder("utf-8").decode(bytes.slice(3));
-      } else {
-        try {
-          csvText = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-        } catch {
-          csvText = new TextDecoder("windows-1252").decode(bytes);
-        }
+      // Roster (só email + gestor_id, payload pequeno) — usado pro matching
+      // client-side. O CSV em si (~10MB em dia cheio) NUNCA sai do
+      // navegador como arquivo bruto: o parse + matching + agregação rodam
+      // aqui, e só o resultado processado (pequeno) vai pro servidor. Ver
+      // parse-tma-client.ts — mandar o File/FormData bruto pra uma Server
+      // Action estoura o limite de payload (413 em produção).
+      const rosterResult = await getTmaRosterAction();
+      if (!rosterResult.success) {
+        setErrorMessage(rosterResult.error);
+        toast.error("Falha ao processar relatório", { id: toastId, description: rosterResult.error });
+        return;
       }
+
+      const payload = await parseTmaNoClient(file, rosterResult.roster);
 
       let result;
       try {
-        result = await uploadTmaAction(csvText);
+        result = await uploadTmaAction(payload);
       } catch (err) {
         if (handleStaleActionError(err)) return;
         throw err;
