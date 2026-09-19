@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { classificarAtendimento } from "./classificar-atendimento";
+import { dedupePorContrato, classificarComHistoricoFaceId } from "./dedupe-por-contrato";
+import { getContratosComFaceIdGlobal } from "./get-contratos-com-faceid-global";
 import { aplicarFiltroEscopo } from "./escopo";
 import { normalizarTema } from "./normalizar-tema";
 
@@ -73,10 +74,14 @@ export async function getEvolucaoHora(
   // Sem recorte de horas: os buckets das pontas ("< 08" e "≥ 20") precisam
   // enxergar os atendimentos fora da janela de operação.
   let allData: {
+    usuario_login: string | null;
+    cod_air: string | null;
+    status_hora: string | null;
     hora_bucket: number | null;
     foi_cancelamento: boolean | null;
     motivo: string | null;
     status_retencao: string | null;
+    primeiro_nivel: string | null;
   }[] = [];
   let page = 0;
   const pageSize = 1000;
@@ -88,7 +93,9 @@ export async function getEvolucaoHora(
 
     let query = supabase
       .from("retencao_atendimentos")
-      .select("hora_bucket, foi_cancelamento, motivo, status_retencao")
+      .select(
+        "usuario_login, cod_air, status_hora, hora_bucket, foi_cancelamento, motivo, status_retencao, primeiro_nivel",
+      )
       .range(from, to);
 
     query = aplicarFiltroEscopo(query, { emailsEquipe });
@@ -122,7 +129,11 @@ export async function getEvolucaoHora(
     map.set(b.hora, { total: 0, retidos: 0, cancelados: 0, temas: new Map() });
   }
 
-  for (const item of allData) {
+  // Histórico de FaceID sem filtro de equipe — ver get-contratos-com-faceid-global.ts.
+  const contratosComFaceId = await getContratosComFaceIdGlobal();
+  const linhasFinais = dedupePorContrato(allData);
+
+  for (const item of linhasFinais) {
     const h = item.hora_bucket;
     // Sem hora não dá pra posicionar no eixo — fica fora do gráfico.
     if (h === null || h === undefined) continue;
@@ -132,7 +143,7 @@ export async function getEvolucaoHora(
 
     // "Abortado" não é nem sucesso nem fracasso de retenção — fica fora de
     // retidos, cancelados e do total (= PEDIDOS = RETIDOS + CANCELADOS).
-    const classe = classificarAtendimento(item);
+    const classe = classificarComHistoricoFaceId(item, contratosComFaceId);
     if (classe === "abortado") continue;
     const isCancelado = classe === "cancelado";
 

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { classificarAtendimento } from "./classificar-atendimento";
+import { dedupePorContrato, classificarComHistoricoFaceId } from "./dedupe-por-contrato";
+import { getContratosComFaceIdGlobal } from "./get-contratos-com-faceid-global";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
 import { aplicarFiltroEscopo } from "./escopo";
 import { BUCKETS, bucketDe, type HoraEvolucaoData } from "./get-evolucao-hora";
@@ -31,10 +32,13 @@ export type OperadorIndividual = {
 type Linha = {
   usuario_login: string;
   usuario_nome: string | null;
+  cod_air: string | null;
+  status_hora: string | null;
   motivo: string | null;
   hora_bucket: number | null;
   foi_cancelamento: boolean | null;
   status_retencao: string | null;
+  primeiro_nivel: string | null;
 };
 
 type Acumulador = {
@@ -91,7 +95,9 @@ export async function getPorOperadorIndividual(
   while (hasMore) {
     let query = supabase
       .from("retencao_atendimentos")
-      .select("usuario_login, usuario_nome, motivo, hora_bucket, foi_cancelamento, status_retencao")
+      .select(
+        "usuario_login, usuario_nome, cod_air, status_hora, motivo, hora_bucket, foi_cancelamento, status_retencao, primeiro_nivel",
+      )
       .range(page * pageSize, page * pageSize + pageSize - 1);
 
     query = aplicarFiltroEscopo(query, { emailsEquipe });
@@ -117,7 +123,11 @@ export async function getPorOperadorIndividual(
     porPrefixo.set(getEmailPrefix(email), novoAcumulador(email.trim().toLowerCase()));
   }
 
-  for (const linha of todas) {
+  // Histórico de FaceID sem filtro de equipe — ver get-contratos-com-faceid-global.ts.
+  const contratosComFaceId = await getContratosComFaceIdGlobal();
+  const linhasFinais = dedupePorContrato(todas);
+
+  for (const linha of linhasFinais) {
     if (!linha.usuario_login) continue;
     const prefixo = getEmailPrefix(linha.usuario_login);
 
@@ -135,7 +145,7 @@ export async function getPorOperadorIndividual(
     // fracasso de retenção — fica fora de retidos, cancelados e do total
     // (= PEDIDOS = RETIDOS + CANCELADOS), em todas as dimensões (geral, por
     // hora e por motivo).
-    const classe = classificarAtendimento(linha);
+    const classe = classificarComHistoricoFaceId(linha, contratosComFaceId);
     if (classe === "abortado") continue;
     const isCancelado = classe === "cancelado";
 

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { classificarAtendimento } from "./classificar-atendimento";
+import { dedupePorContrato, classificarComHistoricoFaceId } from "./dedupe-por-contrato";
+import { getContratosComFaceIdGlobal } from "./get-contratos-com-faceid-global";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
 import { aplicarFiltroEscopo } from "./escopo";
 
@@ -25,8 +26,11 @@ export async function getPorOperador(
   let allData: {
     usuario_login: string | null;
     usuario_nome: string | null;
+    cod_air: string | null;
+    status_hora: string | null;
     foi_cancelamento: boolean | null;
     status_retencao: string | null;
+    primeiro_nivel: string | null;
   }[] = [];
   let page = 0;
   const pageSize = 1000;
@@ -38,7 +42,9 @@ export async function getPorOperador(
 
     let query = supabase
       .from("retencao_atendimentos")
-      .select("usuario_login, usuario_nome, foi_cancelamento, status_retencao")
+      .select(
+        "usuario_login, usuario_nome, cod_air, status_hora, foi_cancelamento, status_retencao, primeiro_nivel",
+      )
       .range(from, to);
 
     query = aplicarFiltroEscopo(query, { escopo, emailsEquipe });
@@ -59,7 +65,9 @@ export async function getPorOperador(
     }
   }
 
-  const list = allData;
+  // Histórico de FaceID sem filtro de equipe — ver get-contratos-com-faceid-global.ts.
+  const contratosComFaceId = await getContratosComFaceIdGlobal();
+  const list = dedupePorContrato(allData);
 
   const operators: Record<
     string,
@@ -79,7 +87,7 @@ export async function getPorOperador(
       nome = item.usuario_login ? item.usuario_login.split("@")[0].trim() : "Operador Desconhecido";
     }
 
-    const classe = classificarAtendimento(item);
+    const classe = classificarComHistoricoFaceId(item, contratosComFaceId);
 
     if (!operators[chave]) {
       // login: guarda a primeira variante encontrada — usada depois como

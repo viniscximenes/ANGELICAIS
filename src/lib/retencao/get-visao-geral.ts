@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { classificarAtendimento } from "./classificar-atendimento";
+import { dedupePorContrato, classificarComHistoricoFaceId } from "./dedupe-por-contrato";
+import { getContratosComFaceIdGlobal } from "./get-contratos-com-faceid-global";
 import { aplicarFiltroEscopo } from "./escopo";
 
 export type VisaoGeralData = {
@@ -17,7 +18,14 @@ export async function getVisaoGeral(
   emailsEquipe: string[],
 ): Promise<VisaoGeralData> {
   const supabase = createAdminClient();
-  let allData: { foi_cancelamento: boolean | null; status_retencao: string | null }[] = [];
+  let allData: {
+    usuario_login: string | null;
+    cod_air: string | null;
+    status_hora: string | null;
+    foi_cancelamento: boolean | null;
+    status_retencao: string | null;
+    primeiro_nivel: string | null;
+  }[] = [];
   let page = 0;
   const pageSize = 1000;
   let hasMore = true;
@@ -28,7 +36,7 @@ export async function getVisaoGeral(
 
     let query = supabase
       .from("retencao_atendimentos")
-      .select("foi_cancelamento, status_retencao")
+      .select("usuario_login, cod_air, status_hora, foi_cancelamento, status_retencao, primeiro_nivel")
       .range(from, to);
 
     query = aplicarFiltroEscopo(query, { emailsEquipe });
@@ -49,10 +57,16 @@ export async function getVisaoGeral(
     }
   }
 
+  // Histórico de FaceID é buscado SEM filtro de equipe (ver comentário em
+  // get-contratos-com-faceid-global.ts) — o mesmo contrato pode ter sido
+  // tocado por um agente de OUTRA equipe.
+  const contratosComFaceId = await getContratosComFaceIdGlobal();
+  const linhasFinais = dedupePorContrato(allData);
+
   let retidos = 0;
   let cancelados = 0;
-  for (const r of allData) {
-    const classe = classificarAtendimento(r);
+  for (const r of linhasFinais) {
+    const classe = classificarComHistoricoFaceId(r, contratosComFaceId);
     if (classe === "cancelado") cancelados++;
     else if (classe === "retido") retidos++;
     // "abortado" fica fora de retidos, cancelados e do total de PEDIDOS.

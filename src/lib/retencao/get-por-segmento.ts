@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { classificarAtendimento } from "./classificar-atendimento";
+import { dedupePorContrato, classificarComHistoricoFaceId } from "./dedupe-por-contrato";
+import { getContratosComFaceIdGlobal } from "./get-contratos-com-faceid-global";
 import { aplicarFiltroEscopo } from "./escopo";
 
 export type SegmentoItem = {
@@ -26,11 +27,15 @@ export async function getPorSegmento(
 ): Promise<SegmentoResult> {
   const supabase = createAdminClient();
   let allData: {
+    usuario_login: string | null;
+    cod_air: string | null;
+    status_hora: string | null;
     marca: string | null;
     unidade_nome: string | null;
     ult_equipe: string | null;
     foi_cancelamento: boolean | null;
     status_retencao: string | null;
+    primeiro_nivel: string | null;
   }[] = [];
   let page = 0;
   const pageSize = 1000;
@@ -42,7 +47,9 @@ export async function getPorSegmento(
 
     let query = supabase
       .from("retencao_atendimentos")
-      .select("marca, unidade_nome, ult_equipe, foi_cancelamento, status_retencao")
+      .select(
+        "usuario_login, cod_air, status_hora, marca, unidade_nome, ult_equipe, foi_cancelamento, status_retencao, primeiro_nivel",
+      )
       .range(from, to);
 
     query = aplicarFiltroEscopo(query, { emailsEquipe });
@@ -63,7 +70,9 @@ export async function getPorSegmento(
     }
   }
 
-  const list = allData;
+  // Histórico de FaceID sem filtro de equipe — ver get-contratos-com-faceid-global.ts.
+  const contratosComFaceId = await getContratosComFaceIdGlobal();
+  const list = dedupePorContrato(allData);
 
   const marcas: Record<string, { total: number; retidos: number; cancelados: number }> = {};
   const unidades: Record<string, { total: number; retidos: number; cancelados: number }> = {};
@@ -72,7 +81,7 @@ export async function getPorSegmento(
   for (const item of list) {
     // "Abortado" não é nem sucesso nem fracasso de retenção — fica fora de
     // retidos, cancelados e do total (= PEDIDOS = RETIDOS + CANCELADOS).
-    const classe = classificarAtendimento(item);
+    const classe = classificarComHistoricoFaceId(item, contratosComFaceId);
     if (classe === "abortado") continue;
     const isCancelado = classe === "cancelado";
     const marcaKey = (item.marca || "Desconhecida").trim();

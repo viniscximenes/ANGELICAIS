@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { classificarAtendimento } from "./classificar-atendimento";
+import { dedupePorContrato, classificarComHistoricoFaceId } from "./dedupe-por-contrato";
+import { getContratosComFaceIdGlobal } from "./get-contratos-com-faceid-global";
 import { aplicarFiltroEscopo } from "./escopo";
 import { normalizarTema } from "./normalizar-tema";
 
@@ -30,10 +31,14 @@ export async function getPorTema(
 ): Promise<TemaData[]> {
   const supabase = createAdminClient();
   let allData: {
+    usuario_login: string | null;
+    cod_air: string | null;
+    status_hora: string | null;
     motivo: string | null;
     submotivo: string | null;
     foi_cancelamento: boolean | null;
     status_retencao: string | null;
+    primeiro_nivel: string | null;
   }[] = [];
   let page = 0;
   const pageSize = 1000;
@@ -45,7 +50,9 @@ export async function getPorTema(
 
     let query = supabase
       .from("retencao_atendimentos")
-      .select("motivo, submotivo, foi_cancelamento, status_retencao")
+      .select(
+        "usuario_login, cod_air, status_hora, motivo, submotivo, foi_cancelamento, status_retencao, primeiro_nivel",
+      )
       .range(from, to);
 
     query = aplicarFiltroEscopo(query, { emailsEquipe });
@@ -66,7 +73,9 @@ export async function getPorTema(
     }
   }
 
-  const list = allData;
+  // Histórico de FaceID sem filtro de equipe — ver get-contratos-com-faceid-global.ts.
+  const contratosComFaceId = await getContratosComFaceIdGlobal();
+  const list = dedupePorContrato(allData);
 
   const map: Record<string, {
     motivo: string;
@@ -97,7 +106,7 @@ export async function getPorTema(
 
     // "Abortado" não é nem sucesso nem fracasso de retenção — fica fora de
     // retidos, cancelados e do total (= PEDIDOS = RETIDOS + CANCELADOS).
-    const classe = classificarAtendimento(item);
+    const classe = classificarComHistoricoFaceId(item, contratosComFaceId);
     if (classe === "abortado") continue;
     const isCancelado = classe === "cancelado";
 

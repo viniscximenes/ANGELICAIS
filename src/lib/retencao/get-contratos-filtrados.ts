@@ -1,7 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getEmailVariants } from "@/lib/utils/email-variants";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
-import { classificarAtendimento, STATUS_RETENCAO_ABORTADO } from "./classificar-atendimento";
+import { dedupePorContrato, classificarComHistoricoFaceId } from "./dedupe-por-contrato";
+import { getContratosComFaceIdGlobal } from "./get-contratos-com-faceid-global";
 import { aplicarFiltroEscopo } from "./escopo";
 
 export type FiltroContratos = {
@@ -16,117 +17,174 @@ export type FiltroContratos = {
 export type ContratoFiltradoItem = {
   usuarioLogin: string;
   nomeSobrenome: string;
-  /** ABORTADO = validação FaceID sem resposta do cliente; só aparece quando o filtro de status é "todos". */
+  /** ABORTADO = validação FaceID sem resposta do cliente OU retenção automática via FaceID (primeiro_nivel); só aparece quando o filtro de status é "todos". */
   status: "RETIDO" | "CANCELADO" | "ABORTADO";
   motivo: string;
   codAir: string;
   linhaFormatada: string; // ex: "igor.souza - RETIDO - Mud. Endereço - 503351"
 };
 
-export async function getContratosFiltrados(filtros: FiltroContratos): Promise<ContratoFiltradoItem[]> {
-  const supabase = createAdminClient();
-  let query = supabase
-    .from("retencao_atendimentos")
-    .select("usuario_login, foi_cancelamento, motivo, cod_air, status_retencao");
+type LinhaCrua = {
+  usuario_login: string | null;
+  foi_cancelamento: boolean | null;
+  motivo: string | null;
+  submotivo: string | null;
+  cod_air: string | null;
+  status_retencao: string | null;
+  primeiro_nivel: string | null;
+  status_hora: string | null;
+  hora_bucket: number | null;
+};
 
-  // Filtro de Escopo e Horas (Reuso)
-  query = aplicarFiltroEscopo(query, {
-    emailsEquipe: filtros.emailsEquipe,
-    periodo: filtros.periodo,
-  });
-
-  // Filtro por Operador Específico (quando selecionado) — cobre as duas
-  // variantes de domínio do mesmo operador.
-  if (filtros.operador) {
-    query = query.in("usuario_login", getEmailVariants(filtros.operador));
-  }
-
-  // Filtro de Status
-  if (filtros.status === "retido") {
-    // "Abortado" também vem com foi_cancelamento=false, mas não é retenção —
-    // fica de fora do filtro "Retidos".
-    query = query.eq("foi_cancelamento", false).not("status_retencao", "eq", STATUS_RETENCAO_ABORTADO);
-  } else if (filtros.status === "cancelado") {
-    query = query.eq("foi_cancelamento", true);
-  }
-
-  // Filtro de Motivo
-  if (filtros.motivo) {
-    if (filtros.motivo === "Mud. Endereço") {
-      query = query.in("motivo", [
+/** Mesmos agrupamentos de motivo usados no filtro do popover "Copiar Contratos". */
+function motivoCombina(motivo: string, filtro: string): boolean {
+  switch (filtro) {
+    case "Mud. Endereço":
+      return [
         "Mud. Endereço Inviabilidade",
         "Mud. Endereço Viabilidade / Parcial",
-        "Mudança de Endereço"
-      ]);
-    } else if (filtros.motivo === "Mot. Financeiro") {
-      query = query.in("motivo", [
-        "Problemas Financeiros",
-        "Problemas Faturamento",
-        "Reajuste de valor / NCC"
-      ]);
-    } else if (filtros.motivo === "Ins. Atendimento") {
-      query = query.eq("motivo", "Insatisfação com o Atendimento");
-    } else if (filtros.motivo === "Ins. Serviço") {
-      query = query.in("motivo", ["Insatisfação com o Serviço", "Insatisfação com o Produto"]);
-    } else if (filtros.motivo === "Mud. Provedora") {
-      query = query.in("motivo", [
+        "Mudança de Endereço",
+      ].includes(motivo);
+    case "Mot. Financeiro":
+      return ["Problemas Financeiros", "Problemas Faturamento", "Reajuste de valor / NCC"].includes(
+        motivo,
+      );
+    case "Ins. Atendimento":
+      return motivo === "Insatisfação com o Atendimento";
+    case "Ins. Serviço":
+      return ["Insatisfação com o Serviço", "Insatisfação com o Produto"].includes(motivo);
+    case "Mud. Provedora":
+      return [
         "Mudança de Provedor - Qualidade",
         "Mudança de Provedor - Preço",
-        "Mudança de Provedor -Preço"
-      ]);
-    } else if (filtros.motivo === "Outros") {
-      query = query.in("motivo", [
+        "Mudança de Provedor -Preço",
+      ].includes(motivo);
+    case "Outros":
+      return [
         "Óbito do Titular",
         "Cliente diz já ter cancelado",
         "Fraude Contratual",
         "Área de Risco",
         "Cliente fez novo Plano com a Giga+",
-        "Cliente fez novo plano com a Giga+"
-      ]);
+        "Cliente fez novo plano com a Giga+",
+      ].includes(motivo);
+    default:
+      return motivo === filtro;
+  }
+}
+
+export async function getContratosFiltrados(filtros: FiltroContratos): Promise<ContratoFiltradoItem[]> {
+  const supabase = createAdminClient();
+
+  // Busca SEM os filtros de status/período/motivo/submotivo na query SQL —
+  // eles precisam ser aplicados DEPOIS da deduplicação por contrato (ver
+  // dedupe-por-contrato.ts), não linha a linha. Motivo: um contrato com
+  // várias tentativas pode ter uma linha "Abortado" (foi_cancelamento=false)
+  // seguida da linha final "Cancelado" (foi_cancelamento=true) — filtrar
+  // "status=retido" (foi_cancelamento=false) NA QUERY buscaria só a
+  // tentativa abortada e nunca traria a linha final de verdade pra dedupe
+  // decidir, dando um resultado errado. O mesmo vale pra período (hora_bucket)
+  // e motivo: o que importa é o valor da linha FINAL do contrato, não de
+  // uma tentativa intermediária.
+  //
+  // Paginação (.range, como os demais get-*.ts): sem isso, mais de 1000
+  // linhas no escopo cortariam contratos fora da dedupe silenciosamente.
+  let allData: LinhaCrua[] = [];
+  let page = 0;
+  const pageSize = 1000;
+  let hasMore = true;
+
+  while (hasMore) {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+      .from("retencao_atendimentos")
+      .select(
+        "usuario_login, foi_cancelamento, motivo, submotivo, cod_air, status_retencao, primeiro_nivel, status_hora, hora_bucket",
+      )
+      .range(from, to);
+
+    query = aplicarFiltroEscopo(query, { emailsEquipe: filtros.emailsEquipe });
+
+    // Filtro por Operador Específico (quando selecionado) — cobre as duas
+    // variantes de domínio do mesmo operador. Seguro em SQL: não depende de
+    // classificação, é uma propriedade fixa da linha.
+    if (filtros.operador) {
+      query = query.in("usuario_login", getEmailVariants(filtros.operador));
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("[getContratosFiltrados] erro ao buscar contratos:", error.message);
+      throw new Error(error.message);
+    }
+
+    const list = data || [];
+    allData = allData.concat(list);
+
+    if (list.length < pageSize) {
+      hasMore = false;
     } else {
-      query = query.eq("motivo", filtros.motivo);
+      page++;
     }
   }
 
-  // Filtro de Submotivo
-  if (filtros.submotivo) {
-    query = query.eq("submotivo", filtros.submotivo);
-  }
-
-  const { data, error } = await query;
-  if (error) {
-    console.error("[getContratosFiltrados] erro ao buscar contratos:", error.message);
-    throw new Error(error.message);
-  }
-
-  const rawRows = (data || []).filter(
-    (r): r is {
-      usuario_login: string | null;
-      foi_cancelamento: boolean | null;
-      motivo: string | null;
-      cod_air: string;
-      status_retencao: string | null;
-    } => typeof r.cod_air === "string" && r.cod_air.trim() !== ""
+  const comContrato = allData.filter(
+    (r): r is LinhaCrua & { cod_air: string } => typeof r.cod_air === "string" && r.cod_air.trim() !== "",
   );
 
-  return rawRows.map((r) => {
-    const usuarioLogin = r.usuario_login || "";
-    const nomeSobrenome = formatNomeDotSobrenome(usuarioLogin);
-    const classe = classificarAtendimento(r);
+  // Uma linha final por contrato (a de status_hora mais recente). O
+  // histórico de FaceID só derruba a classificação se ela dava "retido" —
+  // nunca um "cancelado" real (ver classificarComHistoricoFaceId e o caso
+  // do contrato 5668002 documentado lá). Buscado SEM filtro de equipe (ver
+  // get-contratos-com-faceid-global.ts): o mesmo contrato pode ter sido
+  // tocado por um agente de outra equipe antes de chegar aqui.
+  const contratosComFaceId = await getContratosComFaceIdGlobal();
+  const linhasFinais = dedupePorContrato(comContrato);
+
+  const resultado: ContratoFiltradoItem[] = [];
+
+  for (const r of linhasFinais) {
+    const classe = classificarComHistoricoFaceId(r, contratosComFaceId);
     const statusStr: "RETIDO" | "CANCELADO" | "ABORTADO" =
       classe === "cancelado" ? "CANCELADO" : classe === "abortado" ? "ABORTADO" : "RETIDO";
-    const motivoStr = r.motivo?.trim() || "Outros";
-    const codAirStr = r.cod_air.trim();
 
+    // Filtro de Status — aplicado na linha final já classificada (dedupe +
+    // exclusão de FaceID já refletidas em `classe`).
+    if (filtros.status === "retido" && classe !== "retido") continue;
+    if (filtros.status === "cancelado" && classe !== "cancelado") continue;
+
+    // Filtro de Período (hora_bucket da linha final do contrato).
+    if (filtros.periodo) {
+      const h = r.hora_bucket;
+      if (h === null || h === undefined || h < filtros.periodo.horaInicio || h > filtros.periodo.horaFim) {
+        continue;
+      }
+    }
+
+    const motivoStr = r.motivo?.trim() || "Outros";
+
+    // Filtro de Motivo (mesmos agrupamentos de antes).
+    if (filtros.motivo && !motivoCombina(motivoStr, filtros.motivo)) continue;
+
+    // Filtro de Submotivo.
+    if (filtros.submotivo && r.submotivo !== filtros.submotivo) continue;
+
+    const usuarioLogin = r.usuario_login || "";
+    const nomeSobrenome = formatNomeDotSobrenome(usuarioLogin);
+    const codAirStr = r.cod_air.trim();
     const linhaFormatada = `${nomeSobrenome} - ${statusStr} - ${motivoStr} - ${codAirStr}`;
 
-    return {
+    resultado.push({
       usuarioLogin,
       nomeSobrenome,
       status: statusStr,
       motivo: motivoStr,
       codAir: codAirStr,
       linhaFormatada,
-    };
-  });
+    });
+  }
+
+  return resultado;
 }
