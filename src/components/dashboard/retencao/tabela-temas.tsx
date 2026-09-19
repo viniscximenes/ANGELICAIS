@@ -9,9 +9,25 @@ interface TabelaTemasProps {
   temas: TemaData[];
   metaGlobal: number;
   themeMetas: Record<string, number>;
+  /**
+   * Quando true, ocupa 100% da altura do container pai (que precisa ter
+   * altura definida) e SÓ o corpo da tabela rola internamente — título e
+   * cabeçalho da tabela ficam fixos. Usado dentro do trilho horizontal de
+   * /reports/consolidado (retencao-horizontal-scroll.tsx): com submotivos
+   * expandidos a tabela pode crescer bastante e não pode esticar a altura
+   * do trilho inteiro. Não afeta o uso deste componente em
+   * comparativo-consolidado-section.tsx (prop não passada lá, mantém o
+   * comportamento de altura livre de sempre).
+   */
+  scrollInterno?: boolean;
 }
 
-export function TabelaTemas({ temas, metaGlobal, themeMetas }: TabelaTemasProps) {
+export function TabelaTemas({
+  temas,
+  metaGlobal,
+  themeMetas,
+  scrollInterno = false,
+}: TabelaTemasProps) {
   const [expandedMotivos, setExpandedMotivos] = useState<Record<string, boolean>>({});
 
   function toggleExpand(motivo: string) {
@@ -39,8 +55,8 @@ export function TabelaTemas({ temas, metaGlobal, themeMetas }: TabelaTemasProps)
   };
 
   return (
-    <div className="space-y-3">
-      <div>
+    <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
+      <div className={scrollInterno ? "shrink-0" : undefined}>
         <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
           <IconTags size={20} className="text-foreground" />
           Retenção por Tema
@@ -50,7 +66,20 @@ export function TabelaTemas({ temas, metaGlobal, themeMetas }: TabelaTemasProps)
         </p>
       </div>
 
-      <StyledCard className="p-0 overflow-hidden" withGradient corners="all">
+      {/*
+        scrollInterno: SEM flex-1/h-full aqui de propósito — o card deve
+        dimensionar pela altura real do conteúdo (fit-content), só limitado
+        por max-h-full (o teto = altura do slot no trilho, herdada do
+        wrapper pai com h-full). Poucos temas → card baixo, sem sobra vazia.
+        Muitos temas (até estourar o teto) → overflow-y-auto entra em ação.
+        O espaço "sobrando" abaixo do card fica no wrapper pai (sem fundo
+        próprio), não dentro da borda do StyledCard.
+      */}
+      <StyledCard
+        className={scrollInterno ? "max-h-full overflow-y-auto p-0" : "p-0 overflow-hidden"}
+        withGradient
+        corners="all"
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>

@@ -18,8 +18,9 @@ import { TabelaOperadoresComparativo } from "./tabela-operadores-comparativo";
 
 /**
  * Metas por tema usadas pela TabelaTemas do analítico. O comparativo não
- * expõe o popover de configuração de metas — usa os mesmos defaults do
- * DashboardRetencaoSkeleton só para colorir a coluna Tx.
+ * expõe o popover de configuração de metas — usa os mesmos defaults da
+ * RetencaoDetalheSection (bloco analítico de /reports/consolidado) só para
+ * colorir a coluna Tx.
  */
 const THEME_METAS_DEFAULT: Record<string, number> = {
   "Mot. Financeiro": 80,

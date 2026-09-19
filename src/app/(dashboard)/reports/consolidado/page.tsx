@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { GestorEquipeSection } from "@/components/gestor/gestor-equipe-section";
+import { RetencaoDetalheSection } from "@/components/dashboard/retencao/retencao-detalhe-section";
+import { SignatureFooter } from "@/components/gestor/signature-footer";
+import { ConsolidadoNavSidebar } from "@/components/gestor/consolidado-nav-sidebar";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
@@ -14,6 +17,7 @@ import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { aplicarRvDiarioNaEquipe } from "@/lib/rv/calculate-rv-diario";
 import { getCurrentPerUnitFaixas } from "@/lib/rv/get-current-per-unit-faixas";
+import { getEmailsEquipe } from "@/lib/retencao/get-emails-equipe";
 
 export const metadata: Metadata = {
   title: "Reports - Consolidado",
@@ -28,18 +32,23 @@ export default async function ReportsConsolidadoPage() {
     redirect("/login");
   }
 
-  // Gate explícito por role: só GESTOR acessa esta tela. O ADM mantém a
-  // permissão view_gestor_panel, mas é redirecionado aqui (não é gestor).
+  // Gate explícito por role: só GESTOR acessa esta tela (resumo + detalhe
+  // analítico, fundidos numa página só). O ADM mantém a permissão
+  // view_gestor_panel, mas é redirecionado aqui (não é gestor).
   if (user.profile.role !== "GESTOR") {
     redirect(getPostLoginPath(user.profile.role));
   }
 
-  const [{ data, reportHora, reportNomeSupervisor }, nomeFantasiaConfig, configTabela, rvFaixas] =
+  // getGestorConsolidado roda UMA vez aqui: reportHora/reportNomeSupervisor
+  // são passados como prop tanto pra GestorEquipeSection quanto pra
+  // RetencaoDetalheSection, em vez de cada seção buscar de novo.
+  const [{ data, reportHora, reportNomeSupervisor }, nomeFantasiaConfig, configTabela, rvFaixas, emailsEquipe] =
     await Promise.all([
       getGestorConsolidado(user.profile.id),
       getNomeFantasiaConfig(user.profile.id),
       getConfigTabela(user.profile.id),
       getCurrentPerUnitFaixas(),
+      getEmailsEquipe(user.profile.id),
     ]);
 
   const nomeFantasia = {
@@ -97,9 +106,16 @@ export default async function ReportsConsolidadoPage() {
 
   return (
     <PageTransition>
+      {/*
+        Navegação lateral animada, EXCLUSIVA desta página (não é layout
+        global) — ver comentário em consolidado-nav-sidebar.tsx. position:
+        fixed, então fica fora do fluxo do container centralizado abaixo.
+      */}
+      <ConsolidadoNavSidebar />
+
       <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
         <div className="mx-auto max-w-7xl">
-          <header className="border-border flex flex-col gap-2 border-b border-dashed pb-4">
+          <header className="border-border mb-4 flex flex-col gap-2 border-b border-dashed pb-4">
             <span className="text-muted-foreground text-xs tracking-wide uppercase">
               Painel do Gestor
             </span>
@@ -111,18 +127,29 @@ export default async function ReportsConsolidadoPage() {
             </div>
           </header>
 
-          <GestorEquipeSection
-            operadores={operadores}
-            equipe={equipe}
-            gestora={gestora}
-            showUpload={showUpload}
-            nomeFantasia={nomeFantasia}
-            olhoInicial={nomeFantasiaConfig.olhoConsolidado}
-            nomeSupervisorReport={reportNomeSupervisor}
-            metaTxInicial={configTabela.metaTxRetencao}
-            ordemTabelaInicial={configTabela.ordemTabela}
-            showRvDiarioInicial={configTabela.showRvDiario}
-          />
+          <div className="space-y-10">
+            <GestorEquipeSection
+              operadores={operadores}
+              equipe={equipe}
+              gestora={gestora}
+              showUpload={showUpload}
+              nomeFantasia={nomeFantasia}
+              olhoInicial={nomeFantasiaConfig.olhoConsolidado}
+              nomeSupervisorReport={reportNomeSupervisor}
+              metaTxInicial={configTabela.metaTxRetencao}
+              ordemTabelaInicial={configTabela.ordemTabela}
+              showRvDiarioInicial={configTabela.showRvDiario}
+            />
+
+            <RetencaoDetalheSection
+              emailsEquipeIniciais={emailsEquipe}
+              gestorId={user.profile.id}
+              gestora={gestora}
+              reportHoraInicial={reportHora}
+            />
+
+            <SignatureFooter />
+          </div>
         </div>
       </div>
     </PageTransition>

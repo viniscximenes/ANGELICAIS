@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { IconCopy, IconCheck, IconFilter, IconChevronDown, IconTrash } from "@tabler/icons-react";
 import { fetchContratosFiltradosAction } from "@/lib/retencao/actions";
 import type { TemaData } from "@/lib/retencao/get-por-tema";
@@ -14,6 +15,13 @@ interface CopiarContratosProps {
   emailsEquipe: string[];
   porTema: TemaData[];
   operadoresIndividual?: OperadorIndividual[];
+  /**
+   * Quando true, ocupa 100% da altura do container pai (que precisa ter
+   * altura definida) e o card dimensiona pela altura real do conteúdo até
+   * o teto (max-h-full) — sem esticar nem estourar. Usado dentro do trilho
+   * horizontal de /reports/consolidado (retencao-horizontal-scroll.tsx).
+   */
+  scrollInterno?: boolean;
 }
 
 interface CustomSelectProps {
@@ -28,11 +36,39 @@ interface CustomSelectProps {
 function CustomSelect({ label, value, onChange, options, placeholder, searchable = false }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [menuRect, setMenuRect] = useState<{ top: number; left: number; width: number } | null>(
+    null,
+  );
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Menu renderizado via portal em document.body (ver comentário acima do
+  // return) — precisa recalcular a posição toda vez que abre, e reagir a
+  // scroll/resize enquanto estiver aberto pra não descolar do botão.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function updateRect() {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setMenuRect({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+
+    updateRect();
+    window.addEventListener("scroll", updateRect, true);
+    window.addEventListener("resize", updateRect);
+    return () => {
+      window.removeEventListener("scroll", updateRect, true);
+      window.removeEventListener("resize", updateRect);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const clickedTrigger = triggerRef.current?.contains(target);
+      const clickedMenu = menuRef.current?.contains(target);
+      if (!clickedTrigger && !clickedMenu) {
         setIsOpen(false);
       }
     }
@@ -55,7 +91,7 @@ function CustomSelect({ label, value, onChange, options, placeholder, searchable
   }, [options, searchable, searchQuery]);
 
   return (
-    <div className="space-y-1 relative w-full" ref={dropdownRef}>
+    <div className="space-y-1 relative w-full" ref={triggerRef}>
       <label className="text-[11px] font-medium text-muted-foreground uppercase block tracking-wider">{label}</label>
       <button
         type="button"
@@ -67,54 +103,74 @@ function CustomSelect({ label, value, onChange, options, placeholder, searchable
         <IconChevronDown size={14} className={`text-muted-foreground transition-transform shrink-0 ml-1 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
-      {isOpen && (
-        <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-lg shadow-xl max-h-56 overflow-y-auto scrollbar-tema py-1">
-          {searchable && (
-            <div className="p-1.5 sticky top-0 bg-popover border-b border-border/40 z-10">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar operador..."
-                className="w-full text-xs bg-muted/30 border border-border/60 rounded-md px-2.5 py-1.5 text-foreground outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 focus:border-border/80"
-                style={{ outline: "none", boxShadow: "none" }}
-                autoFocus
-              />
-            </div>
-          )}
+      {/*
+        Portal pra document.body: este select vive dentro do card
+        "Copiar Contratos", que dentro do trilho horizontal de
+        /reports/consolidado fica num slide com overflow-hidden (pra clipar
+        os cards vizinhos durante o scroll-jacking). Sem portal, o menu
+        (position: absolute local) seria cortado por esse overflow-hidden
+        assim que abrisse. Posição calculada via getBoundingClientRect do
+        próprio botão (position: fixed, não relativa a nenhum ancestral).
+      */}
+      {isOpen && menuRect &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="fixed z-[100] bg-popover border border-border rounded-lg shadow-xl max-h-56 overflow-y-auto scrollbar-tema py-1"
+            style={{ top: menuRect.top, left: menuRect.left, width: menuRect.width }}
+          >
+            {searchable && (
+              <div className="p-1.5 sticky top-0 bg-popover border-b border-border/40 z-10">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar operador..."
+                  className="w-full text-xs bg-muted/30 border border-border/60 rounded-md px-2.5 py-1.5 text-foreground outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 focus:border-border/80"
+                  style={{ outline: "none", boxShadow: "none" }}
+                  autoFocus
+                />
+              </div>
+            )}
 
-          {filteredOptions.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-muted-foreground italic text-center">
-              Nenhum operador encontrado
-            </div>
-          ) : (
-            filteredOptions.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => {
-                  onChange(opt.value);
-                  setIsOpen(false);
-                }}
-                className={`w-full text-left px-3 py-2 text-xs transition-colors block truncate cursor-pointer ${
-                  opt.value === value
-                    ? "bg-primary text-primary-foreground font-semibold"
-                    : opt.value === ""
-                    ? "text-muted-foreground hover:text-foreground font-medium italic border-b border-border/20 mb-1"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))
-          )}
-        </div>
-      )}
+            {filteredOptions.length === 0 ? (
+              <div className="px-3 py-2 text-xs text-muted-foreground italic text-center">
+                Nenhum operador encontrado
+              </div>
+            ) : (
+              filteredOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 text-xs transition-colors block truncate cursor-pointer ${
+                    opt.value === value
+                      ? "bg-primary text-primary-foreground font-semibold"
+                      : opt.value === ""
+                      ? "text-muted-foreground hover:text-foreground font-medium italic border-b border-border/20 mb-1"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))
+            )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
 
-export function CopiarContratos({ emailsEquipe, porTema, operadoresIndividual }: CopiarContratosProps) {
+export function CopiarContratos({
+  emailsEquipe,
+  porTema,
+  operadoresIndividual,
+  scrollInterno = false,
+}: CopiarContratosProps) {
   const [selectedOperador, setSelectedOperador] = useState<string>("");
   const [status, setStatus] = useState<"todos" | "retido" | "cancelado">("todos");
   const [selectedMotivo, setSelectedMotivo] = useState<string>("");
@@ -233,9 +289,9 @@ export function CopiarContratos({ emailsEquipe, porTema, operadoresIndividual }:
   };
 
   return (
-    <div className="space-y-3">
+    <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
       {/* ── Título e descrição fora do card ─────────────────────────── */}
-      <div>
+      <div className={scrollInterno ? "shrink-0" : undefined}>
         <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
           <IconCopy size={20} className="text-foreground" />
           Copiar Contratos da Equipe
@@ -245,7 +301,17 @@ export function CopiarContratos({ emailsEquipe, porTema, operadoresIndividual }:
         </p>
       </div>
 
-      <StyledCard className="p-5 space-y-5" withGradient corners="all">
+      {/*
+        scrollInterno: SEM flex-1/h-full — dimensiona pela altura real do
+        conteúdo (filtros + resultado, quando houver), só limitado por
+        max-h-full (teto herdado do wrapper pai). Mesmo padrão já aplicado
+        em tabela-temas.tsx/distribuicao-quartis.tsx.
+      */}
+      <StyledCard
+        className={scrollInterno ? "max-h-full overflow-y-auto p-5 space-y-5" : "p-5 space-y-5"}
+        withGradient
+        corners="all"
+      >
         {/* Filtros em Grade Única Responsiva */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
           {/* Filtro: Operador da Equipe */}

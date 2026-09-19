@@ -1,13 +1,14 @@
-import { resolveGestorId } from "@/lib/d1-db/resolve-gestor-id";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Retorna os e-mails dos operadores da equipe do gestor (d1_operadores_gestor).
  *
- * @param identificador O username ("nome.sobrenome") ou e-mail corporativo do gestor logado.
+ * Recebe o `gestorId` (profiles.id) diretamente — resolvido pelo chamador a
+ * partir de `user.profile.id` (sessão já autenticada). Não re-resolve por
+ * username/e-mail (ver `resolveGestorId`, deixado de ser usado aqui na fusão
+ * de /reports/consolidado com /reports/consolidado/analitico).
  */
-export async function getEmailsEquipe(identificador: string): Promise<string[]> {
-  const gestorId = await resolveGestorId(identificador);
+export async function getEmailsEquipe(gestorId: string): Promise<string[]> {
   if (!gestorId) return [];
 
   try {

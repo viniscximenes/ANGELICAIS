@@ -29,9 +29,10 @@ export async function clearConsolidadoAction(): Promise<ClearConsolidadoResult> 
     const { error } = await admin.from("d1_consolidado").delete().eq("data_ref", dataRef);
     if (error) throw new Error(error.message);
 
-    // Limpa a base do Analítico, alimentada pelo MESMO upload do consolidado
-    // (uploadConsolidadoAction grava nas duas). Sem isso, /reports/consolidado
-    // ficaria vazio e o analítico seguiria mostrando os dados antigos.
+    // Limpa a base do bloco Analítico (mesma página /reports/consolidado),
+    // alimentada pelo MESMO upload do consolidado (uploadConsolidadoAction
+    // grava nas duas). Sem isso, a EquipeTable ficaria vazia e o bloco
+    // analítico seguiria mostrando os dados antigos.
     //
     // Apaga tudo (não só data_ref de hoje): salvarBaseRetencao já mantém
     // apenas o último lote, então "tudo" e "o lote do dia" são a mesma coisa.
@@ -52,7 +53,6 @@ export async function clearConsolidadoAction(): Promise<ClearConsolidadoResult> 
     }
 
     revalidatePath("/reports/consolidado");
-    revalidatePath("/reports/consolidado/analitico");
     return { success: true };
   } catch (err) {
     console.error("[clear-consolidado] erro:", err);
