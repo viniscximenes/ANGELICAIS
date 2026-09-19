@@ -7,6 +7,7 @@ import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
 import { uploadConsolidadoAction } from "@/lib/d1-db/actions/upload-consolidado-action";
+import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
 import { registrarExibicaoPopupComparativoAction } from "@/lib/retencao/comparativo/registrar-exibicao-popup-action";
 import { ComparativoPopupDialog } from "@/components/operacional/comparativo-consolidado/comparativo-popup-dialog";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
@@ -73,6 +74,14 @@ export function UploadDropzone({ compact = false }: UploadDropzoneProps = {}) {
     toast.success("Base updated", {
       description: `${uploadResult.rowsWritten} linhas inseridas`,
     });
+
+    // Gatilho específico do upload concluído (não polling): uploadConsolidadoAction
+    // grava retencao_atendimentos E d1_consolidado na mesma chamada, mas só a
+    // EquipeTable tem polling próprio — o trilho horizontal (RetencaoDetalheSection)
+    // busca retencao_atendimentos uma única vez no mount e só refaria essa busca
+    // com um F5 manual (revalidatePath, chamado dentro da action, invalida cache de
+    // Server Component, não um fetch client-side feito à mão). Ver base-cleared-event.ts.
+    notifyBaseAtualizada();
 
     // Efeito posterior ao report, nunca bloqueante: no PRIMEIRO report do dia
     // civil, convida o gestor a ver o comparativo entre equipes. A action é

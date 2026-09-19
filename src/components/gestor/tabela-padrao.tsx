@@ -22,21 +22,45 @@ export const TABELA_HEADER_BORDA: CSSProperties = {
   borderBottom: "1px solid var(--border)",
 };
 
+/*
+ * min-w-0 em TODAS as células (header e corpo) — causa raiz de um
+ * desalinhamento crônico entre header e linhas de dado: como cada linha
+ * (header, cada operador, totais) é uma instância de CSS Grid SEPARADA
+ * (não uma única grade compartilhada), o `min-width` implícito de uma
+ * célula grid é `auto` por padrão — ou seja, o conteúdo sem quebra
+ * (whitespace-nowrap) pode forçar a coluna daquele grid específico a
+ * ficar mais larga que sua fatia de `fr`, empurrando as OUTRAS colunas
+ * daquele MESMO grid pra um espaço menor. Isso diverge do grid do corpo
+ * (só números curtos, sem essa pressão), mesmo usando a MESMA string de
+ * grid-template-columns nos dois. `min-w-0` remove esse mínimo implícito,
+ * garantindo que a divisão por `fr` seja idêntica em toda instância de
+ * grid, não importa o conteúdo de cada célula.
+ */
+// px-2 (não px-3, como as células de dado): "CANCELADOS"/"TX RETENÇÃO"
+// (ds-body + tracking-wide) são as strings mais largas de toda a tabela —
+// esses 8px a menos de cada lado é o que sobra de folga real pro texto não
+// truncar, sem depender só de aumentar a largura total da tabela. Não
+// quebra o alinhamento com as células de dado: min-w-0 garante que os
+// TRACKS do grid (onde fica a linha divisória) continuam idênticos —
+// padding diferente só muda quanto espaço sobra pro texto DENTRO da
+// própria célula, não a posição da borda.
 export const TABELA_HEADER_CELL_CLASS =
-  "px-3 py-2.5 text-center border-r border-border/50 whitespace-nowrap";
+  "min-w-0 overflow-hidden text-ellipsis px-2 py-2.5 text-center border-r border-border/50 whitespace-nowrap";
 
 /** Última célula do cabeçalho (sem coluna à direita) não leva border-r. */
-export const TABELA_HEADER_CELL_ULTIMA_CLASS = "px-3 py-2.5 text-center whitespace-nowrap";
+export const TABELA_HEADER_CELL_ULTIMA_CLASS =
+  "min-w-0 overflow-hidden text-ellipsis px-2 py-2.5 text-center whitespace-nowrap";
 
 export const TABELA_LINHA_CLASS = "grid items-center gap-0 transition-colors hover:bg-muted/40";
 
 export const TABELA_NOME_CELL_CLASS =
-  "ds-body truncate px-3 py-2 text-center border-r border-border/30 font-medium";
+  "ds-body min-w-0 truncate px-3 py-2 text-center border-r border-border/30 font-medium";
 
-export const TABELA_VALOR_CELL_CLASS = "ds-mono-sm px-3 py-2 text-center border-r border-border/30";
+export const TABELA_VALOR_CELL_CLASS =
+  "ds-mono-sm min-w-0 px-3 py-2 text-center border-r border-border/30";
 
 export const TABELA_VALOR_BULLET_CLASS =
-  "ds-mono-sm flex items-center justify-center gap-1.5 px-3 py-2 text-center border-r border-border/30";
+  "ds-mono-sm min-w-0 flex items-center justify-center gap-1.5 px-3 py-2 text-center border-r border-border/30";
 
 /** Cor da coluna "nome do operador" — mesma régua nos 3 estados usados em EquipeTable. */
 export function corNomeOperador(params: { semDado?: boolean; ruim: boolean }): string {

@@ -1,15 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import {
-  IconChartBar,
-  IconEye,
-  IconEyeOff,
-  IconUsersGroup,
-  IconCoin,
-} from "@tabler/icons-react";
+import { IconEye, IconEyeOff, IconCoin } from "@tabler/icons-react";
 import { motion } from "motion/react";
+import { toast } from "sonner";
 
 import { CopyTableButton } from "@/components/d-1/copy-table-button";
 import { EquipeTable } from "@/components/d-1/equipe-table";
@@ -34,12 +28,33 @@ import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fant
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import { cn } from "@/lib/utils";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
+import { getLenisInstance } from "@/lib/lenis/lenis-instance";
+import { fetchOperadorDetalheAction } from "@/lib/retencao/actions";
+import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
+import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
+import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog";
+import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 // Intervalo do polling: reconsulta a base a cada 30s para refletir mudanças
 // sem precisar de F5.
 const POLL_INTERVAL_MS = 30_000;
+
+// CAUSA RAIZ da última coluna (Tx Retenção/RV Diário) cortada: o wrapper
+// abaixo define `width: 760px/920px` esperando que seja EXATAMENTE a
+// largura útil pro grid da EquipeTable (BASE_COLUMN_WIDTHS_PX soma 760 +
+// RV_COLUMN_PX quando ligado, ver equipe-table.tsx) — mas esse width é do
+// DIV EXTERNO, que ainda contém o StyledCard com padding (`p-3` = 12px por
+// lado) + borda (`border` = 1px por lado) por DENTRO dele. Como StyledCard
+// é `overflow-visible`, mas o container real da tabela (TABELA_CONTAINER_
+// CLASS) é `overflow-hidden` e só recebe a largura ATRIBUÍDA A ELE pelo
+// pai (760/920 menos o padding+borda do StyledCard), o grid interno (que
+// usa pixels fixos, não encolhe) ficava ~26px mais largo que esse espaço
+// disponível — os 26px que sobravam do lado direito eram cortados pelo
+// overflow-hidden. Compensado somando esse "chrome" do StyledCard à
+// largura do wrapper externo, pra área de conteúdo real bater 760/920.
+const TABELA_CARD_CHROME_PX = 26; // 2 × (padding 12px + borda 1px)
 
 interface GestorEquipeSectionProps {
   operadores: OperadorConsolidado[];
@@ -88,6 +103,78 @@ export function GestorEquipeSection({
   // mesmo padrão do handleToggleOlho).
   const [showRvDiario, setShowRvDiario] = useState(showRvDiarioInicial);
 
+  // Detalhamento individual do operador (clique no nome da EquipeTable) —
+  // busca sob demanda via fetchOperadorDetalheAction (retencao_atendimentos),
+  // desacoplado do carregamento pesado do bloco analítico (que só roda
+  // quando aquela seção entra em vista). Antes vivia dentro do card
+  // "Operadores" do trilho horizontal; migrado pra cá quando esse card foi
+  // removido (o dado já estava disponível ali, agora é buscado no clique).
+  const [operadorSelecionado, setOperadorSelecionado] = useState<OperadorIndividual | null>(null);
+  const [operadorQuartil, setOperadorQuartil] = useState<QuartilOperador | null>(null);
+  const [operadorMeta, setOperadorMeta] = useState(DEFAULT_META_TX_RETENCAO);
+  const [operadorDialogOpen, setOperadorDialogOpen] = useState(false);
+  const [operadorDialogLoading, setOperadorDialogLoading] = useState(false);
+
+  // Prefetch no hover — a causa real da demora pra abrir o dialog é a
+  // PRÓPRIA busca (fetchOperadorDetalheAction faz até 3 varreduras de
+  // retencao_atendimentos, uma delas — o ranking de quartil da empresa —
+  // sem filtro nenhum, escaneando a base inteira), não o dialog em si (que
+  // já anima em 100ms). Prefetch não resolve o custo da query, mas esconde
+  // a latência: se o mouse ficar parado numa linha por ~180ms, já dispara
+  // a mesma busca; se o usuário clicar depois, reaproveita essa promise em
+  // vez de disparar outra.
+  const PREFETCH_DEBOUNCE_MS = 180;
+  const prefetchCacheRef = useRef<Map<string, ReturnType<typeof fetchOperadorDetalheAction>>>(
+    new Map(),
+  );
+  const prefetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleOperadorHoverStart(emailOriginal: string) {
+    if (prefetchTimeoutRef.current) clearTimeout(prefetchTimeoutRef.current);
+    if (prefetchCacheRef.current.has(emailOriginal)) return;
+    prefetchTimeoutRef.current = setTimeout(() => {
+      prefetchCacheRef.current.set(emailOriginal, fetchOperadorDetalheAction(emailOriginal));
+    }, PREFETCH_DEBOUNCE_MS);
+  }
+
+  function handleOperadorHoverEnd() {
+    if (prefetchTimeoutRef.current) {
+      clearTimeout(prefetchTimeoutRef.current);
+      prefetchTimeoutRef.current = null;
+    }
+  }
+
+  async function handleOperadorClick(emailOriginal: string) {
+    if (operadorDialogLoading) return;
+    setOperadorDialogLoading(true);
+    try {
+      // Reaproveita a promise já em voo (ou já resolvida) do prefetch de
+      // hover, se existir, em vez de refazer a mesma busca do zero.
+      const emVoo = prefetchCacheRef.current.get(emailOriginal);
+      prefetchCacheRef.current.delete(emailOriginal);
+      const result = await (emVoo ?? fetchOperadorDetalheAction(emailOriginal));
+      if (result.success) {
+        setOperadorSelecionado(result.data.operador);
+        setOperadorQuartil(result.data.quartil);
+        setOperadorMeta(result.data.meta);
+        setOperadorDialogOpen(true);
+      } else {
+        toast.error(result.error);
+      }
+    } catch (err) {
+      if (!handleStaleActionError(err)) {
+        console.error("[GestorEquipeSection] erro ao buscar detalhamento do operador:", err);
+        toast.error("Erro ao carregar detalhamento do operador.");
+      }
+    } finally {
+      setOperadorDialogLoading(false);
+    }
+  }
+
+  function resolverNomeOperador(op: OperadorIndividual): string {
+    return op.login.split("@")[0] || op.login;
+  }
+
   function handleToggleOlho() {
     const novoValor = !olhoAberto;
     setOlhoAberto(novoValor);
@@ -132,6 +219,17 @@ export function GestorEquipeSection({
     }
   }
 
+  // Handler específico do "Limpar Base" (não reaproveitado pelo polling):
+  // além de recarregar a EquipeTable (mesmo refetch de sempre), avisa a
+  // árvore irmã (RetencaoDetalheSection, bloco analítico) que
+  // retencao_atendimentos também foi esvaziada — clearConsolidadoAction já
+  // limpa as duas tabelas no mesmo clique, mas cada seção busca seus dados
+  // de forma independente, então cada lado precisa do próprio refetch.
+  async function handleBaseCleared() {
+    await refetchConsolidado();
+    notifyBaseAtualizada();
+  }
+
   // Polling: reconsulta a base a cada 30s (sem F5) e atualiza operadores +
   // hora/nome do report se houver mudança.
   useEffect(() => {
@@ -141,7 +239,17 @@ export function GestorEquipeSection({
     };
   }, []);
 
-  // Navegação via teclado: setas Cima (ArrowUp) e Baixo (ArrowDown) rolam a página
+  // Navegação via teclado: setas Cima (ArrowUp) e Baixo (ArrowDown) rolam a página.
+  //
+  // Usa lenis.scrollTo (não window.scrollBy nativo): o Lenis já controla o
+  // scroll da página via seu próprio RAF (ver LenisProvider). Se o scroll
+  // nativo com behavior:"smooth" mexer no scrollTop por fora do Lenis, o
+  // Lenis mantém internamente um alvo de scroll (`animatedScroll`) que fica
+  // dessincronizado do scroll real — no primeiro wheel/touch seguinte ele
+  // "puxa" a página de volta pro alvo antigo, travando/anulando o scroll das
+  // setas. Passar pelo lenis.scrollTo mantém os dois em sincronia (isso
+  // também evita a página "pular" um trecho inteiro do scroll horizontal
+  // pinado por ScrollTrigger, que também lê a posição real do scroll).
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const active = document.activeElement;
@@ -152,12 +260,22 @@ export function GestorEquipeSection({
           (active as HTMLElement).isContentEditable);
       if (isInput) return;
 
+      const lenis = getLenisInstance();
+
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        window.scrollBy({ top: 120, behavior: "smooth" });
+        if (lenis) {
+          lenis.scrollTo(lenis.animatedScroll + 120, { duration: 0.4 });
+        } else {
+          window.scrollBy({ top: 120, behavior: "smooth" });
+        }
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        window.scrollBy({ top: -120, behavior: "smooth" });
+        if (lenis) {
+          lenis.scrollTo(lenis.animatedScroll - 120, { duration: 0.4 });
+        } else {
+          window.scrollBy({ top: -120, behavior: "smooth" });
+        }
       }
     }
 
@@ -193,21 +311,23 @@ export function GestorEquipeSection({
 
   return (
     <motion.section
+      id="equipe-section"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15, duration: 0.25, ease: EASE_OUT_EXPO }}
       className="space-y-4"
     >
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-4 py-4">
+        {/*
+          pt-0 (não py-4 nos dois lados): o espaço ACIMA do título "Equipe"
+          já vem do mb-* do <header> da página (page.tsx) — somar padding
+          próprio aqui em cima criava um vazio duplicado entre o cabeçalho
+          da página e este título. pb-4 continua igual (separa o título da
+          EquipeTable abaixo, isso não estava sendo reclamado).
+        */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-0 pb-4">
           <div className="flex items-center gap-3">
-            <h2 className="ds-h2 flex items-center gap-2">
-              <IconUsersGroup
-                className="text-muted-foreground size-4"
-                aria-hidden="true"
-              />
-              Equipe
-            </h2>
+            <h2 className="ds-h2">Equipe</h2>
             {formatReportLabel(equipe.horaReport, nomeSupervisorReport) && (
               <span className="ds-mono-sm text-foreground/80 font-medium">
                 - {formatReportLabel(equipe.horaReport, nomeSupervisorReport)}
@@ -232,15 +352,6 @@ export function GestorEquipeSection({
               <span>RV Diário</span>
             </button>
 
-            <Link
-              href="/reports/consolidado/analitico"
-              className="bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-opacity cursor-pointer shadow-sm"
-              style={{ fontSize: "12px" }}
-            >
-              <IconChartBar size={14} aria-hidden="true" />
-              <span className="ds-mono-sm font-medium">Analítico</span>
-            </Link>
-
             <CopyTableButton
               operadores={operadores}
               equipe={equipe}
@@ -248,7 +359,7 @@ export function GestorEquipeSection({
               nomeSupervisorReport={nomeSupervisorReport}
             />
             {showUpload && (
-              <ClearBaseButton action={clearConsolidadoAction} onCleared={refetchConsolidado} />
+              <ClearBaseButton action={clearConsolidadoAction} onCleared={handleBaseCleared} />
             )}
             <ConfigTabelaPopover
               metaTxInicial={metaTxRetencao}
@@ -281,7 +392,20 @@ export function GestorEquipeSection({
             position: "fixed",
             top: "-99999px",
             left: "-99999px",
-            width: showRvDiario ? "710px" : "600px",
+            // 760px de base (as 5 colunas em `fr`) + 160px fixos da coluna
+            // RV quando ativa (mesmo valor de RV_COLUMN_PX em
+            // equipe-table.tsx) — os 760px continuam os MESMOS nos dois
+            // casos, só a coluna extra soma por cima. Largura calibrada
+            // pra "CANCELADOS"/"TX RETENÇÃO" (ds-body bold tracking-wide,
+            // os headers mais longos da tabela) não truncarem, mesmo já
+            // com padding reduzido nas células de header (px-3→px-2 em
+            // tabela-padrao.tsx) e min-w-0 garantindo que os tracks do
+            // grid do header/corpo fiquem idênticos. + TABELA_CARD_CHROME_PX
+            // compensa o padding/borda do StyledCard por dentro (ver
+            // comentário na constante).
+            width: showRvDiario
+              ? `${920 + TABELA_CARD_CHROME_PX}px`
+              : `${760 + TABELA_CARD_CHROME_PX}px`,
           }}
         >
           <div data-tabela-png>
@@ -304,9 +428,20 @@ export function GestorEquipeSection({
               configPopoverOpen && "z-[45]",
             )}
             style={{
-              width: showRvDiario ? "710px" : "600px",
+              // Mesma largura-base do wrapper do PNG acima (760/920px +
+              // TABELA_CARD_CHROME_PX) — ver comentário lá pro raciocínio
+              // completo.
+              width: showRvDiario
+                ? `${920 + TABELA_CARD_CHROME_PX}px`
+                : `${760 + TABELA_CARD_CHROME_PX}px`,
               maxWidth: "100%",
-              transition: "width 0.2s ease",
+              // Mesma curva/duração da animação interna do toggle RV
+              // (spring do motion em equipe-table.tsx, ~300-400ms) — são
+              // duas animações tecnicamente separadas (CSS aqui, JS spring
+              // lá dentro), mas afinadas pra parecerem UMA coisa só: a
+              // borda do card e a coluna nova crescendo juntas, no mesmo
+              // ritmo, em vez de terminarem em momentos diferentes.
+              transition: "width 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           >
             <StyledCard withGradient className="h-full p-3">
@@ -316,13 +451,23 @@ export function GestorEquipeSection({
                 equipe={equipe}
                 metaTx={metaTxFracao}
                 showRvDiario={showRvDiario}
+                onOperadorClick={handleOperadorClick}
+                onOperadorHoverStart={handleOperadorHoverStart}
+                onOperadorHoverEnd={handleOperadorHoverEnd}
                 headerButton={
                   nomeFantasia?.ativo && (
                     <button
                       type="button"
                       onClick={handleToggleOlho}
                       title={olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"}
-                      className="text-muted-foreground/60 hover:text-muted-foreground transition-colors inline-flex items-center"
+                      // Mesma cor do texto do header ("Operador" e demais
+                      // títulos, herdada de text-foreground em equipe-table.tsx)
+                      // — antes usava text-muted-foreground/60, uma cor própria
+                      // que destoava do resto do header. inline-block (não
+                      // inline-flex) pra participar do fluxo de texto normal
+                      // da célula e ser centralizado JUNTO com "Operador" pelo
+                      // text-align:center herdado, em vez de ficar solto.
+                      className="text-foreground/80 hover:text-foreground transition-colors inline-block align-middle ml-1.5"
                     >
                       {olhoAberto ? <IconEye size={14} /> : <IconEyeOff size={14} />}
                     </button>
@@ -336,7 +481,7 @@ export function GestorEquipeSection({
             <div className="min-h-[180px] min-w-0 flex-1">
               <StyledCard withGradient className="flex h-full flex-col p-3">
                 <span className="text-muted-foreground mb-3 block text-xs font-semibold uppercase tracking-wider">
-                  Atualizar Base D-1
+                  Anexar Base
                 </span>
                 <div className="min-h-0 flex-1">
                   <UploadDropzone />
@@ -346,6 +491,15 @@ export function GestorEquipeSection({
           )}
         </div>
       </div>
+
+      <OperadorDetalheDialog
+        operador={operadorSelecionado}
+        nomeExibido={operadorSelecionado ? resolverNomeOperador(operadorSelecionado) : ""}
+        open={operadorDialogOpen}
+        onOpenChange={setOperadorDialogOpen}
+        meta={operadorMeta}
+        quartil={operadorQuartil}
+      />
     </motion.section>
   );
 }
