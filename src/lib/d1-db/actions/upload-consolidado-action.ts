@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
-import { classificarAtendimento } from "@/lib/retencao/classificar-atendimento";
+import {
+  dedupePorContrato,
+  contratosTocadosPorFaceId,
+  classificarComHistoricoFaceId,
+} from "@/lib/retencao/dedupe-por-contrato";
 import { parseBaseRetencao } from "@/lib/retencao/parse-base-retencao";
 import { salvarBaseRetencao } from "@/lib/retencao/salvar-base-retencao";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -70,7 +74,25 @@ export async function uploadConsolidadoAction(
   };
   const porOperador = new Map<string, Agregado>();
 
-  for (const linha of parseResult.linhas) {
+  // CAUSA RAIZ do bug de retidos duplicados (confirmado com dados reais,
+  // bruno.roberto 19/09: contrato 244309 e 949578 apareciam 3x cada em
+  // contratos_retidos, inflando retidos/pedidos/tx_retencao): a base bruta
+  // do Sydle/AIR tem MÚLTIPLAS LINHAS pro MESMO contrato quando há várias
+  // tentativas de atendimento no mesmo dia (aborta por FaceID, tenta de
+  // novo, retém no final) — sem deduplicar por (operador, cod_air) ANTES de
+  // agregar, cada tentativa era contada como uma retenção/cancelamento
+  // independente. Mantém só a linha final (status_hora mais recente) por
+  // contrato — ver dedupe-por-contrato.ts.
+  //
+  // `contratosComFaceId` é construído a partir de TODAS as linhas do CSV
+  // (antes do dedupe) — histórico completo do contrato, sem limite de
+  // tempo/agente. Só derruba a classificação quando ela der "retido" (ver
+  // classificarComHistoricoFaceId): um contrato que passou por FaceID mas
+  // terminou CANCELADO conta normalmente como cancelado.
+  const contratosComFaceId = contratosTocadosPorFaceId(parseResult.linhas);
+  const linhasFinais = dedupePorContrato(parseResult.linhas);
+
+  for (const linha of linhasFinais) {
     if (!linha.usuario_login) continue;
     const email = linha.usuario_login.trim().toLowerCase();
     const chave = getEmailPrefix(email);
@@ -94,7 +116,7 @@ export async function uploadConsolidadoAction(
     // retenção nem de cancelamento — fica fora de retidos/cancelados/
     // motivos/contratos e, por consequência, fora de PEDIDOS (= RETIDOS +
     // CANCELADOS) e da TX RETENÇÃO.
-    const classe = classificarAtendimento(linha);
+    const classe = classificarComHistoricoFaceId(linha, contratosComFaceId);
     if (classe === "abortado") continue;
 
     const bucket = bucketMotivo(linha.motivo);
@@ -203,6 +225,51 @@ export async function uploadConsolidadoAction(
         error: `Erro ao gravar d1_consolidado: ${upsertErr.message}`,
       };
     }
+
+    // BUG DE MERGE ENTRE UPLOADS DO MESMO DIA (confirmado no código: `dataRef`
+    // é sempre "hoje" — `dataRefHojeBR()` — então duas subidas de base no
+    // MESMO dia caem sempre no MESMO data_ref): upsert sozinho só
+    // insere/atualiza os operadores presentes NESTE upload — um operador que
+    // saiu da base nova (não trabalhou, ou saiu da equipe) nunca tem sua
+    // linha antiga removida, e fica "grudado" com o resultado do upload
+    // anterior pra sempre, mesmo a base nova não tendo reportado nada sobre
+    // ele. Corrigido replicando o padrão de "sobrescrita segura" já usado em
+    // salvar-base-retencao.ts pra retencao_atendimentos: upsert primeiro
+    // (nunca deixa quem SEGUE aparecendo na base sem dado visível, mesmo por
+    // um instante), DEPOIS deleta só quem tinha linha em `data_ref` mas não
+    // veio nesta rodada.
+    const emailsDesteUpload = new Set(rows.map((r) => r.operator_email as string));
+
+    const { data: emailsExistentes, error: existentesErr } = await admin
+      .from("d1_consolidado")
+      .select("operator_email")
+      .eq("data_ref", dataRef);
+
+    if (existentesErr) {
+      console.error(
+        "[upload-consolidado] erro ao buscar operadores existentes pra limpeza:",
+        existentesErr.message,
+      );
+    } else {
+      const emailsObsoletos = (emailsExistentes || [])
+        .map((r) => r.operator_email)
+        .filter((email) => !emailsDesteUpload.has(email));
+
+      if (emailsObsoletos.length > 0) {
+        const { error: deleteErr } = await admin
+          .from("d1_consolidado")
+          .delete()
+          .eq("data_ref", dataRef)
+          .in("operator_email", emailsObsoletos);
+
+        if (deleteErr) {
+          console.error(
+            "[upload-consolidado] erro ao remover operadores obsoletos do dia:",
+            deleteErr.message,
+          );
+        }
+      }
+    }
   }
 
   if (operadoresSemGestor > 0) {
@@ -212,7 +279,6 @@ export async function uploadConsolidadoAction(
   }
 
   revalidatePath("/reports/consolidado");
-  revalidatePath("/reports/consolidado/analitico");
 
   return {
     success: true,
