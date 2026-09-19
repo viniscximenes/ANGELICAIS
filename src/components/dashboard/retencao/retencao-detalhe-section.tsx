@@ -14,6 +14,8 @@ import type { OperadorQuartilItem } from "@/lib/retencao/get-quartil-operadores"
 import type { MatrizResult } from "@/lib/retencao/get-matriz-volume-taxa";
 import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
 import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
+import type { ImpactoFaceIdData } from "@/lib/retencao/get-impacto-faceid";
+import type { ArgumentoItem } from "@/lib/retencao/get-efetividade-argumento";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { VisaoGeralCards } from "./visao-geral-cards";
 import { GraficoEvolucao } from "./grafico-evolucao";
@@ -21,6 +23,8 @@ import { TabelaTemas } from "./tabela-temas";
 import { TabelaSegmentos } from "./tabela-segmentos";
 import { DistribuicaoQuartis } from "./distribuicao-quartis";
 import { CopiarContratos } from "./copiar-contratos";
+import { ImpactoFaceIdCard } from "./impacto-faceid-card";
+import { EfetividadeArgumentoCard } from "./efetividade-argumento-card";
 import { ConfigMetasPopover } from "./config-metas-popover";
 import { RetencaoHorizontalScroll } from "./retencao-horizontal-scroll";
 
@@ -65,6 +69,8 @@ export function RetencaoDetalheSection({
     matriz: MatrizResult;
     operadoresIndividual: OperadorIndividual[];
     quartilPorOperador: Record<string, QuartilOperador>;
+    impactoFaceId: ImpactoFaceIdData;
+    efetividadeArgumento: ArgumentoItem[];
     nomeFantasia: NomeFantasiaSerial;
     meta: number;
   } | null>(null);
@@ -160,6 +166,8 @@ export function RetencaoDetalheSection({
           matriz: result.data.matriz,
           operadoresIndividual: result.data.operadoresIndividual,
           quartilPorOperador: result.data.quartilPorOperador,
+          impactoFaceId: result.data.impactoFaceId,
+          efetividadeArgumento: result.data.efetividadeArgumento,
           nomeFantasia: result.data.nomeFantasia,
           meta: result.data.meta,
         });
@@ -343,6 +351,12 @@ export function RetencaoDetalheSection({
                 emailsEquipe={emailsEquipe}
                 porTema={data!.porTema}
                 operadoresIndividual={data!.operadoresIndividual}
+              />,
+              <ImpactoFaceIdCard key="impacto-faceid" scrollInterno data={data!.impactoFaceId} />,
+              <EfetividadeArgumentoCard
+                key="efetividade-argumento"
+                scrollInterno
+                argumentos={data!.efetividadeArgumento}
               />,
             ]}
           />

@@ -9,8 +9,10 @@ import { getPorSegmento, type SegmentoResult } from "./get-por-segmento";
 import { getQuartilOperadores, type OperadorQuartilItem } from "./get-quartil-operadores";
 import {
   montarQuartilPorOperador,
+  quartilDoOperador,
   type QuartilOperador,
 } from "./get-quartil-operador";
+import { getEmailPrefix } from "@/lib/utils/email-variants";
 import { getMatrizVolumeTaxa, type MatrizResult } from "./get-matriz-volume-taxa";
 import { getMetaTxRetencao } from "./meta";
 import {
@@ -22,9 +24,10 @@ import {
   getPorOperadorIndividual,
   type OperadorIndividual,
 } from "./get-por-operador-individual";
+import { getImpactoFaceId, type ImpactoFaceIdData } from "./get-impacto-faceid";
+import { getEfetividadeArgumento, type ArgumentoItem } from "./get-efetividade-argumento";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
-import { getGestorConsolidado } from "@/lib/d1-db/get-gestor-consolidado";
 
 type DashboardRetencaoResult = {
   success: boolean;
@@ -40,11 +43,14 @@ type DashboardRetencaoResult = {
     operadoresIndividual: OperadorIndividual[];
     /** Quartil de cada operador (equipe e empresa), indexado por prefixo do email. */
     quartilPorOperador: Record<string, QuartilOperador>;
+    /** Card "Impacto do Face ID no Resultado" — visibilidade do fenômeno já excluído do cálculo. */
+    impactoFaceId: ImpactoFaceIdData;
+    /** Card "Efetividade por Tipo de Argumento" — volume de retidos por técnica. */
+    efetividadeArgumento: ArgumentoItem[];
     /** Config de apelidos do gestor, para resolver o nome exibido. */
     nomeFantasia: NomeFantasiaSerial;
     meta: number; // Meta de 0 a 100
     emailsEquipe: string[];
-    reportHora?: string | null;
   };
   error?: string;
 };
@@ -66,8 +72,7 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
   }
 
   try {
-    const id = user.profile.username || user.profile.emailCorporativo;
-    const emailsEquipe = await getEmailsEquipe(id);
+    const emailsEquipe = await getEmailsEquipe(user.profile.id);
 
     // Carrega a meta customizada do gestor logado
     const meta = await getMetaTxRetencao(user.profile.id);
@@ -81,8 +86,9 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
       quartilPoloAll,
       matriz,
       operadoresIndividual,
+      impactoFaceId,
+      efetividadeArgumento,
       nomeFantasiaConfig,
-      gestorConsolidado,
     ] = await Promise.all([
       getVisaoGeral(emailsEquipe),
       getPorTema(emailsEquipe),
@@ -92,8 +98,9 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
       getQuartilOperadores("empresa", []),
       getMatrizVolumeTaxa(emailsEquipe),
       getPorOperadorIndividual(emailsEquipe),
+      getImpactoFaceId(emailsEquipe),
+      getEfetividadeArgumento(emailsEquipe),
       getNomeFantasiaConfig(user.profile.id),
-      getGestorConsolidado(user.profile.id),
     ]);
 
     // Operadores da equipe, mas com o rank/quartil calculado sobre o polo.
@@ -121,13 +128,14 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
         matriz,
         operadoresIndividual,
         quartilPorOperador,
+        impactoFaceId,
+        efetividadeArgumento,
         nomeFantasia: {
           ativo: nomeFantasiaConfig.ativo,
           mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
         },
         meta,
         emailsEquipe,
-        reportHora: gestorConsolidado.reportHora,
       },
     };
   } catch (err) {
@@ -136,6 +144,64 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
       success: false,
       error: "Ocorreu um erro ao processar os dados analíticos de retenção.",
     };
+  }
+}
+
+type OperadorDetalheResult =
+  | {
+      success: true;
+      data: { operador: OperadorIndividual; quartil: QuartilOperador; meta: number };
+    }
+  | { success: false; error: string };
+
+/**
+ * Detalhamento de UM operador (retencao_atendimentos), buscado sob demanda a
+ * partir da EquipeTable (d1_consolidado, topo de /reports/consolidado) —
+ * fonte principal/"viva" da página. Diferente de `fetchDashboardRetencaoAction`
+ * (que carrega TODOS os operadores de uma vez para o trilho analítico), esta
+ * action busca só o operador clicado, mantendo a EquipeTable desacoplada do
+ * carregamento pesado/lazy do bloco analítico.
+ *
+ * `login` é o e-mail canônico do roster (`emailOriginal` em d1_consolidado /
+ * `login` em retencao_atendimentos) — mesma identidade, os dois lados
+ * particionam pelo mesmo roster de `d1_operadores_gestor`.
+ */
+export async function fetchOperadorDetalheAction(login: string): Promise<OperadorDetalheResult> {
+  const user = await getCurrentUser();
+  if (!user || user.profile.role !== "GESTOR") {
+    return { success: false, error: "Acesso não autorizado." };
+  }
+
+  try {
+    const emailsEquipe = await getEmailsEquipe(user.profile.id);
+    const prefixoAlvo = getEmailPrefix(login);
+
+    // Confirma que o operador pedido pertence à equipe do gestor logado —
+    // evita que alguém adulterando o argumento da action veja detalhamento
+    // de um operador fora do seu roster.
+    if (!emailsEquipe.some((email) => getEmailPrefix(email) === prefixoAlvo)) {
+      return { success: false, error: "Operador fora da sua equipe." };
+    }
+
+    const [operadores, quartilEquipe, quartilPoloAll, meta] = await Promise.all([
+      getPorOperadorIndividual(emailsEquipe),
+      getQuartilOperadores("equipe", emailsEquipe),
+      getQuartilOperadores("empresa", []),
+      getMetaTxRetencao(user.profile.id),
+    ]);
+
+    const operador = operadores.find((op) => getEmailPrefix(op.login) === prefixoAlvo);
+    if (!operador) {
+      return { success: false, error: "Operador não encontrado." };
+    }
+
+    const quartilPorOperador = montarQuartilPorOperador(quartilEquipe, quartilPoloAll);
+    const quartil = quartilDoOperador(quartilPorOperador, login);
+
+    return { success: true, data: { operador, quartil, meta } };
+  } catch (err) {
+    console.error("[fetchOperadorDetalheAction] erro:", err);
+    return { success: false, error: "Erro ao carregar detalhamento do operador." };
   }
 }
 
@@ -148,8 +214,7 @@ export async function fetchContratosFiltradosAction(
   }
 
   try {
-    const id = user.profile.username || user.profile.emailCorporativo;
-    const emailsEquipe = await getEmailsEquipe(id);
+    const emailsEquipe = await getEmailsEquipe(user.profile.id);
     const data = await getContratosFiltrados({
       ...filtros,
       emailsEquipe,

@@ -9,6 +9,8 @@ import {
   IconAward,
   IconChartPie,
   IconCopy,
+  IconFaceId,
+  IconTargetArrow,
 } from "@tabler/icons-react";
 import { getLenisInstance } from "@/lib/lenis/lenis-instance";
 import { requestScrollToCard } from "@/lib/retencao/scroll-to-card-event";
@@ -17,7 +19,8 @@ import { requestScrollToCard } from "@/lib/retencao/scroll-to-card-event";
  * Índices dos cards no trilho horizontal — precisam bater com a ordem real
  * do array `slides` em retencao-detalhe-section.tsx:
  * 0 = visão geral + evolução, 1 = retenção por tema, 2 = divisor de quartil,
- * 3 = desempenho por segmento, 4 = copiar contratos.
+ * 3 = desempenho por segmento, 4 = copiar contratos, 5 = impacto FaceID,
+ * 6 = efetividade por argumento.
  */
 const TRILHO_CARD = {
   visaoGeral: 0,
@@ -25,6 +28,8 @@ const TRILHO_CARD = {
   quartis: 2,
   segmentos: 3,
   contratos: 4,
+  impactoFaceId: 5,
+  efetividadeArgumento: 6,
 } as const;
 
 const ICON_CLASS = "h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200";
@@ -94,6 +99,18 @@ export function ConsolidadoNavSidebar() {
       href: "#trilho-card-4",
       icon: <IconCopy className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.contratos),
+    },
+    {
+      label: "Impacto do Face ID",
+      href: "#trilho-card-5",
+      icon: <IconFaceId className={ICON_CLASS} />,
+      onClick: () => requestScrollToCard(TRILHO_CARD.impactoFaceId),
+    },
+    {
+      label: "Efetividade por Argumento",
+      href: "#trilho-card-6",
+      icon: <IconTargetArrow className={ICON_CLASS} />,
+      onClick: () => requestScrollToCard(TRILHO_CARD.efetividadeArgumento),
     },
   ];
 
