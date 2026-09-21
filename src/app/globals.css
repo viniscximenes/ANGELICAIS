@@ -338,17 +338,26 @@
     font-weight: 600;
 }
 
-/* Customização e hierarquia das Tabelas do Painel do Gestor (Equipe, Tempo Logado, Indisponibilidade) */
+/* Customização e hierarquia das Tabelas do Painel do Gestor (Equipe, Tempo Logado & Indisponibilidade, Pausas Detalhadas) */
 [data-theme="light"] [data-equipe-table] > div:first-child,
-[data-theme="light"] [data-tempo-logado-table] > div:first-child,
-[data-theme="light"] [data-indisp-table] > div:first-child {
+[data-theme="light"] [data-tempo-indisp-table] > div:first-child,
+[data-theme="light"] [data-aderencia-tabela] > div:first-child {
     background-color: var(--muted) !important;
     border-bottom: 2px solid var(--border) !important;
     color: var(--foreground) !important;
 }
+/* Pausas Detalhadas: cabeçalho com fundo/borda igual às outras, mas SEM
+   forçar var(--foreground) na cor do texto — esta tabela usa cinza mais
+   claro que as demais (ver .pausas-tabela-header-cor abaixo), de propósito. */
+[data-theme="light"] [data-pausas-tabela] > div:first-child {
+    background-color: var(--muted) !important;
+    border-bottom: 2px solid var(--border) !important;
+}
+/* Sem [data-pausas-tabela] aqui de propósito: essa tabela não tem hover
+   (é só de consulta) — incluir o seletor adicionaria um hover que não foi
+   pedido. */
 [data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover,
-[data-theme="light"] [data-tempo-logado-table] > div:not(:first-child):not(.font-bold):hover,
-[data-theme="light"] [data-indisp-table] > div:not(:first-child):not(.font-bold):hover {
+[data-theme="light"] [data-tempo-indisp-table] > div:not(:first-child):not(.font-bold):hover {
     background-color: var(--muted-hover-bg) !important;
 }
 

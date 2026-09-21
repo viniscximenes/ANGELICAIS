@@ -24,6 +24,7 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
   const [step, setStep] = useState<UploadStep>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [rowsWritten, setRowsWritten] = useState<number>(0);
+  const [isHovering, setIsHovering] = useState(false);
 
   const handleFile = useCallback(async (file: File) => {
     setErrorMessage(null);
@@ -164,18 +165,27 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
   return (
     <>
       <div
-        {...getRootProps()}
+        {...getRootProps({
+          onMouseEnter: () => setIsHovering(true),
+          onMouseLeave: () => setIsHovering(false),
+        })}
         className="relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed transition-all duration-300 hover:border-primary"
         style={{
+          // Mesmo mecanismo de fundo do UploadDropzone (consolidado):
+          // --upload-idle-bg/--muted-hover-bg só existem em
+          // [data-theme="light"] (globals.css); em dark, o fallback var(--card)
+          // entra automaticamente, sem precisar de override específico aqui.
           background: isDragActive
             ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
-            : "var(--card)",
+            : isHovering
+              ? "var(--muted-hover-bg, var(--card))"
+              : "var(--upload-idle-bg, var(--card))",
           borderColor: isDragReject
             ? "var(--danger)"
             : isDragActive
               ? "var(--primary)"
               : "var(--border)",
-          boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "none",
+          boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "var(--shadow-sm, none)",
           padding: "1rem 1.25rem",
           opacity: isProcessing ? 0.5 : 1,
           pointerEvents: isProcessing ? "none" : "auto",

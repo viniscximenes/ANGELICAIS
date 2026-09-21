@@ -167,10 +167,15 @@ export type GestorIndispLinha = {
   cumpriuMeta: boolean;
   nr17Pct: number | null;
   pausaParticularPct: number | null;
-  /** % de pausa_mon_taref (monitoramento/tarefa) sobre o tempo logado. */
-  monitoramentoPct: number | null;
-  /** % de pausa_feedback sobre o tempo logado. */
-  feedbackPct: number | null;
+  /**
+   * % de todas as pausas que não são NR17 (pausa10+pausa20) nem Particular
+   * — treinamento, feedback, pré-pausa, ativo, take blip, email,
+   * indisponível, sistema e monitoramento/tarefa — sobre o tempo logado.
+   * Usada pela coluna "Outras Pausas" da tabela unificada; o detalhamento
+   * por pausa individual (Monitoramento, Feedback etc.) continua em
+   * `pausas` abaixo.
+   */
+  outrasPausasPct: number | null;
   pausas: PausasDetalhe;
   /**
    * Hora real de início de cada pausa, "HH:MM:SS" — de d1_indisponibilidade

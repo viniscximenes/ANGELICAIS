@@ -15,6 +15,10 @@ export type OperadorAnaliticoTempoIndisp = {
   horaLogout: string | null;
   indisponibilidade: number | null;
   cumpriuMetaIndisp: boolean;
+  nr17Pct: number | null;
+  pausaParticularPct: number | null;
+  /** Soma das pausas que não são NR17 nem Particular — ver GestorIndispLinha.outrasPausasPct. */
+  outrasPausasPct: number | null;
   pausas: PausasDetalhe;
   pausa10PrimeiraHora: string | null;
   pausa10SegundaHora: string | null;
@@ -62,6 +66,9 @@ export function mergeOperadoresTempoIndisp(
       horaLogout: tl.horaLogout,
       indisponibilidade: indisp?.indisponibilidade ?? null,
       cumpriuMetaIndisp: indisp?.cumpriuMeta ?? false,
+      nr17Pct: indisp?.nr17Pct ?? null,
+      pausaParticularPct: indisp?.pausaParticularPct ?? null,
+      outrasPausasPct: indisp?.outrasPausasPct ?? null,
       pausas: indisp?.pausas ?? PAUSAS_ZERADAS,
       pausa10PrimeiraHora: indisp?.pausa10PrimeiraHora ?? null,
       pausa10SegundaHora: indisp?.pausa10SegundaHora ?? null,

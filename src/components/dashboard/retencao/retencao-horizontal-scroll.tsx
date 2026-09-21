@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { getLenisInstance } from "@/lib/lenis/lenis-instance";
 import { onScrollToCardRequest } from "@/lib/retencao/scroll-to-card-event";
+import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -66,6 +67,21 @@ interface RetencaoHorizontalScrollProps {
    * ficar acima dela, onde rolaria pra fora de vista antes do pin engatar.
    */
   header?: ReactNode;
+  /**
+   * Quando true, a section pinada NÃO usa a altura fixa
+   * `lg:h-[min(80vh,700px)]` — cresce pro tamanho natural do `track`
+   * (maior slide entre os que estão nela), sem NENHUMA rolagem vertical
+   * interna em lugar nenhum. Opt-in, default false: sem passar essa prop,
+   * a section continua com a MESMA altura fixa de sempre — o consolidado
+   * nunca passa essa prop (git diff vazio nele, comportamento idêntico,
+   * provado por medição). O pin-spacer do próprio GSAP ScrollTrigger já é
+   * automaticamente dimensionado pra altura REAL do elemento pinado
+   * (não pra um valor fixo) — a chave pra isso funcionar sem "sobra" de
+   * scroll é chamar `ScrollTrigger.refresh()` toda vez que a altura real
+   * mudar (ver ResizeObserver abaixo, que observa `track.clientHeight`
+   * quando `dynamicHeight` está ativo).
+   */
+  dynamicHeight?: boolean;
 }
 
 /**
@@ -82,6 +98,7 @@ export function RetencaoHorizontalScroll({
   slides,
   refreshKey,
   header,
+  dynamicHeight = false,
 }: RetencaoHorizontalScrollProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -241,6 +258,42 @@ export function RetencaoHorizontalScroll({
       });
       resizeObserver.observe(track);
 
+      // dynamicHeight: gerencia a altura do track por JS (ver comentário
+      // na className do track, acima) em vez de deixar pro auto-size do
+      // flexbox, que só funciona na primeira resolução de layout. Observa
+      // o CONTEÚDO real de cada slide (o filho direto de cada
+      // `#trilho-card-N`, que não tem overflow-hidden nem altura fixa
+      // própria — só o WRAPPER do slide tem) via ResizeObserver: esse
+      // elemento reporta o `scrollHeight` real (não clipado) mesmo com o
+      // pai cortando visualmente. Sempre que qualquer um muda de altura
+      // (dados carregados, polling de 30s trocando linhas de uma tabela,
+      // resize, troca de tema/fonte alterando line-height), reaplica o
+      // MAIOR valor como `track.style.height` e chama refresh() — o
+      // mesmo guard de rAF evita o loop do ResizeObserver.
+      let heightResizeObserver: ResizeObserver | undefined;
+      if (dynamicHeight) {
+        const contentEls = Array.from(track.children)
+          .map((wrapper) => wrapper.firstElementChild)
+          .filter((el): el is HTMLElement => el instanceof HTMLElement);
+
+        let lastAppliedHeight = -1;
+        let heightRafId = 0;
+        const recomputeHeight = () => {
+          const natural = contentEls.reduce((max, el) => Math.max(max, el.scrollHeight), 0);
+          if (natural === lastAppliedHeight) return;
+          lastAppliedHeight = natural;
+          track.style.height = `${natural}px`;
+          refresh();
+        };
+        recomputeHeight();
+
+        heightResizeObserver = new ResizeObserver(() => {
+          if (heightRafId) cancelAnimationFrame(heightRafId);
+          heightRafId = requestAnimationFrame(recomputeHeight);
+        });
+        contentEls.forEach((el) => heightResizeObserver!.observe(el));
+      }
+
       // Navegação externa (ex: sidebar de /reports/consolidado) pra um card
       // específico do trilho — ADITIVO, não mexe em nenhuma fórmula de
       // end/snap/multiplier já calibrada, só REAPROVEITA o que já existe:
@@ -268,6 +321,8 @@ export function RetencaoHorizontalScroll({
         window.removeEventListener("load", refresh);
         if (rafId) cancelAnimationFrame(rafId);
         resizeObserver.disconnect();
+        heightResizeObserver?.disconnect();
+        if (dynamicHeight) track.style.height = "";
         unsubscribeScrollToCard();
         tl.scrollTrigger?.kill();
         tl.kill();
@@ -283,7 +338,10 @@ export function RetencaoHorizontalScroll({
   return (
     <div
       ref={sectionRef}
-      className="relative lg:flex lg:h-[min(80vh,700px)] lg:flex-col lg:overflow-hidden"
+      className={cn(
+        "relative lg:flex lg:flex-col lg:overflow-hidden",
+        dynamicHeight ? "" : "lg:h-[min(80vh,700px)]",
+      )}
     >
       {/*
         Cabeçalho fixo DENTRO da área pinada: `shrink-0` pra não disputar
@@ -293,7 +351,30 @@ export function RetencaoHorizontalScroll({
 
       <div
         ref={trackRef}
-        className="flex flex-col gap-6 lg:min-h-0 lg:flex-1 lg:flex-row lg:flex-nowrap lg:items-start lg:gap-0"
+        className={cn(
+          "flex flex-col gap-6 lg:flex-row lg:flex-nowrap lg:items-start lg:gap-0",
+          // dynamicHeight: SEM `lg:flex-1 lg:min-h-0` — com esse par de
+          // classes, a altura do track é decidida pela distribuição de
+          // espaço livre do flexbox (flex-basis:0% + flex-grow:1), que só
+          // "vê" o conteúdo natural dos slides na primeira vez que o
+          // browser resolve o layout (quando a altura do container ainda é
+          // indefinida). Depois de montado, se o conteúdo de um slide
+          // crescer (polling, dados chegando depois), os slides-wrapper
+          // (`lg:h-full lg:overflow-hidden`, abaixo) já têm uma altura
+          // DEFINIDA herdada do track — o browser não volta a recalcular o
+          // "auto" do flex a partir do conteúdo depois disso, então o
+          // crescimento fica invisível e o conteúdo novo é cortado pelo
+          // overflow-hidden, SEM barra (silenciosamente) — bug real,
+          // confirmado via medição (scrollHeight do slide cresceu, mas
+          // clientHeight do track não). Corrigido gerenciando a altura do
+          // track via JS (useIsomorphicLayoutEffect abaixo, só quando
+          // dynamicHeight): mede o scrollHeight real (não clipado) do
+          // conteúdo de CADA slide sempre que ele muda, aplica o maior
+          // valor como `track.style.height` explícito, e chama
+          // ScrollTrigger.refresh(). Sem flex-1/min-h-0 competindo com essa
+          // altura explícita.
+          dynamicHeight ? "" : "lg:min-h-0 lg:flex-1",
+        )}
       >
         {/*
           Altura FIXA vem só de `section`+`track` (acima). `items-start`

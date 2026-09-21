@@ -4,8 +4,8 @@ type NomeFantasiaConfig = {
   ativo: boolean;
   mapa: Map<string, string>; // operador_email → nome_fantasia
   olhoConsolidado: boolean;
-  olhoTempoLogado: boolean;
-  olhoIndisponibilidade: boolean;
+  /** Olho único da tabela unificada Tempo Logado & Indisponibilidade (dentro do Consolidado). */
+  olhoTempoIndisponibilidade: boolean;
   olhoOperacional: boolean;
   olhoTma: boolean;
 };
@@ -19,7 +19,7 @@ export async function getNomeFantasiaConfig(
     supabase
       .from("gestor_config_fantasia")
       .select(
-        "ativo, olho_consolidado, olho_tempo_logado, olho_indisponibilidade, olho_operacional, olho_tma",
+        "ativo, olho_consolidado, olho_tempo_indisponibilidade, olho_operacional, olho_tma",
       )
       .eq("gestor_id", gestorId)
       .maybeSingle(),
@@ -39,8 +39,7 @@ export async function getNomeFantasiaConfig(
   const cfg = configResult.data as {
     ativo?: boolean;
     olho_consolidado?: boolean;
-    olho_tempo_logado?: boolean;
-    olho_indisponibilidade?: boolean;
+    olho_tempo_indisponibilidade?: boolean;
     olho_operacional?: boolean;
     olho_tma?: boolean;
   } | null;
@@ -59,8 +58,7 @@ export async function getNomeFantasiaConfig(
     ativo: cfg?.ativo ?? false,
     mapa,
     olhoConsolidado: cfg?.olho_consolidado ?? false,
-    olhoTempoLogado: cfg?.olho_tempo_logado ?? false,
-    olhoIndisponibilidade: cfg?.olho_indisponibilidade ?? false,
+    olhoTempoIndisponibilidade: cfg?.olho_tempo_indisponibilidade ?? false,
     olhoOperacional: cfg?.olho_operacional ?? false,
     olhoTma: cfg?.olho_tma ?? false,
   };

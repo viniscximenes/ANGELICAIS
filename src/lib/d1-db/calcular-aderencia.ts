@@ -53,7 +53,8 @@ export function buildForecastPorOperador(
   return new Map(pausasProgramadas.map((p) => [getEmailPrefix(p.operatorEmail), p]));
 }
 
-function paraMinutos(hora: string | null | undefined): number | null {
+/** Exportada pros cards analíticos de tempo-indisponibilidade (Pausas não realizadas, Aderência da equipe) reaproveitarem o mesmo parser, sem duplicar. */
+export function paraMinutos(hora: string | null | undefined): number | null {
   if (!hora) return null;
   const m = hora.trim().match(/^(\d{1,2}):(\d{2})/);
   if (!m) return null;
@@ -63,7 +64,8 @@ function paraMinutos(hora: string | null | undefined): number | null {
   return h * 60 + min;
 }
 
-function formatarHoraCurta(hora: string | null | undefined): string | null {
+/** Exportada pros cards analíticos de tempo-indisponibilidade reaproveitarem a mesma formatação "HH:MM". */
+export function formatarHoraCurta(hora: string | null | undefined): string | null {
   if (!hora) return null;
   const m = hora.trim().match(/^(\d{1,2}):(\d{2})/);
   if (!m) return null;

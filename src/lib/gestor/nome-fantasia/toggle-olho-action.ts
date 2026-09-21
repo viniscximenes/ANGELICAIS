@@ -5,8 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 type TabelaOlho =
   | "consolidado"
-  | "tempo_logado"
-  | "indisponibilidade"
+  | "tempo_indisponibilidade"
   | "operacional"
   | "tma";
 
@@ -32,15 +31,13 @@ export async function toggleOlhoAction(
       .from("gestor_config_fantasia")
       .upsert({ gestor_id: gestorId, olho_consolidado: valor }, { onConflict: "gestor_id" });
     dbError = error;
-  } else if (tabela === "tempo_logado") {
+  } else if (tabela === "tempo_indisponibilidade") {
     const { error } = await supabase
       .from("gestor_config_fantasia")
-      .upsert({ gestor_id: gestorId, olho_tempo_logado: valor }, { onConflict: "gestor_id" });
-    dbError = error;
-  } else if (tabela === "indisponibilidade") {
-    const { error } = await supabase
-      .from("gestor_config_fantasia")
-      .upsert({ gestor_id: gestorId, olho_indisponibilidade: valor }, { onConflict: "gestor_id" });
+      .upsert(
+        { gestor_id: gestorId, olho_tempo_indisponibilidade: valor },
+        { onConflict: "gestor_id" },
+      );
     dbError = error;
   } else if (tabela === "tma") {
     const { error } = await supabase

@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/hover-sidebar";
 import {
   IconUsersGroup,
   IconChartLine,
@@ -14,6 +12,7 @@ import {
 } from "@tabler/icons-react";
 import { getLenisInstance } from "@/lib/lenis/lenis-instance";
 import { requestScrollToCard } from "@/lib/retencao/scroll-to-card-event";
+import { FloatingNavSidebar } from "@/components/ui/floating-nav-sidebar";
 
 /**
  * Índices dos cards no trilho horizontal — precisam bater com a ordem real
@@ -48,10 +47,13 @@ const ICON_CLASS = "h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200";
  * adaptar o comportamento mobile (hambúrguer fullscreen) embutido no
  * componente original, que não foi desenhado pra conviver com o header/menu
  * mobile que esta página já tem.
+ *
+ * A casca (wrapper fixed + Sidebar/SidebarBody/loop) foi extraída pra
+ * FloatingNavSidebar — reaproveitada também por TempoIndispNavSidebar, sem
+ * duplicar essa lógica. Este componente só monta a lista de itens
+ * específica do consolidado, IDÊNTICA à de antes da extração.
  */
 export function ConsolidadoNavSidebar() {
-  const [open, setOpen] = useState(false);
-
   function scrollToEquipe() {
     const el = document.getElementById("equipe-section");
     if (!el) return;
@@ -114,15 +116,5 @@ export function ConsolidadoNavSidebar() {
     },
   ];
 
-  return (
-    <div className="fixed top-24 right-4 z-40 hidden lg:block">
-      <Sidebar open={open} setOpen={setOpen}>
-        <SidebarBody className="border-border/60 h-auto justify-start gap-1 rounded-xl border py-4 shadow-lg">
-          {links.map((link) => (
-            <SidebarLink key={link.label} link={link} />
-          ))}
-        </SidebarBody>
-      </Sidebar>
-    </div>
-  );
+  return <FloatingNavSidebar links={links} />;
 }

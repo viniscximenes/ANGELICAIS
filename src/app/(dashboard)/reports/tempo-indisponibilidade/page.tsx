@@ -1,13 +1,19 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { GestorTempoLogadoIndispSection } from "@/components/gestor/gestor-tempo-logado-indisp-section";
+import { TempoIndispSection } from "@/components/dashboard/tempo-indisponibilidade/tempo-indisp-section";
+import { TempoIndispNavSidebar } from "@/components/gestor/tempo-indisp-nav-sidebar";
+import { SignatureFooter } from "@/components/gestor/signature-footer";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
+import { getPausasProgramadas } from "@/lib/bases/pausas-programadas/actions/get-pausas-programadas";
 import { getGestorIndisponibilidade } from "@/lib/d1-db/get-gestor-indisponibilidade";
 import { getGestorTempoLogado } from "@/lib/d1-db/get-gestor-tempo-logado";
+import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
+import { getConfigAderencia } from "@/lib/gestor/config-aderencia/get-config-aderencia";
+import { getConfigTabelaTempoIndisp } from "@/lib/gestor/config-tabela-tempo-indisp/get-config-tabela-tempo-indisp";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 
@@ -26,11 +32,26 @@ export default async function ReportsTempoIndisponibilidadePage() {
     redirect(getPostLoginPath(user.profile.role));
   }
 
-  const [dataTempoLogado, dataIndisponibilidade, nomeFantasiaConfig] =
+  // Roster da equipe D-1 (d1_operadores_gestor) e config da tabela unificada
+  // (meta de Indisp.% + ordenação) buscados antes do resto: o roster porque
+  // getPausasProgramadas precisa dele, e a config porque getGestorIndisponibilidade
+  // precisa da meta pra calcular cumpriuMeta.
+  const [rosterD1, configTabelaTempoIndisp] = await Promise.all([
+    getRosterOperadoresGestor(user.profile.id),
+    getConfigTabelaTempoIndisp(user.profile.id),
+  ]);
+
+  // Fetch único da página (antes dividido entre esta rota e
+  // /analitico, hoje fundidas): tempo logado, indisponibilidade,
+  // nome fantasia, pausas programadas (filtradas pelo roster) e
+  // tolerância de aderência.
+  const [dataTempoLogado, dataIndisponibilidade, nomeFantasiaConfig, pausasProgramadas, configAderencia] =
     await Promise.all([
       getGestorTempoLogado(user.profile.id),
-      getGestorIndisponibilidade(user.profile.id),
+      getGestorIndisponibilidade(user.profile.id, configTabelaTempoIndisp.metaIndisponibilidade),
       getNomeFantasiaConfig(user.profile.id),
+      getPausasProgramadas(rosterD1),
+      getConfigAderencia(user.profile.id),
     ]);
 
   // Os dois datasets vêm do mesmo upload de BASE - 2 — se um vier vazio,
@@ -70,9 +91,18 @@ export default async function ReportsTempoIndisponibilidadePage() {
 
   return (
     <PageTransition>
+      {/*
+        Navegação lateral animada, EXCLUSIVA desta página — mesmo
+        componente/mecanismo do ConsolidadoNavSidebar (ambos delegam a
+        FloatingNavSidebar), só com a lista de itens trocada. position:
+        fixed, fica fora do fluxo do container centralizado abaixo — mesma
+        posição de ConsolidadoNavSidebar em /reports/consolidado.
+      */}
+      <TempoIndispNavSidebar />
+
       <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
         <div className="mx-auto max-w-7xl">
-          <header className="border-border flex flex-col gap-2 border-b border-dashed pb-4">
+          <header className="border-border mb-4 flex flex-col gap-2 border-b border-dashed pb-4">
             <span className="text-muted-foreground text-xs tracking-wide uppercase">
               Painel do Gestor
             </span>
@@ -84,16 +114,31 @@ export default async function ReportsTempoIndisponibilidadePage() {
             </div>
           </header>
 
-          <GestorTempoLogadoIndispSection
-            operadoresTempoLogado={dataTempoLogado.operadores}
-            operadoresIndisponibilidade={dataIndisponibilidade.operadores}
-            horaReport={dataTempoLogado.horaReport ?? "—"}
-            nomeSupervisorReport={dataTempoLogado.nomeSupervisorReport}
+          <TempoIndispSection
+            operadoresTempoLogadoIniciais={dataTempoLogado.operadores}
+            operadoresIndisponibilidadeIniciais={dataIndisponibilidade.operadores}
+            horaReportInicial={dataTempoLogado.horaReport ?? null}
+            nomeSupervisorReportInicial={dataTempoLogado.nomeSupervisorReport}
+            pausasProgramadas={pausasProgramadas}
+            toleranciaMin={configAderencia.toleranciaMin}
             showUpload={showUpload}
             nomeFantasia={nomeFantasia}
-            olhoInicialTempoLogado={nomeFantasiaConfig.olhoTempoLogado}
-            olhoInicialIndisponibilidade={nomeFantasiaConfig.olhoIndisponibilidade}
+            olhoInicial={nomeFantasiaConfig.olhoTempoIndisponibilidade}
+            metaIndisponibilidadeInicial={configTabelaTempoIndisp.metaIndisponibilidade}
+            ordemTabelaInicial={configTabelaTempoIndisp.ordemTabela}
           />
+
+          {/*
+            MESMO componente/posição do consolidado (SignatureFooter,
+            reports/consolidado/page.tsx): irmã, DEPOIS de todo o conteúdo
+            de scroll (incluindo o trilho horizontal pinado dentro de
+            TempoIndispSection) — fora de qualquer área pinada, em fluxo de
+            documento normal. Sem espaçador manual e sem dynamicHeight: o
+            consolidado também não usa nenhum dos dois pra ela (investigado
+            — ela nunca esteve dentro do trilho, então nunca precisou
+            entrar no cálculo de altura/pin do GSAP).
+          */}
+          <SignatureFooter />
         </div>
       </div>
     </PageTransition>

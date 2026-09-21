@@ -6,19 +6,13 @@ import { toast } from "sonner";
 
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/d1-db/types";
 import { capturarComoPng } from "@/lib/utils/capturar-como-png";
+import { copyFormattedHtml, escapeHtml } from "@/lib/utils/copy-formatted-html";
 
 function getHoraReport(equipe: ResumoEquipe): string {
   if (!equipe.horaReport || equipe.horaReport === "—") return "—";
   // Se a hora contiver segundos (ex: 15:30:00), corta e deixa apenas HH:MM
   const match = equipe.horaReport.match(/^(\d{1,2}:\d{2})/);
   return match ? match[1] : equipe.horaReport;
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
 
 function formatReportTexto(hora: string): string {
@@ -42,46 +36,6 @@ function formatReportHtml(
     `<div style="margin-top: 8px;"><img src="${pngDataUrl}" style="display: block; max-width: 1000px; width: 100%;" alt="Tabela consolidado"></div>`,
   ];
   return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">${parts.join("")}</div>`;
-}
-
-async function copyFormattedHtml(html: string): Promise<void> {
-  // Tenta execCommand primeiro — preserva estilos inline (sem sanitização)
-  try {
-    const container = document.createElement("div");
-    container.setAttribute("contenteditable", "true");
-    container.style.position = "fixed";
-    container.style.top = "-9999px";
-    container.style.left = "-9999px";
-    container.style.whiteSpace = "pre-wrap";
-    container.innerHTML = html;
-    document.body.appendChild(container);
-
-    const range = document.createRange();
-    range.selectNodeContents(container);
-    const selection = window.getSelection();
-    if (selection) {
-      selection.removeAllRanges();
-      selection.addRange(range);
-      const ok = document.execCommand("copy");
-      selection.removeAllRanges();
-      document.body.removeChild(container);
-      if (ok) return;
-    } else {
-      document.body.removeChild(container);
-    }
-  } catch (e) {
-    console.warn(
-      "[copy-table] execCommand falhou, tentando ClipboardItem:",
-      e,
-    );
-  }
-
-  // Fallback: ClipboardItem (sem garantia de cores em todos os browsers)
-  await navigator.clipboard.write([
-    new ClipboardItem({
-      "text/html": new Blob([html], { type: "text/html" }),
-    }),
-  ]);
 }
 
 interface CopyTableButtonProps {

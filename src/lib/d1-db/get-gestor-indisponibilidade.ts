@@ -44,13 +44,29 @@ const PAUSAS_ZERADAS: PausasDetalhe = {
  * operador cadastrado mas sem upload de hoje aparece com tudo zerado. Só
  * retorna `operadores: []` quando o roster está vazio.
  *
- * NR17%/Particular%/Monitoramento%/Feedback% são percentuais ABSOLUTOS —
- * cada um é o tempo daquela pausa ÷ tempo logado, não ÷ tempo indisponível
- * (isso daria a proporção relativa dentro da indisponibilidade, ex: NR17
- * aparecendo como 100% quando na verdade é só 10% da jornada). A soma dos
- * quatro NÃO cobre toda a indisponibilidade — há outras pausas (treinamento,
- * pré-pausa, ativo, take blip, email, sistema) que entram no total mas não
- * têm coluna própria na tabela.
+ * @param metaIndisponibilidade Meta configurável do gestor (config
+ * `gestor_config_fantasia.meta_indisponibilidade`, via
+ * getConfigTabelaTempoIndisp) — usada só pra `cumpriuMeta` (indisp_percent <
+ * meta). Fallback META_INDISPONIBILIDADE (14.5%) se omitido. Quem chama no
+ * polling (refreshIndisponibilidadeAction) precisa passar a meta ATUAL do
+ * gestor, senão cada refetch de 30s recalcularia cumpriuMeta com o default,
+ * descartando silenciosamente a meta configurada.
+ *
+ * NR17%/Particular%/Outras Pausas% são percentuais ABSOLUTOS — cada um é o
+ * tempo daquela(s) pausa(s) ÷ tempo logado, não ÷ tempo indisponível (isso
+ * daria a proporção relativa dentro da indisponibilidade, ex: NR17
+ * aparecendo como 100% quando na verdade é só 10% da jornada).
+ *
+ * "Outras Pausas" = tudo que NÃO é NR17 (pausa10+pausa20) nem Particular —
+ * soma de treinamento, feedback, pré-pausa, ativo, take blip, email,
+ * indisponível, sistema e monitoramento/tarefa. Por construção, NR17% +
+ * Particular% + Outras Pausas% = (soma de TODAS as colunas de pausa que
+ * existem no schema atual) ÷ tempo logado — o que não é necessariamente
+ * igual a indisp_percent (vindo pronto do CSV/sistema externo), porque esse
+ * indisp_percent pode ter sido calculado pelo sistema de origem incluindo
+ * categorias de pausa que existiam no Sheets antigo mas não têm coluna
+ * neste schema (pausa15/pausa40/operacional/pausaSemMotivo — ver abaixo).
+ * Ver relatório da fusão pra a checagem de consistência feita.
  *
  * O denominador é só tempo_logado (SEM somar tempo_indisponivel de novo):
  * o "tempo logado" já é o span completo da sessão (login → logout) no CSV
@@ -58,9 +74,13 @@ const PAUSAS_ZERADAS: PausasDetalhe = {
  * adicionais fora dele. Somar os dois dobraria a contagem das pausas.
  *
  * pausa15/pausa40/operacional/pausaSemMotivo não têm coluna no schema novo
- * (ver PausasDetalhe) — ficam sempre "00:00:00".
+ * (ver PausasDetalhe) — ficam sempre "00:00:00", e por isso não entram na
+ * soma de "Outras Pausas" (não têm de onde vir).
  */
-export async function getGestorIndisponibilidade(gestorId: string): Promise<GestorIndispData> {
+export async function getGestorIndisponibilidade(
+  gestorId: string,
+  metaIndisponibilidade: number = META_INDISPONIBILIDADE,
+): Promise<GestorIndispData> {
   const admin = createAdminClient();
 
   const roster = await getRosterOperadoresGestor(gestorId);
@@ -115,8 +135,7 @@ export async function getGestorIndisponibilidade(gestorId: string): Promise<Gest
         cumpriuMeta: false,
         nr17Pct: null,
         pausaParticularPct: null,
-        monitoramentoPct: null,
-        feedbackPct: null,
+        outrasPausasPct: null,
         pausas: PAUSAS_ZERADAS,
         pausa10PrimeiraHora: null,
         pausa10SegundaHora: null,
@@ -127,8 +146,21 @@ export async function getGestorIndisponibilidade(gestorId: string): Promise<Gest
     const pausa10Seg = horaParaSegundos(row.pausa10);
     const pausa20Seg = horaParaSegundos(row.pausa20);
     const particularSeg = horaParaSegundos(row.pausa_particular);
-    const monTarefSeg = horaParaSegundos(row.pausa_mon_taref);
-    const feedbackSeg = horaParaSegundos(row.pausa_feedback);
+    // "Outras Pausas" (coluna da tabela unificada) = tudo que NÃO é NR17
+    // (pausa10+pausa20) nem Particular — as outras 7 categorias abaixo,
+    // mesmo critério documentado no comentário da função (soma não cobre
+    // NR17/Particular, cobre o resto). Mesmo parser (horaParaSegundos) e
+    // mesmo denominador (tempoLogadoSeg) das demais colunas de %.
+    const outrasPausasSeg =
+      horaParaSegundos(row.pausa_treinamento) +
+      horaParaSegundos(row.pausa_feedback) +
+      horaParaSegundos(row.pausa_pre_pausa) +
+      horaParaSegundos(row.pausa_ativo) +
+      horaParaSegundos(row.pausa_take_blip) +
+      horaParaSegundos(row.pausa_email) +
+      horaParaSegundos(row.pausa_indisponivel) +
+      horaParaSegundos(row.pausa_sistema) +
+      horaParaSegundos(row.pausa_mon_taref);
 
     const pausas: PausasDetalhe = {
       pausa10: row.pausa10 ?? ZERO_HORA,
@@ -155,11 +187,10 @@ export async function getGestorIndisponibilidade(gestorId: string): Promise<Gest
       email,
       gestor: nomeGestor,
       indisponibilidade: row.indisp_percent,
-      cumpriuMeta: row.indisp_percent !== null && row.indisp_percent < META_INDISPONIBILIDADE,
+      cumpriuMeta: row.indisp_percent !== null && row.indisp_percent < metaIndisponibilidade,
       nr17Pct: pct(pausa10Seg + pausa20Seg, tempoLogadoSeg),
       pausaParticularPct: pct(particularSeg, tempoLogadoSeg),
-      monitoramentoPct: pct(monTarefSeg, tempoLogadoSeg),
-      feedbackPct: pct(feedbackSeg, tempoLogadoSeg),
+      outrasPausasPct: pct(outrasPausasSeg, tempoLogadoSeg),
       pausas,
       pausa10PrimeiraHora: row.pausa10_1_hora_inicio ?? null,
       pausa10SegundaHora: row.pausa10_2_hora_inicio ?? null,
