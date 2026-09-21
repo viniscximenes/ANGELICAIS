@@ -197,6 +197,16 @@ export function GestorEquipeSection({
 
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Carimbo do último report conhecido (hora + nome do supervisor), pra
+  // detectar barato — sem query pesada nenhuma — quando outro gestor subiu
+  // uma base nova. O polling de 30s já busca esses dois campos de qualquer
+  // forma pra EquipeTable; só reaproveitamos o resultado e comparamos.
+  // Inicializado com os valores vindos do servidor pra não disparar um
+  // notifyBaseAtualizada falso no primeiro poll após o mount.
+  const lastReportSignatureRef = useRef(
+    `${equipeInicial.horaReport}|${nomeSupervisorReportInicial ?? ""}`,
+  );
+
   // Refetch usado tanto pelo polling quanto (imediatamente, sem esperar os
   // 30s) pelo ClearBaseButton — mesma fonte, dois gatilhos.
   async function refetchConsolidado() {
@@ -206,6 +216,17 @@ export function GestorEquipeSection({
         setOperadores(result.operadores);
         setEquipe(result.equipe);
         setNomeSupervisorReport(result.nomeSupervisorReport);
+
+        // Base nova detectada (report mudou) — avisa a árvore irmã
+        // (RetencaoDetalheSection, bloco Analítico) pra refazer sua busca
+        // pesada. Sem isso, qualquer gestor que NÃO fez o upload continua
+        // vendo o Analítico desatualizado até dar F5, mesmo com a
+        // EquipeTable já refletindo a base nova — ver base-cleared-event.ts.
+        const signature = `${result.equipe.horaReport}|${result.nomeSupervisorReport ?? ""}`;
+        if (signature !== lastReportSignatureRef.current) {
+          lastReportSignatureRef.current = signature;
+          notifyBaseAtualizada();
+        }
       }
     } catch (err) {
       // Server Action de um build anterior (hot reload em dev, ou deploy
