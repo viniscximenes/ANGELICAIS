@@ -9,6 +9,7 @@ import { getTmaRosterAction } from "@/lib/tma/actions/get-tma-roster-action";
 import { uploadTmaAction } from "@/lib/tma/actions/upload-tma-action";
 import { parseTmaNoClient } from "@/lib/tma/parse-tma-client";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
+import { TmaUploadProgressModal, type TmaUploadStep } from "./tma-upload-progress-modal";
 
 interface TmaUploadDropzoneProps {
   /** Variante enxuta — área de drop mais baixa, sem o ícone central. */
@@ -16,14 +17,17 @@ interface TmaUploadDropzoneProps {
 }
 
 export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = {}) {
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [step, setStep] = useState<TmaUploadStep>(null);
+  const [resumoFinal, setResumoFinal] = useState<string | null>(null);
   const [isHovering, setIsHovering] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const isProcessing = step !== null && step !== "done";
+
   const handleFile = useCallback(async (file: File) => {
     setErrorMessage(null);
-    setIsProcessing(true);
-    const toastId = toast.loading("Processando relatório de voz...");
+    setResumoFinal(null);
+    setStep("reading-roster");
 
     try {
       // Roster (só email + gestor_id, payload pequeno) — usado pro matching
@@ -34,39 +38,45 @@ export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = 
       // Action estoura o limite de payload (413 em produção).
       const rosterResult = await getTmaRosterAction();
       if (!rosterResult.success) {
+        setStep(null);
         setErrorMessage(rosterResult.error);
-        toast.error("Falha ao processar relatório", { id: toastId, description: rosterResult.error });
+        toast.error("Falha ao processar relatório", { description: rosterResult.error });
         return;
       }
 
+      setStep("parsing");
       const payload = await parseTmaNoClient(file, rosterResult.roster);
 
+      setStep("uploading");
       let result;
       try {
         result = await uploadTmaAction(payload);
       } catch (err) {
-        if (handleStaleActionError(err)) return;
+        if (handleStaleActionError(err)) {
+          setStep(null);
+          return;
+        }
         throw err;
       }
 
       if (!result.success) {
+        setStep(null);
         setErrorMessage(result.error);
-        toast.error("Falha ao processar relatório", { id: toastId, description: result.error });
+        toast.error("Falha ao processar relatório", { description: result.error });
         return;
       }
 
-      toast.success("TMA atualizado", {
-        id: toastId,
-        description: `${result.atendimentosValidos} atendimentos válidos · ${result.operadoresAtualizados} operadores · ${result.semMatch} linhas de outras equipes ignoradas`,
-      });
+      setResumoFinal(
+        `${result.atendimentosValidos} atendimentos válidos · ${result.operadoresAtualizados} operadores · ${result.semMatch} linhas de outras equipes ignoradas`,
+      );
+      setStep("done");
 
       setTimeout(() => window.location.reload(), 1200);
     } catch (err) {
       console.error("[tma-upload] erro:", err);
+      setStep(null);
       setErrorMessage("Erro ao processar arquivo");
-      toast.error("Não foi possível processar o arquivo", { id: toastId });
-    } finally {
-      setIsProcessing(false);
+      toast.error("Não foi possível processar o arquivo");
     }
   }, []);
 
@@ -90,67 +100,71 @@ export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = 
   });
 
   return (
-    <div
-      {...getRootProps({
-        onMouseEnter: () => setIsHovering(true),
-        onMouseLeave: () => setIsHovering(false),
-      })}
-      className={
-        compact
-          ? "relative flex w-full cursor-pointer items-center justify-center rounded-xl border border-dashed transition-all duration-300 hover:border-primary"
-          : "relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed transition-all duration-300 hover:border-primary"
-      }
-      style={{
-        background: isDragActive
-          ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
-          : isHovering
-            ? "var(--muted-hover-bg, var(--card))"
-            : "var(--upload-idle-bg, var(--card))",
-        borderColor: isDragReject
-          ? "var(--danger)"
-          : isDragActive
-            ? "var(--primary)"
-            : "var(--border)",
-        boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "var(--shadow-sm, none)",
-        padding: compact ? "0.875rem 1.25rem" : "2.5rem 1.5rem",
-        opacity: isProcessing ? 0.5 : 1,
-        pointerEvents: isProcessing ? "none" : "auto",
-        minHeight: compact ? "auto" : "100%",
-      }}
-    >
-      <input {...getInputProps()} />
+    <>
+      <div
+        {...getRootProps({
+          onMouseEnter: () => setIsHovering(true),
+          onMouseLeave: () => setIsHovering(false),
+        })}
+        className={
+          compact
+            ? "relative flex w-full cursor-pointer items-center justify-center rounded-xl border border-dashed transition-all duration-300 hover:border-primary"
+            : "relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed transition-all duration-300 hover:border-primary"
+        }
+        style={{
+          background: isDragActive
+            ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
+            : isHovering
+              ? "var(--muted-hover-bg, var(--card))"
+              : "var(--upload-idle-bg, var(--card))",
+          borderColor: isDragReject
+            ? "var(--danger)"
+            : isDragActive
+              ? "var(--primary)"
+              : "var(--border)",
+          boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "var(--shadow-sm, none)",
+          padding: compact ? "0.875rem 1.25rem" : "2.5rem 1.5rem",
+          opacity: isProcessing ? 0.5 : 1,
+          pointerEvents: isProcessing ? "none" : "auto",
+          minHeight: compact ? "auto" : "100%",
+        }}
+      >
+        <input {...getInputProps()} />
 
-      <div className={compact ? "flex items-center justify-center gap-3 text-center" : "flex flex-col items-center justify-center gap-3 text-center"}>
-        {!compact && (
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border/80 bg-muted/40 text-muted-foreground">
-            {isDragActive ? (
-              <IconCloudUpload size={30} aria-hidden="true" />
-            ) : (
-              <IconFileSpreadsheet size={30} aria-hidden="true" />
-            )}
+        <div className={compact ? "flex items-center justify-center gap-3 text-center" : "flex flex-col items-center justify-center gap-3 text-center"}>
+          {!compact && (
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border/80 bg-muted/40 text-muted-foreground">
+              {isDragActive ? (
+                <IconCloudUpload size={30} aria-hidden="true" />
+              ) : (
+                <IconFileSpreadsheet size={30} aria-hidden="true" />
+              )}
+            </div>
+          )}
+
+          <div className={compact ? "space-y-0.5" : "space-y-1"}>
+            <p className={compact ? "ds-body text-foreground text-sm font-semibold" : "ds-body text-foreground font-semibold"}>
+              {isDragActive
+                ? "Solte o arquivo para enviar"
+                : "Arraste o arquivo CSV aqui ou clique para selecionar"}
+            </p>
+            <p className="ds-mono-sm text-muted-foreground/80 text-[11px]">
+              Apenas arquivos .csv · limite de 50.000 linhas
+            </p>
+          </div>
+        </div>
+
+        {errorMessage && !isProcessing && (
+          <div
+            role="alert"
+            className="status-danger ds-small mt-4 flex items-center justify-center gap-2 rounded-md p-3"
+          >
+            {errorMessage}
           </div>
         )}
-
-        <div className={compact ? "space-y-0.5" : "space-y-1"}>
-          <p className={compact ? "ds-body text-foreground text-sm font-semibold" : "ds-body text-foreground font-semibold"}>
-            {isDragActive
-              ? "Solte o arquivo para enviar"
-              : "Arraste o relatório de voz (CDR) aqui ou clique para selecionar"}
-          </p>
-          <p className="ds-mono-sm text-muted-foreground/80 text-[11px]">
-            Apenas arquivos .csv, delimitados por ;
-          </p>
-        </div>
       </div>
 
-      {errorMessage && !isProcessing && (
-        <div
-          role="alert"
-          className="status-danger ds-small mt-4 flex items-center justify-center gap-2 rounded-md p-3"
-        >
-          {errorMessage}
-        </div>
-      )}
-    </div>
+      <TmaUploadProgressModal step={step} resumoFinal={resumoFinal} />
+    </>
   );
 }

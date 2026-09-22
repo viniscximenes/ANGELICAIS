@@ -23,7 +23,7 @@ const PASSOS = [
   },
   {
     texto:
-      'Na parte superior vai aparecer um botão de Download — clicar nele baixa o CSV. Depois é só anexar esse arquivo na aba de anexo do site (o card "Atualizar base D-1").',
+      'Na parte superior vai aparecer um botão de Download — clicar nele baixa o CSV. Depois é só anexar esse arquivo na aba de anexo do site (o card "Anexar Base").',
     imagem: "/tma-ajuda/04.png",
   },
 ];

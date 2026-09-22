@@ -18,7 +18,7 @@ const ALL_SECTIONS: SidebarSection[] = [
     items: [
       { label: "Consolidado", href: "/reports/consolidado" },
       { label: "Tempo Logado & Indisp.", href: "/reports/tempo-indisponibilidade" },
-      { label: "TMA", href: "/reports/tma" },
+      { label: "TMA & Peso", href: "/reports/tma-peso" },
     ],
   },
   {

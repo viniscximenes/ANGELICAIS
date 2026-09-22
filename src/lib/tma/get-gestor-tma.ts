@@ -1,8 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { dataRefHojeBR } from "@/lib/d1-db/parse";
+import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
+import { DEFAULT_ORDEM_TABELA_TMA, isOrdemTabelaTma, type OrdemTabelaTma } from "@/lib/gestor/config-tabela-tma/types";
+import { ordenarOperadoresTma } from "@/lib/gestor/config-tabela-tma/ordenar-operadores-tma";
+import { getTmaThresholdConfig, statusTmaDe, type TmaStatus } from "./tma-status";
 
-export type TmaStatus = "success" | "danger" | "neutral";
+export type { TmaStatus };
 
 export type OperadorTma = {
   operatorEmail: string;
@@ -26,15 +30,9 @@ export type GestorTmaResult = {
   reportNomeSupervisor: string | null;
   /** Meta efetiva usada pra colorir (override do gestor ou default do KPI), em "MM:SS". */
   metaAtualMmSs: string;
+  /** Ordenação salva do gestor — `gestor_config_fantasia.ordem_tabela_tma`. */
+  ordemTabela: OrdemTabelaTma;
 };
-
-/** "MM:SS" -> segundos. Formato inválido/nulo -> null. */
-function metaMmSsParaSegundos(meta: unknown): number | null {
-  if (typeof meta !== "string") return null;
-  const m = meta.trim().match(/^(\d{1,3}):(\d{2})$/);
-  if (!m) return null;
-  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
-}
 
 function segundosParaMmSs(segundos: number): string {
   const total = Math.max(0, Math.round(segundos));
@@ -54,7 +52,7 @@ export async function getGestorTma(gestorId: string): Promise<GestorTmaResult> {
   const supabase = await createClient();
   const dataRef = dataRefHojeBR();
 
-  const [{ data: rows, error }, { data: kpiDef }, { data: config }] = await Promise.all([
+  const [{ data: rows, error }, thresholdConfig, { data: config }, roster] = await Promise.all([
     admin
       .from("d1_tma")
       .select(
@@ -63,53 +61,107 @@ export async function getGestorTma(gestorId: string): Promise<GestorTmaResult> {
       .eq("gestor_id", gestorId)
       .eq("data_ref", dataRef)
       .order("operator_email", { ascending: true }),
-    supabase.from("kpi_definitions").select("threshold_red, direction").eq("slug", "tma").maybeSingle(),
+    getTmaThresholdConfig(gestorId),
     supabase
       .from("gestor_config_fantasia")
-      .select("kpi_gestor_metas")
+      .select("ordem_tabela_tma")
       .eq("gestor_id", gestorId)
       .maybeSingle(),
+    getRosterOperadoresGestor(gestorId),
   ]);
 
   if (error) {
     console.error("[get-gestor-tma] erro ao buscar d1_tma:", error.message);
   }
 
-  const thresholdDefault = kpiDef?.threshold_red !== null && kpiDef?.threshold_red !== undefined
-    ? Number(kpiDef.threshold_red)
-    : null;
-  const direction = kpiDef?.direction ?? "lower_better";
-
-  const metasGestor = (config?.kpi_gestor_metas ?? {}) as Record<string, { meta?: unknown }>;
-  const thresholdOverride = metaMmSsParaSegundos(metasGestor.tma?.meta);
-  const threshold = thresholdOverride ?? thresholdDefault;
+  const threshold = thresholdConfig.threshold;
 
   function statusDe(valor: number | null): TmaStatus {
-    if (valor === null || threshold === null) return "neutral";
-    if (direction === "higher_better") return valor >= threshold ? "success" : "danger";
-    return valor <= threshold ? "success" : "danger";
+    return statusTmaDe(valor, thresholdConfig);
   }
 
-  const operadores: OperadorTma[] = (rows ?? []).map((row) => ({
-    operatorEmail: row.operator_email,
-    qtdAtendimentos: row.qtd_atendimentos,
-    tmaSegundos: row.tma_segundos !== null ? Number(row.tma_segundos) : null,
-    talkMedioSegundos: row.talk_medio_segundos !== null ? Number(row.talk_medio_segundos) : null,
-    acwMedioSegundos: row.acw_medio_segundos !== null ? Number(row.acw_medio_segundos) : null,
-    status: statusDe(row.tma_segundos !== null ? Number(row.tma_segundos) : null),
-    qtdOutros: row.qtd_outros,
-    qtdCriticos: row.qtd_criticos,
-    qtdMudEndereco: row.qtd_mud_endereco,
-    qtdFinanceiro: row.qtd_financeiro,
-    qtdQualidade: row.qtd_qualidade,
-    qtdConcorrencia: row.qtd_concorrencia,
-    qtdHotlineChurn: row.qtd_hotline_churn,
-  }));
+  function operadorDaLinha(row: NonNullable<typeof rows>[number]): OperadorTma {
+    return {
+      operatorEmail: row.operator_email,
+      qtdAtendimentos: row.qtd_atendimentos,
+      tmaSegundos: row.tma_segundos !== null ? Number(row.tma_segundos) : null,
+      talkMedioSegundos: row.talk_medio_segundos !== null ? Number(row.talk_medio_segundos) : null,
+      acwMedioSegundos: row.acw_medio_segundos !== null ? Number(row.acw_medio_segundos) : null,
+      status: statusDe(row.tma_segundos !== null ? Number(row.tma_segundos) : null),
+      qtdOutros: row.qtd_outros,
+      qtdCriticos: row.qtd_criticos,
+      qtdMudEndereco: row.qtd_mud_endereco,
+      qtdFinanceiro: row.qtd_financeiro,
+      qtdQualidade: row.qtd_qualidade,
+      qtdConcorrencia: row.qtd_concorrencia,
+      qtdHotlineChurn: row.qtd_hotline_churn,
+    };
+  }
+
+  // Operador do roster sem linha em d1_tma hoje: entra zerado (status neutral),
+  // igual ao Consolidado (get-gestor-consolidado.ts), que também parte do roster.
+  function operadorSemLinha(email: string): OperadorTma {
+    return {
+      operatorEmail: email,
+      qtdAtendimentos: 0,
+      tmaSegundos: null,
+      talkMedioSegundos: null,
+      acwMedioSegundos: null,
+      status: "neutral",
+      qtdOutros: 0,
+      qtdCriticos: 0,
+      qtdMudEndereco: 0,
+      qtdFinanceiro: 0,
+      qtdQualidade: 0,
+      qtdConcorrencia: 0,
+      qtdHotlineChurn: 0,
+    };
+  }
+
+  const doDia = (rows ?? []).map(operadorDaLinha);
+
+  // d1_tma grava operator_email = email canônico do roster (minúsculo, ver
+  // parse-tma-client.ts), então o match é por email normalizado.
+  const emailsComLinha = new Set((rows ?? []).map((row) => row.operator_email.trim().toLowerCase()));
+  const emailsRoster = new Set(roster);
+
+  // Linha em d1_tma cujo operador NÃO está no roster do gestor: não deveria
+  // acontecer, mas a linha é mantida (não perde dado) e só é sinalizada.
+  if (emailsRoster.size > 0) {
+    const foraDoRoster = doDia.filter((op) => !emailsRoster.has(op.operatorEmail.trim().toLowerCase()));
+    if (foraDoRoster.length > 0) {
+      console.warn(
+        `[get-gestor-tma] ${foraDoRoster.length} linha(s) de d1_tma fora do roster do gestor ${gestorId}: ${foraDoRoster
+          .map((op) => op.operatorEmail)
+          .join(", ")}`,
+      );
+    }
+  }
+
+  const doRosterSemLinha = Array.from(emailsRoster)
+    .filter((email) => !emailsComLinha.has(email))
+    .map(operadorSemLinha);
+
+  // Mesmo critério de "sem dado" usado pela TmaTable (semDado). Ordem: quem
+  // tem resultado primeiro (ordem de operator_email vinda do banco), quem não
+  // tem por último (ordem do roster) — o "padrao" do ordenarOperadores do
+  // Consolidado, que sempre empurra "sem resultado" pro fim.
+  const semDado = (op: OperadorTma) => op.qtdAtendimentos === 0 || op.tmaSegundos === null;
+  const todos = [...doDia, ...doRosterSemLinha];
+  const emPadrao: OperadorTma[] = [...todos.filter((op) => !semDado(op)), ...todos.filter(semDado)];
+
+  const ordemTabela =
+    config?.ordem_tabela_tma && isOrdemTabelaTma(config.ordem_tabela_tma)
+      ? config.ordem_tabela_tma
+      : DEFAULT_ORDEM_TABELA_TMA;
+
+  const operadores = ordenarOperadoresTma(emPadrao, ordemTabela);
 
   return {
     operadores,
     reportHora: rows?.[0]?.report_hora ?? null,
     reportNomeSupervisor: rows?.[0]?.report_nome_supervisor ?? null,
     metaAtualMmSs: segundosParaMmSs(threshold ?? 731),
+    ordemTabela,
   };
 }

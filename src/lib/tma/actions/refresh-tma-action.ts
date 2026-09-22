@@ -7,6 +7,7 @@ import { getGestorTma } from "../get-gestor-tma";
 import { getGestorTmaAtendimentos } from "../get-gestor-tma-atendimentos";
 import type { TmaLinha } from "@/components/tma/tma-table";
 import type { AtendimentoTma } from "../get-gestor-tma-atendimentos";
+import type { OrdemTabelaTma } from "@/lib/gestor/config-tabela-tma/types";
 
 type RefreshTmaResult =
   | {
@@ -16,6 +17,7 @@ type RefreshTmaResult =
       reportHora: string;
       reportNomeSupervisor: string | null;
       metaAtualMmSs: string;
+      ordemTabela: OrdemTabelaTma;
     }
   | { success: false };
 
@@ -24,7 +26,7 @@ export async function refreshTmaAction(): Promise<RefreshTmaResult> {
   const user = await getCurrentUser();
   if (!user || user.profile.role !== "GESTOR") return { success: false };
 
-  const [{ operadores, reportHora, reportNomeSupervisor, metaAtualMmSs }, nomeFantasiaConfig, atendimentosMap] =
+  const [{ operadores, reportHora, reportNomeSupervisor, metaAtualMmSs, ordemTabela }, nomeFantasiaConfig, atendimentosMap] =
     await Promise.all([
       getGestorTma(user.profile.id),
       getNomeFantasiaConfig(user.profile.id),
@@ -48,5 +50,6 @@ export async function refreshTmaAction(): Promise<RefreshTmaResult> {
     reportHora: reportHora ?? "—",
     reportNomeSupervisor,
     metaAtualMmSs,
+    ordemTabela,
   };
 }
