@@ -90,6 +90,34 @@ export async function uploadTmaAction(payload: UploadTmaPayload): Promise<Upload
   }
 
   if (payload.detalhes.length > 0) {
+    // Reenvio do MESMO dia precisa SUBSTITUIR os atendimentos anteriores, não
+    // acumular: o call_segment_id do Five9 muda a cada exportação do mesmo
+    // atendimento, então o upsert abaixo (onConflict data_ref+call_segment_id)
+    // nunca colide com a linha antiga — cada reenvio virava linhas 100% novas,
+    // duplicando a base (bug real, confirmado via banco: d1_tma_atendimentos
+    // chegou a ter ~2-3x mais linhas que o total agregado em d1_tma pro mesmo
+    // dia). d1_tma (acima) não tem esse problema porque upsert por
+    // data_ref+operator_email já substitui a linha inteira a cada envio.
+    //
+    // Escopo do delete: pelos gestor_id REALMENTE presentes neste payload
+    // (não gestor_id: user.profile.id, quem clicou em enviar) — o roster
+    // usado no matching client-side é GLOBAL (get-tma-roster-action.ts,
+    // sem filtro por gestor), então um único CSV pode trazer atendimentos de
+    // operadores de VÁRIOS gestores ao mesmo tempo (mesmo mecanismo que
+    // sustenta a Rechamada cruzando todo o polo). Escopar só pelo uploader
+    // deixaria o bug parcialmente ativo pra qualquer envio que cubra mais de
+    // um time.
+    const gestorIdsAfetados = Array.from(new Set(payload.detalhes.map((d) => d.gestorId)));
+    const { error: erroDelete } = await admin
+      .from("d1_tma_atendimentos")
+      .delete()
+      .eq("data_ref", dataRef)
+      .in("gestor_id", gestorIdsAfetados);
+    if (erroDelete) {
+      console.error("[upload-tma] erro ao limpar d1_tma_atendimentos antes do reenvio:", erroDelete.message);
+      return { success: false, error: `Erro ao limpar atendimentos antigos: ${erroDelete.message}` };
+    }
+
     const detalhes = payload.detalhes.map((d) => ({
       data_ref: dataRef,
       gestor_id: d.gestorId,
