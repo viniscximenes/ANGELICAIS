@@ -38,7 +38,13 @@ import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 // Intervalo do polling: reconsulta a base a cada 30s para refletir mudanças
-// sem precisar de F5.
+// sem precisar de F5. A tabela unificada Tempo Logado & Indisponibilidade
+// (tempo-indisp-section.tsx) tinha o mesmo mecanismo (tabela + seção
+// Analítico compartilhando o mesmo state/poll) — removido a pedido
+// explícito, refetch() lá virou só manual (ClearBaseButton/popover). A
+// tabela principal da TMA (gestor-tma-section.tsx) mantém o PRÓPRIO polling,
+// à parte — não fazia parte dessa decisão. A seção Analítico da TMA
+// (analitico-tma-tabela.tsx/cards-resumo-tma.tsx) nunca teve polling.
 const POLL_INTERVAL_MS = 30_000;
 
 // CAUSA RAIZ da última coluna (Tx Retenção/RV Diário) cortada: o wrapper

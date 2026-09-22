@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 
 import { UploadTempoLogadoDropzone } from "@/components/d-1/tempo-logado/upload-tempo-logado-dropzone";
@@ -38,11 +38,6 @@ import { PausasNaoRealizadasAnalitico } from "./pausas-nao-realizadas-analitico"
 import { TEMPO_INDISP_TABELA_WIDTH_PX, TempoIndispTabela } from "./tempo-indisp-tabela";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
-
-// Reconsulta d1_tempo_logado + d1_indisponibilidade a cada 30s, sem F5 — um
-// único intervalo pros dois datasets (antes eram dois pollings separados,
-// um por seção/página).
-const POLL_INTERVAL_MS = 30_000;
 
 interface TempoIndispSectionProps {
   operadoresTempoLogadoIniciais: GestorTempoLogadoLinha[];
@@ -101,30 +96,21 @@ export function TempoIndispSection({
     void toggleOlhoAction("tempo_indisponibilidade", novoValor);
   }
 
-  // Refetch usado tanto pelo polling quanto (imediatamente, sem esperar os
-  // 30s) pelo ClearBaseButton — mesma fonte, dois gatilhos. Repassa a meta
-  // ATUAL (estado) pro refresh recalcular cumpriuMeta com o valor
-  // configurado, não com o default — ver comentário em
-  // refreshIndisponibilidadeAction.
-  // Ref (não state) pra `refetch` sempre ler a meta ATUAL sem precisar
-  // entrar nas deps do useEffect do polling abaixo — closure de state
-  // direto ficaria obsoleta (o setInterval de `[]` só vê o valor do
-  // PRIMEIRO render); com o ref, o mesmo padrão `useEffect(..., [])` de
-  // GestorEquipeSection (consolidado) continua funcionando sem recriar o
-  // interval a cada mudança de meta.
-  const metaIndisponibilidadeRef = useRef(metaIndisponibilidade);
-  useEffect(() => {
-    metaIndisponibilidadeRef.current = metaIndisponibilidade;
-  }, [metaIndisponibilidade]);
-
-  // `metaOverride` existe só pro chamado logo após salvar uma meta nova na
-  // engrenagem: nesse ponto nem o state nem o ref ainda refletem o valor
-  // novo (setState é assíncrono, o ref só atualiza no efeito acima).
-  // Passar o valor recém-salvo direto evita esse 1 render de atraso.
+  // Sem polling automático nesta página (removido — só o Consolidado
+  // continua reconsultando sozinho a cada 30s; ver comentário em
+  // gestor-equipe-section.tsx). `refetch` continua existindo como gatilho
+  // MANUAL, disparado só por ação explícita do gestor: ClearBaseButton e o
+  // popover de meta/ordenação (onSaved). `metaOverride` existe só pro
+  // chamado logo após salvar uma meta nova na engrenagem: nesse ponto o
+  // state `metaIndisponibilidade` ainda não reflete o valor novo (setState
+  // é assíncrono) — passar o valor recém-salvo direto evita esse 1 render
+  // de atraso. Sem polling, não há mais risco de closure obsoleta presa num
+  // `useEffect(..., [])`, então `refetch` lê `metaIndisponibilidade` direto
+  // do state (sem ref).
   async function refetch(metaOverride?: number) {
     const [tlResult, indispResult] = await Promise.all([
       refreshTempoLogadoAction(),
-      refreshIndisponibilidadeAction(metaOverride ?? metaIndisponibilidadeRef.current),
+      refreshIndisponibilidadeAction(metaOverride ?? metaIndisponibilidade),
     ]);
     if (tlResult.success) {
       setOperadoresTL(tlResult.operadores);
@@ -137,11 +123,6 @@ export function TempoIndispSection({
       setToleranciaMin(indispResult.toleranciaMin);
     }
   }
-
-  useEffect(() => {
-    const interval = setInterval(refetch, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, []);
 
   const operadoresMergedBrutos = mergeOperadoresTempoIndisp(operadoresTL, operadoresIndisp);
   const operadoresMerged = ordenarOperadoresTempoIndisp(operadoresMergedBrutos, ordemTabela);
