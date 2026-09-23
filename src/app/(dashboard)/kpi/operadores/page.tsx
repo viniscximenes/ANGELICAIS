@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Instrument_Sans } from "next/font/google";
 
-import { PageTransition } from "@/components/motion/page-transition";
+import "./kpi-operadores.css";
 import { KpiEquipeSection } from "@/components/operacional/kpi-equipe-section";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
@@ -19,10 +20,31 @@ import { VIRTUAL_KPI_LABELS } from "@/lib/kpi/gestor/retidos-brutos";
 import { toKpiEquipeSerial, type KpiEquipeSerial } from "@/lib/kpi/gestor/serial-types";
 import { stripUnitSuffix } from "@/lib/kpi/strip-unit-suffix";
 import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
+import {
+  getKpiAnteriorPorEmails,
+  filtrarKpiAnteriorPorDataCorte,
+} from "./_lib/get-kpi-anterior-por-emails";
+import { PageEnter } from "./_components/page-enter";
 
 export const metadata: Metadata = {
   title: "KPI - Operadores",
 };
+
+// Fontes do tema Zen Linen — carregadas só nesta rota (não afetam nenhuma
+// outra página: next/font/google gera classes/variáveis escopadas ao módulo
+// que as importa, e o CSS do tema (kpi-operadores.css) só as referencia
+// dentro de [data-page="kpi-operadores"]).
+// Nome da fonte sans isolado nesta única chamada — trocar por "Geist" ou
+// "Hanken Grotesk" é só editar `Instrument_Sans` (import + chamada) aqui.
+const zenSans = Instrument_Sans({
+  subsets: ["latin", "latin-ext"],
+  weight: "variable",
+  variable: "--font-zen-sans",
+});
+// Fonte única da rota agora — título, corpo e números da tabela (testado:
+// tabular-nums funciona de verdade com Instrument Sans, ver
+// _lib/format-kpi-value-local.ts e o relatório desta rodada). JetBrains Mono
+// e Playfair Display foram removidos por não terem mais nenhum uso.
 
 // Página personalizada por gestor — nunca cacheada entre usuários.
 export const dynamic = "force-dynamic";
@@ -100,11 +122,16 @@ export default async function KpiOperadoresPage() {
     return { slug, label: VIRTUAL_KPI_LABELS[slug] ?? slug };
   });
 
-  // KPIs dos mesmos operadores nos 3 meses, em paralelo.
-  const [dataAtualRaw, dataPassadoRaw, dataRetrasadoRaw] = await Promise.all([
+  // KPIs dos mesmos operadores nos 3 meses, em paralelo — junto com o report
+  // ANTERIOR (kpi_monthly_snapshots_anterior), só pro mês atual (não existe
+  // "anterior do anterior" pra meses passados). O filtro por data_corte só
+  // roda depois (não é I/O), quando dataAtual.dataCorte já é conhecido —
+  // ver comentário em getKpiAnteriorPorEmails.
+  const [dataAtualRaw, dataPassadoRaw, dataRetrasadoRaw, kpiAnteriorBruto] = await Promise.all([
     getKpiEquipePorEmails(emailsEquipe, definitions, mesAtual, false),
     getKpiEquipePorEmails(emailsEquipe, definitions, mesPassado, true),
     getKpiEquipePorEmails(emailsEquipe, definitions, mesRetrasado, true),
+    getKpiAnteriorPorEmails(emailsEquipe, mesAtual),
   ]);
 
   const nomeFantasia = {
@@ -130,23 +157,26 @@ export default async function KpiOperadoresPage() {
   const dataPassado = comNomeFantasia(toKpiEquipeSerial(dataPassadoRaw, definitions));
   const dataRetrasado = comNomeFantasia(toKpiEquipeSerial(dataRetrasadoRaw, definitions));
 
-  return (
-    <PageTransition>
-      <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
-        <div className="mx-auto max-w-7xl">
-          <header className="border-border flex flex-col gap-2 border-b border-dashed pb-4">
-            <span className="text-muted-foreground text-xs tracking-wide uppercase">
-              Painel do Gestor
-            </span>
-            <div className="flex flex-wrap items-baseline gap-3">
-              <h1 className="ds-h1">Operadores</h1>
-              <span className="ds-mono-sm text-muted-foreground">
-                / KPI · {formatNomeProprio(fullName)}
-              </span>
-            </div>
-          </header>
+  // Só agora dataAtual.dataCorte é conhecido — aplica a regra "só considere
+  // linhas com data_corte anterior ao data_corte atual".
+  const kpiAnterior = filtrarKpiAnteriorPorDataCorte(kpiAnteriorBruto, dataAtual.dataCorte);
 
+  return (
+    <PageEnter>
+      <div
+        data-page="kpi-operadores"
+        className={`min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
+      >
+        <div className="mx-auto max-w-7xl">
+          {/*
+            Cabeçalho (título + linha de contexto + ações) é renderizado
+            inteiro dentro de KpiEquipeSection — não dá pra ficar aqui (Server
+            Component): as ações (RV/Copiar/Colunas) e a linha de contexto
+            (mês selecionado, dataCorte) dependem de estado client que só
+            existe lá dentro.
+          */}
           <KpiEquipeSection
+            nomeGestor={formatNomeProprio(fullName)}
             dataAtual={dataAtual}
             dataPassado={dataPassado}
             dataRetrasado={dataRetrasado}
@@ -156,9 +186,11 @@ export default async function KpiOperadoresPage() {
             colunasDisponiveis={colunasDisponiveis}
             colunasVisiveisIniciais={kpiColunasVisiveis}
             showRvInicial={showRvOperadores}
+            kpiAnterior={kpiAnterior.porOperador}
+            kpiDefinitions={definitions}
           />
         </div>
       </div>
-    </PageTransition>
+    </PageEnter>
   );
 }

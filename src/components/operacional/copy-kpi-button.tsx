@@ -4,18 +4,22 @@ import { useState } from "react";
 import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
-import { buildClipboardReportHtml } from "@/lib/gestor/build-clipboard-report-html";
-import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
+import {
+  buildKpiClipboardHtml,
+  buildKpiClipboardTextoPlano,
+  escapeHtml,
+  tituloComData,
+} from "@/app/(dashboard)/kpi/operadores/_lib/build-copy-html";
 
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-async function copyFormattedHtml(html: string): Promise<void> {
+/**
+ * Cópia local (não a shared src/lib/utils/copy-formatted-html.ts, NÃO
+ * alterada) — só pra poder incluir também um Blob "text/plain" no fallback
+ * ClipboardItem (a versão compartilhada só escreve "text/html"). O caminho
+ * execCommand não precisa de nada extra: o navegador já sintetiza um
+ * text/plain a partir da seleção automaticamente.
+ */
+async function copyFormattedHtml(html: string, textoPlano: string): Promise<void> {
   // Tenta execCommand primeiro — preserva estilos inline (sem sanitização)
   try {
     const container = document.createElement("div");
@@ -44,58 +48,69 @@ async function copyFormattedHtml(html: string): Promise<void> {
     console.warn("[copy-kpi] execCommand falhou, tentando ClipboardItem:", e);
   }
 
-  // Fallback: ClipboardItem (sem garantia de cores em todos os browsers)
+  // Fallback: ClipboardItem (sem garantia de cores em todos os browsers) —
+  // com text/plain junto, pra colar em campos que só aceitam texto puro.
   await navigator.clipboard.write([
     new ClipboardItem({
       "text/html": new Blob([html], { type: "text/html" }),
+      "text/plain": new Blob([textoPlano], { type: "text/plain" }),
     }),
   ]);
 }
 
 interface CopyKpiButtonProps {
-  /** Data de corte dos dados (mesRef não tem precisão de dia) — vira o subtítulo "atualizado até DD/MM/YYYY". */
+  /** Data de corte dos dados (mesRef não tem precisão de dia) — vira o subtítulo "atualizado até DD/MM/YYYY" E o sufixo "- dd/mm" do título. */
   dataCorte: string | null;
+  /** true = inclui o aviso de RV no conteúdo copiado (só com "Exibir RV" ligado, no mês atual — mesma condição de rvColunaAtiva). */
+  comAvisoRv: boolean;
+  /**
+   * Monta a instância offscreen (data-kpi-tabela-png), aguarda fontes +
+   * frames e retorna o PNG capturado, desmontando a instância em seguida
+   * (inclusive em erro) — implementado no componente pai
+   * (kpi-equipe-section.tsx), que é quem controla essa instância. Este
+   * botão não guarda mais nenhuma referência direta ao DOM da tabela.
+   */
+  onCapturar: () => Promise<string>;
 }
 
 /**
  * Copia a tabela de KPI (offscreen, [data-kpi-tabela-png]) como imagem —
  * mesmo mecanismo e mesmo padrão visual de CopyTableButton (D-1
  * Consolidado) / CopyTempoLogadoButton / CopyIndisponibilidadeButton:
- * título + subtítulo como TEXTO (via buildClipboardReportHtml), a imagem
- * capturada é só a tabela (sem título embutido nela).
+ * título + subtítulo como TEXTO, a imagem capturada é só a tabela (sem
+ * título embutido nela). O HTML é montado em _lib/build-copy-html.ts
+ * (réplica do formato de buildClipboardReportHtml, que não aceita conteúdo
+ * extra como o aviso de RV — ver comentário lá).
  */
-export function CopyKpiButton({ dataCorte }: CopyKpiButtonProps) {
+export function CopyKpiButton({ dataCorte, comAvisoRv, onCapturar }: CopyKpiButtonProps) {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
 
   async function handleCopy() {
-    const target = document.querySelector<HTMLElement>("[data-kpi-tabela-png]");
-
-    if (!target) {
-      toast.error("Tabela não encontrada");
-      return;
-    }
-
     setState("copying");
 
     try {
-      const pngDataUrl = await capturarComoPng(target);
+      const pngDataUrl = await onCapturar();
       const subtitulo = dataCorte
         ? `atualizado até ${escapeHtml(formatDateBR(dataCorte))}`
         : "—";
+      const titulo = tituloComData("TABELA DO KPI", dataCorte);
 
-      const html = buildClipboardReportHtml({
-        titulo: "TABELA DO KPI",
+      const html = buildKpiClipboardHtml({
+        titulo,
         subtitulo,
         pngDataUrl,
         altText: "Tabela do KPI",
+        comAvisoRv,
       });
+      const textoPlano = buildKpiClipboardTextoPlano(titulo, comAvisoRv);
 
-      await copyFormattedHtml(html);
+      await copyFormattedHtml(html, textoPlano);
 
       setState("done");
       toast.success("Tabela copiada", {
         description: "Cole no Teams, Slack ou email (Ctrl+V)",
         duration: 2500,
+        className: "kpi-op-toast",
       });
 
       setTimeout(() => setState("idle"), 2000);
@@ -104,35 +119,48 @@ export function CopyKpiButton({ dataCorte }: CopyKpiButtonProps) {
       setState("idle");
       toast.error("Não foi possível copiar", {
         description: "Tente em outro navegador (Chrome/Edge)",
+        className: "kpi-op-toast",
       });
     }
   }
 
   return (
+    // min-w fixo (cabe o rótulo mais longo, "Copiar imagem") + justify-center
+    // — troca de ícone/texto entre estados não desloca o layout ao redor.
+    // h-8 pra bater com a altura do seletor de mês/bloco RV na mesma linha.
     <button
       type="button"
       onClick={handleCopy}
       disabled={state === "copying"}
-      className="bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-opacity cursor-pointer shadow-sm disabled:opacity-50"
-      style={{ fontSize: "12px" }}
+      className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 min-w-[140px] items-center justify-center gap-1.5 rounded-md border bg-transparent px-3 text-sm font-medium outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
     >
       {state === "copying" && (
-        <>
+        <span
+          key="copying"
+          className="animate-in fade-in inline-flex items-center gap-1.5 duration-150 motion-reduce:animate-none"
+        >
           <IconLoader2 size={14} className="animate-spin" aria-hidden="true" />
-          <span className="ds-mono-sm">Gerando...</span>
-        </>
+          <span>Copiando…</span>
+        </span>
       )}
       {state === "done" && (
-        <>
-          <IconCheck size={14} style={{ color: "var(--success)" }} aria-hidden="true" />
-          <span className="ds-mono-sm">Copiado</span>
-        </>
+        <span
+          key="done"
+          className="animate-in fade-in inline-flex items-center gap-1.5 duration-150 motion-reduce:animate-none"
+          style={{ color: "var(--success)" }}
+        >
+          <IconCheck size={14} aria-hidden="true" />
+          <span>Copiado</span>
+        </span>
       )}
       {state === "idle" && (
-        <>
+        <span
+          key="idle"
+          className="animate-in fade-in inline-flex items-center gap-1.5 duration-150 motion-reduce:animate-none"
+        >
           <IconCamera size={14} aria-hidden="true" />
-          <span className="ds-mono-sm">Copiar como imagem</span>
-        </>
+          <span>Copiar imagem</span>
+        </span>
       )}
     </button>
   );
