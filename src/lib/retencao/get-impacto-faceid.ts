@@ -23,21 +23,21 @@ const STATUS_NAO_REALIZADO = "Abortado - FaceID não realizado";
 const STATUS_REPROVADO = "Abortado - FaceID reprovado";
 
 /**
- * REDEFINIÇÃO DO CARD (versão anterior tinha um stat "Excluídos da Retenção"
- * cruzado com histórico global e um "Cancelados Normalmente" — removidos).
- * Este card agora mede uma coisa mais simples e direta: TENTATIVAS de FaceID
- * que não deram certo (as duas variantes de aborto), contadas por LINHA
- * (não por contrato único/deduplicado — "tentativa" é o evento em si, não o
- * desfecho do caso).
+ * Este card mede uma coisa simples e direta: TENTATIVAS de FaceID que não
+ * deram certo (as duas variantes de aborto), contadas por LINHA (não por
+ * contrato único/deduplicado — "tentativa" é o evento em si, não o desfecho
+ * do caso).
  *
- * ESCOPO: só a equipe do gestor (`aplicarFiltroEscopo`), SEM o cruzamento
- * global usado nos outros cards (`getContratosComFaceIdGlobal`). Esse
- * cruzamento existe pra decidir se um contrato deve ser EXCLUÍDO do cálculo
- * de retidos (aí sim importa se ALGUÉM, de qualquer equipe, tocou o
- * contrato) — mas aqui a pergunta é outra: "quem da MINHA equipe tentou
- * FaceID e não conseguiu". Isso é uma propriedade da própria linha
- * (usuario_login + status_retencao), não do contrato como um todo — não há
- * nada pra cruzar com outra equipe.
+ * A regra de negócio de exclusão por histórico de FaceID (contrato inteiro
+ * banido do cálculo de retidos por ter tocado FaceID em algum momento) foi
+ * removida — a classificação de retido/cancelado agora é puramente por
+ * linha (ver classificar-atendimento.ts). Este card não tem relação com
+ * aquela regra: mede só tentativas abortadas, independente do desfecho do
+ * contrato.
+ *
+ * ESCOPO: só a equipe do gestor (`aplicarFiltroEscopo`) — "quem da MINHA
+ * equipe tentou FaceID e não conseguiu". Propriedade da própria linha
+ * (usuario_login + status_retencao), não há cruzamento com outra equipe.
  */
 export async function getImpactoFaceId(emailsEquipe: string[]): Promise<ImpactoFaceIdData> {
   const supabase = createAdminClient();

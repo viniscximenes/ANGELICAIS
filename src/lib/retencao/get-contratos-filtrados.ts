@@ -1,8 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getEmailVariants } from "@/lib/utils/email-variants";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
-import { dedupePorContrato, classificarComHistoricoFaceId } from "./dedupe-por-contrato";
-import { getContratosComFaceIdGlobal } from "./get-contratos-com-faceid-global";
+import { dedupePorContrato } from "./dedupe-por-contrato";
+import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
 
 export type FiltroContratos = {
@@ -17,7 +17,7 @@ export type FiltroContratos = {
 export type ContratoFiltradoItem = {
   usuarioLogin: string;
   nomeSobrenome: string;
-  /** ABORTADO = validação FaceID sem resposta do cliente OU retenção automática via FaceID (primeiro_nivel); só aparece quando o filtro de status é "todos". */
+  /** ABORTADO = validação FaceID sem resposta do cliente (status_retencao "Abortado - ..."); só aparece quando o filtro de status é "todos". */
   status: "RETIDO" | "CANCELADO" | "ABORTADO";
   motivo: string;
   codAir: string;
@@ -134,19 +134,14 @@ export async function getContratosFiltrados(filtros: FiltroContratos): Promise<C
     (r): r is LinhaCrua & { cod_air: string } => typeof r.cod_air === "string" && r.cod_air.trim() !== "",
   );
 
-  // Uma linha final por contrato (a de status_hora mais recente). O
-  // histórico de FaceID só derruba a classificação se ela dava "retido" —
-  // nunca um "cancelado" real (ver classificarComHistoricoFaceId e o caso
-  // do contrato 5668002 documentado lá). Buscado SEM filtro de equipe (ver
-  // get-contratos-com-faceid-global.ts): o mesmo contrato pode ter sido
-  // tocado por um agente de outra equipe antes de chegar aqui.
-  const contratosComFaceId = await getContratosComFaceIdGlobal();
+  // Uma linha final por (operador, contrato) — a de status_hora mais
+  // recente. Classificação puramente por linha, sem histórico.
   const linhasFinais = dedupePorContrato(comContrato);
 
   const resultado: ContratoFiltradoItem[] = [];
 
   for (const r of linhasFinais) {
-    const classe = classificarComHistoricoFaceId(r, contratosComFaceId);
+    const classe = classificarAtendimento(r);
     const statusStr: "RETIDO" | "CANCELADO" | "ABORTADO" =
       classe === "cancelado" ? "CANCELADO" : classe === "abortado" ? "ABORTADO" : "RETIDO";
 

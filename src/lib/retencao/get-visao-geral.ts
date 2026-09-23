@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { dedupePorContrato, classificarComHistoricoFaceId } from "./dedupe-por-contrato";
-import { getContratosComFaceIdGlobal } from "./get-contratos-com-faceid-global";
+import { dedupePorContrato } from "./dedupe-por-contrato";
+import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
 
 export type VisaoGeralData = {
@@ -24,7 +24,6 @@ export async function getVisaoGeral(
     status_hora: string | null;
     foi_cancelamento: boolean | null;
     status_retencao: string | null;
-    primeiro_nivel: string | null;
   }[] = [];
   let page = 0;
   const pageSize = 1000;
@@ -36,7 +35,7 @@ export async function getVisaoGeral(
 
     let query = supabase
       .from("retencao_atendimentos")
-      .select("usuario_login, cod_air, status_hora, foi_cancelamento, status_retencao, primeiro_nivel")
+      .select("usuario_login, cod_air, status_hora, foi_cancelamento, status_retencao")
       .range(from, to);
 
     query = aplicarFiltroEscopo(query, { emailsEquipe });
@@ -57,16 +56,12 @@ export async function getVisaoGeral(
     }
   }
 
-  // Histórico de FaceID é buscado SEM filtro de equipe (ver comentário em
-  // get-contratos-com-faceid-global.ts) — o mesmo contrato pode ter sido
-  // tocado por um agente de OUTRA equipe.
-  const contratosComFaceId = await getContratosComFaceIdGlobal();
   const linhasFinais = dedupePorContrato(allData);
 
   let retidos = 0;
   let cancelados = 0;
   for (const r of linhasFinais) {
-    const classe = classificarComHistoricoFaceId(r, contratosComFaceId);
+    const classe = classificarAtendimento(r);
     if (classe === "cancelado") cancelados++;
     else if (classe === "retido") retidos++;
     // "abortado" fica fora de retidos, cancelados e do total de PEDIDOS.

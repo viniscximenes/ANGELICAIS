@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { dedupePorContrato, classificarComHistoricoFaceId } from "./dedupe-por-contrato";
-import { getContratosComFaceIdGlobal } from "./get-contratos-com-faceid-global";
+import { dedupePorContrato } from "./dedupe-por-contrato";
+import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
 
 export type ArgumentoItem = {
@@ -34,10 +34,10 @@ type LinhaCrua = {
  * (pareceria 100% em toda categoria, já que não há "fracasso" atribuível a
  * nenhuma). Por isso o card mostra só o VOLUME retido por técnica.
  *
- * Contratos excluídos pela regra de FaceID (`primeiro_nivel = "FaceID"`
- * pontual ou histórico, ver classificarComHistoricoFaceId) não entram aqui:
- * FaceID não é uma técnica de negociação real, é o próprio problema que os
- * outros cards já isolam.
+ * `primeiro_nivel = "FaceID"` NÃO é mais critério de exclusão (mudança de
+ * regra de negócio): um contrato retido automaticamente pelo fluxo de
+ * FaceID entra aqui normalmente, categorizado como "FaceID" — é só mais uma
+ * técnica/origem entre as demais.
  */
 export async function getEfetividadeArgumento(emailsEquipe: string[]): Promise<ArgumentoItem[]> {
   const supabase = createAdminClient();
@@ -73,14 +73,13 @@ export async function getEfetividadeArgumento(emailsEquipe: string[]): Promise<A
     }
   }
 
-  const contratosComFaceId = await getContratosComFaceIdGlobal();
   const linhasFinais = dedupePorContrato(allData);
 
   const porCategoria = new Map<string, number>();
   let totalRetidos = 0;
 
   for (const row of linhasFinais) {
-    const classe = classificarComHistoricoFaceId(row, contratosComFaceId);
+    const classe = classificarAtendimento(row);
     if (classe !== "retido") continue;
 
     totalRetidos++;

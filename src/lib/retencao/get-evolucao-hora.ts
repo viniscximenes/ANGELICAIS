@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { dedupePorContrato, classificarComHistoricoFaceId } from "./dedupe-por-contrato";
-import { getContratosComFaceIdGlobal } from "./get-contratos-com-faceid-global";
+import { dedupePorContrato } from "./dedupe-por-contrato";
+import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
 import { normalizarTema } from "./normalizar-tema";
 
@@ -81,7 +81,6 @@ export async function getEvolucaoHora(
     foi_cancelamento: boolean | null;
     motivo: string | null;
     status_retencao: string | null;
-    primeiro_nivel: string | null;
   }[] = [];
   let page = 0;
   const pageSize = 1000;
@@ -94,7 +93,7 @@ export async function getEvolucaoHora(
     let query = supabase
       .from("retencao_atendimentos")
       .select(
-        "usuario_login, cod_air, status_hora, hora_bucket, foi_cancelamento, motivo, status_retencao, primeiro_nivel",
+        "usuario_login, cod_air, status_hora, hora_bucket, foi_cancelamento, motivo, status_retencao",
       )
       .range(from, to);
 
@@ -129,8 +128,6 @@ export async function getEvolucaoHora(
     map.set(b.hora, { total: 0, retidos: 0, cancelados: 0, temas: new Map() });
   }
 
-  // Histórico de FaceID sem filtro de equipe — ver get-contratos-com-faceid-global.ts.
-  const contratosComFaceId = await getContratosComFaceIdGlobal();
   const linhasFinais = dedupePorContrato(allData);
 
   for (const item of linhasFinais) {
@@ -143,7 +140,7 @@ export async function getEvolucaoHora(
 
     // "Abortado" não é nem sucesso nem fracasso de retenção — fica fora de
     // retidos, cancelados e do total (= PEDIDOS = RETIDOS + CANCELADOS).
-    const classe = classificarComHistoricoFaceId(item, contratosComFaceId);
+    const classe = classificarAtendimento(item);
     if (classe === "abortado") continue;
     const isCancelado = classe === "cancelado";
 

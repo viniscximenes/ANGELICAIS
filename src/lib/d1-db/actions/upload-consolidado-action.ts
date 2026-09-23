@@ -4,11 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
-import {
-  dedupePorContrato,
-  contratosTocadosPorFaceId,
-  classificarComHistoricoFaceId,
-} from "@/lib/retencao/dedupe-por-contrato";
+import { dedupePorContrato } from "@/lib/retencao/dedupe-por-contrato";
+import { classificarAtendimento } from "@/lib/retencao/classificar-atendimento";
 import { parseBaseRetencao } from "@/lib/retencao/parse-base-retencao";
 import { salvarBaseRetencao } from "@/lib/retencao/salvar-base-retencao";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -82,14 +79,13 @@ export async function uploadConsolidadoAction(
   // novo, retém no final) — sem deduplicar por (operador, cod_air) ANTES de
   // agregar, cada tentativa era contada como uma retenção/cancelamento
   // independente. Mantém só a linha final (status_hora mais recente) por
-  // contrato — ver dedupe-por-contrato.ts.
+  // (operador, contrato) — ver dedupe-por-contrato.ts. Chave por operador +
+  // contrato: se dois operadores diferentes retêm o mesmo contrato no
+  // mesmo dia, cada um conta a sua própria linha final separadamente.
   //
-  // `contratosComFaceId` é construído a partir de TODAS as linhas do CSV
-  // (antes do dedupe) — histórico completo do contrato, sem limite de
-  // tempo/agente. Só derruba a classificação quando ela der "retido" (ver
-  // classificarComHistoricoFaceId): um contrato que passou por FaceID mas
-  // terminou CANCELADO conta normalmente como cancelado.
-  const contratosComFaceId = contratosTocadosPorFaceId(parseResult.linhas);
+  // Classificação puramente por linha, sem histórico cross-operador/
+  // cross-equipe (mudança de regra de negócio: a checagem por
+  // `primeiro_nivel = "FaceID"` deixou de ser critério de exclusão).
   const linhasFinais = dedupePorContrato(parseResult.linhas);
 
   for (const linha of linhasFinais) {
@@ -116,7 +112,7 @@ export async function uploadConsolidadoAction(
     // retenção nem de cancelamento — fica fora de retidos/cancelados/
     // motivos/contratos e, por consequência, fora de PEDIDOS (= RETIDOS +
     // CANCELADOS) e da TX RETENÇÃO.
-    const classe = classificarComHistoricoFaceId(linha, contratosComFaceId);
+    const classe = classificarAtendimento(linha);
     if (classe === "abortado") continue;
 
     const bucket = bucketMotivo(linha.motivo);

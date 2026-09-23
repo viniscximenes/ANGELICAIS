@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { dedupePorContrato, classificarComHistoricoFaceId } from "./dedupe-por-contrato";
-import { getContratosComFaceIdGlobal } from "./get-contratos-com-faceid-global";
+import { dedupePorContrato } from "./dedupe-por-contrato";
+import { classificarAtendimento } from "./classificar-atendimento";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
 import { aplicarFiltroEscopo } from "./escopo";
 import { BUCKETS, bucketDe, type HoraEvolucaoData } from "./get-evolucao-hora";
@@ -38,7 +38,6 @@ type Linha = {
   hora_bucket: number | null;
   foi_cancelamento: boolean | null;
   status_retencao: string | null;
-  primeiro_nivel: string | null;
 };
 
 type Acumulador = {
@@ -96,7 +95,7 @@ export async function getPorOperadorIndividual(
     let query = supabase
       .from("retencao_atendimentos")
       .select(
-        "usuario_login, usuario_nome, cod_air, status_hora, motivo, hora_bucket, foi_cancelamento, status_retencao, primeiro_nivel",
+        "usuario_login, usuario_nome, cod_air, status_hora, motivo, hora_bucket, foi_cancelamento, status_retencao",
       )
       .range(page * pageSize, page * pageSize + pageSize - 1);
 
@@ -123,8 +122,6 @@ export async function getPorOperadorIndividual(
     porPrefixo.set(getEmailPrefix(email), novoAcumulador(email.trim().toLowerCase()));
   }
 
-  // Histórico de FaceID sem filtro de equipe — ver get-contratos-com-faceid-global.ts.
-  const contratosComFaceId = await getContratosComFaceIdGlobal();
   const linhasFinais = dedupePorContrato(todas);
 
   for (const linha of linhasFinais) {
@@ -145,7 +142,7 @@ export async function getPorOperadorIndividual(
     // fracasso de retenção — fica fora de retidos, cancelados e do total
     // (= PEDIDOS = RETIDOS + CANCELADOS), em todas as dimensões (geral, por
     // hora e por motivo).
-    const classe = classificarComHistoricoFaceId(linha, contratosComFaceId);
+    const classe = classificarAtendimento(linha);
     if (classe === "abortado") continue;
     const isCancelado = classe === "cancelado";
 
