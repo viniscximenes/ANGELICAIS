@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { UploadProgressModal } from "@/components/d-1/upload-progress-modal";
 import { uploadTempoLogadoAction } from "@/lib/d1-db/actions/upload-tempo-logado-action";
+import { useFaviconLoading } from "@/lib/favicon/use-favicon-loading";
 
 type UploadStep =
   | "attaching"
@@ -114,6 +115,9 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
     });
 
   const isProcessing = step !== null && step !== "done";
+  // Favicon animado ("carregando") — step volta pra null em todo caminho
+  // de erro (ver catches acima), então cobre sucesso e falha igual.
+  useFaviconLoading(isProcessing);
 
   if (compact) {
     return (

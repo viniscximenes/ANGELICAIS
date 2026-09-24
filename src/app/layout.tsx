@@ -3,6 +3,8 @@ import "./globals.css";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 
+import { FaviconNavigationBridge } from "@/components/dashboard/favicon-navigation-bridge";
+import { HideProgressBarForRoutes } from "@/components/dashboard/hide-progress-bar-for-routes";
 import { ProgressBarProvider } from "@/components/dashboard/progress-provider";
 import { ThemeProvider } from "@/components/dashboard/theme-provider";
 import { LenisProvider } from "@/components/providers/lenis-provider";
@@ -37,6 +39,8 @@ export default async function RootLayout({
       )}
     >
       <body>
+        <FaviconNavigationBridge />
+        <HideProgressBarForRoutes />
         <ProgressBarProvider>
           <LenisProvider>
             <ThemeProvider initialTheme={theme}>

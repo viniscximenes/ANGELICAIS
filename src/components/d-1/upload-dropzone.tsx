@@ -7,6 +7,7 @@ import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
 import { uploadConsolidadoAction } from "@/lib/d1-db/actions/upload-consolidado-action";
+import { useFaviconLoading } from "@/lib/favicon/use-favicon-loading";
 import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
 import { registrarExibicaoPopupComparativoAction } from "@/lib/retencao/comparativo/registrar-exibicao-popup-action";
 import { ComparativoPopupDialog } from "@/components/operacional/comparativo-consolidado/comparativo-popup-dialog";
@@ -190,6 +191,11 @@ export function UploadDropzone({ compact = false }: UploadDropzoneProps = {}) {
     });
 
   const isProcessing = step !== null && step !== "done";
+  // Favicon animado ("carregando") durante upload/substituição/exclusão da
+  // base Consolidado — step volta pra null em todo caminho de erro (ver
+  // handleStaleActionError/catch abaixo), então isProcessing já cobre erro
+  // certinho, sem precisar de tratamento à parte.
+  useFaviconLoading(isProcessing);
 
   return (
     <>

@@ -8,12 +8,15 @@ import { toast } from "sonner";
 import { StyledCard } from "@/components/gestor/styled-card";
 import { salvarPausasAction } from "@/lib/bases/pausas-programadas/actions/salvar-pausas-action";
 import { parsePausasClipboard } from "@/lib/bases/pausas-programadas/parse-pausas-clipboard";
+import { useFaviconLoading } from "@/lib/favicon/use-favicon-loading";
 import { cn } from "@/lib/utils";
 
 export function PausasPasteForm() {
   const router = useRouter();
   const [clipboardText, setClipboardText] = useState("");
   const [isPending, startTransition] = useTransition();
+  // Favicon animado ("carregando") enquanto salva as pausas.
+  useFaviconLoading(isPending);
 
   const { linhas, ignoradas } = useMemo(
     () => parsePausasClipboard(clipboardText),

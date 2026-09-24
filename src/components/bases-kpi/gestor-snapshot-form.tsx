@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useFaviconLoading } from "@/lib/favicon/use-favicon-loading";
 import { cn } from "@/lib/utils";
 import {
   formatDateBR,
@@ -268,6 +269,9 @@ export function GestorSnapshotForm({
     null,
   );
   const [isPending, startTransition] = useTransition();
+  // Favicon animado ("carregando") durante o upload — mesmo padrão de
+  // snapshot-form.tsx (operadores).
+  useFaviconLoading(isPending);
 
   const pastMonths = existingMonths.filter((m) => m !== currentMesRef);
 

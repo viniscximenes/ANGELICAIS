@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useFaviconLoading } from "@/lib/favicon/use-favicon-loading";
 import { cn } from "@/lib/utils";
 import {
   formatDateBR,
@@ -273,6 +274,10 @@ export function SnapshotForm({
   const [dataCortePopoverOpen, setDataCortePopoverOpen] = useState(false);
   const [result, setResult] = useState<ProcessSnapshotResult | null>(null);
   const [isPending, startTransition] = useTransition();
+  // Favicon animado ("carregando") enquanto o upload/processamento estiver
+  // em andamento — cleanup do useEffect roda mesmo se isPending virar false
+  // por causa de um catch/erro, então cobre sucesso e falha igual.
+  useFaviconLoading(isPending);
   const [missingKpisForModal, setMissingKpisForModal] = useState<
     MissingKpiInfo[]
   >([]);
