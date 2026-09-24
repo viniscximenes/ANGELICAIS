@@ -12,10 +12,8 @@ import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasi
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import { getSnapshotsSummary } from "@/lib/kpi/bases/get-snapshots-summary";
 import { getKpiDefinitions } from "@/lib/kpi/get-definitions";
-import { getKpiColunasConfig } from "@/lib/kpi/gestor/get-kpi-colunas-config";
 import { getKpiEquipePorEmails } from "@/lib/kpi/gestor/get-kpi-equipe-gestor";
 import { getShowRvOperadoresConfig } from "@/lib/kpi/gestor/get-show-rv-operadores-config";
-import { KPI_COLUNAS_ORDER } from "@/lib/kpi/gestor/kpi-colunas-config";
 import { VIRTUAL_KPI_LABELS } from "@/lib/kpi/gestor/retidos-brutos";
 import { toKpiEquipeSerial, type KpiEquipeSerial } from "@/lib/kpi/gestor/serial-types";
 import { stripUnitSuffix } from "@/lib/kpi/strip-unit-suffix";
@@ -24,6 +22,10 @@ import {
   getKpiAnteriorPorEmails,
   filtrarKpiAnteriorPorDataCorte,
 } from "./_lib/get-kpi-anterior-por-emails";
+import { getKpiColunasConfigLocal } from "./_lib/get-kpi-colunas-config-local";
+import { getKpiColunasRvConfig } from "./_lib/get-kpi-colunas-rv-config";
+import { extractKpisExtras, type KpiExtrasPorEmail } from "./_lib/extract-kpis-extras";
+import { KPI_COLUNAS_ORDER_LOCAL, LABELS_KPI_LOCAL } from "./_lib/kpi-colunas-local";
 import { PageEnter } from "./_components/page-enter";
 
 export const metadata: Metadata = {
@@ -93,13 +95,15 @@ export default async function KpiOperadoresPage() {
     definitions,
     nomeFantasiaConfig,
     kpiColunasVisiveis,
+    kpiColunasRv,
     snapshotsSummary,
     showRvOperadores,
   ] = await Promise.all([
     getRosterOperadoresGestor(user.profile.id),
     getKpiDefinitions(),
     getNomeFantasiaConfig(user.profile.id),
-    getKpiColunasConfig(user.profile.id),
+    getKpiColunasConfigLocal(user.profile.id),
+    getKpiColunasRvConfig(user.profile.id),
     getSnapshotsSummary(),
     getShowRvOperadoresConfig(user.profile.id),
   ]);
@@ -114,12 +118,14 @@ export default async function KpiOperadoresPage() {
     .filter((m) => !mesesRecentes.includes(m))
     .filter((m) => m >= "2026-01-01"); // só 2026 em diante
 
-  // KPIs virtuais (ex.: retidos_brutos) não têm linha em kpi_definitions —
-  // o label vem de VIRTUAL_KPI_LABELS.
-  const colunasDisponiveis = KPI_COLUNAS_ORDER.map((slug) => {
+  // KPIs virtuais (ex.: retidos_brutos, tempo_restante) não têm linha em
+  // kpi_definitions — o label vem de VIRTUAL_KPI_LABELS/LABELS_KPI_LOCAL.
+  // KPI_COLUNAS_ORDER_LOCAL = colunas de sempre + os 4 novos desta rodada
+  // (tempo_projetado, tempo_login, multiplicador, tempo_restante).
+  const colunasDisponiveis = KPI_COLUNAS_ORDER_LOCAL.map((slug) => {
     const def = definitions.find((d) => d.slug === slug);
     if (def) return { slug, label: stripUnitSuffix(def.displayName) };
-    return { slug, label: VIRTUAL_KPI_LABELS[slug] ?? slug };
+    return { slug, label: VIRTUAL_KPI_LABELS[slug] ?? LABELS_KPI_LOCAL[slug] ?? slug };
   });
 
   // KPIs dos mesmos operadores nos 3 meses, em paralelo — junto com o report
@@ -157,6 +163,17 @@ export default async function KpiOperadoresPage() {
   const dataPassado = comNomeFantasia(toKpiEquipeSerial(dataPassadoRaw, definitions));
   const dataRetrasado = comNomeFantasia(toKpiEquipeSerial(dataRetrasadoRaw, definitions));
 
+  // tempo_projetado/tempo_login/multiplicador — extraídos do dado CRU (antes
+  // do filtro de SECUNDARIO_SLUGS_ORDER em toKpiEquipeSerial, compartilhado,
+  // NÃO alterado). Um mapa por mês (só os 3 recentes — mesma limitação de
+  // "sob demanda" que o histórico distante já tinha para RV). Ver
+  // _lib/extract-kpis-extras.ts.
+  const kpisExtrasPorMes: Record<string, KpiExtrasPorEmail> = {
+    [dataAtual.mesRef]: extractKpisExtras(dataAtualRaw),
+    [dataPassado.mesRef]: extractKpisExtras(dataPassadoRaw),
+    [dataRetrasado.mesRef]: extractKpisExtras(dataRetrasadoRaw),
+  };
+
   // Só agora dataAtual.dataCorte é conhecido — aplica a regra "só considere
   // linhas com data_corte anterior ao data_corte atual".
   const kpiAnterior = filtrarKpiAnteriorPorDataCorte(kpiAnteriorBruto, dataAtual.dataCorte);
@@ -185,6 +202,8 @@ export default async function KpiOperadoresPage() {
             olhoInicial={nomeFantasiaConfig.olhoOperacional}
             colunasDisponiveis={colunasDisponiveis}
             colunasVisiveisIniciais={kpiColunasVisiveis}
+            colunasRvIniciais={kpiColunasRv}
+            kpisExtrasPorMes={kpisExtrasPorMes}
             showRvInicial={showRvOperadores}
             kpiAnterior={kpiAnterior.porOperador}
             kpiDefinitions={definitions}

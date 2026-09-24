@@ -12,16 +12,14 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
-import type { ColunaKpiDisponivel } from "@/components/gestor/config-kpi-popover";
 import { CopyKpiButton } from "@/components/operacional/copy-kpi-button";
 import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import { getKpiMesHistoricoAction } from "@/lib/kpi/gestor/get-kpi-mes-historico-action";
+import { getKpiExtrasMesHistoricoAction } from "@/app/(dashboard)/kpi/operadores/_lib/get-kpi-extras-mes-historico-action";
 import { getRvOperadoresAction } from "@/lib/kpi/gestor/get-rv-operadores-action";
 import { toggleShowRvOperadoresAction } from "@/lib/kpi/gestor/toggle-show-rv-operadores-action";
-import { KPI_COLUNAS_ORDER } from "@/lib/kpi/gestor/kpi-colunas-config";
-import { saveKpiColunasAction } from "@/lib/kpi/gestor/save-kpi-colunas-action";
 import type {
   KpiCelulaSerial,
   KpiEquipeSerial,
@@ -42,6 +40,7 @@ import { KpiEmptyState } from "@/app/(dashboard)/kpi/operadores/_components/kpi-
 import { KpiTabelaSkeleton } from "@/app/(dashboard)/kpi/operadores/_components/kpi-tabela-skeleton";
 import { formatMesCapitalizado, formatMesPorExtenso } from "@/app/(dashboard)/kpi/operadores/_components/mes-format";
 import { formatHeaderLabel } from "@/app/(dashboard)/kpi/operadores/_lib/format-header-label";
+import { formatDuracaoHoras } from "@/app/(dashboard)/kpi/operadores/_lib/format-duracao-horas";
 import { formatKpiValueLocal } from "@/app/(dashboard)/kpi/operadores/_lib/format-kpi-value-local";
 import { celulaApresentacao } from "@/app/(dashboard)/kpi/operadores/_lib/celula-apresentacao";
 import type { KpiAnteriorPorOperador } from "@/app/(dashboard)/kpi/operadores/_lib/get-kpi-anterior-por-emails";
@@ -53,6 +52,24 @@ import { celulaTicketRv } from "@/app/(dashboard)/kpi/operadores/_lib/celula-tic
 import { celulaRvTotal, STYLE_SUFIXO_DESCONTO } from "@/app/(dashboard)/kpi/operadores/_lib/celula-rv-total";
 import { recolorirOperadoresHistorico } from "@/app/(dashboard)/kpi/operadores/_lib/status-historico";
 import { IndicadorRvHeader, IndicadorRvCell } from "@/app/(dashboard)/kpi/operadores/_components/indicador-rv-coluna";
+import {
+  ConfigKpiOperadoresPopover,
+  type ColunaKpiOperadoresDisponivel,
+} from "@/app/(dashboard)/kpi/operadores/_components/config-kpi-operadores-popover";
+import {
+  KPI_COLUNAS_ORDER_LOCAL,
+  LABELS_KPI_LOCAL,
+  MULTIPLICADOR_SLUG,
+  TEMPO_LOGIN_SLUG,
+  TEMPO_PROJETADO_SLUG,
+  TEMPO_RESTANTE_SLUG,
+} from "@/app/(dashboard)/kpi/operadores/_lib/kpi-colunas-local";
+import { saveKpiColunasLocalAction } from "@/app/(dashboard)/kpi/operadores/_lib/save-kpi-colunas-local-action";
+import { DEFAULT_KPI_COLUNAS_VISIVEIS } from "@/lib/kpi/gestor/kpi-colunas-config";
+import { RV_COLUNA_ORDER, type RvColunaId } from "@/app/(dashboard)/kpi/operadores/_lib/rv-colunas-config";
+import { formatMultiplicador } from "@/app/(dashboard)/kpi/operadores/_lib/format-multiplicador";
+import { celulaTempoRestante, valorTempoRestanteParaSort } from "@/app/(dashboard)/kpi/operadores/_lib/celula-tempo-restante";
+import type { KpiExtrasPorEmail } from "@/app/(dashboard)/kpi/operadores/_lib/extract-kpis-extras";
 
 type SortDir = "asc" | "desc";
 type SortState = { slug: string; dir: SortDir };
@@ -105,22 +122,57 @@ function celulaVazia(h: { slug: string; displayName: string }): KpiCelulaSerial 
   };
 }
 
+function celulaExtra(slug: string, valor: number | null, valueType: KpiCelulaSerial["valueType"]): KpiCelulaSerial {
+  return { slug, displayName: LABELS_KPI_LOCAL[slug] ?? slug, valor, valueType, status: "neutral" };
+}
+
 /**
- * Substitui op.kpis pelo conjunto de colunas VISÍVEIS (config do gestor),
- * combinando kpis (principais) + secundarios — o gestor pode promover um
- * KPI secundário (hoje só no modal) pra coluna da tabela principal.
+ * Combina op.kpis (principais) + op.secundarios + os 4 KPIs extras desta
+ * rodada (tempo_projetado/tempo_login/multiplicador, vindos à parte via
+ * kpisExtrasPorMes — ver _lib/extract-kpis-extras.ts — e tempo_restante,
+ * virtual, calculado aqui) num Map COMPLETO por operador (todas as colunas
+ * selecionáveis, independente de estarem visíveis) — usado tanto para
+ * montar `headers` filtrados/ordenados quanto para as colunas de RV
+ * buscarem o valor da coluna-base mesmo quando ela está OCULTA (RV cai pro
+ * fim da tabela nesse caso, mas ainda depende do valor-base pra decidir "–").
+ */
+function buildMapaCompleto(
+  op: OperadorKpiSerial,
+  extras: KpiExtrasPorEmail[string] | undefined,
+): Map<string, KpiCelulaSerial> {
+  const combinado = new Map<string, KpiCelulaSerial>();
+  for (const k of op.kpis) combinado.set(k.slug, k);
+  for (const k of op.secundarios) combinado.set(k.slug, k);
+  if (extras) {
+    combinado.set(TEMPO_PROJETADO_SLUG, celulaExtra(TEMPO_PROJETADO_SLUG, extras.tempoProjetado, "time"));
+    combinado.set(TEMPO_LOGIN_SLUG, celulaExtra(TEMPO_LOGIN_SLUG, extras.tempoLogin, "time"));
+    combinado.set(MULTIPLICADOR_SLUG, celulaExtra(MULTIPLICADOR_SLUG, extras.multiplicador, "number"));
+    const diff = valorTempoRestanteParaSort(extras.tempoProjetado, extras.tempoLogin);
+    combinado.set(TEMPO_RESTANTE_SLUG, celulaExtra(TEMPO_RESTANTE_SLUG, diff, "time"));
+  }
+  return combinado;
+}
+
+/**
+ * Substitui op.kpis pelo conjunto de colunas VISÍVEIS (config do gestor), na
+ * ORDEM salva (headers já vem ordenado por colunasVisiveis — ver `headers`
+ * em KpiEquipeSection). Retorna também o mapa COMPLETO por email (todas as
+ * colunas, não só as visíveis), usado pelas colunas de RV.
  */
 function aplicarColunasVisiveis(
   operadores: OperadorKpiSerial[],
   headers: { slug: string; displayName: string }[],
-): OperadorKpiSerial[] {
-  return operadores.map((op) => {
-    const combinado = new Map<string, KpiCelulaSerial>();
-    for (const k of op.kpis) combinado.set(k.slug, k);
-    for (const k of op.secundarios) combinado.set(k.slug, k);
+  extrasPorEmail: KpiExtrasPorEmail | undefined,
+): { operadores: OperadorKpiSerial[]; completos: Map<string, Map<string, KpiCelulaSerial>> } {
+  const completos = new Map<string, Map<string, KpiCelulaSerial>>();
+  const novos = operadores.map((op) => {
+    const key = op.email.trim().toLowerCase();
+    const combinado = buildMapaCompleto(op, extrasPorEmail?.[key]);
+    completos.set(key, combinado);
     const kpis = headers.map((h) => combinado.get(h.slug) ?? celulaVazia(h));
     return { ...op, kpis };
   });
+  return { operadores: novos, completos };
 }
 
 // Slugs da dupla de colunas de retenção — TX_RETENCAO_ATUAL_SLUG é o slug
@@ -159,6 +211,45 @@ const TICKET_INDICATOR_SLUG = "variacao_ticket";
 // "RV (Total)" — coluna final, sempre a última; sintética só pra sort
 // (usa RvCalculation.liquido, já com multiplicador de pedidos e deflatores).
 const RV_TOTAL_SLUG = "rv_total";
+
+// ── Colunas de RV configuráveis (kpi_colunas_rv) ──────────────────────────
+// Slug de origem de cada coluna de RV — se a coluna-base correspondente
+// estiver OCULTA (fora de `headers`), a coluna de RV vai pro fim da tabela
+// (ver tailRvIds abaixo), na ordem de RV_COLUNA_ORDER (rv-colunas-config.ts):
+// INDISP, TMA, BÔNUS, MULTIPLICADOR, TICKET, RV (TOTAL). `null` = sempre no fim (RV Total).
+const RV_COL_ORIGEM_SLUG: Record<RvColunaId, string | null> = {
+  rv_indisp: INDISP_TOTAL_SLUG,
+  rv_tma: TMA_SLUG,
+  rv_bonus: INDISP_TOTAL_SLUG,
+  rv_multiplicador: RETIDOS_BRUTOS_SLUG,
+  rv_ticket: VARIACAO_TICKET_SLUG,
+  rv_total: null,
+};
+const RV_COL_TITULO: Record<RvColunaId, string> = {
+  rv_indisp: "Indisp (RV)",
+  rv_tma: "TMA (RV)",
+  rv_bonus: "Bônus (RV)",
+  rv_multiplicador: "Multiplicador (RV)",
+  rv_ticket: "Ticket (RV)",
+  rv_total: "RV (Total)",
+};
+const RV_COL_SORT_SLUG: Record<RvColunaId, string> = {
+  rv_indisp: INDISP_RV_SLUG,
+  rv_tma: TMA_RV_SLUG,
+  rv_bonus: BONUS_RV_SLUG,
+  rv_multiplicador: MULTIPLICADOR_RV_SLUG,
+  rv_ticket: TICKET_RV_SLUG,
+  rv_total: RV_TOTAL_SLUG,
+};
+
+/** Ids de RV que caem no FIM da tabela — ativos cuja coluna-base não está em `headers` (rv_total sempre, origemSlug null). */
+function tailRvIds(headersSlugSet: Set<string>, colunasRvSet: Set<RvColunaId>): RvColunaId[] {
+  return RV_COLUNA_ORDER.filter((id) => {
+    if (!colunasRvSet.has(id)) return false;
+    const origem = RV_COL_ORIGEM_SLUG[id];
+    return origem === null || !headersSlugSet.has(origem);
+  });
+}
 
 // Espaço reservado (padding) nas duas células vizinhas à divisória de
 // retenção, pro selo (~14px SVG + ~4px gap + ~36px texto + ~14px padding
@@ -291,7 +382,7 @@ function SeloEvolucao({ evolucao }: { evolucao: EvolucaoTxRetencao }) {
         left: 0,
         top: "50%",
         transform: "translate(-50%, -50%)",
-        zIndex: 30,
+        zIndex: "var(--z-kpi-badge)",
         pointerEvents: "none",
         backgroundColor: `color-mix(in srgb, ${cor} 12%, var(--card))`,
         border: `1px solid color-mix(in srgb, ${cor} 30%, transparent)`,
@@ -349,11 +440,17 @@ function KpiOperadoresTabela({
   onHeaderDragLeave,
   onHeaderDrop,
   onHeaderDragEnd,
+  colunasRvVisiveis,
+  valoresCompletos,
 }: {
   operadores: OperadorKpiSerial[];
   headers: { slug: string; displayName: string }[];
   sort: SortState;
   rvColunaAtiva: boolean;
+  /** Colunas de RV configuradas como visíveis (kpi_colunas_rv) — independente do switch "Exibir RV" (rvColunaAtiva). */
+  colunasRvVisiveis: RvColunaId[];
+  /** Todas as colunas (visíveis ou não) por email — usado pelas colunas de RV cuja base está oculta. */
+  valoresCompletos?: Map<string, Map<string, KpiCelulaSerial>>;
   mostrarToggleOlho?: boolean;
   olhoAberto?: boolean;
   onToggleOlho?: () => void;
@@ -373,6 +470,8 @@ function KpiOperadoresTabela({
   onHeaderDragEnd?: () => void;
 }) {
   const interativo = !!onSort;
+  const headersSlugSet = useMemo(() => new Set(headers.map((h) => h.slug)), [headers]);
+  const colunasRvSet = useMemo(() => new Set(colunasRvVisiveis), [colunasRvVisiveis]);
 
   // Fade nas bordas do scroll horizontal — só na tabela interativa da tela
   // (o efeito abaixo nem registra listeners quando `!interativo`, ou seja,
@@ -403,6 +502,15 @@ function KpiOperadoresTabela({
   }, [interativo, operadores.length, headers.length, rvColunaAtiva]);
 
   const scrollMask = interativo ? buildScrollFadeMask(fadeLeft, fadeRight) : undefined;
+
+  // Sombra sutil na borda direita da coluna fixa "Operador" — só quando há
+  // rolagem horizontal de fato (scrollLeft > 0, mesma detecção do fade acima:
+  // fadeLeft). Nunca aparece na instância offscreen de export (fadeLeft fica
+  // sempre false ali, já que o useEffect que o atualiza nem roda quando
+  // `!interativo`) nem antes do usuário rolar.
+  const stickyOperadorShadow = interativo && fadeLeft
+    ? "6px 0 6px -6px color-mix(in srgb, var(--foreground) 8%, transparent)"
+    : undefined;
 
   // dd/mm do report anterior — pega a primeira célula disponível (o
   // data_corte é o mesmo pra equipe inteira, vem do mesmo import). Sem
@@ -452,7 +560,8 @@ function KpiOperadoresTabela({
             <tr style={{ borderBottom: "1px solid var(--border)" }}>
               <th
                 scope="col"
-                className="font-sans text-muted-foreground sticky left-0 z-20 bg-[var(--background)] px-3 py-2.5 text-center text-[13px] font-semibold tracking-[0.04em] whitespace-nowrap uppercase select-none"
+                className="font-sans text-muted-foreground sticky left-0 bg-[var(--background)] px-3 py-2.5 text-center text-[13px] font-semibold tracking-[0.04em] whitespace-nowrap uppercase select-none"
+                style={{ zIndex: "var(--z-kpi-sticky-th)", boxShadow: stickyOperadorShadow }}
               >
                 <div className="flex items-center justify-center gap-1.5">
                   <span>Operador</span>
@@ -497,7 +606,7 @@ function KpiOperadoresTabela({
                       uma coluna-base própria como Indisp (RV)/TMA (RV)).
                       Mesmo componente genérico (_components/indicador-rv-coluna.tsx).
                     */}
-                    {h.slug === INDISP_TOTAL_SLUG && rvColunaAtiva && (
+                    {h.slug === INDISP_TOTAL_SLUG && rvColunaAtiva && colunasRvSet.has("rv_bonus") && (
                       <IndicadorRvHeader
                         titulo={formatHeaderLabel("Bônus (RV)")}
                         sortSlug={BONUS_RV_SLUG}
@@ -620,7 +729,7 @@ function KpiOperadoresTabela({
                       não de op.kpis. Componente genérico (_components/), o
                       mesmo usado por "TMA (RV)" logo abaixo.
                     */}
-                    {h.slug === INDISP_TOTAL_SLUG && rvColunaAtiva && (
+                    {h.slug === INDISP_TOTAL_SLUG && rvColunaAtiva && colunasRvSet.has("rv_indisp") && (
                       <IndicadorRvHeader
                         titulo={formatHeaderLabel("Indisp (RV)")}
                         sortSlug={INDISP_RV_SLUG}
@@ -632,7 +741,7 @@ function KpiOperadoresTabela({
                     )}
 
                     {/* "TMA (RV)" — logo depois de "TMA", mesmo componente genérico. */}
-                    {h.slug === TMA_SLUG && rvColunaAtiva && (
+                    {h.slug === TMA_SLUG && rvColunaAtiva && colunasRvSet.has("rv_tma") && (
                       <IndicadorRvHeader
                         titulo={formatHeaderLabel("TMA (RV)")}
                         sortSlug={TMA_RV_SLUG}
@@ -644,7 +753,7 @@ function KpiOperadoresTabela({
                     )}
 
                     {/* "Multiplicador (RV)" — logo depois de "Retidos Brutos". */}
-                    {h.slug === RETIDOS_BRUTOS_SLUG && rvColunaAtiva && (
+                    {h.slug === RETIDOS_BRUTOS_SLUG && rvColunaAtiva && colunasRvSet.has("rv_multiplicador") && (
                       <IndicadorRvHeader
                         titulo={formatHeaderLabel("Multiplicador (RV)")}
                         sortSlug={MULTIPLICADOR_RV_SLUG}
@@ -656,7 +765,7 @@ function KpiOperadoresTabela({
                     )}
 
                     {/* "Ticket (RV)" — logo depois de "% Variação Ticket". */}
-                    {h.slug === VARIACAO_TICKET_SLUG && rvColunaAtiva && (
+                    {h.slug === VARIACAO_TICKET_SLUG && rvColunaAtiva && colunasRvSet.has("rv_ticket") && (
                       <IndicadorRvHeader
                         titulo={formatHeaderLabel("Ticket (RV)")}
                         sortSlug={TICKET_RV_SLUG}
@@ -669,23 +778,30 @@ function KpiOperadoresTabela({
                   </Fragment>
                 );
               })}
-              {rvColunaAtiva && (
-                <IndicadorRvHeader
-                  titulo={formatHeaderLabel("RV (Total)")}
-                  sortSlug={RV_TOTAL_SLUG}
-                  sort={sort}
-                  interativo={interativo}
-                  onSort={onSort}
-                  sortIcon={<SortIcon slug={RV_TOTAL_SLUG} sort={sort} />}
-                />
-              )}
+              {/*
+                Colunas de RV cuja coluna-base está OCULTA (ou RV Total,
+                sempre) caem no FIM da tabela, na ordem fixa de
+                RV_COLUNA_ORDER — ver tailRvIds/_lib/rv-colunas-config.ts.
+              */}
+              {rvColunaAtiva &&
+                tailRvIds(headersSlugSet, colunasRvSet).map((id) => (
+                  <IndicadorRvHeader
+                    key={id}
+                    titulo={formatHeaderLabel(RV_COL_TITULO[id])}
+                    sortSlug={RV_COL_SORT_SLUG[id]}
+                    sort={sort}
+                    interativo={interativo}
+                    onSort={onSort}
+                    sortIcon={<SortIcon slug={RV_COL_SORT_SLUG[id]} sort={sort} />}
+                  />
+                ))}
             </tr>
           </thead>
           <tbody>
             {operadores.map((op, i) => (
               <tr
                 key={op.email}
-                className="hover:bg-accent transition-colors duration-150 motion-reduce:transition-none"
+                className="group hover:bg-accent transition-colors duration-150 motion-reduce:transition-none"
                 style={{
                   borderBottom:
                     i < operadores.length - 1
@@ -693,7 +809,18 @@ function KpiOperadoresTabela({
                       : undefined,
                 }}
               >
-                <td className="font-sans text-foreground sticky left-0 z-10 bg-[var(--background)] px-3 py-2 text-center font-medium whitespace-nowrap">
+                {/*
+                  Fundo OPACO (var(--background)) — necessário pra coluna fixa
+                  não deixar o selo de evolução (z-index mais baixo, ver
+                  --z-kpi-badge) "vazar" por trás dela ao rolar. group-hover
+                  repete o var(--accent) do hover da linha (a <td> tem
+                  background próprio, que cobriria o hover:bg-accent do <tr>
+                  se não repetido aqui) — também opaco, sem transparência.
+                */}
+                <td
+                  className="font-sans text-foreground sticky left-0 bg-[var(--background)] group-hover:bg-accent transition-colors duration-150 motion-reduce:transition-none px-3 py-2 text-center font-medium whitespace-nowrap"
+                  style={{ zIndex: "var(--z-kpi-sticky-td)", boxShadow: stickyOperadorShadow }}
+                >
                   {op.nome}
                 </td>
                 {op.kpis.map((kpi) => {
@@ -723,22 +850,50 @@ function KpiOperadoresTabela({
                   // linha, reaproveitado em todas.
                   const calculoRv = rvColunaAtiva ? (getRvCalculo?.(op.email) ?? null) : null;
 
+                  // Multiplicador ("4.0x"), Tempo Restante (cor/tooltip
+                  // próprios, ≤0 = "00:00" em --success), Tempo Projetado e
+                  // Tempo de Login (formatDuracaoHoras local — "H:MM", NUNCA
+                  // o formatador genérico compartilhado, que é mm:ss/hhh:mm
+                  // e usado por TMA) têm apresentação especial — os demais
+                  // KPIs de sempre usam o formatador genérico
+                  // (formatKpiValueLocal, valueType "percent"/"number"/etc).
+                  const ehMultiplicador = kpi.slug === MULTIPLICADOR_SLUG;
+                  const ehTempoRestante = kpi.slug === TEMPO_RESTANTE_SLUG;
+                  const ehTempoHoras = kpi.slug === TEMPO_PROJETADO_SLUG || kpi.slug === TEMPO_LOGIN_SLUG;
+                  const tempoRestanteInfo = ehTempoRestante
+                    ? celulaTempoRestante(
+                        valoresCompletos?.get(op.email.trim().toLowerCase())?.get(TEMPO_PROJETADO_SLUG)?.valor ?? null,
+                        valoresCompletos?.get(op.email.trim().toLowerCase())?.get(TEMPO_LOGIN_SLUG)?.valor ?? null,
+                      )
+                    : null;
+
                   return (
                     <Fragment key={kpi.slug}>
                       {/* "Bônus" — logo ANTES de "Indisp Total" (ver comentário no header). */}
-                      {kpi.slug === INDISP_TOTAL_SLUG && rvColunaAtiva && (
+                      {kpi.slug === INDISP_TOTAL_SLUG && rvColunaAtiva && colunasRvSet.has("rv_bonus") && (
                         <IndicadorRvCell resultado={celulaBonusRv(calculoRv ?? CALCULO_RV_VAZIO)} />
                       )}
                       <td
                         className="font-sans px-3 py-2 text-center whitespace-nowrap"
                         style={{
-                          ...style,
+                          ...(tempoRestanteInfo ? tempoRestanteInfo.style : style),
                           fontVariantNumeric: "tabular-nums",
                           paddingRight: ehTxAtual ? SELO_RESERVA_PX : undefined,
                         }}
+                        title={tempoRestanteInfo?.title}
+                        aria-label={tempoRestanteInfo?.ariaLabel}
                       >
-                        {kpi.valor === null ? (
+                        {tempoRestanteInfo ? (
+                          tempoRestanteInfo.texto
+                        ) : ehMultiplicador ? (
+                          formatMultiplicador(kpi.valor)
+                        ) : kpi.valor === null ? (
                           <span className="text-muted-foreground">N/D</span>
+                        ) : ehTempoHoras ? (
+                          <>
+                            {formatDuracaoHoras(kpi.valor)}
+                            {srOnlyLabel && <span className="sr-only"> ({srOnlyLabel})</span>}
+                          </>
                         ) : (
                           <>
                             {formatKpiValueLocal(kpi.valor, kpi.valueType)}
@@ -783,7 +938,7 @@ function KpiOperadoresTabela({
                         RvCalculation já calculado (calculoRv acima), sem
                         recalcular nada.
                       */}
-                      {kpi.slug === INDISP_TOTAL_SLUG && rvColunaAtiva && (
+                      {kpi.slug === INDISP_TOTAL_SLUG && rvColunaAtiva && colunasRvSet.has("rv_indisp") && (
                         <IndicadorRvCell
                           resultado={celulaIndicadorRv({
                             valorKpi: kpi.valor,
@@ -792,7 +947,7 @@ function KpiOperadoresTabela({
                           })}
                         />
                       )}
-                      {kpi.slug === TMA_SLUG && rvColunaAtiva && (
+                      {kpi.slug === TMA_SLUG && rvColunaAtiva && colunasRvSet.has("rv_tma") && (
                         <IndicadorRvCell
                           resultado={celulaIndicadorRv({
                             valorKpi: kpi.valor,
@@ -803,36 +958,80 @@ function KpiOperadoresTabela({
                       )}
 
                       {/* "Multiplicador (RV)" — logo depois de "Retidos Brutos" (ver comentário no header). */}
-                      {kpi.slug === RETIDOS_BRUTOS_SLUG && rvColunaAtiva && (
+                      {kpi.slug === RETIDOS_BRUTOS_SLUG && rvColunaAtiva && colunasRvSet.has("rv_multiplicador") && (
                         <IndicadorRvCell
                           resultado={celulaMultiplicadorRv(calculoRv ?? CALCULO_RV_VAZIO, MULTIPLICADOR_RETIDO_INDICATOR_SLUG)}
                         />
                       )}
 
                       {/* "Ticket (RV)" — logo depois de "% Variação Ticket". */}
-                      {kpi.slug === VARIACAO_TICKET_SLUG && rvColunaAtiva && (
+                      {kpi.slug === VARIACAO_TICKET_SLUG && rvColunaAtiva && colunasRvSet.has("rv_ticket") && (
                         <IndicadorRvCell resultado={celulaTicketRv(calculoRv ?? CALCULO_RV_VAZIO, TICKET_INDICATOR_SLUG)} />
                       )}
                     </Fragment>
                   );
                 })}
+                {/* Colunas de RV cuja base está oculta (+ RV Total, sempre) — ver comentário no <thead>. */}
                 {rvColunaAtiva &&
-                  (() => {
-                    const resultado = celulaRvTotal(calculoLinhaRvTotal(op.email));
-                    return (
-                      <td
-                        className="font-sans px-3 py-2 text-center whitespace-nowrap"
-                        style={{ ...resultado.style, fontVariantNumeric: "tabular-nums" }}
-                        title={resultado.title}
-                        aria-label={resultado.ariaLabel}
-                      >
-                        {resultado.texto}
-                        {resultado.sufixoDesconto && (
-                          <span style={{ ...STYLE_SUFIXO_DESCONTO, marginLeft: 4 }}>{resultado.sufixoDesconto}</span>
-                        )}
-                      </td>
-                    );
-                  })()}
+                  tailRvIds(headersSlugSet, colunasRvSet).map((id) => {
+                    const calc = getRvCalculo?.(op.email) ?? CALCULO_RV_VAZIO;
+                    const valorOrigem = (slug: string) =>
+                      valoresCompletos?.get(op.email.trim().toLowerCase())?.get(slug)?.valor ?? null;
+                    if (id === "rv_total") {
+                      const resultado = celulaRvTotal(calculoLinhaRvTotal(op.email));
+                      return (
+                        <td
+                          key={id}
+                          className="font-sans px-3 py-2 text-center whitespace-nowrap"
+                          style={{ ...resultado.style, fontVariantNumeric: "tabular-nums" }}
+                          title={resultado.title}
+                          aria-label={resultado.ariaLabel}
+                        >
+                          {resultado.texto}
+                          {resultado.sufixoDesconto && (
+                            <span style={{ ...STYLE_SUFIXO_DESCONTO, marginLeft: 4 }}>{resultado.sufixoDesconto}</span>
+                          )}
+                        </td>
+                      );
+                    }
+                    if (id === "rv_indisp") {
+                      return (
+                        <IndicadorRvCell
+                          key={id}
+                          resultado={celulaIndicadorRv({
+                            valorKpi: valorOrigem(INDISP_TOTAL_SLUG),
+                            calculo: calc,
+                            indicatorSlug: INDISP_RV_INDICATOR_SLUG,
+                          })}
+                        />
+                      );
+                    }
+                    if (id === "rv_tma") {
+                      return (
+                        <IndicadorRvCell
+                          key={id}
+                          resultado={celulaIndicadorRv({
+                            valorKpi: valorOrigem(TMA_SLUG),
+                            calculo: calc,
+                            indicatorSlug: TMA_RV_INDICATOR_SLUG,
+                          })}
+                        />
+                      );
+                    }
+                    if (id === "rv_bonus") {
+                      return <IndicadorRvCell key={id} resultado={celulaBonusRv(calc)} />;
+                    }
+                    if (id === "rv_multiplicador") {
+                      return (
+                        <IndicadorRvCell
+                          key={id}
+                          resultado={celulaMultiplicadorRv(calc, MULTIPLICADOR_RETIDO_INDICATOR_SLUG)}
+                        />
+                      );
+                    }
+                    // rv_ticket
+                    return <IndicadorRvCell key={id} resultado={celulaTicketRv(calc, TICKET_INDICATOR_SLUG)} />;
+                  })}
               </tr>
             ))}
           </tbody>
@@ -852,8 +1051,12 @@ interface KpiEquipeSectionProps {
   mesesHistoricos: string[];
   nomeFantasia?: NomeFantasiaSerial;
   olhoInicial?: boolean;
-  colunasDisponiveis: ColunaKpiDisponivel[];
+  colunasDisponiveis: ColunaKpiOperadoresDisponivel[];
   colunasVisiveisIniciais: string[];
+  /** kpi_colunas_rv — [] quando NULL no banco vira DEFAULT_RV_COLUNAS já resolvido no server (get-kpi-colunas-rv-config.ts). */
+  colunasRvIniciais: RvColunaId[];
+  /** tempo_projetado/tempo_login/multiplicador por email, só dos 3 meses recentes (ver _lib/extract-kpis-extras.ts). */
+  kpisExtrasPorMes: Record<string, KpiExtrasPorEmail>;
   /** Toggle "Exibir RV" salvo — gestor_config_fantasia.show_rv_operadores. */
   showRvInicial?: boolean;
   /** Valor ANTERIOR de tx_retencao_bruta (kpi_monthly_snapshots_anterior), só do mês atual — ver _lib/get-kpi-anterior-por-emails.ts. */
@@ -872,6 +1075,8 @@ export function KpiEquipeSection({
   olhoInicial = false,
   colunasDisponiveis,
   colunasVisiveisIniciais,
+  colunasRvIniciais,
+  kpisExtrasPorMes,
   showRvInicial = false,
   kpiAnterior,
   kpiDefinitions,
@@ -880,10 +1085,16 @@ export function KpiEquipeSection({
   // Cache dos meses históricos já buscados (getKpiMesHistoricoAction) — evita
   // rebuscar ao alternar de volta pra um mês já visitado nesta sessão.
   const [historicoCache, setHistoricoCache] = useState<Record<string, KpiEquipeSerial>>({});
+  // Cache dos extras (tempo_projetado/tempo_login/multiplicador) dos meses
+  // históricos distantes buscados sob demanda (getKpiExtrasMesHistoricoAction)
+  // — igual historicoCache, mas separado porque vem de outra action/query.
+  const [historicoExtrasCache, setHistoricoExtrasCache] = useState<Record<string, KpiExtrasPorEmail>>({});
   const [carregandoMes, setCarregandoMes] = useState<string | null>(null);
   const [sort, setSort] = useState<SortState>({ slug: "tx_retencao_bruta", dir: "desc" });
   const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
   const [colunasVisiveis, setColunasVisiveis] = useState<string[]>(colunasVisiveisIniciais);
+  const [colunasRvVisiveis, setColunasRvVisiveis] = useState<RvColunaId[]>(colunasRvIniciais);
+  const [configOpen, setConfigOpen] = useState(false);
 
   // ── RV (geral, mensal) ────────────────────────────────────────────
   // rvVisivel persiste por gestor (show_rv_operadores). O seletor "RV com
@@ -996,10 +1207,32 @@ export function KpiEquipeSection({
           }
         });
       }
+      // Extras (tempo_projetado/tempo_login/multiplicador) desse mês
+      // histórico — busca separada (ver get-kpi-extras-mes-historico-action.ts),
+      // com seu próprio cache pra não rebuscar ao voltar pro mesmo mês. Falha
+      // aqui não bloqueia a tabela (só esses 4 KPIs ficam "–" nesse mês) —
+      // por isso sem toast de erro, só log.
+      if (!(mesRef in historicoExtrasCache) && mesRef !== dataAtual.mesRef && mesRef !== dataPassado.mesRef && mesRef !== dataRetrasado.mesRef) {
+        void getKpiExtrasMesHistoricoAction(mesRef).then((result) => {
+          if (result.success) {
+            setHistoricoExtrasCache((prev) => ({ ...prev, [mesRef]: result.data }));
+          } else {
+            console.error("[kpi-extras-historico] falha ao buscar:", result.error);
+          }
+        });
+      }
 
       if (rvVisivel) buscarRv(mesRef);
     },
-    [dataAtual.mesRef, dataPassado.mesRef, dataRetrasado.mesRef, historicoCache, rvVisivel, buscarRv],
+    [
+      dataAtual.mesRef,
+      dataPassado.mesRef,
+      dataRetrasado.mesRef,
+      historicoCache,
+      historicoExtrasCache,
+      rvVisivel,
+      buscarRv,
+    ],
   );
 
   const handleSort = (slug: string) => {
@@ -1041,14 +1274,17 @@ export function KpiEquipeSection({
   );
 
   // Colunas visíveis (config do gestor). A ORDEM vem de colunasVisiveis —
-  // é ela que o gestor reordena arrastando os headers e que fica salva em
-  // gestor_config_fantasia.kpi_colunas_visiveis. KPI_COLUNAS_ORDER serve só
-  // para descartar slug desconhecido. O label vem de colunasDisponiveis (já
-  // com displayName real do banco, sufixo de unidade removido).
+  // é ela que o gestor reordena (arrastando os headers OU marcando/
+  // desmarcando no popover ⚙) e que fica salva em
+  // gestor_config_fantasia.kpi_colunas_visiveis, EXATAMENTE nessa ordem.
+  // KPI_COLUNAS_ORDER_LOCAL (extensão local de KPI_COLUNAS_ORDER, ver
+  // _lib/kpi-colunas-local.ts) serve só para descartar slug desconhecido —
+  // inclui os 4 KPIs novos desta rodada. O label vem de colunasDisponiveis
+  // (já com displayName real do banco, sufixo de unidade removido).
   const headers = useMemo(
     () =>
       colunasVisiveis
-        .filter((slug) => (KPI_COLUNAS_ORDER as readonly string[]).includes(slug))
+        .filter((slug) => KPI_COLUNAS_ORDER_LOCAL.includes(slug))
         .map((slug) => ({
           slug,
           displayName: colunasDisponiveis.find((c) => c.slug === slug)?.label ?? slug,
@@ -1060,16 +1296,25 @@ export function KpiEquipeSection({
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Última ordem confirmada salva — usada pra reverter em caso de erro
+  // (spec: salvar otimista, reverter com toast.error em falha).
+  const lastSavedColunasRef = useRef<string[]>(colunasVisiveisIniciais);
 
-  // Debounce de 500ms: num arrasto rápido de várias colunas só a ordem
-  // final vai pro banco. Sem toast — o feedback já é o próprio movimento.
+  // Debounce de ~400ms: várias mudanças seguidas (arrasto ou toques rápidos
+  // no popover) só disparam UM save, com a ordem final.
   const salvarOrdem = useCallback((ordem: string[]) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      void saveKpiColunasAction(ordem).then((r) => {
-        if (!r.success) console.error("[kpi-colunas] falha ao salvar ordem:", r.error);
+      void saveKpiColunasLocalAction(ordem).then((r) => {
+        if (r.success) {
+          lastSavedColunasRef.current = ordem;
+        } else {
+          console.error("[kpi-colunas] falha ao salvar ordem:", r.error);
+          setColunasVisiveis(lastSavedColunasRef.current);
+          toast.error("Erro ao salvar colunas", { className: "kpi-op-toast" });
+        }
       });
-    }, 500);
+    }, 400);
   }, []);
 
   const limparDrag = useCallback(() => {
@@ -1129,11 +1374,22 @@ export function KpiEquipeSection({
     }));
   }, [operadoresBase, nomeFantasia, olhoAberto]);
 
+  // extras (tempo_projetado/tempo_login/multiplicador) do mês REALMENTE
+  // exibido (dataExibida, mesma lógica de operadoresBase acima) — os 3
+  // meses recentes vêm prontos do server (kpisExtrasPorMes, ver page.tsx);
+  // meses históricos distantes usam o cache buscado sob demanda em paralelo
+  // com getKpiMesHistoricoAction (ver handleMesChange acima e
+  // get-kpi-extras-mes-historico-action.ts).
+  const kpisExtrasAtuais =
+    kpisExtrasPorMes[dataExibida?.mesRef ?? ""] ?? historicoExtrasCache[dataExibida?.mesRef ?? ""];
+
   // op.kpis passa a ser SÓ as colunas visíveis (combinando principais +
-  // secundárias) — tabela na tela e exportação PNG usam a mesma seleção.
-  const operadoresParaTabela = useMemo(
-    () => aplicarColunasVisiveis(operadoresParaTela, headers),
-    [operadoresParaTela, headers],
+  // secundárias + extras), na ORDEM de `headers` — tabela na tela e
+  // exportação PNG usam a mesma seleção. `completos` (todas as colunas,
+  // mesmo ocultas) alimenta as colunas de RV cuja base está oculta.
+  const { operadores: operadoresParaTabela, completos: valoresCompletosTela } = useMemo(
+    () => aplicarColunasVisiveis(operadoresParaTela, headers, kpisExtrasAtuais),
+    [operadoresParaTela, headers, kpisExtrasAtuais],
   );
 
   // Export SEMPRE usa nome fantasia (ou o fallback já embutido em
@@ -1142,9 +1398,9 @@ export function KpiEquipeSection({
   // "olho" aberto revelando nomes reais na tela no momento do clique.
   // Por isso parte de `operadoresBase` (já recolorido, mas ainda sem o
   // toggle de nome fantasia aplicado), não de `operadoresParaTela`.
-  const operadoresParaExport = useMemo(
-    () => aplicarColunasVisiveis(operadoresBase, headers),
-    [operadoresBase, headers],
+  const { operadores: operadoresParaExport, completos: valoresCompletosExport } = useMemo(
+    () => aplicarColunasVisiveis(operadoresBase, headers, kpisExtrasAtuais),
+    [operadoresBase, headers, kpisExtrasAtuais],
   );
 
   const scopeAtual = scopeParaMes(mesSelecionado);
@@ -1158,6 +1414,23 @@ export function KpiEquipeSection({
   // não renderizada em meses históricos (reaproveita scopeAtual, mesma regra
   // de "mês atual" que o RV já usa).
   const mostrarColunaUltimoReport = !!scopeAtual;
+
+  // Se a coluna ordenada deixar de estar visível (desmarcada no popover, RV
+  // desligado, ou a coluna de RV correspondente ficou oculta), volta pra
+  // ordenação padrão — nunca fica "presa" numa coluna que já não existe.
+  useEffect(() => {
+    const slugsValidos = new Set<string>(headers.map((h) => h.slug));
+    if (mostrarColunaUltimoReport && headers.some((h) => h.slug === TX_RETENCAO_ATUAL_SLUG)) {
+      slugsValidos.add(TX_RETENCAO_ANTERIOR_SLUG);
+    }
+    if (rvColunaAtiva) {
+      for (const id of colunasRvVisiveis) slugsValidos.add(RV_COL_SORT_SLUG[id]);
+    }
+    if (!slugsValidos.has(sort.slug)) {
+      setSort({ slug: "tx_retencao_bruta", dir: "desc" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headers, rvColunaAtiva, colunasRvVisiveis, mostrarColunaUltimoReport]);
 
   // RvCalculation.normal (RV sempre exibido sem contestação nesta página) —
   // mesma fonte (rvDataAtual, já calculada por getRvParaEquipe/calculateRv),
@@ -1361,7 +1634,25 @@ export function KpiEquipeSection({
           />
 
           {data && data.operadores.length > 0 && (
+            // Ordem pedida: [⚙ Colunas] [Copiar imagem] [Exibir RV].
             <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+              <ConfigKpiOperadoresPopover
+                colunasDisponiveis={colunasDisponiveis}
+                colunasVisiveis={colunasVisiveis}
+                colunasDefault={DEFAULT_KPI_COLUNAS_VISIVEIS}
+                onColunasChange={setColunasVisiveis}
+                rvColunasVisiveis={colunasRvVisiveis}
+                onRvColunasChange={setColunasRvVisiveis}
+                rvDisponivel={!!scopeAtual}
+                onOpenChange={setConfigOpen}
+              />
+
+              <CopyKpiButton
+                dataCorte={data.dataCorte}
+                comAvisoRv={rvColunaAtiva}
+                onCapturar={capturarTabelaPng}
+              />
+
               {/*
                 Switch sempre visível (mesmo fora do mês atual) — desabilitado
                 com tooltip nesse caso. rvVisivel (preferência salva) não é
@@ -1398,12 +1689,6 @@ export function KpiEquipeSection({
                   </motion.div>
                 )}
               </AnimatePresence>
-
-              <CopyKpiButton
-                dataCorte={data.dataCorte}
-                comAvisoRv={rvColunaAtiva}
-                onCapturar={capturarTabelaPng}
-              />
             </div>
           )}
         </div>
@@ -1459,6 +1744,8 @@ export function KpiEquipeSection({
                   mostrarColunaUltimoReport={mostrarColunaUltimoReport}
                   kpiAnterior={kpiAnterior}
                   getRvCalculo={getRvCalculo}
+                  colunasRvVisiveis={colunasRvVisiveis}
+                  valoresCompletos={valoresCompletosTela}
                   dragIndex={dragIndex}
                   dragOverIndex={dragOverIndex}
                   onHeaderDragStart={setDragIndex}
@@ -1522,6 +1809,8 @@ export function KpiEquipeSection({
               mostrarColunaUltimoReport={mostrarColunaUltimoReport}
               kpiAnterior={kpiAnterior}
               getRvCalculo={getRvCalculo}
+              colunasRvVisiveis={colunasRvVisiveis}
+              valoresCompletos={valoresCompletosExport}
             />
           </div>
         </div>
