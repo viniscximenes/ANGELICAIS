@@ -126,6 +126,20 @@
   --switch-knob-off: #F4EFE4;
 }
 
+/* ───────── Escala de z-index da tabela (coluna fixa "Operador" x selo de
+ * evolução da retenção) — escopada à rota, vale nos dois temas.
+ * Ordem (do fundo pro topo): células comuns (auto) < selo de evolução (1)
+ * < td fixo "Operador" (3) < th fixo "Operador" (4). O selo tem que ficar
+ * ABAIXO da coluna fixa pra não cobrir os nomes ao rolar horizontalmente
+ * (era z-index: 30 fixo, acima até do th sticky — bug corrigido aqui).
+ * Usadas em kpi-equipe-section.tsx via style={{ zIndex: "var(--z-kpi-...)" }}. */
+[data-page="kpi-operadores"] {
+  --z-kpi-cell: auto;
+  --z-kpi-badge: 1;
+  --z-kpi-sticky-td: 3;
+  --z-kpi-sticky-th: 4;
+}
+
 /* ───────── Ponte para as utilities do Tailwind (vale nos dois temas) ───────── */
 [data-page="kpi-operadores"] {
   --color-background: var(--background);
