@@ -1,3 +1,4 @@
+import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import type { KpiValueType } from "@/lib/kpi/types";
 
 export type MetaDirecao = "gte" | "lte" | "forecast" | "diff_bruta" | null;
@@ -78,14 +79,31 @@ export function avaliarMetaGestor(
   }
 }
 
-/** "≥ 63%" / "≤ 14.5%" / "Forecast" / "Bruta -5%" — condição a exibir (sem o prefixo "Meta"). */
+/**
+ * "mínimo 63%" / "máximo 14.5%" / "máximo 2068" (Churn, valor de
+ * forecast_churn) / "Bruta -5%" — condição a exibir (sem o prefixo "meta:").
+ * Sem símbolos de comparação (≥/≤/</>) — só texto, pedido explícito: os
+ * glyphs matemáticos caem no fallback do navegador (a fonte do tema,
+ * Instrument Sans, não tem esses glyphs), destoando visualmente do resto
+ * do card.
+ */
 export function formatMetaCondicao(
   config: MetaGestorConfig | undefined,
   valueType: KpiValueType,
+  /** valuesBySlug.get("forecast_churn") do mesmo snapshot — único uso: meta do Churn (direção "forecast"). */
+  forecastChurn: number | null = null,
 ): string | null {
   if (!config?.direcao) return null;
 
-  if (config.direcao === "forecast") return "Forecast";
+  if (config.direcao === "forecast") {
+    // Churn: "quanto menor, melhor" (avaliarMetaGestor: valor <= forecastChurn
+    // = OK) — mesma semântica de "lte", por isso "máximo" aqui também, com o
+    // valor NUMÉRICO de forecast_churn (não mais o texto genérico "Forecast").
+    // Sem forecast_churn pro mês/supervisor: sem linha de meta (mesmo
+    // comportamento de qualquer outro card sem meta configurada).
+    if (forecastChurn === null) return null;
+    return `máximo ${formatKpiValue(forecastChurn, valueType)}`;
+  }
 
   if (config.direcao === "diff_bruta") {
     if (config.meta === null) return null;
@@ -94,7 +112,8 @@ export function formatMetaCondicao(
   }
 
   if (config.meta === null) return null;
-  const simbolo = config.direcao === "gte" ? "≥" : "≤";
   const sufixo = valueType === "percent" || valueType === "percent_negative" ? "%" : "";
-  return `${simbolo} ${config.meta}${sufixo}`;
+  // meta de "time" já vem como string formatada ("13:00") — sem sufixo.
+  const valorMeta = typeof config.meta === "number" ? `${config.meta}${sufixo}` : config.meta;
+  return config.direcao === "gte" ? `mínimo ${valorMeta}` : `máximo ${valorMeta}`;
 }

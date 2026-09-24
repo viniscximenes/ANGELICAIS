@@ -60,13 +60,18 @@
   /* Seletor segmentado (meses/RV) e switch ("Exibir RV") — tokens PRÓPRIOS,
      não --card/--muted: no escuro, --card (#1C1C1C) e --muted (#2A2A2A) ficam
      próximos demais de --background (#141414), sem contraste suficiente pro
-     item ativo se destacar. [ajustar se o contraste não agradar] */
+     item ativo se destacar. [ajustar se o contraste não agradar]
+     --seg-thumb/-thumb-border/-text-active (item SELECIONADO) corrigidos:
+     estavam com a mesma cor de fundo do próprio tema escuro (item ativo
+     escuro no escuro) — direção invertida em relação a --primary/--switch-on
+     (ativo CLARO no escuro, ativo ESCURO no claro, ver bloco claro abaixo).
+     Track/texto inativo (--seg-track/-track-border/-text) não mudaram. */
   --seg-track: #1F1F1F;
   --seg-track-border: #2C2C2C;
-  --seg-thumb: #3A3A3A;
-  --seg-thumb-border: color-mix(in srgb, #E8E3DA 14%, transparent);
+  --seg-thumb: #F8F4EC;
+  --seg-thumb-border: #CFC8B8;
   --seg-text: #8E8A83;
-  --seg-text-active: #F1ECE3;
+  --seg-text-active: #1E1E1E;
   --switch-off: #2C2C2C;
   --switch-off-border: #3A3A3A;
   --switch-on: #D1CFC0;
@@ -112,13 +117,15 @@
 
   --kpi-shadow: 0px 4px 10px 0px rgb(0 0 0 / 0.1);
 
-  /* Seletor segmentado/switch — ver comentário no bloco escuro acima. */
+  /* Seletor segmentado/switch — ver comentário no bloco escuro acima
+     (item selecionado corrigido: ESCURO no claro, mesma direção de
+     --primary/--switch-on). */
   --seg-track: #DDD7CA;
   --seg-track-border: #D2CBBB;
-  --seg-thumb: #F8F4EC;
-  --seg-thumb-border: #CFC8B8;
+  --seg-thumb: #3A3A3A;
+  --seg-thumb-border: color-mix(in srgb, #E8E3DA 14%, transparent);
   --seg-text: #5E5A52;
-  --seg-text-active: #1E1E1E;
+  --seg-text-active: #F1ECE3;
   --switch-off: #CFC8B8;
   --switch-off-border: #C2BAA8;
   --switch-on: #2E2E2E;

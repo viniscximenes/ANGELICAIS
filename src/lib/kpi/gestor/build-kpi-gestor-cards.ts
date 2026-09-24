@@ -46,7 +46,7 @@ export function buildKpiGestorCards(
       temDado: valor !== null,
       status,
       // Sem dado = sem avaliação — não mostra meta mesmo que configurada.
-      metaCondicao: valor === null ? null : formatMetaCondicao(config, card.valueType),
+      metaCondicao: valor === null ? null : formatMetaCondicao(config, card.valueType, forecastChurn),
     };
   });
 }

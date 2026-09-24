@@ -13,10 +13,17 @@ interface KpiGestorCardProps {
   delayIndex: number;
   isHovered: boolean;
   isDimmed: boolean;
+  /** Painel flutuante deste card está fixo aberto (clique/Enter) — ver kpi-gestor-section.tsx. */
+  isPinned: boolean;
+  /** Card tem painel pra abrir (dado presente e, se aplicável, meta configurada) — controla os atributos de acessibilidade do trigger. */
+  temPainel: boolean;
   /** Só aplica a cor semântica de meta (verde/vermelho) quando true — Mês Atual. */
   isMesAtual: boolean;
   onHover: (slug: string, event: React.MouseEvent<HTMLDivElement>) => void;
-  onLeave: () => void;
+  /** Mouse saiu do card — pode ser em direção ao painel (ver handlePanelEnter em kpi-gestor-section.tsx), por isso recebe o slug e não fecha na hora. */
+  onLeave: (slug: string) => void;
+  /** Clique ou Enter/Espaço — fixa (ou desfixa, se já fixo) o painel deste card. */
+  onOpen: (slug: string, event: React.SyntheticEvent<HTMLDivElement>) => void;
 }
 
 function getStatusColor(status: "success" | "danger" | null): string {
@@ -55,7 +62,7 @@ function CardBody({
         duration: 0.25,
         ease: EASE_OUT_EXPO,
       }}
-      className="relative overflow-hidden rounded-lg p-6 flex flex-col justify-between min-h-[140px] h-full bg-card border border-border shadow-[var(--shadow-sm)] backdrop-blur-md dark:bg-zinc-800/45 dark:border-white/10 dark:shadow-[0_10px_15px_-3px_rgb(0_0_0_/_0.3)]"
+      className="relative overflow-hidden rounded-lg p-6 flex flex-col justify-between min-h-[140px] h-full bg-card/70 border border-border shadow-[var(--shadow-sm)] backdrop-blur-md"
     >
       <div
         aria-hidden="true"
@@ -105,7 +112,14 @@ export function DefasadosTooltipContent({
 
   return (
     <div>
-      <p className="text-sm font-semibold mb-1">
+      {/*
+        pr-4 só no título/subtítulo (não no painel inteiro) — dá clearance
+        pro botão × (absolute top-2.5 right-2.5, size-6) sem empurrar a
+        lista/scrollbar pra longe da borda direita do painel. O padding do
+        painel (p-5) já é igual nos 4 lados; só a lista tem mais 4px de
+        respiro próprio (pr-1) pra escala não encostar no texto.
+      */}
+      <p className="text-sm font-semibold mb-1 pr-4">
         {card.label} {card.metaCondicao}
       </p>
       <p className="text-xs text-muted-foreground mb-3 pb-2 border-b border-border">
@@ -119,7 +133,13 @@ export function DefasadosTooltipContent({
             : "Nenhum operador com dado neste mês"}
         </p>
       ) : (
-        <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1 scrollbar-tema">
+        // overscroll-contain: sem isso, ao chegar no fim da lista o resto do
+        // gesto de rolagem (wheel/touch) "vaza" pra rolar a PÁGINA por trás
+        // (scroll chaining nativo do navegador) — o que fecharia o painel
+        // (kpi-gestor-section.tsx fecha ao detectar scroll da página).
+        // Confirmado via Playwright: sem isso, rolar até o fim de uma lista
+        // longa fechava o painel no meio da leitura.
+        <div className="space-y-2 max-h-[350px] overflow-y-auto overscroll-contain pr-1 scrollbar-tema">
           {defasado.defasados.map((op) => (
             <div key={op.user} className="flex justify-between gap-3">
               <span className="text-sm text-foreground truncate">{op.user}</span>
@@ -136,34 +156,68 @@ export function DefasadosTooltipContent({
 export function SemDadoTooltipContent({ card }: { card: KpiGestorCardSerial }) {
   return (
     <div>
-      <p className="text-sm font-semibold mb-1">{card.label}</p>
+      {/* pr-4: mesmo motivo do título em DefasadosTooltipContent — clearance pro botão ×. */}
+      <p className="text-sm font-semibold mb-1 pr-4">{card.label}</p>
       <p className="text-sm text-muted-foreground">Dados não disponíveis para este indicador</p>
     </div>
   );
 }
 
 /**
- * Card de KPI do gestor. Sem Popover/portal próprios — o hover só reporta
- * o slug pro KpiGestorSection, que decide dim/tooltip pra todos os cards
- * de uma vez (ver painel flutuante único em kpi-gestor-section.tsx).
+ * Card de KPI do gestor. Sem Popover/portal próprios — hover/clique só
+ * reportam o slug pro KpiGestorSection, que decide dim/painel pra todos os
+ * cards de uma vez (ver painel flutuante único em kpi-gestor-section.tsx).
+ *
+ * Duas formas de abrir o painel de detalhes:
+ * - Hover: abre ao passar o mouse, e continua aberto — interativo, dá pra
+ *   rolar a lista — enquanto o mouse estiver sobre o card OU sobre o
+ *   próprio painel (o painel tem seus próprios onMouseEnter/Leave, ver
+ *   kpi-gestor-section.tsx). Só fecha, com um pequeno atraso, quando o
+ *   mouse sai dos dois de vez.
+ * - Clique (ou Enter/Espaço, com foco no card): FIXA o painel aberto
+ *   indefinidamente, sem depender do mouse — essencial pra touch (sem
+ *   hover) e teclado. Fecha só com um gesto explícito (botão ×, Esc,
+ *   clique fora ou clique de novo no card).
  */
 export function KpiGestorCard({
   card,
   delayIndex,
   isHovered,
   isDimmed,
+  isPinned,
+  temPainel,
   isMesAtual,
   onHover,
   onLeave,
+  onOpen,
 }: KpiGestorCardProps) {
   return (
     <div
+      data-kpi-gestor-card={card.configSlug}
+      role={temPainel ? "button" : undefined}
+      tabIndex={temPainel ? 0 : undefined}
+      aria-haspopup={temPainel ? "dialog" : undefined}
+      aria-expanded={temPainel ? isPinned : undefined}
       onMouseEnter={(event) => onHover(card.configSlug, event)}
-      onMouseLeave={onLeave}
+      onMouseLeave={() => onLeave(card.configSlug)}
+      onClick={temPainel ? (event) => onOpen(card.configSlug, event) : undefined}
+      onKeyDown={
+        temPainel
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onOpen(card.configSlug, event);
+              }
+            }
+          : undefined
+      }
       className={cn(
         "h-full transition-all duration-200",
         isDimmed && "opacity-30 blur-[1px]",
         isHovered && "relative z-10 scale-[1.02]",
+        temPainel &&
+          "cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)] rounded-lg",
+        isPinned && "relative z-10",
       )}
     >
       <CardBody card={card} delayIndex={delayIndex} isMesAtual={isMesAtual} />

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Instrument_Sans } from "next/font/google";
 
+import "./kpi-gestor.css";
 import { KpiGestorSection } from "@/components/gestor/kpi-gestor/kpi-gestor-section";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
@@ -17,6 +19,16 @@ import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
 export const metadata: Metadata = {
   title: "KPI - Gestor",
 };
+
+// Fonte do tema Zen Linen — carregada só nesta rota (mesmo padrão de
+// /kpi/operadores/page.tsx: next/font/google gera uma variável escopada ao
+// módulo que a importa, referenciada só dentro de [data-page="kpi-gestor"]
+// em kpi-gestor.css, então não afeta nenhuma outra página).
+const zenSans = Instrument_Sans({
+  subsets: ["latin", "latin-ext"],
+  weight: "variable",
+  variable: "--font-zen-sans",
+});
 
 // Página personalizada por gestor — nunca cacheada entre usuários.
 export const dynamic = "force-dynamic";
@@ -96,21 +108,20 @@ export default async function KpiGestorPage() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
+      <div
+        data-page="kpi-gestor"
+        className={`min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
+      >
         <div className="mx-auto max-w-7xl">
-          <header className="border-border flex flex-col gap-2 border-b border-dashed pb-4">
-            <span className="text-muted-foreground text-xs tracking-wide uppercase">
-              Painel do Gestor
-            </span>
-            <div className="flex flex-wrap items-baseline gap-3">
-              <h1 className="ds-h1">Gestor</h1>
-              <span className="ds-mono-sm text-muted-foreground">
-                / KPI · {nomeGestor}
-              </span>
-            </div>
-          </header>
-
+          {/*
+            Cabeçalho (título + linha de contexto + seletor de mês + ações) é
+            renderizado inteiro dentro de KpiGestorSection — mesmo motivo de
+            /kpi/operadores (KpiEquipeSection, NÃO alterado): o mês/dataCorte
+            exibidos no subtítulo dependem do mês selecionado, que é estado
+            client.
+          */}
           <KpiGestorSection
+            nomeGestor={nomeGestor}
             dataAtual={dataAtual}
             dataPassado={dataPassado}
             dataRetrasado={dataRetrasado}
