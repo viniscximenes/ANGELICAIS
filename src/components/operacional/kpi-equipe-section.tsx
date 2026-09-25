@@ -101,7 +101,7 @@ function SubtituloSeparador() {
 // Apresentação da célula (cor + fundo danger + rótulo sr-only) vem de
 // _lib/celula-apresentacao.ts, que por sua vez reaproveita a COR/lógica de
 // @/lib/kpi/atual/status-color.ts (fonte única, compartilhada com a tabela
-// de /operacao/kpi-detalhado, NÃO alterada). O 3º parâmetro dessa função
+// de /kpi/detalhado-polo, NÃO alterada). O 3º parâmetro dessa função
 // compartilhada (`isMesPassado`) SUPRIME a cor quando true — comportamento
 // que fazia sentido enquanto meses antigos vinham sempre "neutral" do
 // server. Agora `kpi.status` de meses antigos já chega recolorido pela

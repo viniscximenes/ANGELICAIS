@@ -21,11 +21,12 @@ interface KpiLoadingScreenProps {
    * "kpi-gestor") — escopa os tokens do tema Zen Linen pro loading também.
    * IMPORTANTE: quem chama este componente (loading.tsx de cada rota)
    * precisa importar o CSS do tema daquela rota (kpi-operadores.css /
-   * kpi-gestor.css) — como page.tsx ainda não montou nesse momento (é
+   * kpi-gestor.css / kpi-detalhado-polo.css) — como page.tsx ainda não
+   * montou nesse momento (é
    * literalmente o fallback de Suspense enquanto ele carrega), não dá pra
    * contar com o import do page.tsx pra trazer o CSS.
    */
-  dataPage: "kpi-operadores" | "kpi-gestor";
+  dataPage: "kpi-operadores" | "kpi-gestor" | "kpi-detalhado-polo";
   /** Nome da página pro rótulo acessível ("Carregando Operadores...") e pro texto visível. */
   titulo: string;
   /** Esqueleto: "tabela" (operadores) ou "cards" (gestor) — só muda a forma dos blocos desfocados ao fundo. */

@@ -9,7 +9,7 @@ export type KpiStatus = EnrichedKpiValue["status"];
  * aplicar (status neutro, valor nulo, ou mês passado, que nunca colore).
  *
  * Fonte única da coloração das células de KPI. Usado pela tabela de
- * /kpi/operadores (KpiEquipeSection) e pela tabela de /operacao/kpi-detalhado.
+ * /kpi/operadores (KpiEquipeSection) e pela tabela de /kpi/detalhado-polo.
  */
 export function statusColorVar(
   status: KpiStatus,

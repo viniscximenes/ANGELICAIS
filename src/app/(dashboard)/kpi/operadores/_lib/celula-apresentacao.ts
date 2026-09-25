@@ -9,7 +9,7 @@ import {
 /**
  * Apresentação da célula de KPI nesta tabela — reaproveita status-color.ts
  * (fonte única da COR/lógica de status, compartilhada com
- * /operacao/kpi-detalhado) sem alterá-lo, e adiciona só o que é exclusivo
+ * /kpi/detalhado-polo) sem alterá-lo, e adiciona só o que é exclusivo
  * do redesign desta rota: fundo sutil pra "danger" e um rótulo sr-only pra
  * status não depender só de cor.
  */

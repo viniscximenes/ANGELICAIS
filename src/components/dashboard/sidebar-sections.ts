@@ -34,6 +34,7 @@ const ALL_SECTIONS: SidebarSection[] = [
     items: [
       { label: "Operadores", href: "/kpi/operadores" },
       { label: "Gestor", href: "/kpi/gestor" },
+      { label: "Detalhado Polo", href: "/kpi/detalhado-polo" },
     ],
   },
   {
@@ -62,7 +63,6 @@ const ALL_SECTIONS: SidebarSection[] = [
       { label: "Análise Operadores", href: "/operacao/analise-operadores" },
       { label: "Comparativo Consolidado", href: "/operacao/comparativo-consolidado" },
       { label: "Quartil", href: "/operacao/quartil" },
-      { label: "KPI Detalhado", href: "/operacao/kpi-detalhado" },
     ],
   },
   {

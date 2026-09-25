@@ -1,7 +1,7 @@
 import type { KpiValueType } from "@/lib/kpi/types";
 
 /**
- * Ordem e rótulo FIXOS das colunas de /operacao/kpi-detalhado.
+ * Ordem e rótulo FIXOS das colunas de /kpi/detalhado-polo.
  *
  * Esta tela é um espelho 1:1 da planilha colada em /bases/kpi — cada coluna
  * é "título + valor bruto do slug", sem cálculo/regra de negócio. NÃO deriva

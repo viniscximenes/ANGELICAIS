@@ -160,7 +160,7 @@ export async function buildAnaliseOperadorSerial(params: {
     const i = PRINCIPAIS_SLUGS.indexOf(slug);
     return i === -1 ? 999 : i;
   };
-  // Ignora os slugs que existem só para o espelho de /operacao/kpi-detalhado.
+  // Ignora os slugs que existem só para o espelho de /kpi/detalhado-polo.
   const defsRelevantes = definitions.filter(
     (d) => !SLUGS_SOMENTE_ESPELHO.has(d.slug),
   );

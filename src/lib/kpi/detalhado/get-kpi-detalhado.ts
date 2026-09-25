@@ -48,7 +48,9 @@ export type KpiDetalhadoData = {
   colunas: KpiDetalhadoColuna[];
   /** Lista pro filtro da coluna "Gestor" — nomes distintos de meta_gestor (inclui não-cadastrados). */
   gestores: GestorOpcao[];
-  /** Operadores de TODAS as equipes, em ordem aleatória (mistura livre). */
+  /** Operadores de TODAS as equipes, em ordem misturada (sem agrupar por
+   *  gestor/nome) e ESTÁVEL — mesmo conjunto de e-mails sempre produz a
+   *  mesma ordem, mesmo em re-fetches (ver ordemMisturadaEstavel). */
   linhas: KpiDetalhadoLinha[];
 };
 
@@ -57,14 +59,36 @@ function getCurrentMesRef(): string {
   return `${year}-${String(month).padStart(2, "0")}-01`;
 }
 
-/** Fisher-Yates — embaralha uma cópia. */
-function embaralhar<T>(arr: T[]): T[] {
-  const out = [...arr];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
+/**
+ * Hash determinístico (FNV-1a) de uma string → número 32-bit sem sinal.
+ * Usado só como chave de ordenação abaixo — não tem nenhuma pretensão
+ * criptográfica, só precisa ser estável e "espalhar" bem.
+ */
+function hashDeterministico(str: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
   }
-  return out;
+  return h >>> 0;
+}
+
+/**
+ * Ordem "embaralhada" mas ESTÁVEL: ordena pelo hash do e-mail em vez de
+ * Math.random() puro. Antes, `embaralhar` reordenava aleatoriamente A CADA
+ * chamada de getKpiDetalhado() — como a página é `force-dynamic` e
+ * qualquer `revalidatePath("/", "layout")` (ex.: trocar de tema, ver
+ * update-theme-preference-action.ts) refaz esse fetch, a ordem visível na
+ * tela mudava sozinha a cada re-render, mesmo sem o usuário mexer em nada.
+ * Ordenar por hash do e-mail continua misturando livremente (sem viés de
+ * nome/gestor), mas dá sempre o MESMO resultado pro mesmo conjunto de
+ * operadores, em qualquer render/revalidação — só muda se a lista de
+ * e-mails mudar de verdade (import de mês novo).
+ */
+function ordemMisturadaEstavel<T>(arr: T[], chave: (item: T) => string): T[] {
+  return [...arr].sort(
+    (a, b) => hashDeterministico(chave(a)) - hashDeterministico(chave(b)),
+  );
 }
 
 type SnapshotRow = {
@@ -230,6 +254,6 @@ export async function getKpiDetalhado(): Promise<KpiDetalhadoData> {
     dataCorte: dataCorteMax,
     colunas,
     gestores,
-    linhas: embaralhar(linhas),
+    linhas: ordemMisturadaEstavel(linhas, (l) => l.email),
   };
 }

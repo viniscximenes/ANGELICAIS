@@ -7,7 +7,7 @@ import type { KpiValueType } from "@/lib/kpi/types";
  * decimal ".", ex. "78.1%"). Com `true`, troca só nesta tabela pro padrão
  * pt-BR ("78,1%", "-13,3%"). TMA e outros `time` (mm:ss / hhh:mm) nunca
  * mudam — não têm separador decimal. formatKpiValue (compartilhado com
- * /operacao/kpi-detalhado) não é alterado.
+ * /kpi/detalhado-polo) não é alterado.
  */
 export const USAR_VIRGULA_DECIMAL = false;
 

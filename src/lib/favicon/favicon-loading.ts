@@ -27,20 +27,15 @@ let ctx: CanvasRenderingContext2D | null = null;
 let hrefsOriginais: { link: HTMLLinkElement; href: string }[] = [];
 
 /**
- * Cor do anel: o script de referência usa `prefers-color-scheme` (tema do
- * SISTEMA operacional). Este projeto controla o tema por `data-theme` no
- * <html> (o usuário escolhe no app, independente do SO — ver
- * theme-provider.tsx) — usar `prefers-color-scheme` faria o favicon
- * dessincronizar do tema real da página sempre que o usuário escolhesse um
- * tema diferente do SO. Por isso a cor do anel aqui lê `data-theme`, não
- * `matchMedia`. Lido a cada frame (não só na hora de iniciar), então uma
- * troca de tema durante uma animação em andamento já reflete no próximo
- * redesenho, sem precisar reiniciar o favicon.
+ * Cor do anel: sempre branco, independente do tema do site (`data-theme`)
+ * e do tema do navegador/SO (`prefers-color-scheme`) — pedido explícito,
+ * só a bolinha verde (`VERDE`, acima) muda/permanece fixa por design.
+ * Antes variava com `data-theme` (branco no escuro, um azul-escuro
+ * #1F2430 no claro), o que deixava o anel escuro e pouco visível sobre o
+ * favicon pequeno na aba do navegador no tema claro.
  */
 function corDoAnel(): string {
-  if (typeof document === "undefined") return "#FFFFFF";
-  const tema = document.documentElement.getAttribute("data-theme");
-  return tema === "light" ? "#1F2430" : "#FFFFFF";
+  return "#FFFFFF";
 }
 
 /** Desenha um frame do modo "carregando" — mesma matemática do script de referência (x/y/r fixos nesse modo; só o arco do anel gira/estica). */

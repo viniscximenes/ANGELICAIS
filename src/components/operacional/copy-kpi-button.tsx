@@ -4,6 +4,7 @@ import { useState } from "react";
 import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
+import { cn } from "@/lib/utils";
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 import {
   buildKpiClipboardHtml,
@@ -71,6 +72,10 @@ interface CopyKpiButtonProps {
    * botão não guarda mais nenhuma referência direta ao DOM da tabela.
    */
   onCapturar: () => Promise<string>;
+  /** Título do bloco copiado (mesmo texto vira "- dd/mm" via tituloComData). Default = comportamento original ("TABELA DO KPI", usado em /kpi/operadores). */
+  titulo?: string;
+  /** Alt text da imagem no HTML copiado. Default = comportamento original. */
+  altText?: string;
 }
 
 /**
@@ -82,7 +87,13 @@ interface CopyKpiButtonProps {
  * (réplica do formato de buildClipboardReportHtml, que não aceita conteúdo
  * extra como o aviso de RV — ver comentário lá).
  */
-export function CopyKpiButton({ dataCorte, comAvisoRv, onCapturar }: CopyKpiButtonProps) {
+export function CopyKpiButton({
+  dataCorte,
+  comAvisoRv,
+  onCapturar,
+  titulo: tituloBase = "TABELA DO KPI",
+  altText = "Tabela do KPI",
+}: CopyKpiButtonProps) {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
 
   async function handleCopy() {
@@ -90,16 +101,17 @@ export function CopyKpiButton({ dataCorte, comAvisoRv, onCapturar }: CopyKpiButt
 
     try {
       const pngDataUrl = await onCapturar();
+
       const subtitulo = dataCorte
         ? `atualizado até ${escapeHtml(formatDateBR(dataCorte))}`
         : "—";
-      const titulo = tituloComData("TABELA DO KPI", dataCorte);
+      const titulo = tituloComData(tituloBase, dataCorte);
 
       const html = buildKpiClipboardHtml({
         titulo,
         subtitulo,
         pngDataUrl,
-        altText: "Tabela do KPI",
+        altText,
         comAvisoRv,
       });
       const textoPlano = buildKpiClipboardTextoPlano(titulo, comAvisoRv);
@@ -132,7 +144,9 @@ export function CopyKpiButton({ dataCorte, comAvisoRv, onCapturar }: CopyKpiButt
       type="button"
       onClick={handleCopy}
       disabled={state === "copying"}
-      className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 min-w-[140px] items-center justify-center gap-1.5 rounded-md border bg-transparent px-3 text-sm font-medium outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
+      className={cn(
+        "font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 min-w-[140px] items-center justify-center gap-1.5 rounded-md border bg-transparent px-3 text-sm font-medium outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]",
+      )}
     >
       {state === "copying" && (
         <span

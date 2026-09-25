@@ -11,20 +11,45 @@ import {
   IconSelector,
 } from "@tabler/icons-react";
 
+import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
+import { celulaApresentacao } from "@/app/(dashboard)/kpi/operadores/_lib/celula-apresentacao";
+import { formatKpiValueLocal } from "@/app/(dashboard)/kpi/operadores/_lib/format-kpi-value-local";
 import { StyledCard } from "@/components/gestor/styled-card";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
-import { celulaStyle, statusColorVar } from "@/lib/kpi/atual/status-color";
 import type { KpiDetalhadoData } from "@/lib/kpi/detalhado/get-kpi-detalhado";
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 import { cn } from "@/lib/utils";
 
 type SortDir = "desc" | "asc";
 type SortState = { slug: string; dir: SortDir } | null;
+
+// Peso do título "Detalhado Polo" — mesmo valor/mesmo motivo de
+// TITULO_WEIGHT_CLASS em kpi-equipe-section.tsx (Instrument Sans, isolado
+// aqui pra poder trocar rápido pra "font-medium" se 600 ficar pesado
+// demais). Não importado de lá porque não é exportado (função/consts locais
+// daquele arquivo, que não pode mudar).
+const TITULO_WEIGHT_CLASS = "font-semibold";
+
+/** Separador "·" do subtítulo — cópia do mesmo componente local usado em
+ *  kpi-equipe-section.tsx/kpi-gestor-section.tsx (não exportado de lá). */
+function SubtituloSeparador() {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block"
+      style={{
+        marginInline: "0.5rem",
+        color: "color-mix(in srgb, var(--muted-foreground) 60%, transparent)",
+      }}
+    >
+      ·
+    </span>
+  );
+}
 
 // Larguras fixas das duas primeiras colunas (sticky) — usadas tanto no
 // offset `left` quanto no cálculo de minWidth da tabela.
@@ -182,77 +207,115 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.05, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="space-y-4"
+      className="min-w-0 space-y-4"
     >
-      <header className="border-border flex flex-col gap-2 border-b border-dashed pb-4">
-        <span className="text-muted-foreground text-xs tracking-wide uppercase">
-          Painel do Gestor
-        </span>
-        <div className="flex flex-wrap items-baseline gap-3">
-          <h1 className="ds-h1">KPI Detalhado</h1>
-          <span className="ds-mono-sm text-muted-foreground">
-            / Operação · {gestorFiltroNome ?? "Todos os gestores"}
-            {dataCorte && ` · Dados até ${formatDateBR(dataCorte)}`}
-          </span>
+      {/*
+        Cabeçalho — mesma estrutura de /kpi/operadores e /kpi/gestor
+        (kpi-equipe-section.tsx / kpi-gestor-section.tsx): h1 + linha de
+        contexto (aqui: gestor filtrado · data de corte, já que esta página
+        não tem "gestor logado" — é a visão de todos os polos) + segunda
+        linha com o controle que noutras páginas é o MesSelector. Esta
+        página não tem toggle de mês, então a busca por nome ocupa a MESMA
+        posição (a "linha do seletor de mês + ações" das outras duas). O
+        filtro por gestor continua no header da coluna "Gestor" da tabela
+        (inalterado). "Painel do Gestor"/"Operação" e a contagem
+        "N operadores" saíram — texto herdado que não tinha equivalente nas
+        páginas de referência.
+      */}
+      <div>
+        <div className="pt-4">
+          <h1
+            className={cn(
+              "font-sans text-3xl tracking-tight text-foreground md:text-4xl",
+              TITULO_WEIGHT_CLASS,
+            )}
+          >
+            Detalhado Polo
+          </h1>
+          <p className="font-sans text-muted-foreground pt-3 text-sm font-normal">
+            {gestorFiltroNome ?? "Todos os gestores"}
+            {dataCorte && (
+              <>
+                <SubtituloSeparador />
+                {`Dados até ${formatDateBR(dataCorte).slice(0, 5)}`}
+              </>
+            )}
+          </p>
         </div>
-      </header>
 
-      {/* Filtro: só a busca por nome (independente). O filtro de gestor
-          agora vive no cabeçalho da coluna "Gestor" da tabela. */}
-      <div className="flex flex-wrap items-center gap-3 pt-2">
-        <div className="relative">
-          <IconSearch
-            size={15}
-            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
-            aria-hidden="true"
-          />
-          <input
-            type="text"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar operador..."
-            className="border-border/60 bg-muted/30 focus:border-primary focus:ring-primary/20 ds-mono-sm w-64 rounded-md border py-1.5 pr-3 pl-9 outline-none focus:ring-2"
-          />
+        <div className="flex flex-wrap items-center gap-3 pt-4 pb-4">
+          <div className="relative">
+            <IconSearch
+              size={15}
+              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
+              aria-hidden="true"
+            />
+            <input
+              type="text"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar operador..."
+              aria-label="Buscar operador"
+              className="font-sans text-foreground placeholder:text-muted-foreground h-8 w-64 rounded-[var(--radius)] border border-[var(--seg-track-border)] bg-[var(--seg-track)] py-1.5 pr-3 pl-9 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
+            />
+          </div>
         </div>
-
-        <span className="text-muted-foreground ds-mono-sm ml-auto">
-          {linhasOrdenadas.length} operador
-          {linhasOrdenadas.length === 1 ? "" : "es"}
-          {gestorFiltroNome && ` · ${gestorFiltroNome}`}
-        </span>
       </div>
 
-      <div className="border-border relative border-t border-dashed pt-4">
+      <div className="pt-4 relative min-w-0">
         {linhas.length === 0 ? (
           <StyledCard withGradient className="p-8 text-center">
-            <p className="ds-body text-muted-foreground">
+            <p className="font-sans text-muted-foreground text-sm">
               Nenhum operador com dados no período.
             </p>
           </StyledCard>
         ) : (
-          <StyledCard withGradient className="p-3">
+          /*
+            Card = KpiFrame (mesmas cantoneiras de /kpi/operadores, "fork
+            local de StyledCard" — ver comentário no próprio arquivo, não
+            editado). SEM rolagem vertical própria: o card cresce até a
+            altura natural da tabela inteira (todas as linhas visíveis), e
+            quem rola verticalmente é só a PÁGINA — pedido explícito, ao
+            contrário do ajuste anterior (que prendia a altura em 72vh).
+            `min-w-0` no container pai acima e aqui: sem isso, o <table> com
+            minWidth fixo empurra a largura do próprio flex/grid ancestral
+            em vez de ficar contido pelo `overflow-x-auto` (causa do "sair
+            da página" resolvida na etapa anterior, continua valendo).
+
+            Rolagem horizontal: só a nativa do container (`scrollbar-tema`,
+            `overflow-x-auto`), com o mesmo scroll fluido do navegador. Uma
+            barra "flutuante" sincronizada foi tentada numa sessão anterior
+            pra facilitar o alcance com a tabela sem limite de altura, mas
+            gerava duas barras visíveis ao mesmo tempo e uma rolagem menos
+            lisa — removida a pedido, mantendo só a barra nativa do card.
+          */
+          <KpiFrame className="min-w-0">
             <div
               ref={scrollRef}
-              className="elevation-1 scrollbar-tema overflow-auto rounded-xl border border-border/80"
-              style={{ maxHeight: "72vh" }}
+              className="scrollbar-tema overflow-x-auto rounded-[var(--radius)] border border-border"
             >
               <table
                 className="w-full border-collapse text-sm"
                 style={{ minWidth }}
               >
                 <thead>
-                  <tr>
+                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
                     <th
-                      className="ds-mono-sm text-muted-foreground border-border/50 bg-card sticky top-0 left-0 z-30 border-r border-b px-4 py-2.5 text-left align-middle font-semibold tracking-wider uppercase whitespace-nowrap shadow-sm select-none"
+                      scope="col"
+                      className="font-sans text-muted-foreground sticky top-0 left-0 z-30 bg-[var(--background)] px-3 py-2.5 text-center text-[13px] font-semibold tracking-[0.04em] whitespace-nowrap uppercase select-none"
                       style={{ width: COL_OPERADOR_W, minWidth: COL_OPERADOR_W }}
                     >
                       Operador
                     </th>
 
-                    {/* Coluna "Gestor": o HEADER INTEIRO é a área de clique do
-                        filtro (não só o ícone). Não cicla ordenação. */}
+                    {/* Coluna "Gestor": sem equivalente em /kpi/operadores
+                        (lá a equipe já é de um gestor só). O HEADER INTEIRO é
+                        a área de clique do filtro (não só o ícone) — mantido,
+                        é a função que não pode se perder. Não cicla
+                        ordenação, mesmo padrão de antes. */}
                     <th
-                      className="ds-mono-sm text-muted-foreground border-border/50 bg-card sticky top-0 z-30 border-r border-b p-0 text-left align-middle font-semibold tracking-wider uppercase whitespace-nowrap shadow-sm select-none"
+                      scope="col"
+                      className="font-sans text-muted-foreground sticky top-0 z-30 bg-[var(--background)] p-0 text-center text-[13px] font-semibold tracking-[0.04em] whitespace-nowrap uppercase select-none"
                       style={{
                         left: COL_OPERADOR_W,
                         width: COL_GESTOR_W,
@@ -265,7 +328,7 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
                             type="button"
                             title="Filtrar por gestor"
                             className={cn(
-                              "hover:text-foreground hover:bg-muted/40 flex w-full cursor-pointer items-center gap-1.5 px-3 py-2.5 uppercase transition-colors",
+                              "hover:text-foreground flex w-full cursor-pointer items-center justify-center gap-1.5 px-3 py-2.5 uppercase transition-colors",
                               gestorFiltro && "text-primary",
                             )}
                           >
@@ -285,7 +348,11 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
                             )}
                           </button>
                         </PopoverTrigger>
-                        <PopoverContent align="start" className="w-64 p-1.5">
+                        <PopoverContent
+                          align="start"
+                          className="w-64 p-1.5"
+                          data-page="kpi-detalhado-polo"
+                        >
                           <button
                             type="button"
                             onClick={() => {
@@ -323,28 +390,40 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
                       </Popover>
                     </th>
 
-                    {/* Status: só exibição (badge), não entra no ciclo de
-                        ordenação das colunas de KPI. */}
+                    {/* Status: sem equivalente em /kpi/operadores. Só
+                        exibição, não entra no ciclo de ordenação. */}
                     <th
-                      className="ds-mono-sm text-muted-foreground border-border/50 bg-card sticky top-0 z-20 border-r border-b px-3 py-2.5 text-left align-middle font-semibold tracking-wider uppercase whitespace-nowrap shadow-sm select-none"
+                      scope="col"
+                      className="font-sans text-muted-foreground bg-[var(--background)] px-3 py-2.5 text-center text-[13px] font-semibold tracking-[0.04em] whitespace-nowrap uppercase select-none"
                       style={{ width: COL_STATUS_W, minWidth: COL_STATUS_W }}
                     >
                       Status
                     </th>
 
-                    {colunas.map((c, idx) => {
+                    {colunas.map((c) => {
                       const ativo = sort?.slug === c.slug;
                       return (
                         <th
                           key={c.slug}
+                          scope="col"
+                          aria-sort={
+                            ativo ? (sort?.dir === "asc" ? "ascending" : "descending") : "none"
+                          }
+                          tabIndex={0}
                           onClick={() =>
                             setSort((prev) => proximoSort(prev, c.slug))
                           }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setSort((prev) => proximoSort(prev, c.slug));
+                            }
+                          }}
                           title="Clique para ordenar (aleatório → ↓ → ↑)"
                           className={cn(
-                            "ds-mono-sm text-muted-foreground bg-card hover:text-foreground border-border/50 sticky top-0 z-20 cursor-pointer border-b px-3 py-2.5 text-center font-semibold tracking-wider uppercase whitespace-nowrap shadow-sm transition-colors select-none",
-                            idx < colunas.length - 1 && "border-r",
-                            ativo && "text-foreground",
+                            "font-sans px-3 py-2.5 text-center text-[13px] font-semibold tracking-[0.04em] whitespace-nowrap uppercase select-none",
+                            "hover:text-foreground cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]",
+                            ativo ? "text-foreground" : "text-muted-foreground",
                           )}
                         >
                           {c.label}
@@ -358,22 +437,22 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
                   {linhasOrdenadas.map((linha, i) => (
                     <tr
                       key={linha.email}
-                      className="hover:bg-muted/10 transition-colors"
+                      className="group hover:bg-accent transition-colors duration-150 motion-reduce:transition-none"
                       style={{
                         borderBottom:
                           i < linhasOrdenadas.length - 1
-                            ? "1px solid var(--border)"
+                            ? "1px solid color-mix(in srgb, var(--border) 60%, transparent)"
                             : undefined,
                       }}
                     >
                       <td
-                        className="ds-body bg-card border-border/30 sticky left-0 z-10 border-r px-4 py-2 text-left align-middle font-medium whitespace-nowrap shadow-sm"
+                        className="font-sans text-foreground sticky left-0 z-10 bg-[var(--background)] group-hover:bg-accent transition-colors duration-150 motion-reduce:transition-none px-3 py-2 text-center font-medium whitespace-nowrap"
                         style={{ width: COL_OPERADOR_W, minWidth: COL_OPERADOR_W }}
                       >
                         {linha.nome}
                       </td>
                       <td
-                        className="ds-mono-sm text-muted-foreground bg-card border-border/30 sticky z-10 border-r px-3 py-2 text-left align-middle whitespace-nowrap shadow-sm"
+                        className="font-sans text-muted-foreground sticky z-10 bg-[var(--background)] group-hover:bg-accent transition-colors duration-150 motion-reduce:transition-none px-3 py-2 text-center whitespace-nowrap"
                         style={{
                           left: COL_OPERADOR_W,
                           width: COL_GESTOR_W,
@@ -383,22 +462,22 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
                         {linha.gestorNome}
                       </td>
                       <td
-                        className="ds-mono-sm text-muted-foreground border-border/30 border-r px-3 py-2 text-left align-middle whitespace-nowrap"
+                        className="font-sans text-muted-foreground px-3 py-2 text-center whitespace-nowrap"
                         style={{ width: COL_STATUS_W, minWidth: COL_STATUS_W }}
                       >
                         {linha.statusLabel}
                       </td>
-                      {linha.celulas.map((cel, idx) => {
-                        const v = statusColorVar(cel.status, cel.valor === null);
+                      {linha.celulas.map((cel) => {
+                        const { style, srOnlyLabel } = celulaApresentacao(
+                          cel.status,
+                          cel.valor === null,
+                          false,
+                        );
                         return (
                           <td
                             key={cel.slug}
-                            className={cn(
-                              "ds-mono-sm px-3 py-2 text-center",
-                              idx < linha.celulas.length - 1 &&
-                                "border-border/30 border-r",
-                            )}
-                            style={celulaStyle(cel.status, cel.valor === null)}
+                            className="font-sans px-3 py-2 text-center whitespace-nowrap"
+                            style={{ ...style, fontVariantNumeric: "tabular-nums" }}
                           >
                             {cel.valor === null ? (
                               cel.valorTexto ? (
@@ -407,20 +486,10 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
                                 <span className="text-muted-foreground">N/D</span>
                               )
                             ) : (
-                              <span className="inline-flex items-center justify-center gap-1.5">
-                                <span
-                                  style={{ fontVariantNumeric: "tabular-nums" }}
-                                >
-                                  {formatKpiValue(cel.valor, cel.valueType)}
-                                </span>
-                                {v && (
-                                  <span
-                                    aria-hidden="true"
-                                    className="inline-block h-1.5 w-1.5 rounded-full"
-                                    style={{ background: `var(${v})` }}
-                                  />
-                                )}
-                              </span>
+                              <>
+                                {formatKpiValueLocal(cel.valor, cel.valueType)}
+                                {srOnlyLabel && <span className="sr-only"> ({srOnlyLabel})</span>}
+                              </>
                             )}
                           </td>
                         );
@@ -431,7 +500,7 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
                     <tr>
                       <td
                         colSpan={colunas.length + 3}
-                        className="ds-body text-muted-foreground px-4 py-8 text-center"
+                        className="font-sans text-muted-foreground px-4 py-8 text-center text-sm"
                       >
                         Nenhum operador corresponde aos filtros.
                       </td>
@@ -440,7 +509,7 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
                 </tbody>
               </table>
             </div>
-          </StyledCard>
+          </KpiFrame>
         )}
       </div>
     </motion.section>

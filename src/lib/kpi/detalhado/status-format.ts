@@ -3,7 +3,7 @@ import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 /**
  * Formatação e categorização do `meta_status` (kpi_monthly_snapshots,
  * kpi_slug='meta_status', valor_texto) para a coluna "Status" de
- * /operacao/kpi-detalhado.
+ * /kpi/detalhado-polo.
  *
  * Módulo puro (sem imports de servidor). Tolerante a valor novo/desconhecido:
  * nunca quebra — cai no Title Case do texto cru. Exibido como texto simples
