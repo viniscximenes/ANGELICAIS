@@ -9,7 +9,7 @@ type SaveResult = { success: true } | { success: false; error: string };
 
 /**
  * Salva (ou limpa, com `valor: null`) o override de meta de Tx. Retenção
- * Bruta usado SÓ em /operacao/analise-operadores
+ * Bruta usado SÓ em /kpi/evolucao
  * (gestor_config_fantasia.analise_meta_tx_retencao). Não toca em
  * kpi_definitions nem em nada de /kpi/operadores.
  */
@@ -43,7 +43,7 @@ export async function saveAnaliseMetaTxRetencaoAction(
     return { success: false, error: "Erro ao salvar a meta." };
   }
 
-  revalidatePath("/operacao/analise-operadores");
+  revalidatePath("/kpi/evolucao");
 
   return { success: true };
 }

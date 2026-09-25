@@ -1,6 +1,6 @@
 /**
  * Seletor de período do relatório de performance por operador
- * (/operacao/analise-operadores).
+ * (/kpi/evolucao).
  *
  * A janela tem SEMPRE N meses (3/6/12). O toggle "Incluir mês atual"
  * desliza o FIM da janela — não corta um mês de uma janela fixa:

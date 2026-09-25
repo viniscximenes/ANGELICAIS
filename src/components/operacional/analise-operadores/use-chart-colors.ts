@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-import { resolverTokenCss } from "@/lib/utils/resolver-token-css";
-
 export type ChartColors = {
   success: string;
   danger: string;
@@ -65,6 +63,25 @@ function lerTokensTemaClaro(): ChartColors {
 }
 
 /**
+ * Lê os tokens já resolvidos no elemento `[data-page="kpi-evolucao"]` — não
+ * em `document.documentElement`. Esta página tem tema Zen Linen escopado por
+ * `[data-page]` (ver kpi-evolucao.css); ler do `<html>` pegaria os tokens
+ * GLOBAIS do site (outro tema), não os desta rota. Cai pro FALLBACK se o
+ * elemento ainda não montou.
+ */
+function lerTokensDaPagina(): ChartColors {
+  if (typeof document === "undefined") return FALLBACK;
+  const raiz = document.querySelector<HTMLElement>('[data-page="kpi-evolucao"]');
+  if (!raiz) return FALLBACK;
+  const cs = getComputedStyle(raiz);
+  const cores = { ...FALLBACK };
+  for (const t of TOKENS) {
+    cores[t] = cs.getPropertyValue(CSS_VAR[t]).trim() || FALLBACK[t];
+  }
+  return cores;
+}
+
+/**
  * Cores do tema já RESOLVIDAS (valor computado, não `var(--x)`) — os gráficos
  * deste relatório são serializados isoladamente num <img> pela exportação
  * PNG/PDF, e `var()` não resolve dentro do SVG nesse contexto (mesmo motivo
@@ -77,15 +94,7 @@ export function useChartColors(forceLight = false): ChartColors {
   const [cores, setCores] = useState<ChartColors>(FALLBACK);
 
   useEffect(() => {
-    if (forceLight) {
-      setCores(lerTokensTemaClaro());
-      return;
-    }
-    const cs = { ...FALLBACK };
-    for (const t of TOKENS) {
-      cs[t] = resolverTokenCss(CSS_VAR[t], FALLBACK[t]);
-    }
-    setCores(cs);
+    setCores(forceLight ? lerTokensTemaClaro() : lerTokensDaPagina());
   }, [forceLight]);
 
   return cores;

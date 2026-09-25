@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 
 /**
  * Override de meta de Tx. Retenção Bruta específico do relatório
- * /operacao/analise-operadores
+ * /kpi/evolucao
  * (gestor_config_fantasia.analise_meta_tx_retencao).
  *
  * Retorna `null` quando o gestor não configurou nada — o caller cai no

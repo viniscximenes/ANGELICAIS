@@ -20,7 +20,7 @@ type GetAnaliseOperadorResult =
 /**
  * Carrega o relatório de performance histórica de um operador (KPIs mensais
  * + quartil por mês). Chamada sob demanda ao trocar operador/período em
- * /operacao/analise-operadores.
+ * /kpi/evolucao.
  *
  * O operador precisa estar no roster do gestor logado
  * (d1_operadores_gestor) — não basta existir snapshot de KPI pra ele.

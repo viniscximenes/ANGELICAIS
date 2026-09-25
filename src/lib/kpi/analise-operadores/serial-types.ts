@@ -102,6 +102,68 @@ function isRanqueavel(def: KpiDefinition): boolean {
 }
 
 /**
+ * Split + ordenação de `kpi_definitions` em principais/secundários desta
+ * feature — extraído de dentro de `buildAnaliseOperadorSerial` (mesma
+ * lógica, sem duplicar) pra ser reaproveitado por `getKpisPreview` (usado
+ * no estado vazio, sem operador selecionado, ainda em
+ * analise-operadores-section.tsx).
+ */
+export function splitPrincipaisSecundarios(definitions: KpiDefinition[]): {
+  principaisDefs: KpiDefinition[];
+  secundariosDefs: KpiDefinition[];
+} {
+  const ordemPrincipal = (slug: string) => {
+    const i = PRINCIPAIS_SLUGS.indexOf(slug);
+    return i === -1 ? 999 : i;
+  };
+  // Ignora os slugs que existem só para o espelho de /kpi/detalhado-polo.
+  const defsRelevantes = definitions.filter(
+    (d) => !SLUGS_SOMENTE_ESPELHO.has(d.slug),
+  );
+  const principaisDefs = defsRelevantes
+    .filter((d) => PRINCIPAIS_SLUGS.includes(d.slug))
+    .sort((a, b) => ordemPrincipal(a.slug) - ordemPrincipal(b.slug));
+  const secundariosDefs = defsRelevantes
+    .filter((d) => !PRINCIPAIS_SLUGS.includes(d.slug))
+    // Nativos de group_type "secundario" primeiro (na ordem deles); os
+    // rebaixados daqui (pedidos/churn/variacao_ticket) vão para o fim.
+    .sort((a, b) => {
+      const ga = a.groupType === "secundario" ? 0 : 1;
+      const gb = b.groupType === "secundario" ? 0 : 1;
+      return ga - gb || a.displayOrder - b.displayOrder;
+    });
+  return { principaisDefs, secundariosDefs };
+}
+
+export type KpiPreviewItem = { slug: string; displayName: string };
+export type KpisPreview = {
+  principais: KpiPreviewItem[];
+  secundarios: KpiPreviewItem[];
+};
+
+/**
+ * Só os NOMES dos KPIs (principais/secundários), na mesma ordem/agrupamento
+ * de `buildAnaliseOperadorSerial` — sem nenhum dado do operador. Usado pelo
+ * estado vazio (sem operador selecionado) pra montar os cards "fantasma" na
+ * estrutura real da página, sem lista hardcoded duplicada.
+ */
+export async function getKpisPreview(): Promise<KpisPreview> {
+  const definitions = await getKpiDefinitions();
+  const { principaisDefs, secundariosDefs } =
+    splitPrincipaisSecundarios(definitions);
+  return {
+    principais: principaisDefs.map((d) => ({
+      slug: d.slug,
+      displayName: d.displayName,
+    })),
+    secundarios: secundariosDefs.map((d) => ({
+      slug: d.slug,
+      displayName: d.displayName,
+    })),
+  };
+}
+
+/**
  * Monta o payload serializável do relatório de um operador: para cada KPI
  * (principais e secundários de kpi_definitions), a série mensal de valor +
  * status (mesmo semáforo do resto do site, via enrichWithDefinitions) e,
@@ -156,26 +218,8 @@ export async function buildAnaliseOperadorSerial(params: {
   const definitions = await getKpiDefinitions();
 
   // Split LOCAL desta feature (PRINCIPAIS_SLUGS), não kpi_definitions.group_type.
-  const ordemPrincipal = (slug: string) => {
-    const i = PRINCIPAIS_SLUGS.indexOf(slug);
-    return i === -1 ? 999 : i;
-  };
-  // Ignora os slugs que existem só para o espelho de /kpi/detalhado-polo.
-  const defsRelevantes = definitions.filter(
-    (d) => !SLUGS_SOMENTE_ESPELHO.has(d.slug),
-  );
-  const principaisDefs = defsRelevantes
-    .filter((d) => PRINCIPAIS_SLUGS.includes(d.slug))
-    .sort((a, b) => ordemPrincipal(a.slug) - ordemPrincipal(b.slug));
-  const secundariosDefs = defsRelevantes
-    .filter((d) => !PRINCIPAIS_SLUGS.includes(d.slug))
-    // Nativos de group_type "secundario" primeiro (na ordem deles); os
-    // rebaixados daqui (pedidos/churn/variacao_ticket) vão para o fim.
-    .sort((a, b) => {
-      const ga = a.groupType === "secundario" ? 0 : 1;
-      const gb = b.groupType === "secundario" ? 0 : 1;
-      return ga - gb || a.displayOrder - b.displayOrder;
-    });
+  const { principaisDefs, secundariosDefs } =
+    splitPrincipaisSecundarios(definitions);
   const ranqueaveisDefs = principaisDefs.filter(isRanqueavel);
 
   const [historico, quartis] = await Promise.all([

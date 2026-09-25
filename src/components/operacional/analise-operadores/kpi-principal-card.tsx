@@ -1,34 +1,30 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { useId, useMemo, type ReactNode } from "react";
 import {
   Area,
   CartesianGrid,
   ComposedChart,
   Line,
   ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
 import { StyledCard } from "@/components/gestor/styled-card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import { foraDeOperacao } from "@/lib/kpi/analise-operadores/meta-status";
 import type { KpiSerie, PontoSerie } from "@/lib/kpi/analise-operadores/serial-types";
 
 import { QuartilFaixa } from "./quartil-faixa";
-import { useChartColors, type ChartColors } from "./use-chart-colors";
+import { useChartColors } from "./use-chart-colors";
 
 type StatusKpi = PontoSerie["status"];
-
-function corDoStatus(status: StatusKpi, cores: ChartColors): string {
-  if (status === "success") return cores.success;
-  if (status === "danger") return cores.danger;
-  if (status === "warning") return cores.warning;
-  return cores.mutedFg;
-}
 
 function classeTextoStatus(status: StatusKpi): string {
   if (status === "success") return "text-success";
@@ -176,7 +172,15 @@ export function KpiPrincipalCard({
     }
   }
 
-  const corArea = corDoStatus(statusMedia, cores);
+  // Config do ChartContainer (shadcn/ui, ver components/ui/chart.tsx) —
+  // não há uma paleta fixa por série aqui (a cor de cada trecho da linha/
+  // área é calculada ponto a ponto contra a meta, acima), então o config só
+  // dá nome/rótulo à série pro shell de tema; as cores em si continuam
+  // resolvidas via useChartColors e aplicadas direto em cada elemento.
+  const chartConfig: ChartConfig = useMemo(
+    () => ({ valor: { label: displayName } }),
+    [displayName],
+  );
 
   // ── Máx / mín entre pontos plotados ──────────────────────────────
   let idxMax = -1;
@@ -225,16 +229,31 @@ export function KpiPrincipalCard({
 
       <StyledCard className="p-5" withGradient>
         <div className="h-[240px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
+          <ChartContainer config={chartConfig} className="aspect-auto h-full w-full">
             <ComposedChart
               data={chartData}
               margin={{ top: 16, right: 14, left: -4, bottom: 0 }}
             >
+              {/*
+                Um gradiente por SUB-SEGMENTO (mesmo array `segmentos` usado
+                pela linha, abaixo) — a área muda de cor exatamente no mesmo
+                ponto em que a linha cruza a meta, subida ou descida, com
+                quantos cruzamentos houver.
+              */}
               <defs>
-                <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor={corArea} stopOpacity={0.22} />
-                  <stop offset="1" stopColor={corArea} stopOpacity={0} />
-                </linearGradient>
+                {segmentos.map((seg, i) => (
+                  <linearGradient
+                    key={`${areaId}-${i}`}
+                    id={`${areaId}-${i}`}
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="0" stopColor={seg.cor} stopOpacity={0.22} />
+                    <stop offset="1" stopColor={seg.cor} stopOpacity={0} />
+                  </linearGradient>
+                ))}
               </defs>
 
               {/* Grade SÓLIDA e discreta (mesmo valor nos dois temas). A
@@ -273,7 +292,15 @@ export function KpiPrincipalCard({
                 tick={{ fill: cores.mutedFg, fontSize: 10 }}
               />
 
-              <Tooltip
+              {/*
+                Conteúdo próprio (não o ChartTooltipContent genérico do
+                shadcn): este tooltip mostra status/quartil/rótulo de "fora
+                de operação", que o conteúdo genérico (só rótulo+valor) não
+                cobre. Casca visual igual à do ChartTooltipContent (borda,
+                fundo, sombra, radius) pra ficar consistente com o resto do
+                shadcn/ui — só o miolo é customizado.
+              */}
+              <ChartTooltip
                 content={({ active, payload }) => {
                   if (!active || !payload || !payload.length) return null;
                   const pt = payload.find(
@@ -290,13 +317,13 @@ export function KpiPrincipalCard({
                         ? " · mín do período"
                         : "";
                   return (
-                    <div className="bg-popover border-border/80 space-y-1 rounded-lg border p-3 font-sans shadow-md">
+                    <div className="border-border/80 bg-popover text-popover-foreground space-y-1 rounded-lg border px-2.5 py-2 font-sans text-xs shadow-xl">
                       <p className="text-foreground text-[11px] font-semibold tracking-wider uppercase">
                         {pt.label}
                         {extremo}
                       </p>
                       <div className="bg-border/60 my-1 h-px" />
-                      <p className="text-muted-foreground text-xs">
+                      <p className="text-muted-foreground">
                         {displayName}:{" "}
                         <strong className={classeTextoStatus(pt.status)}>
                           {formatKpiValue(pt.valor, valueType)}
@@ -308,7 +335,7 @@ export function KpiPrincipalCard({
                         </p>
                       ) : (
                         serie.temQuartil && (
-                          <p className="text-muted-foreground text-xs">
+                          <p className="text-muted-foreground">
                             Quartil:{" "}
                             <strong className="text-foreground">
                               {pt.quartil ? `Q${pt.quartil}` : "—"}
@@ -321,17 +348,24 @@ export function KpiPrincipalCard({
                 }}
               />
 
-              <Area
-                type="linear"
-                dataKey="valorPlot"
-                stroke="none"
-                fill={`url(#${areaId})`}
-                isAnimationActive={!estatico}
-                animationDuration={estatico ? 0 : 300}
-                connectNulls
-                activeDot={false}
-                tooltipType="none"
-              />
+              {/* Área visível: um <Area> por sub-segmento, MESMA cor do
+                  <Line> equivalente abaixo — muda de verde pra vermelho (ou
+                  vice-versa) exatamente no ponto de cruzamento com a meta. */}
+              {segmentos.map((seg, i) => (
+                <Area
+                  key={`area-seg-${i}`}
+                  data={seg.pts}
+                  dataKey="y"
+                  type="linear"
+                  stroke="none"
+                  fill={`url(#${areaId}-${i})`}
+                  isAnimationActive={!estatico}
+                  animationDuration={estatico ? 0 : 300}
+                  connectNulls
+                  activeDot={false}
+                  tooltipType="none"
+                />
+              ))}
 
               {metaLinha !== null && (
                 <ReferenceLine
@@ -434,7 +468,7 @@ export function KpiPrincipalCard({
                 activeDot={{ r: 6 }}
               />
             </ComposedChart>
-          </ResponsiveContainer>
+          </ChartContainer>
         </div>
 
         {serie.temQuartil && (

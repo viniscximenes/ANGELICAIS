@@ -25,9 +25,10 @@ const ALL_SECTIONS: SidebarSection[] = [
     id: "operacional",
     label: "KPI",
     iconName: "headset",
-    // Amplo o suficiente pra cobrir /kpi/operadores e /kpi/gestor (só o
-    // GESTOR vê esta seção — nenhuma outra rota /kpi/* é alcançável por ele,
-    // então não há risco de ativar a seção errada).
+    // Amplo o suficiente pra cobrir /kpi/operadores, /kpi/gestor,
+    // /kpi/detalhado-polo e /kpi/evolucao (só o GESTOR vê esta seção —
+    // nenhuma outra rota /kpi/* é alcançável por ele, então não há risco de
+    // ativar a seção errada).
     basePath: "/kpi",
     permission: "view_gestor_panel",
     onlyRoles: ["GESTOR"],
@@ -35,6 +36,7 @@ const ALL_SECTIONS: SidebarSection[] = [
       { label: "Operadores", href: "/kpi/operadores" },
       { label: "Gestor", href: "/kpi/gestor" },
       { label: "Detalhado Polo", href: "/kpi/detalhado-polo" },
+      { label: "Evolução", href: "/kpi/evolucao" },
     ],
   },
   {
@@ -60,7 +62,6 @@ const ALL_SECTIONS: SidebarSection[] = [
     divider: "OUTROS DADOS",
     items: [
       { label: "Diário", href: "/operacao/diario" },
-      { label: "Análise Operadores", href: "/operacao/analise-operadores" },
       { label: "Comparativo Consolidado", href: "/operacao/comparativo-consolidado" },
       { label: "Quartil", href: "/operacao/quartil" },
     ],

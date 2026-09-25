@@ -26,7 +26,7 @@ interface KpiLoadingScreenProps {
    * literalmente o fallback de Suspense enquanto ele carrega), não dá pra
    * contar com o import do page.tsx pra trazer o CSS.
    */
-  dataPage: "kpi-operadores" | "kpi-gestor" | "kpi-detalhado-polo";
+  dataPage: "kpi-operadores" | "kpi-gestor" | "kpi-detalhado-polo" | "kpi-evolucao";
   /** Nome da página pro rótulo acessível ("Carregando Operadores...") e pro texto visível. */
   titulo: string;
   /** Esqueleto: "tabela" (operadores) ou "cards" (gestor) — só muda a forma dos blocos desfocados ao fundo. */
