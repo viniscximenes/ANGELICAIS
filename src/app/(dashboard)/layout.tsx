@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
+import "@/components/dashboard/nav-zen-linen.css";
 import { AppHeader } from "@/components/dashboard/app-header";
 import { Sidebar, type SidebarUser } from "@/components/dashboard/sidebar";
 import { getSidebarSectionsForRole } from "@/components/dashboard/sidebar-sections";

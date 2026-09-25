@@ -17,7 +17,7 @@ export function ThemeToggle() {
       type="button"
       onClick={toggleTheme}
       disabled={isBusy}
-      className="text-muted-foreground hover:text-foreground flex w-full items-center gap-2 rounded-md px-3 py-2 transition-colors"
+      className="text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground flex w-full items-center gap-2 rounded-md px-3 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
       aria-label={
         isDark ? "Alternar para tema claro" : "Alternar para tema escuro"
       }

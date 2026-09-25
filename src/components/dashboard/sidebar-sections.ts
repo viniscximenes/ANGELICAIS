@@ -12,9 +12,6 @@ const ALL_SECTIONS: SidebarSection[] = [
     permission: "view_gestor_panel",
     // Só o GESTOR vê — o ADM tem a permissão, mas não acessa esta tela.
     onlyRoles: ["GESTOR"],
-    // Divisória "MEUS RESULTADOS" acima do grupo Reports — só aparece pro GESTOR
-    // porque esta seção já é onlyRoles: ["GESTOR"].
-    divider: "MEUS RESULTADOS",
     items: [
       { label: "Consolidado", href: "/reports/consolidado" },
       { label: "Tempo Logado & Indisp.", href: "/reports/tempo-indisponibilidade" },
@@ -56,10 +53,10 @@ const ALL_SECTIONS: SidebarSection[] = [
     iconName: "users",
     basePath: "/operacao",
     permission: "view_gestor_panel",
-    // Mesmo escopo de "MEUS RESULTADOS": só o GESTOR vê. Divisória própria
-    // "OUTROS DADOS" — irmã de "MEUS RESULTADOS", logo abaixo dela.
+    // Mesmo escopo do grupo anterior: só o GESTOR vê. Sem divisória visível
+    // (removida a pedido) — espaçamento uniforme como os demais itens, sem
+    // respiro extra de início de grupo (ver sidebar.tsx).
     onlyRoles: ["GESTOR"],
-    divider: "OUTROS DADOS",
     items: [
       { label: "Diário", href: "/operacao/diario" },
       { label: "Comparativo Consolidado", href: "/operacao/comparativo-consolidado" },

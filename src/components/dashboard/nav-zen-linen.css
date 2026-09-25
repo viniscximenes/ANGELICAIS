@@ -1,0 +1,143 @@
+/*
+ * Tema Zen Linen — escopado à navegação global (sidebar lateral + barra
+ * superior), via [data-nav-theme="zen-linen"] em vez de [data-page="..."].
+ *
+ * Fonte: tema/kpi-operadores.css (mesmos valores de token — ver esse
+ * arquivo para a origem/rationale de cada cor). Cópia por área, igual ao
+ * padrão já usado em /kpi/operadores, /kpi/gestor, /kpi/detalhado-polo e
+ * /kpi/evolucao: migração temporária, por partes. Quando o tema virar
+ * global, este arquivo (e os das páginas) são removidos e os tokens vão
+ * para o :root / [data-theme="light"] de globals.css.
+ *
+ * Diferente das páginas, a sidebar e a barra superior aparecem em TODO
+ * layout (inclusive páginas não migradas) e têm parte do conteúdo
+ * (drawer mobile, tooltip "Sair") renderizada em portal para <body> — fora
+ * da árvore DOM do <header>/<nav>. Custom properties CSS não atravessam
+ * portais (cascade segue o DOM real, não a árvore React), então o atributo
+ * data-nav-theme="zen-linen" é aplicado em CADA raiz que precisa do tema:
+ * <header>, o <nav> fixo do desktop, o <SheetContent> do drawer mobile e o
+ * <TooltipContent> do botão "Sair".
+ *
+ * --sidebar/--sidebar-border são aliases locais (não existem no tema Zen
+ * Linen original), usados pela sidebar E pela barra superior — as duas
+ * formam um único "painel de navegação" e por isso compartilham o mesmo
+ * fundo, calibrado um pouco mais escuro que --background para se distinguir
+ * do conteúdo das páginas (ver valores abaixo, um por modo).
+ */
+
+/* ───────── ESCURO (base do projeto) ← .dark do tema ───────── */
+[data-nav-theme="zen-linen"] {
+  --background: #141414;
+  --foreground: #E8E3DA;
+  --card: #1C1C1C;
+  --card-foreground: #E8E3DA;
+  --popover: #1C1C1C;
+  --popover-foreground: #E8E3DA;
+  --primary: #D1CFC0;
+  --primary-foreground: #363636;
+  --secondary: #222222;
+  --secondary-foreground: #D1CFC0;
+  --muted: #2A2A2A;
+  --muted-foreground: #8E8A83;
+  --accent: #363636;
+  --accent-foreground: #D1CFC0;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #2C2C2C;
+  --input: #2C2C2C;
+  --ring: #D1CFC0;
+
+  /* Alias local — painel da navegação (sidebar + header) levemente MAIS
+   * ESCURO que --background (#141414), não var(--card) (#1C1C1C, que é mais
+   * CLARO e por isso não separava a nav do conteúdo). Calibrado ~4% mais
+   * escuro que --background, sutil o bastante pra não parecer outro
+   * "cartão" e forte o bastante pra ler como painel distinto. */
+  --sidebar: #101010;
+  --sidebar-foreground: var(--foreground);
+  --sidebar-border: #232323;
+
+  --radius: 0.5rem;
+  --letter-spacing: 0.01em;
+}
+
+/* ───────── CLARO ← :root do tema ───────── */
+[data-theme="light"] [data-nav-theme="zen-linen"] {
+  --background: #E9E4D8;
+  --foreground: #1E1E1E;
+  --card: #F4EFE4;
+  --card-foreground: #1E1E1E;
+  --popover: #F4EFE4;
+  --popover-foreground: #1E1E1E;
+  --primary: #2E2E2E;
+  --primary-foreground: #E6E4D7;
+  --secondary: #D8D2C4;
+  --secondary-foreground: #2E2E2E;
+  --muted: #CFC8B8;
+  --muted-foreground: #5E5A52;
+  --accent: #E6E4D7;
+  --accent-foreground: #2E2E2E;
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --border: #D2CBBB;
+  --input: #D2CBBB;
+  --ring: #2E2E2E;
+
+  /* Mesma lógica do modo escuro: mais escuro que --background (#E9E4D8),
+   * não var(--card) (#F4EFE4, que é mais CLARO que a página — por isso a
+   * sidebar "sumia" contra o conteúdo). ~4% mais escuro, mesma família de
+   * tom (linho), sem chegar em --secondary/--muted (escuro demais). */
+  --sidebar: #E1DACB;
+  --sidebar-foreground: var(--foreground);
+  --sidebar-border: #D6CEBC;
+}
+
+/* ───────── Ponte para as utilities do Tailwind (vale nos dois temas) ─────────
+ * Necessária porque @theme inline (globals.css) resolve --color-background
+ * etc. a partir de --background do :root global — sem essa ponte local, as
+ * utilities bg-background/text-foreground/etc. dentro do escopo não
+ * enxergariam os overrides acima. */
+[data-nav-theme="zen-linen"] {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  color: var(--foreground);
+  letter-spacing: var(--letter-spacing);
+}
+
+/* Fundo do painel de navegação (sidebar + header + drawer mobile).
+ *
+ * Não dá pra confiar só na utility bg-[var(--sidebar)] do Tailwind aqui: ela
+ * e o seletor de atributo acima (`[data-nav-theme="zen-linen"]`) têm a MESMA
+ * especificidade (0,1,0), então quem "ganha" depende da ordem de carga do
+ * CSS gerado pelo Tailwind vs. deste arquivo — instável entre builds. Foi
+ * essa disputa (não o valor do token) que fazia a sidebar aparentar ter a
+ * mesma cor da página antes deste refinamento: o fundo caía para
+ * --background em vez de --sidebar. As regras abaixo usam seletores mais
+ * específicos (elemento+atributo / atributo+atributo) para sempre vencer,
+ * independente da ordem de carga. */
+header[data-nav-theme="zen-linen"],
+nav[data-nav-theme="zen-linen"],
+[data-nav-theme="zen-linen"][data-slot="sheet-content"] {
+  background-color: var(--sidebar);
+}

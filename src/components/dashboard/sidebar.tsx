@@ -130,10 +130,10 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                 onClick={onNavigate}
                 aria-expanded={isActiveSection}
                 aria-current={isActiveSection ? "page" : undefined}
-                className={`sidebar-main-link hover:bg-muted/50 hover:text-foreground flex items-center gap-3 rounded-md border-l-2 px-3 py-2 transition-colors duration-150 ${
+                className={`flex items-center gap-3 rounded-md px-3 py-2 transition-colors duration-150 ${
                   isActiveSection
-                    ? "border-primary bg-[var(--elevation-1-bg)] text-foreground"
-                    : "text-muted-foreground border-transparent"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 }`}
               >
                 <Icon size={18} aria-hidden="true" />
@@ -171,7 +171,7 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                               {isActiveItem && (
                                 <span
                                   aria-hidden="true"
-                                  className="bg-foreground/60 absolute top-1/2 left-[24px] h-4 w-[3px] -translate-y-1/2 rounded-full dark:bg-gradient-to-b dark:from-emerald-400 dark:to-emerald-700"
+                                  className="bg-primary absolute top-1/2 left-[24px] h-4 w-[3px] -translate-y-1/2 rounded-full"
                                 />
                               )}
                               <span className="ds-small">{item.label}</span>
@@ -209,7 +209,7 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                                           {isActiveSub && (
                                             <span
                                               aria-hidden="true"
-                                              className="bg-foreground/60 absolute top-1/2 left-[44px] h-4 w-[3px] -translate-y-1/2 rounded-full dark:bg-gradient-to-b dark:from-emerald-400 dark:to-emerald-700"
+                                              className="bg-primary absolute top-1/2 left-[44px] h-4 w-[3px] -translate-y-1/2 rounded-full"
                                             />
                                           )}
                                           <span className="ds-small">
@@ -235,7 +235,7 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
       </div>
 
       {/* ── Rodapé: usuário + logout ─────────────────────────── */}
-      <div className="border-border mt-auto flex items-center justify-between gap-2 border-t pt-3">
+      <div className="mt-auto flex items-center justify-between gap-2 border-t border-[var(--sidebar-border)] pt-3">
         <span
           className="ds-small text-muted-foreground min-w-0 flex-1 truncate px-1"
           title={formatNomeProprio(user.fullName)}
@@ -256,7 +256,9 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                 </button>
               </form>
             </TooltipTrigger>
-            <TooltipContent side="top">Sair</TooltipContent>
+            <TooltipContent side="top" data-nav-theme="zen-linen">
+              Sair
+            </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
@@ -277,7 +279,8 @@ export function Sidebar({ sections, user }: SidebarProps) {
   return (
     <nav
       aria-label="Navegação principal"
-      className="sticky top-[60px] hidden h-[calc(100vh-60px)] w-[240px] shrink-0 flex-col border-r border-[var(--border)] bg-[var(--sidebar)] px-4 pt-3 pb-4 lg:flex dark:border-r-0 dark:bg-zinc-950 dark:shadow-[1px_0_0_0_rgba(255,255,255,0.05)]"
+      data-nav-theme="zen-linen"
+      className="sticky top-[60px] hidden h-[calc(100vh-60px)] w-[240px] shrink-0 flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar)] px-4 pt-3 pb-4 lg:flex"
     >
       <SidebarNav sections={sections} user={user} />
     </nav>

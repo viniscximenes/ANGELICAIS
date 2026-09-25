@@ -38,7 +38,10 @@ export function AppHeader({ user, sections }: AppHeaderProps) {
       : ROLE_LABEL[user.role];
 
   return (
-    <header className="border-border bg-background/80 shadow-[0_1px_2px_rgba(0,0,0,0.04)] sticky top-0 z-30 h-[60px] border-b backdrop-blur-md dark:border-border/50 dark:shadow-none">
+    <header
+      data-nav-theme="zen-linen"
+      className="border-[var(--sidebar-border)] bg-[var(--sidebar)]/95 shadow-[0_1px_2px_rgba(0,0,0,0.04)] sticky top-0 z-30 h-[60px] border-b backdrop-blur-md dark:shadow-none"
+    >
       <div className="flex h-[60px] items-center justify-between gap-4 px-6">
         {/* ── Esquerda: hamburger (mobile) + branding ────────── */}
         <div className="flex min-w-0 items-center gap-3">
@@ -74,7 +77,8 @@ export function AppHeader({ user, sections }: AppHeaderProps) {
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent
           side="left"
-          className="w-[280px] bg-zinc-50 px-4 py-6 sm:max-w-[280px] dark:bg-zinc-950"
+          data-nav-theme="zen-linen"
+          className="w-[280px] bg-[var(--sidebar)] px-4 py-6 sm:max-w-[280px]"
         >
           <SheetTitle className="sr-only">Navegação principal</SheetTitle>
           <SidebarNav
