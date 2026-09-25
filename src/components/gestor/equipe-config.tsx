@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { IconLoader2, IconTrash, IconUserPlus } from "@tabler/icons-react";
 import { toast } from "sonner";
 
-import { StyledCard } from "@/components/gestor/styled-card";
+import { ConfigFrame } from "@/app/(dashboard)/configuracoes/equipe/_components/config-frame";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -60,7 +60,7 @@ export function EquipeConfig({ ativoInicial, operadoresIniciais }: Props) {
     const r = await toggleApelidosAction(valor);
     if (!r.ok) {
       setAtivo(anterior);
-      toast.error(r.error);
+      toast.error(r.error, { className: "config-equipe-toast" });
     }
   }, []);
 
@@ -83,9 +83,9 @@ export function EquipeConfig({ ativoInicial, operadoresIniciais }: Props) {
       const r = await salvarApelidoAction(email, normalizado);
       if (r.ok) {
         salvosRef.current.set(email, normalizado);
-        toast.success("Apelido salvo");
+        toast.success("Apelido salvo", { className: "config-equipe-toast" });
       } else {
-        toast.error(r.error);
+        toast.error(r.error, { className: "config-equipe-toast" });
       }
     }, DEBOUNCE_MS);
 
@@ -109,7 +109,7 @@ export function EquipeConfig({ ativoInicial, operadoresIniciais }: Props) {
     try {
       const r = await adicionarOperadorAction(emailNorm);
       if (!r.ok) {
-        toast.error(r.error);
+        toast.error(r.error, { className: "config-equipe-toast" });
         return;
       }
       setOperadores((prev) =>
@@ -119,7 +119,7 @@ export function EquipeConfig({ ativoInicial, operadoresIniciais }: Props) {
       );
       salvosRef.current.set(emailNorm, "");
       setEmailInput("");
-      toast.success("Operador adicionado");
+      toast.success("Operador adicionado", { className: "config-equipe-toast" });
     } finally {
       setIsAdding(false);
     }
@@ -139,10 +139,10 @@ export function EquipeConfig({ ativoInicial, operadoresIniciais }: Props) {
         clearTimeout(timer);
         timersRef.current.delete(email);
       }
-      toast.success("Operador removido");
+      toast.success("Operador removido", { className: "config-equipe-toast" });
     } else {
       setOperadores(snapshot); // desfaz o otimismo
-      toast.error(r.error);
+      toast.error(r.error, { className: "config-equipe-toast" });
     }
     setRemovendo(null);
   }
@@ -150,12 +150,12 @@ export function EquipeConfig({ ativoInicial, operadoresIniciais }: Props) {
   const ocupado = isAdding || removendo !== null;
 
   return (
-    <StyledCard withGradient className="p-6 gap-0">
+    <ConfigFrame className="p-6">
       {/* ── Toggle: linha discreta, sem card próprio ─────────────── */}
       <div className="border-border flex items-center justify-between gap-4 border-b border-dashed pb-4">
         <div className="min-w-0">
-          <p className="ds-body font-medium">Usar nomes fantasias nas tabelas</p>
-          <p className="ds-small text-muted-foreground">
+          <p className="font-sans text-sm font-medium text-foreground">Usar nomes fantasias nas tabelas</p>
+          <p className="font-sans text-xs text-muted-foreground">
             {ativo
               ? "As tabelas exibem os nomes fantasias definidos abaixo."
               : "As tabelas exibem os nomes reais. Você pode preparar os nomes fantasias mesmo desligado."}
@@ -173,10 +173,10 @@ export function EquipeConfig({ ativoInicial, operadoresIniciais }: Props) {
       <Table className="mt-4">
         <TableHeader>
           <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
-            <TableHead className="ds-mono-sm text-muted-foreground px-3 py-3.5 font-semibold tracking-wider uppercase align-middle leading-none">
+            <TableHead className="font-sans text-xs text-muted-foreground px-3 py-3.5 font-semibold tracking-wider uppercase align-middle leading-none">
               Operador
             </TableHead>
-            <TableHead className="ds-mono-sm text-muted-foreground px-3 py-3.5 font-semibold tracking-wider uppercase align-middle leading-none">
+            <TableHead className="font-sans text-xs text-muted-foreground px-3 py-3.5 font-semibold tracking-wider uppercase align-middle leading-none">
               Nome Fantasia
             </TableHead>
             <TableHead className="w-10 px-3 py-3.5 text-right align-middle" aria-label="Ações" />
@@ -186,7 +186,7 @@ export function EquipeConfig({ ativoInicial, operadoresIniciais }: Props) {
           {operadores.length === 0 ? (
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={3} className="py-10 text-center">
-                <p className="ds-small text-muted-foreground">
+                <p className="font-sans text-xs text-muted-foreground">
                   Nenhum operador na sua equipe ainda. Adicione o primeiro abaixo.
                 </p>
               </TableCell>
@@ -195,7 +195,7 @@ export function EquipeConfig({ ativoInicial, operadoresIniciais }: Props) {
             operadores.map((op) => (
               <TableRow key={op.email} className="hover:bg-muted/10">
                 <TableCell
-                  className="ds-mono max-w-[220px] truncate px-3 py-2 align-middle"
+                  className="font-sans text-sm max-w-[220px] truncate px-3 py-2 align-middle"
                   title={op.email}
                 >
                   {prefixoEmail(op.email)}
@@ -280,8 +280,8 @@ export function EquipeConfig({ ativoInicial, operadoresIniciais }: Props) {
           </Button>
         </div>
 
-        {erroInput && <p className="ds-small text-destructive">{erroInput}</p>}
+        {erroInput && <p className="font-sans text-xs text-destructive">{erroInput}</p>}
       </div>
-    </StyledCard>
+    </ConfigFrame>
   );
 }

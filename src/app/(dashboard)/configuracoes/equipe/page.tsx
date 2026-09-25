@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Instrument_Sans } from "next/font/google";
 
+import "./configuracoes-equipe.css";
 import { EquipeConfig } from "@/components/gestor/equipe-config";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
@@ -11,6 +13,17 @@ import { getEquipeAction } from "@/lib/gestor/equipe/actions";
 export const metadata: Metadata = {
   title: "Configurações - Equipe",
 };
+
+// Fonte do tema Zen Linen — carregada só nesta rota (mesmo padrão de
+// /kpi/operadores e /kpi/evolucao: next/font/google gera classes/variáveis
+// escopadas ao módulo que as importa, e o CSS do tema
+// (configuracoes-equipe.css) só as referencia dentro de
+// [data-page="configuracoes-equipe"]; nenhuma outra rota é afetada).
+const zenSans = Instrument_Sans({
+  subsets: ["latin", "latin-ext"],
+  weight: "variable",
+  variable: "--font-zen-sans",
+});
 
 export const dynamic = "force-dynamic";
 
@@ -31,37 +44,47 @@ export default async function ConfigEquipePage() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
-        <div className="mx-auto max-w-2xl space-y-6">
-          <header className="border-border flex flex-col gap-2 border-b border-dashed pb-4">
-            <span className="text-muted-foreground text-xs tracking-wide uppercase">
-              Painel do Gestor
-            </span>
-            <div className="flex flex-wrap items-baseline gap-3">
-              <h1 className="ds-h1">Equipe</h1>
-              <span className="ds-mono-sm text-muted-foreground">
-                / Configurações · {formatNomeProprio(user.profile.fullName)}
-              </span>
-            </div>
+      <div
+        data-page="configuracoes-equipe"
+        className={`min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
+      >
+        <div className="mx-auto max-w-2xl">
+          {/*
+            Cabeçalho — mesma estrutura de /kpi/operadores (h1 + linha de
+            contexto em texto simples, sem eyebrow/breadcrumb e sem linha
+            divisória): "Painel do Gestor" (eyebrow) e o prefixo
+            "/ Configurações ·" foram removidos por serem redundantes (a
+            própria página já se chama "Configurações - Equipe" e nenhuma
+            rota migrada usa esse tipo de rótulo no cabeçalho).
+          */}
+          <div className="pt-4">
+            <h1 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+              Equipe
+            </h1>
+            <p className="font-sans text-muted-foreground pt-3 text-sm font-normal">
+              {formatNomeProprio(user.profile.fullName)}
+            </p>
 
             {!result.ok && (
-              <p className="ds-small text-destructive mt-1">
+              <p className="font-sans text-xs text-destructive mt-3">
                 Não foi possível carregar a equipe:{" "}
                 <span className="font-medium">{result.error}</span>
               </p>
             )}
-          </header>
+          </div>
 
-          <EquipeConfig
-            ativoInicial={result.ok ? result.data.ativo : false}
-            operadoresIniciais={result.ok ? result.data.operadores : []}
-          />
+          <div className="pt-8 space-y-6">
+            <EquipeConfig
+              ativoInicial={result.ok ? result.data.ativo : false}
+              operadoresIniciais={result.ok ? result.data.operadores : []}
+            />
 
-          <p className="ds-small text-muted-foreground">
-            Só operadores cadastrados aqui aparecem nas tabelas de Consolidado,
-            Tempo Logado, Indisponibilidade e KPI da sua equipe. Remover um
-            operador também apaga o apelido dele.
-          </p>
+            <p className="font-sans text-xs text-muted-foreground">
+              Só operadores cadastrados aqui aparecem nas tabelas de Consolidado,
+              Tempo Logado, Indisponibilidade e KPI da sua equipe. Remover um
+              operador também apaga o apelido dele.
+            </p>
+          </div>
         </div>
       </div>
     </PageTransition>

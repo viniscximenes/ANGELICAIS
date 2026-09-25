@@ -1,0 +1,241 @@
+/*
+ * Tema Zen Linen — escopado a /configuracoes/equipe
+ * Cópia do tema aplicado em /kpi/operadores, /kpi/gestor, /kpi/detalhado-polo
+ * e /kpi/evolucao (mesmos valores, outro seletor de escopo). Migração por
+ * página, temporária: quando o tema virar global, este arquivo e os das
+ * outras rotas são removidos e os tokens abaixo (menos os específicos de
+ * rota) vão para o :root/[data-theme="light"] globais.
+ *
+ * Regras:
+ * - TODA regra começa com [data-page="configuracoes-equipe"]. O import do
+ *   CSS não isola nada; o seletor é que isola (o arquivo continua carregado
+ *   após navegação client-side).
+ * - Projeto: :root = dark (base) e [data-theme="light"] = claro.
+ *   Tema original: :root = claro e .dark = escuro. Por isso a ordem está
+ *   invertida aqui (mesma convenção das outras rotas).
+ * - --color-* e --radius-* são sobrescritos junto por segurança: se o @theme
+ *   do globals.css não for "inline", as utilities (bg-card etc.) leem
+ *   --color-card, que foi resolvido no :root e não enxergaria o override
+ *   local.
+ * - --success / --warning / --danger / --elevation-1-* não existem no tema.
+ *   Foram derivados da paleta Zen Linen (idênticos aos das outras rotas).
+ * - Esta página usa o Switch COMPARTILHADO (components/ui/switch.tsx, não
+ *   um switch local como as rotas /kpi/*): não foi tocado. Ele lê
+ *   bg-primary/bg-input/bg-background/bg-primary-foreground, que já
+ *   herdam --primary/--input/--background/--primary-foreground definidos
+ *   abaixo — então o item selecionado já sai ESCURO no claro e CLARO no
+ *   escuro (mesma direção de --primary/--switch-on das outras rotas) sem
+ *   precisar de tokens --switch-* próprios nem editar o componente.
+ */
+
+/* ───────── ESCURO (base do projeto) ← .dark do tema ───────── */
+[data-page="configuracoes-equipe"] {
+  --background: #141414;
+  --foreground: #E8E3DA;
+  --card: #1C1C1C;
+  --card-foreground: #E8E3DA;
+  --popover: #1C1C1C;
+  --popover-foreground: #E8E3DA;
+  --primary: #D1CFC0;
+  --primary-foreground: #363636;
+  --secondary: #222222;
+  --secondary-foreground: #D1CFC0;
+  --muted: #2A2A2A;
+  --muted-foreground: #8E8A83;
+  --accent: #363636;
+  --accent-foreground: #D1CFC0;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #2C2C2C;
+  --input: #2C2C2C;
+  --ring: #D1CFC0;
+
+  --chart-1: #F26A4B;
+  --chart-2: #D9CFC2;
+  --chart-3: #8E8A83;
+  --chart-4: #5C5A56;
+  --chart-5: #3B3B3B;
+
+  /* Status (derivados — tons terrosos legíveis sobre #1C1C1C) */
+  --success: #8DB596;
+  --warning: #D9A74A;
+  --danger: #F07A62;
+
+  /* Elevação usada pelo projeto */
+  --elevation-1-bg: #1C1C1C;
+  --elevation-1-border: #2C2C2C;
+
+  --radius: 0.5rem;
+  --letter-spacing: 0.01em;
+}
+
+/* ───────── CLARO ← :root do tema ───────── */
+[data-theme="light"] [data-page="configuracoes-equipe"] {
+  --background: #E9E4D8;
+  --foreground: #1E1E1E;
+  --card: #F4EFE4;
+  --card-foreground: #1E1E1E;
+  --popover: #F4EFE4;
+  --popover-foreground: #1E1E1E;
+  --primary: #2E2E2E;
+  --primary-foreground: #E6E4D7;
+  --secondary: #D8D2C4;
+  --secondary-foreground: #2E2E2E;
+  --muted: #CFC8B8;
+  --muted-foreground: #5E5A52;
+  --accent: #E6E4D7;
+  --accent-foreground: #2E2E2E;
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --border: #D2CBBB;
+  --input: #D2CBBB;
+  --ring: #2E2E2E;
+
+  --chart-1: #F26A4B;
+  --chart-2: #1E1E1E;
+  --chart-3: #5E5A52;
+  --chart-4: #A89F8F;
+  --chart-5: #CFC8B8;
+
+  /* Status (derivados — escuros o bastante p/ texto sobre #F4EFE4) */
+  --success: #3D6B47;
+  --warning: #93600F;
+  --danger: #B3321C;
+
+  --elevation-1-bg: #F4EFE4;
+  --elevation-1-border: #D2CBBB;
+}
+
+/* ───────── Ponte para as utilities do Tailwind (vale nos dois temas) ───────── */
+[data-page="configuracoes-equipe"] {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Fonte única da rota — a variável vem do next/font carregado só em
+     page.tsx (mesma fonte de /kpi/operadores e /kpi/evolucao, Instrument
+     Sans). */
+  --font-sans: var(--font-zen-sans), "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letter-spacing);
+}
+
+/*
+ * Contorno de foco nativo desligado nesta página — mesmo ajuste de
+ * /kpi/evolucao (ver comentário lá): globals.css aplica, pra todo o site,
+ * um outline sólido de 2px em :focus-visible usando var(--primary), que
+ * empilhava com o `focus-visible:border-ring focus-visible:ring-3
+ * ring-ring/50` já usado pelos componentes compartilhados (Button, Input,
+ * Switch) e lia como uma borda clara/branca dupla ao redor do controle.
+ * Seletor com maior especificidade que o de globals.css, então ganha
+ * independente da ordem de carregamento — sem editar globals.css e sem
+ * afetar nenhuma outra rota (só elementos DENTRO de
+ * [data-page="configuracoes-equipe"]). O ring temático (já correto nos
+ * dois modos, via --ring) segue como único indicador de foco visível.
+ */
+[data-page="configuracoes-equipe"] button:focus-visible,
+[data-page="configuracoes-equipe"] input:focus-visible,
+[data-page="configuracoes-equipe"] [role="switch"]:focus-visible {
+  outline: none;
+}
+
+/* ───────── Barra de rolagem interna da tabela (mesmo padrão de
+ * .scrollbar-tema em globals.css) — a tabela de operadores (ui/table.tsx)
+ * envolve <table> num div overflow-x-auto próprio (data-slot=
+ * "table-container") sem className exposto pra receber a classe utilitária
+ * diretamente sem tocar no componente compartilhado; replicada aqui,
+ * escopada à rota, com os mesmos tokens (--border/--muted-foreground). */
+[data-page="configuracoes-equipe"] [data-slot="table-container"] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+[data-page="configuracoes-equipe"] [data-slot="table-container"]::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+[data-page="configuracoes-equipe"] [data-slot="table-container"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-page="configuracoes-equipe"] [data-slot="table-container"]::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+[data-page="configuracoes-equipe"] [data-slot="table-container"]::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* ───────── Toasts desta página (sonner) ─────────
+ * ÚNICA exceção à regra "toda regra começa com [data-page]": o <Toaster/>
+ * global (src/app/layout.tsx, NÃO alterado) monta os toasts em
+ * document.body, fora da div com data-page="configuracoes-equipe" — o
+ * seletor de atributo não alcança lá. A classe .config-equipe-toast é
+ * passada via `toast.error/success(msg, { className: "config-equipe-toast" })`
+ * só nas chamadas desta rota (equipe-config.tsx), então não vaza pra outras
+ * páginas. Mesmo padrão de .kpi-op-toast em kpi-operadores.css.
+ *
+ * !important necessário: o Toaster global aplica toastOptions.style com
+ * background/border/color LITERAIS via atributo style inline no elemento
+ * ([data-sonner-toast]) — uma regra de classe externa comum nunca vence
+ * style inline no mesmo elemento, independente de especificidade.
+ */
+.config-equipe-toast {
+  --normal-bg: #1C1C1C;
+  --normal-text: #E8E3DA;
+  --normal-border: #2C2C2C;
+  background: var(--normal-bg) !important;
+  color: var(--normal-text) !important;
+  border: 1px solid var(--normal-border) !important;
+  font-family: var(--font-zen-sans), "Instrument Sans", ui-sans-serif, system-ui, sans-serif !important;
+}
+.config-equipe-toast [data-icon] svg {
+  color: #8DB596 !important;
+}
+.config-equipe-toast[data-type="error"] [data-icon] svg {
+  color: #F07A62 !important;
+}
+
+[data-theme="light"] .config-equipe-toast {
+  --normal-bg: #F4EFE4;
+  --normal-text: #1E1E1E;
+  --normal-border: #D2CBBB;
+  background: var(--normal-bg) !important;
+  color: var(--normal-text) !important;
+  border: 1px solid var(--normal-border) !important;
+}
+[data-theme="light"] .config-equipe-toast [data-icon] svg {
+  color: #3D6B47 !important;
+}
+[data-theme="light"] .config-equipe-toast[data-type="error"] [data-icon] svg {
+  color: #B3321C !important;
+}

@@ -26,11 +26,34 @@ interface KpiLoadingScreenProps {
    * literalmente o fallback de Suspense enquanto ele carrega), não dá pra
    * contar com o import do page.tsx pra trazer o CSS.
    */
-  dataPage: "kpi-operadores" | "kpi-gestor" | "kpi-detalhado-polo" | "kpi-evolucao";
+  dataPage:
+    | "kpi-operadores"
+    | "kpi-gestor"
+    | "kpi-detalhado-polo"
+    | "kpi-evolucao"
+    | "configuracoes-equipe";
   /** Nome da página pro rótulo acessível ("Carregando Operadores...") e pro texto visível. */
   titulo: string;
-  /** Esqueleto: "tabela" (operadores) ou "cards" (gestor) — só muda a forma dos blocos desfocados ao fundo. */
-  formato: "tabela" | "cards";
+  /**
+   * Esqueleto: "tabela" (operadores/detalhado-polo) ou "cards"
+   * (gestor/evolução) — muda a forma dos blocos desfocados ao fundo.
+   * "equipe" é um esqueleto dedicado à estrutura de /configuracoes/equipe
+   * (toggle + tabela + linha de adicionar, sem a linha de ações das KPIs).
+   */
+  formato: "tabela" | "cards" | "equipe";
+  /**
+   * Largura do container central — as páginas de KPI usam "max-w-7xl"
+   * (default, preserva o comportamento atual). /configuracoes/equipe usa
+   * "max-w-2xl", igual ao container real de page.tsx.
+   */
+  maxWidthClassName?: string;
+  /**
+   * Linha fantasma de ações (pill + botão) abaixo do cabeçalho, presente
+   * nas páginas de KPI. /configuracoes/equipe não tem essa linha no layout
+   * real, então passa `false` pra não fazer o conteúdo "pular" quando a
+   * página de verdade entrar.
+   */
+  showActionsRow?: boolean;
 }
 
 function SkeletonCards() {
@@ -57,26 +80,78 @@ function SkeletonTabela() {
   );
 }
 
-export function KpiLoadingScreen({ dataPage, titulo, formato }: KpiLoadingScreenProps) {
+/**
+ * Esqueleto de /configuracoes/equipe: linha de toggle, tabela de
+ * operadores e linha de "adicionar" — mesma sequência vertical de
+ * EquipeConfig (dentro de ConfigFrame, que não tem borda/fundo próprios,
+ * só as cantoneiras — por isso nenhum wrapper com borda aqui, diferente de
+ * SkeletonTabela).
+ */
+function SkeletonEquipe() {
+  return (
+    <div className="space-y-4">
+      <div className="border-border flex items-center justify-between gap-4 border-b border-dashed pb-4">
+        <div className="space-y-2">
+          <div className="h-4 w-56 rounded bg-card" />
+          <div className="h-3 w-72 rounded bg-card/70" />
+        </div>
+        <div className="h-5 w-9 shrink-0 rounded-full bg-card" />
+      </div>
+
+      <div className="overflow-hidden rounded-lg border border-border">
+        <div className="h-10 bg-card" />
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-11 border-t border-border/60 bg-background" />
+        ))}
+      </div>
+
+      <div className="flex gap-2 pt-1">
+        <div className="h-9 flex-1 rounded-md bg-card" />
+        <div className="h-9 w-28 shrink-0 rounded-md bg-card" />
+      </div>
+    </div>
+  );
+}
+
+export function KpiLoadingScreen({
+  dataPage,
+  titulo,
+  formato,
+  maxWidthClassName = "max-w-7xl",
+  showActionsRow = true,
+}: KpiLoadingScreenProps) {
   return (
     <div
       data-page={dataPage}
       className="relative min-h-screen overflow-hidden px-6 py-8 lg:px-12 lg:py-12"
     >
-      <div className="mx-auto max-w-7xl animate-in fade-in duration-300 motion-reduce:animate-none">
-        {/* Cabeçalho fantasma — mesma métrica do cabeçalho real (título + subtítulo + linha de ações), pra altura/posição não pularem quando o conteúdo de verdade entrar. */}
+      <div
+        className={`mx-auto ${maxWidthClassName} animate-in fade-in duration-300 motion-reduce:animate-none`}
+      >
+        {/* Cabeçalho fantasma — mesma métrica do cabeçalho real (título + subtítulo + linha de ações, quando existir), pra altura/posição não pularem quando o conteúdo de verdade entrar. */}
         <div className="pt-4">
           <div className="h-9 w-40 rounded-md bg-card md:h-10 md:w-48" />
           <div className="mt-3 h-4 w-64 rounded bg-card/70" />
         </div>
-        <div className="flex items-center gap-3 pt-4 pb-4">
-          <div className="h-8 w-64 rounded-[var(--radius)] bg-card" />
-          <div className="ml-auto h-8 w-8 rounded-md bg-card" />
-        </div>
+        {showActionsRow && (
+          <div className="flex items-center gap-3 pt-4 pb-4">
+            <div className="h-8 w-64 rounded-[var(--radius)] bg-card" />
+            <div className="ml-auto h-8 w-8 rounded-md bg-card" />
+          </div>
+        )}
 
-        {/* Esqueleto do conteúdo — desfocado e apagado, só pra sugerir a forma (tabela ou grid de cards) sem parecer dado real incompleto. */}
-        <div aria-hidden="true" className="pt-4 opacity-40 blur-[2px]">
-          {formato === "tabela" ? <SkeletonTabela /> : <SkeletonCards />}
+        {/* Esqueleto do conteúdo — desfocado e apagado, só pra sugerir a forma (tabela, grid de cards ou a estrutura de equipe) sem parecer dado real incompleto. */}
+        <div
+          aria-hidden="true"
+          className={`${showActionsRow ? "pt-4" : "pt-8"} opacity-40 blur-[2px]`}
+        >
+          {formato === "tabela" ? (
+            <SkeletonTabela />
+          ) : formato === "cards" ? (
+            <SkeletonCards />
+          ) : (
+            <SkeletonEquipe />
+          )}
         </div>
       </div>
 

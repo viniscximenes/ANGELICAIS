@@ -37,17 +37,6 @@ const ALL_SECTIONS: SidebarSection[] = [
     ],
   },
   {
-    id: "configuracoes-gestor",
-    label: "Configurações",
-    iconName: "settings",
-    basePath: "/configuracoes",
-    permission: "view_gestor_panel",
-    onlyRoles: ["GESTOR"],
-    items: [
-      { label: "Equipe", href: "/configuracoes/equipe" },
-    ],
-  },
-  {
     id: "operacao",
     label: "Operação",
     iconName: "users",
@@ -61,6 +50,17 @@ const ALL_SECTIONS: SidebarSection[] = [
       { label: "Diário", href: "/operacao/diario" },
       { label: "Comparativo Consolidado", href: "/operacao/comparativo-consolidado" },
       { label: "Quartil", href: "/operacao/quartil" },
+    ],
+  },
+  {
+    id: "configuracoes-gestor",
+    label: "Configurações",
+    iconName: "settings",
+    basePath: "/configuracoes",
+    permission: "view_gestor_panel",
+    onlyRoles: ["GESTOR"],
+    items: [
+      { label: "Equipe", href: "/configuracoes/equipe" },
     ],
   },
   {
