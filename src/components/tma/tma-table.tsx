@@ -6,7 +6,6 @@ import type { ReactNode } from "react";
 import {
   corNomeOperador,
   fundoLinhaRuim,
-  TABELA_CONTAINER_CLASS,
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
   TABELA_HEADER_CELL_ULTIMA_CLASS,
@@ -47,6 +46,14 @@ const GRID_TEMPLATE_COLUMNS = "3fr 2fr 2fr";
 // divisor da última coluna, que aqui é a "Qtd. Ligações".
 const VALOR_CELL_CLASS = `${TABELA_VALOR_CELL_CLASS} last:border-r-0`;
 
+// O Consolidado troca o hover genérico da tabela por --accent, que pertence
+// à paleta Zen Linen da rota. Mantemos a constante compartilhada intacta e
+// fazemos a mesma substituição apenas nesta tabela.
+const TABELA_LINHA_HOVER_CLASS = TABELA_LINHA_CLASS.replace(
+  "hover:bg-muted/40",
+  "hover:bg-accent",
+);
+
 export function TmaTable({ linhas, atendimentosPorOperador, headerButton, thresholdConfig }: TmaTableProps) {
   const [operadorAberto, setOperadorAberto] = useState<TmaLinha | null>(null);
 
@@ -59,7 +66,7 @@ export function TmaTable({ linhas, atendimentosPorOperador, headerButton, thresh
         `[data-theme="light"] [data-equipe-table] > div:first-child`).
         Sem ele, o header caía só no `bg-muted/40` (quase branco no claro).
       */}
-      <div data-equipe-table className={TABELA_CONTAINER_CLASS}>
+      <div data-equipe-table className="overflow-hidden">
         {/* Cabeçalho — MESMAS classes do header da EquipeTable (Consolidado). */}
         <div
           className="ds-body grid gap-0 bg-muted/40 font-bold text-foreground tracking-wide uppercase"
@@ -100,7 +107,7 @@ export function TmaTable({ linhas, atendimentosPorOperador, headerButton, thresh
               key={linha.operatorEmail}
               onClick={clicavel ? () => setOperadorAberto(linha) : undefined}
               className={cn(
-                TABELA_LINHA_CLASS,
+                TABELA_LINHA_HOVER_CLASS,
                 "border-l-2 border-l-transparent transition-[background-color,border-color,transform] duration-200 ease-out",
                 clicavel && "cursor-pointer",
                 hoverClass,

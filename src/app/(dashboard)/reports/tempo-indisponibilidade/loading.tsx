@@ -18,6 +18,7 @@ export default function LoadingReportsTempoIndisponibilidade() {
       dataPage="reports-tempo-indisponibilidade"
       titulo="Tempo Logado & Indisponibilidade"
       formato="consolidado"
+      indicatorPosition="after-header"
     />
   );
 }

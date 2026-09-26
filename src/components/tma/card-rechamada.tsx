@@ -1,8 +1,6 @@
-import { IconPhoneCall } from "@tabler/icons-react";
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import {
-  TABELA_CONTAINER_CLASS,
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
   TABELA_HEADER_CELL_ULTIMA_CLASS,
@@ -76,19 +74,18 @@ export function CardRechamada({ clientesDistintos, clientesRecorrentes, percentu
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-          <IconPhoneCall size={20} className="text-foreground" />
+        <h3 className="ds-h3 font-semibold text-foreground">
           Rechamada
         </h3>
         <p className="ds-small text-muted-foreground mt-1">Clientes que ligaram mais de uma vez hoje.</p>
       </div>
 
-      <StyledCard className="flex flex-col px-5 py-5 gap-4" withGradient corners="all">
+      <StyledCard className="flex flex-col p-4 gap-4" withGradient corners="all">
         {percentual === null ? (
-          <p className="ds-display text-4xl font-bold text-foreground">—</p>
+          <p className="ds-display text-4xl font-semibold text-foreground">—</p>
         ) : (
           <div>
-            <p className="ds-display text-4xl font-bold tracking-tight text-foreground">
+            <p className="ds-display text-4xl font-semibold tracking-tight text-foreground">
               {percentual.toFixed(1)}%
             </p>
             <p className="ds-small text-muted-foreground mt-1.5">
@@ -98,11 +95,11 @@ export function CardRechamada({ clientesDistintos, clientesRecorrentes, percentu
         )}
 
         {lista.length > 0 && (
-          <div className={TABELA_CONTAINER_CLASS}>
+          <div className="overflow-hidden border-y border-border/40">
             <div className="overflow-x-auto overflow-y-auto scrollbar-tema" style={{ maxHeight: MAX_HEIGHT_PX }}>
               <div className="min-w-fit">
                 <div
-                  className={cn(TABELA_HEADER_CLASS, "text-foreground sticky top-0 z-10")}
+                  className={cn(TABELA_HEADER_CLASS, "font-sans text-muted-foreground text-[11px] sticky top-0 z-10")}
                   style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA, background: STICKY_HEADER_BG }}
                 >
                   <div className={TABELA_HEADER_CELL_CLASS}>1º Atendimento</div>

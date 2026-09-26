@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Instrument_Sans } from "next/font/google";
 
-import { PageTransition } from "@/components/motion/page-transition";
+import "./reports-tma-peso.css";
+
 import { AnaliticoTmaSection } from "@/components/tma/analitico-tma-section";
 import { GestorTmaSection } from "@/components/tma/gestor-tma-section";
 import { TmaNavSidebar } from "@/components/tma/tma-nav-sidebar";
@@ -10,7 +12,6 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
-import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import { SignatureFooter } from "@/components/gestor/signature-footer";
@@ -21,6 +22,12 @@ import { getGestorTmaAtendimentos } from "@/lib/tma/get-gestor-tma-atendimentos"
 export const metadata: Metadata = {
   title: "Reports - TMA & Peso",
 };
+
+const zenSans = Instrument_Sans({
+  subsets: ["latin", "latin-ext"],
+  weight: "variable",
+  variable: "--font-zen-sans",
+});
 
 export const revalidate = 300;
 
@@ -65,50 +72,38 @@ export default async function ReportsTmaPage() {
 
   const showUpload = can(user.profile.role, "manage_d1_base");
 
-  const gestora = formatNomeProprio(user.profile.fullName);
-
   return (
-    <PageTransition>
-      <TmaNavSidebar />
-      <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
-        <div className="mx-auto max-w-7xl">
-          <header className="border-border mb-4 flex flex-col gap-2 border-b border-dashed pb-4">
-            <span className="text-muted-foreground text-xs tracking-wide uppercase">
-              Painel do Gestor
-            </span>
-            <div className="flex flex-wrap items-baseline gap-3">
-              <h1 className="ds-h1 font-bold">TMA & Peso</h1>
-              <span className="ds-mono-sm text-muted-foreground">
-                / Reports · {gestora}
-              </span>
+    <div className={zenSans.variable}>
+      <div data-page="reports-tma-peso">
+        <TmaNavSidebar />
+        <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
+          <div className="mx-auto max-w-7xl">
+            <div className="space-y-10">
+              <GestorTmaSection
+                linhas={linhas}
+                atendimentosPorOperador={Object.fromEntries(atendimentosPorOperador)}
+                reportHora={reportHora ?? "—"}
+                reportNomeSupervisor={reportNomeSupervisor}
+                metaAtualMmSs={metaAtualMmSs}
+                ordemTabela={ordemTabela}
+                showUpload={showUpload}
+                nomeFantasia={nomeFantasia}
+                olhoInicial={nomeFantasiaConfig.olhoTma}
+                thresholdConfig={analitico.thresholdConfig}
+              />
+
+              <AnaliticoTmaSection
+                roster={roster}
+                analitico={analitico}
+                operadores={operadores}
+                nomeFantasia={nomeFantasia}
+              />
+
+              <SignatureFooter />
             </div>
-          </header>
-
-          <div className="space-y-10">
-            <GestorTmaSection
-              linhas={linhas}
-              atendimentosPorOperador={Object.fromEntries(atendimentosPorOperador)}
-              reportHora={reportHora ?? "—"}
-              reportNomeSupervisor={reportNomeSupervisor}
-              metaAtualMmSs={metaAtualMmSs}
-              ordemTabela={ordemTabela}
-              showUpload={showUpload}
-              nomeFantasia={nomeFantasia}
-              olhoInicial={nomeFantasiaConfig.olhoTma}
-              thresholdConfig={analitico.thresholdConfig}
-            />
-
-            <AnaliticoTmaSection
-              roster={roster}
-              analitico={analitico}
-              operadores={operadores}
-              nomeFantasia={nomeFantasia}
-            />
-
-            <SignatureFooter />
           </div>
         </div>
       </div>
-    </PageTransition>
+    </div>
   );
 }

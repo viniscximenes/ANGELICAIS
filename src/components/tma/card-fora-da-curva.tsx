@@ -1,8 +1,6 @@
-import { IconArrowsMaximize } from "@tabler/icons-react";
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import {
-  TABELA_CONTAINER_CLASS,
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
   TABELA_HEADER_CELL_ULTIMA_CLASS,
@@ -51,11 +49,11 @@ function TabelaForaDaCurva({ titulo, itens }: { titulo: string; itens: ForaDaCur
         {titulo}
       </p>
 
-      <div className={TABELA_CONTAINER_CLASS}>
+      <div className="overflow-hidden border-y border-border/40">
         <div className="overflow-x-auto overflow-y-auto scrollbar-tema" style={{ maxHeight: MAX_HEIGHT_PX }}>
           <div className="min-w-fit">
             <div
-              className={cn(TABELA_HEADER_CLASS, "text-foreground sticky top-0 z-10")}
+              className={cn(TABELA_HEADER_CLASS, "font-sans text-muted-foreground text-[11px] sticky top-0 z-10")}
               style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA, background: STICKY_HEADER_BG }}
             >
               <div className={TABELA_HEADER_CELL_CLASS}>Operador</div>
@@ -104,26 +102,25 @@ export function CardForaDaCurva({ curtas, longas, curtasLista, longasLista }: Ca
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-          <IconArrowsMaximize size={20} className="text-foreground" />
+        <h3 className="ds-h3 font-semibold text-foreground">
           Fora da Curva
         </h3>
         <p className="ds-small text-muted-foreground mt-1">Chamadas muito curtas (&lt;30s) ou muito longas (&gt;30min).</p>
       </div>
 
-      <StyledCard className="flex flex-col gap-4 px-5 py-5" withGradient corners="all">
+      <StyledCard className="flex flex-col gap-4 p-4" withGradient corners="all">
         <div className="flex flex-col gap-3">
           <div className="flex items-baseline justify-between">
             <span className="ds-small text-muted-foreground/80 text-xs font-semibold tracking-wider uppercase">
               Curtas (&lt;30s)
             </span>
-            <span className="ds-display text-2xl font-bold text-foreground tabular-nums">{curtas}</span>
+            <span className="ds-display text-2xl font-semibold text-foreground tabular-nums">{curtas}</span>
           </div>
           <div className="flex items-baseline justify-between">
             <span className="ds-small text-muted-foreground/80 text-xs font-semibold tracking-wider uppercase">
               Longas (&gt;30min)
             </span>
-            <span className="ds-display text-2xl font-bold text-foreground tabular-nums">{longas}</span>
+            <span className="ds-display text-2xl font-semibold text-foreground tabular-nums">{longas}</span>
           </div>
         </div>
 

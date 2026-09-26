@@ -45,6 +45,11 @@ interface TmaDetalheDialogProps {
 export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOpenChange }: TmaDetalheDialogProps) {
   const cores = useSkillColors();
   const pngRef = useRef<HTMLDivElement>(null);
+  const temaTma =
+    typeof document === "undefined"
+      ? null
+      : document.querySelector<HTMLElement>('[data-page="reports-tma-peso"]');
+  const fontFamilyEscopo = temaTma ? getComputedStyle(temaTma).fontFamily : undefined;
 
   // 7 buckets (Hotline + Reversão Churn somadas), espelhando as colunas de
   // "queda por skill" da tabela principal — não as 8 skills cruas.
@@ -105,8 +110,8 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
   // (valor COMPUTADO, não a string "var()" crua): o export em PNG clona
   // este SVG num <img> isolado, onde var() não resolve sem acesso ao :root
   // da página.
-  const corAbaixoMeta = resolverTokenCss("--success", "#16a34a");
-  const corAcimaMeta = resolverTokenCss("--danger", "#dc2626");
+  const corAbaixoMeta = resolverTokenCss("--success", "#16a34a", temaTma);
+  const corAcimaMeta = resolverTokenCss("--danger", "#dc2626", temaTma);
   const TMA_META_GRADIENT_ID = "linha-tma-meta-gradient";
 
   const indicesComDado = evolucaoPorHora
@@ -180,13 +185,19 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
         NÃO editado): sm:max-w-4xl (era sm:max-w-[960px]) + mesma
         border-border/80 já usada.
       */}
-      <DialogContent className="max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-4xl bg-background border-border/80 p-6 shadow-2xl">
+      <DialogContent
+        data-page="reports-tma-peso"
+        className="reports-tma-peso-dialog max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-4xl bg-background border-border/80 p-6 shadow-2xl"
+        style={fontFamilyEscopo ? { fontFamily: fontFamilyEscopo } : undefined}
+      >
         {operador && (
           <>
             <ExportPopupPngButton
               contentRef={pngRef}
               filename={`tma_${emailLocal}.png`}
               className="absolute top-2 right-10"
+              corDeFundoDoAlvo
+              toastClassName="reports-tma-peso-toast"
             />
 
             {/*
@@ -196,7 +207,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
               assim a imagem sempre reflete o tema atual (claro/escuro), não
               um tema fixo.
             */}
-            <div ref={pngRef} style={{ backgroundColor: "var(--background)" }}>
+            <div ref={pngRef} data-tma-detalhe-png style={{ backgroundColor: "var(--background)" }}>
               <DialogHeader className="border-b border-dashed border-border/60 pb-3 space-y-1.5">
                 <DialogTitle className="ds-h3 font-semibold tracking-tight text-xl">{emailLocal}</DialogTitle>
               </DialogHeader>
@@ -210,22 +221,22 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                 quando há 4 cards.
               */}
               <div className="grid grid-cols-2 gap-3 pt-4">
-                <StyledCard className="px-4 py-3.5 flex flex-col justify-center" withGradient corners="left">
+                <div className="flex flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-3.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
                   <p className="ds-small text-muted-foreground/80 mb-1 text-xs font-semibold tracking-wider uppercase">
                     TMA
                   </p>
                   <p className="ds-display text-2xl font-semibold tabular-nums text-foreground">
                     {formatKpiValue(operador.tmaSegundos, "time")}
                   </p>
-                </StyledCard>
-                <StyledCard className="px-4 py-3.5 flex flex-col justify-center" withGradient corners="right">
+                </div>
+                <div className="flex flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-3.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
                   <p className="ds-small text-muted-foreground/80 mb-1 text-xs font-semibold tracking-wider uppercase">
                     Atendimentos
                   </p>
                   <p className="ds-display text-2xl font-semibold tabular-nums text-foreground">
                     {operador.qtdAtendimentos}
                   </p>
-                </StyledCard>
+                </div>
               </div>
 
               {/* ── TMA por Hora ───────────────────────────────────── */}

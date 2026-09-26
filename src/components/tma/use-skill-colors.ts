@@ -49,10 +49,11 @@ export function useSkillColors(): SkillColors {
 
   useEffect(() => {
     const next = { ...FALLBACK, surface: FALLBACK_SURFACE } as SkillColors;
+    const temaTma = document.querySelector<HTMLElement>('[data-page="reports-tma-peso"]');
     (Object.keys(CSS_VAR) as SkillBucket[]).forEach((k) => {
-      next[k] = resolverTokenCss(CSS_VAR[k], FALLBACK[k]);
+      next[k] = resolverTokenCss(CSS_VAR[k], FALLBACK[k], temaTma);
     });
-    next.surface = resolverTokenCss("--background", FALLBACK_SURFACE);
+    next.surface = resolverTokenCss("--background", FALLBACK_SURFACE, temaTma);
     setCores(next);
   }, []);
 

@@ -54,7 +54,7 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
   function handleSave() {
     const valor = meta.trim();
     if (!/^\d{1,3}:\d{2}$/.test(valor)) {
-      toast.error("Meta inválida", { description: "Use o formato MM:SS, ex.: 12:11" });
+      toast.error("Meta inválida", { description: "Use o formato MM:SS, ex.: 13:00" });
       return;
     }
 
@@ -99,28 +99,27 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
             type="button"
             title="Configurar meta do TMA"
             aria-label="Configurar meta do TMA"
-            className="bg-primary text-primary-foreground hover:opacity-90 flex cursor-pointer items-center justify-center rounded-md p-2 shadow-sm transition-opacity disabled:opacity-50"
+            className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 items-center justify-center gap-1.5 rounded-md border bg-transparent text-sm font-medium outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)] w-8 shrink-0"
           >
-            <IconSettings size={14} aria-hidden="true" />
+            <IconSettings size={15} aria-hidden="true" />
           </button>
         </PopoverTrigger>
 
         <PopoverContent
           align="end"
-          className="w-84 rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-xl space-y-3"
+          className="bg-popover text-popover-foreground border-border w-84 rounded-2xl border p-5 shadow-2xl space-y-4"
         >
-          <PopoverHeader className="border-b border-border/50 pb-2">
-            <PopoverTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <IconSettings size={15} className="text-muted-foreground" />
+          <PopoverHeader className="border-border/50 space-y-0.5 border-b pb-2">
+            <PopoverTitle className="text-foreground text-sm font-semibold">
               Configurações da Tabela
             </PopoverTitle>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Define a meta e a ordenação da equipe
+              Ajuste a meta do TMA e a ordenação da tabela.
             </p>
           </PopoverHeader>
 
           <div className="space-y-1.5">
-            <Label htmlFor="config-meta-tma" className="ds-mono-sm text-xs font-medium text-foreground/90">
+            <Label htmlFor="config-meta-tma" className="text-foreground text-xs font-medium">
               Meta do TMA (MM:SS)
             </Label>
             <Input
@@ -129,13 +128,14 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
               placeholder="MM:SS"
               value={meta}
               onChange={(e) => setMeta(e.target.value)}
-              className="h-8 border-border bg-background px-2 font-mono text-xs"
+              disabled={isPending}
+              className="text-sm font-semibold"
             />
             <p className="text-[11px] text-muted-foreground">Define o corte vermelho/verde da tabela (menor é melhor)</p>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="config-ordem-tma" className="ds-mono-sm text-xs font-medium text-foreground/90">
+            <Label htmlFor="config-ordem-tma" className="text-foreground text-xs font-medium">
               Ordenação dos Operadores
             </Label>
             <div className="relative">
@@ -144,14 +144,14 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
                 id="config-ordem-tma"
                 disabled={isPending}
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-full flex items-center justify-between rounded-xl border border-border/80 bg-muted/30 px-3.5 py-2.5 text-xs font-medium text-foreground hover:bg-muted/50 hover:border-primary/40 focus:outline-none transition-all cursor-pointer"
+                className="border-border bg-transparent text-foreground hover:bg-accent w-full flex items-center justify-between rounded-lg border px-3.5 py-2.5 text-xs font-medium transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus:outline-none cursor-pointer"
               >
                 <span>{selectedOption?.label ?? "Selecione..."}</span>
                 <IconChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", dropdownOpen && "rotate-180")} />
               </button>
 
               {dropdownOpen && (
-                <div className="absolute left-0 right-0 z-50 mt-1.5 rounded-xl border border-border/80 bg-popover p-1 shadow-2xl">
+                <div className="absolute left-0 right-0 z-50 mt-1.5 rounded-lg border border-border bg-popover text-popover-foreground p-1 shadow-2xl">
                   {ORDEM_TABELA_TMA_OPTIONS.map((opt) => {
                     const isSelected = opt.value === ordem;
                     return (
@@ -163,10 +163,10 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
                           setDropdownOpen(false);
                         }}
                         className={cn(
-                          "w-full flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors text-left cursor-pointer",
+                          "w-full flex items-center justify-between rounded-md px-3 py-2 text-xs font-medium transition-colors text-left cursor-pointer",
                           isSelected
                             ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                            : "text-foreground hover:bg-muted/60"
+                            : "text-foreground hover:bg-accent"
                         )}
                       >
                         <span>{opt.label}</span>
@@ -183,7 +183,7 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2 text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-semibold shadow-sm transition-colors focus-visible:ring-[var(--ring)]"
           >
             {isPending ? (
               <>
@@ -193,7 +193,7 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
             ) : (
               <>
                 <IconCheck size={14} aria-hidden="true" />
-                <span>Salvar meta</span>
+                <span>Salvar Alterações</span>
               </>
             )}
           </Button>

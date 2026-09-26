@@ -82,7 +82,7 @@ export function AnaliticoTmaSection({
 
   if (hasNoData) {
     return (
-      <section>
+      <section aria-label="Analítico do TMA">
         {cabecalho}
         <AguardandoDadosCard descricao="Ainda não há atendimentos de TMA reportados hoje pra sua equipe." />
       </section>
@@ -117,5 +117,11 @@ export function AnaliticoTmaSection({
     <CardPesoDesigual key="peso-desigual" operadores={pesoDesigual} nomeFantasia={nomeFantasia} />,
   ];
 
-  return <RetencaoHorizontalScroll header={cabecalho} slides={slides} dynamicHeight />;
+  return (
+    <section aria-label="Analítico do TMA">
+      <div className="space-y-6">
+        <RetencaoHorizontalScroll header={cabecalho} slides={slides} dynamicHeight />
+      </div>
+    </section>
+  );
 }

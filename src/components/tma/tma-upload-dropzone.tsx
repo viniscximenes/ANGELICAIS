@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { IconCloudUpload, IconFileSpreadsheet } from "@tabler/icons-react";
+import { IconLoader2, IconFileSpreadsheet } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { getTmaRosterAction } from "@/lib/tma/actions/get-tma-roster-action";
 import { uploadTmaAction } from "@/lib/tma/actions/upload-tma-action";
@@ -99,71 +100,62 @@ export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = 
     disabled: isProcessing,
   });
 
+  const dropzoneState = isProcessing ? "processing" : isDragReject ? "reject" : isDragActive ? "active" : "idle";
+  const rootProps = getRootProps({
+    onMouseEnter: () => setIsHovering(true),
+    onMouseLeave: () => setIsHovering(false),
+  });
+  const accessibleName =
+    "Anexar base CSV. Arraste um arquivo ou clique para selecionar. Apenas arquivos .csv, limite de 50.000 linhas.";
+
   return (
     <>
-      <div
-        {...getRootProps({
-          onMouseEnter: () => setIsHovering(true),
-          onMouseLeave: () => setIsHovering(false),
-        })}
-        className={
-          compact
-            ? "relative flex w-full cursor-pointer items-center justify-center rounded-xl border border-dashed transition-all duration-300 hover:border-primary"
-            : "relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed transition-all duration-300 hover:border-primary"
-        }
-        style={{
-          background: isDragActive
-            ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
-            : isHovering
-              ? "var(--muted-hover-bg, var(--card))"
-              : "var(--upload-idle-bg, var(--card))",
-          borderColor: isDragReject
-            ? "var(--danger)"
-            : isDragActive
-              ? "var(--primary)"
-              : "var(--border)",
-          boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "var(--shadow-sm, none)",
-          padding: compact ? "0.875rem 1.25rem" : "2.5rem 1.5rem",
-          opacity: isProcessing ? 0.5 : 1,
-          pointerEvents: isProcessing ? "none" : "auto",
-          minHeight: compact ? "auto" : "100%",
-        }}
-      >
-        <input {...getInputProps()} />
-
-        <div className={compact ? "flex items-center justify-center gap-3 text-center" : "flex flex-col items-center justify-center gap-3 text-center"}>
-          {!compact && (
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border/80 bg-muted/40 text-muted-foreground">
-              {isDragActive ? (
-                <IconCloudUpload size={30} aria-hidden="true" />
-              ) : (
-                <IconFileSpreadsheet size={30} aria-hidden="true" />
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              {...rootProps}
+              role="button"
+              tabIndex={isProcessing ? -1 : 0}
+              aria-label={accessibleName}
+              aria-disabled={isProcessing}
+              aria-busy={isProcessing}
+              data-dropzone-state={dropzoneState}
+              className="upload-dropzone-root-reports-tma-peso relative flex h-full flex-col cursor-pointer items-center justify-center rounded-xl border border-dashed outline-none transition-all duration-300 hover:border-primary focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+              style={{
+                background: isDragActive ? "color-mix(in oklch, var(--primary) 8%, var(--muted))" : isHovering ? "var(--muted-hover-bg, var(--card))" : "var(--upload-idle-bg, var(--card))",
+                borderColor: isDragReject ? "var(--danger)" : isDragActive ? "var(--primary)" : "var(--border)",
+                borderWidth: isDragActive ? "2px" : "1px",
+                boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "var(--shadow-sm, none)",
+                padding: compact ? "0.875rem 1.25rem" : "2.5rem 1.5rem",
+                opacity: isProcessing ? 0.5 : 1,
+                pointerEvents: isProcessing ? "none" : "auto",
+                cursor: isProcessing ? "not-allowed" : "pointer",
+                minHeight: compact ? "auto" : "100%",
+              }}
+            >
+              <input {...getInputProps()} />
+              <div className="flex flex-col items-center justify-center gap-3 text-center">
+                <div className={`upload-dropzone-icon-reports-tma-peso relative flex items-center justify-center ${compact ? "h-9 w-9" : "h-14 w-14"}`} aria-hidden="true">
+                  <span className="upload-dropzone-ring-reports-tma-peso absolute inset-0 rounded-full" />
+                  {isProcessing ? (
+                    <IconLoader2 size={compact ? 20 : 26} className="relative animate-spin text-muted-foreground" />
+                  ) : (
+                    <IconFileSpreadsheet size={compact ? 20 : 26} className="upload-dropzone-glyph-reports-tma-peso relative" />
+                  )}
+                </div>
+                <p className="upload-dropzone-touch-hint-reports-tma-peso ds-mono-sm text-muted-foreground/80 text-[11px] sm:hidden">
+                  Toque para selecionar um CSV
+                </p>
+              </div>
+              {errorMessage && !isProcessing && (
+                <div role="alert" className="status-danger ds-small mt-4 flex items-center justify-center gap-2 rounded-md p-3">{errorMessage}</div>
               )}
             </div>
-          )}
-
-          <div className={compact ? "space-y-0.5" : "space-y-1"}>
-            <p className={compact ? "ds-body text-foreground text-sm font-semibold" : "ds-body text-foreground font-semibold"}>
-              {isDragActive
-                ? "Solte o arquivo para enviar"
-                : "Arraste o arquivo CSV aqui ou clique para selecionar"}
-            </p>
-            <p className="ds-mono-sm text-muted-foreground/80 text-[11px]">
-              Apenas arquivos .csv · limite de 50.000 linhas
-            </p>
-          </div>
-        </div>
-
-        {errorMessage && !isProcessing && (
-          <div
-            role="alert"
-            className="status-danger ds-small mt-4 flex items-center justify-center gap-2 rounded-md p-3"
-          >
-            {errorMessage}
-          </div>
-        )}
-      </div>
-
+          </TooltipTrigger>
+          <TooltipContent side="top">Arraste um CSV aqui ou clique para selecionar · até 50.000 linhas</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <TmaUploadProgressModal step={step} resumoFinal={resumoFinal} />
     </>
   );

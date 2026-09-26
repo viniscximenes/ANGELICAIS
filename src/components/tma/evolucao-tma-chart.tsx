@@ -12,7 +12,6 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
-import { IconChartLine } from "@tabler/icons-react";
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
@@ -73,8 +72,7 @@ export function EvolucaoTmaChart({ dados, thresholdConfig }: EvolucaoTmaChartPro
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-          <IconChartLine size={20} className="text-foreground" />
+        <h3 className="ds-h3 font-semibold text-foreground">
           Evolução do TMA
         </h3>
         <p className="ds-small text-muted-foreground mt-1">

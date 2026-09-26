@@ -6,43 +6,7 @@ import { toast } from "sonner";
 
 import { buildClipboardReportHtml } from "@/lib/gestor/build-clipboard-report-html";
 import { capturarComoPng } from "@/lib/utils/capturar-como-png";
-
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-async function copyFormattedHtml(html: string): Promise<void> {
-  try {
-    const container = document.createElement("div");
-    container.setAttribute("contenteditable", "true");
-    container.style.position = "fixed";
-    container.style.top = "-9999px";
-    container.style.left = "-9999px";
-    container.style.whiteSpace = "pre-wrap";
-    container.innerHTML = html;
-    document.body.appendChild(container);
-
-    const range = document.createRange();
-    range.selectNodeContents(container);
-    const selection = window.getSelection();
-    if (selection) {
-      selection.removeAllRanges();
-      selection.addRange(range);
-      const ok = document.execCommand("copy");
-      selection.removeAllRanges();
-      document.body.removeChild(container);
-      if (ok) return;
-    } else {
-      document.body.removeChild(container);
-    }
-  } catch (e) {
-    console.warn("[copy-tma] execCommand falhou, tentando ClipboardItem:", e);
-  }
-
-  await navigator.clipboard.write([
-    new ClipboardItem({ "text/html": new Blob([html], { type: "text/html" }) }),
-  ]);
-}
+import { copyFormattedHtml, escapeHtml } from "@/lib/utils/copy-formatted-html";
 
 interface CopyTmaButtonProps {
   horaReport: string;
@@ -54,14 +18,14 @@ export function CopyTmaButton({ horaReport }: CopyTmaButtonProps) {
   async function handleCopy() {
     const target = document.querySelector<HTMLElement>("[data-tma-png]");
     if (!target) {
-      toast.error("Tabela não encontrada");
+      toast.error("Tabela não encontrada", { className: "reports-tma-peso-toast" });
       return;
     }
 
     setState("copying");
 
     try {
-      const pngDataUrl = await capturarComoPng(target);
+      const pngDataUrl = await capturarComoPng(target, { corDeFundoDoAlvo: true });
       const hora =
         horaReport && horaReport !== "—"
           ? horaReport.match(/^(\d{1,2}:\d{2})/)?.[1] ?? horaReport
@@ -81,6 +45,7 @@ export function CopyTmaButton({ horaReport }: CopyTmaButtonProps) {
       toast.success("Tabela copiada", {
         description: "Cole no Teams, Slack ou email (Ctrl+V)",
         duration: 2500,
+        className: "reports-tma-peso-toast",
       });
       setTimeout(() => setState("idle"), 2000);
     } catch (err) {
@@ -88,6 +53,7 @@ export function CopyTmaButton({ horaReport }: CopyTmaButtonProps) {
       setState("idle");
       toast.error("Não foi possível copiar", {
         description: "Tente em outro navegador (Chrome/Edge)",
+        className: "reports-tma-peso-toast",
       });
     }
   }
@@ -97,26 +63,25 @@ export function CopyTmaButton({ horaReport }: CopyTmaButtonProps) {
       type="button"
       onClick={handleCopy}
       disabled={state === "copying"}
-      className="bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-opacity cursor-pointer shadow-sm disabled:opacity-50"
-      style={{ fontSize: "12px", whiteSpace: "nowrap" }}
+      className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 items-center justify-center gap-1.5 rounded-md border bg-transparent text-sm font-medium outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)] min-w-[140px] px-3"
     >
       {state === "copying" && (
-        <>
+        <span className="inline-flex items-center gap-1.5">
           <IconLoader2 size={14} className="animate-spin" aria-hidden="true" />
-          <span className="ds-mono-sm">Gerando...</span>
-        </>
+          <span>Gerando...</span>
+        </span>
       )}
       {state === "done" && (
-        <>
-          <IconCheck size={14} style={{ color: "var(--success)" }} aria-hidden="true" />
-          <span className="ds-mono-sm">Copiado</span>
-        </>
+        <span className="inline-flex items-center gap-1.5" style={{ color: "var(--success)" }}>
+          <IconCheck size={14} aria-hidden="true" />
+          <span>Copiado</span>
+        </span>
       )}
       {state === "idle" && (
-        <>
+        <span className="inline-flex items-center gap-1.5">
           <IconCamera size={14} aria-hidden="true" />
-          <span className="ds-mono-sm">Copiar como imagem (TMA)</span>
-        </>
+          <span>Copiar imagem</span>
+        </span>
       )}
     </button>
   );

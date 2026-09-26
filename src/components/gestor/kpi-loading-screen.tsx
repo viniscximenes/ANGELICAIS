@@ -33,7 +33,8 @@ interface KpiLoadingScreenProps {
     | "kpi-evolucao"
     | "configuracoes-equipe"
     | "reports-consolidado"
-    | "reports-tempo-indisponibilidade";
+    | "reports-tempo-indisponibilidade"
+    | "reports-tma-peso";
   /** Nome da página pro rótulo acessível ("Carregando Operadores...") e pro texto visível. */
   titulo: string;
   /**
@@ -45,7 +46,7 @@ interface KpiLoadingScreenProps {
    * equipe + placeholder genérico da seção Analítico abaixo, ver
    * SkeletonConsolidado.
    */
-  formato: "tabela" | "cards" | "equipe" | "consolidado";
+  formato: "tabela" | "cards" | "equipe" | "consolidado" | "tma-peso";
   /**
    * Largura do container central — as páginas de KPI usam "max-w-7xl"
    * (default, preserva o comportamento atual). /configuracoes/equipe usa
@@ -59,6 +60,13 @@ interface KpiLoadingScreenProps {
    * página de verdade entrar.
    */
   showActionsRow?: boolean;
+  /**
+   * Posição do spinner/texto. O padrão central preserva todas as telas de
+   * KPI e Configurações. As páginas longas de Reports usam "after-header"
+   * para manter o indicador na primeira dobra, logo abaixo do cabeçalho,
+   * sem inseri-lo no fluxo e sem deslocar o skeleton.
+   */
+  indicatorPosition?: "center" | "after-header";
 }
 
 function SkeletonCards() {
@@ -158,12 +166,38 @@ function SkeletonConsolidado() {
   );
 }
 
+function SkeletonTmaPeso() {
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,786px)_1fr]">
+        <div className="overflow-hidden rounded-lg border border-border">
+          <div className="h-10 bg-card" />
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="h-11 border-t border-border/60 bg-background" />
+          ))}
+        </div>
+        <div className="min-h-[180px] rounded-lg border border-border bg-card" />
+      </div>
+
+      <div className="space-y-4">
+        <div className="h-6 w-28 rounded bg-card" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="h-[110px] rounded-lg border border-border bg-card" />
+          <div className="h-[110px] rounded-lg border border-border bg-card" />
+        </div>
+        <div className="h-[420px] rounded-lg border border-border bg-card lg:h-[600px]" />
+      </div>
+    </div>
+  );
+}
+
 export function KpiLoadingScreen({
   dataPage,
   titulo,
   formato,
   maxWidthClassName = "max-w-7xl",
   showActionsRow = true,
+  indicatorPosition = "center",
 }: KpiLoadingScreenProps) {
   return (
     <div
@@ -196,6 +230,8 @@ export function KpiLoadingScreen({
             <SkeletonCards />
           ) : formato === "consolidado" ? (
             <SkeletonConsolidado />
+          ) : formato === "tma-peso" ? (
+            <SkeletonTmaPeso />
           ) : (
             <SkeletonEquipe />
           )}
@@ -206,7 +242,11 @@ export function KpiLoadingScreen({
       <div
         role="status"
         aria-live="polite"
-        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3"
+        className={
+          indicatorPosition === "after-header"
+            ? "pointer-events-none absolute inset-x-0 top-[12rem] flex flex-col items-center gap-3 lg:top-[13.25rem]"
+            : "pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3"
+        }
       >
         <span
           aria-hidden="true"

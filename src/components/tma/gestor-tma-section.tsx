@@ -3,14 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 
-import { OlhoToggleButton } from "@/components/gestor/olho-toggle-button";
+import { IconEye, IconEyeOff } from "@tabler/icons-react";
 import { StyledCard } from "@/components/gestor/styled-card";
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
 import { clearTmaAction } from "@/lib/tma/actions/clear-tma-action";
 import { refreshTmaAction } from "@/lib/tma/actions/refresh-tma-action";
 import type { AtendimentoTma } from "@/lib/tma/get-gestor-tma-atendimentos";
 import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
-import { formatReportLabel } from "@/lib/gestor/format-report-label";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import type { OrdemTabelaTma } from "@/lib/gestor/config-tabela-tma/types";
@@ -23,7 +22,12 @@ import { TmaAjudaFive9Dialog } from "./tma-ajuda-five9-dialog";
 import { TmaTable, type TmaLinha } from "./tma-table";
 import { TmaUploadDropzone } from "./tma-upload-dropzone";
 
-const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+function formatCabecalhoReport(hora: string, nomeSupervisor: string | null): string | null {
+  if (!hora || hora === "—" || hora === "00:00" || hora === "00:00:00") return null;
+  const horaCurta = hora.match(/^(\d{1,2}:\d{2})/)?.[1] ?? hora;
+  const nome = nomeSupervisor?.trim();
+  return nome ? `${nome} fez um report às ${horaCurta}` : `Atualizado às ${horaCurta}`;
+}
 const POLL_INTERVAL_MS = 30_000;
 
 // Mesma largura-base da tabela do Consolidado (gestor-equipe-section.tsx):
@@ -117,24 +121,20 @@ export function GestorTmaSection({
   return (
     <motion.section
       id="equipe-section"
-      initial={{ opacity: 0, y: 12 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.15, duration: 0.25, ease: EASE_OUT_EXPO }}
-      className="space-y-4"
+      className="tma-equipe"
     >
-      <div className="mb-0 flex flex-wrap items-center justify-between gap-4 pt-0 pb-4">
-        <div className="flex items-center gap-3">
-          <h2 className="ds-h2">Equipe</h2>
-          {formatReportLabel(reportHora, reportNomeSupervisor) && (
-            <span className="ds-mono-sm text-foreground/80 font-medium">
-              - {formatReportLabel(reportHora, reportNomeSupervisor)}
-            </span>
-          )}
-        </div>
-
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-          <CopyTmaButton horaReport={reportHora} />
-          {showUpload && <ClearBaseButton action={clearTmaAction} onCleared={refetchTma} />}
+      <div className="pt-4 mb-4">
+        <h1 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">TMA & Peso</h1>
+      </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pb-2">
+        {formatCabecalhoReport(reportHora, reportNomeSupervisor) ? (
+          <p className="font-sans text-muted-foreground text-sm font-normal">
+            {formatCabecalhoReport(reportHora, reportNomeSupervisor)}
+          </p>
+        ) : <span aria-hidden="true" />}
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <ConfigTmaPopover
             metaInicial={metaAtualMmSs}
             ordemInicial={ordemTabela}
@@ -145,6 +145,15 @@ export function GestorTmaSection({
             }}
             onOpenChange={setConfigPopoverOpen}
           />
+          {showUpload && (
+            <ClearBaseButton
+              action={clearTmaAction}
+              onCleared={refetchTma}
+              variant="icon-danger"
+              toastClassName="reports-tma-peso-toast"
+            />
+          )}
+          <CopyTmaButton horaReport={reportHora} />
         </div>
       </div>
 
@@ -183,7 +192,7 @@ export function GestorTmaSection({
         Consolidado, maxWidth 100% no mobile) e o `z-[45]` enquanto o
         popover de meta está aberto, pra tabela ficar acima do overlay.
       */}
-      <div className="flex flex-col gap-4 border-t border-dashed border-border pt-4 lg:flex-row lg:items-stretch">
+      <div className="flex flex-col gap-4 pt-2 lg:flex-row lg:items-stretch">
         <div
           className={cn(
             "shrink-0 relative transition-[z-index] duration-0",
@@ -199,7 +208,16 @@ export function GestorTmaSection({
               thresholdConfig={thresholdConfig}
               headerButton={
                 nomeFantasia?.ativo && (
-                  <OlhoToggleButton olhoAberto={olhoAberto} onToggle={handleToggleOlho} />
+                  <button
+                    type="button"
+                    onClick={handleToggleOlho}
+                    aria-pressed={olhoAberto}
+                    title={olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"}
+                    aria-label={olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"}
+                    className="text-foreground/80 hover:text-foreground transition-colors inline-block align-middle ml-1.5"
+                  >
+                    {olhoAberto ? <IconEye size={14} /> : <IconEyeOff size={14} />}
+                  </button>
                 )
               }
             />

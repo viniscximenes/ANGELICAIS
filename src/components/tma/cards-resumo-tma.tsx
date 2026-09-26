@@ -2,7 +2,6 @@
 
 import { BlurFade } from "@/components/ui/blur-fade";
 import { NumberTicker } from "@/components/ui/number-ticker";
-import { StyledCard } from "@/components/gestor/styled-card";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import type { TmaStatus } from "@/lib/tma/tma-status";
 
@@ -14,25 +13,7 @@ interface CardsResumoTmaProps {
   totalAtendidos: number;
 }
 
-/**
- * 2 cards grandes lado a lado (TMA + Atendidos) — mesmo padrão visual dos
- * cards de resumo do Tempo-Indisp (StyledCard + BlurFade, cantoneiras
- * left/right), sem os médios (só 2 números pra esta seção) e sem seletor de
- * período (a página não tem um — mostra sempre a base atual, mesmo padrão do
- * Consolidado/Tempo-Indisp).
- *
- * Cor do card "TMA": MESMO padrão já usado pelos outros cards grandes de
- * resumo do projeto (VisaoGeralCards no Consolidado, CardsResumoAnalitico no
- * Tempo-Indisp) — recolore só o TEXTO do valor (text-success/text-danger),
- * sem tingir o fundo do card. Não inventei um padrão novo: os dois exemplos
- * existentes já fazem exatamente isso pro card grande com meta.
- *
- * "TMA" usa formatKpiValue(..., "time") — MESMO formatador já usado em
- * tma-table.tsx/tma-detalhe-dialog.tsx, sem criar formatador novo.
- * "Atendidos" é NumberTicker puro (inteiro, sem cor de status — é volume,
- * não tem meta), igual ao card equivalente do dialog de detalhe da TMA
- * (tma-detalhe-dialog.tsx).
- */
+/** Indicador principal e volume secundário: mesmas caixas neutras do Analítico do Consolidado. */
 export function CardsResumoTma({ tmaMedioPonderado, tmaStatus, totalAtendidos }: CardsResumoTmaProps) {
   // Classes literais (não interpoladas) — mesma ressalva de VisaoGeralCards:
   // o scanner do Tailwind precisa achar a string inteira no código-fonte.
@@ -44,24 +25,25 @@ export function CardsResumoTma({ tmaMedioPonderado, tmaStatus, totalAtendidos }:
         : "text-foreground dark:text-foreground";
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-end">
-      <BlurFade delay={0} inView>
-        <StyledCard className="flex h-full flex-col justify-center px-6 py-5" withGradient corners="left">
-          <p className="ds-small text-muted-foreground/80 mb-2 text-xs font-semibold tracking-wider uppercase">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end">
+      <BlurFade delay={0} inView className="sm:col-span-2">
+        <div className="relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 p-6 shadow-[var(--shadow-sm)] backdrop-blur-md">
+          <div aria-hidden="true" className="absolute top-0 left-0 h-full w-[3px] bg-primary" />
+          <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             TMA
           </p>
-          <p className={`ds-display tracking-tight text-4xl xl:text-5xl font-bold tabular-nums ${tmaClassName}`}>
+          <p className={`ds-display tracking-tight text-5xl font-semibold tabular-nums ${tmaClassName}`}>
             {formatKpiValue(tmaMedioPonderado, "time")}
           </p>
-        </StyledCard>
+        </div>
       </BlurFade>
 
-      <BlurFade delay={0.06} inView>
-        <StyledCard className="flex h-full flex-col justify-center px-6 py-5" withGradient corners="right">
-          <p className="ds-small text-muted-foreground/80 mb-2 text-xs font-semibold tracking-wider uppercase">
+      <BlurFade delay={0.06} inView className="sm:col-span-3">
+        <div className="flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 p-4 shadow-[var(--shadow-sm)] backdrop-blur-md">
+          <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             Atendidos
           </p>
-          <p className="ds-display flex items-baseline tracking-tight text-4xl xl:text-5xl font-bold text-foreground">
+          <p className="ds-display text-foreground flex items-baseline text-3xl font-semibold">
             <NumberTicker
               value={totalAtendidos}
               decimalPlaces={0}
@@ -69,7 +51,7 @@ export function CardsResumoTma({ tmaMedioPonderado, tmaStatus, totalAtendidos }:
               className="text-foreground tracking-tight dark:text-foreground"
             />
           </p>
-        </StyledCard>
+        </div>
       </BlurFade>
     </div>
   );

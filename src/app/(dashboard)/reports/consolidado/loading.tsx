@@ -15,6 +15,7 @@ export default function LoadingReportsConsolidado() {
       dataPage="reports-consolidado"
       titulo="Consolidado"
       formato="consolidado"
+      indicatorPosition="after-header"
     />
   );
 }

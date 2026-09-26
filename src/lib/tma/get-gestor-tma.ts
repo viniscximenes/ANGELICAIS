@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { dataRefHojeBR } from "@/lib/d1-db/parse";
 import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
+import { resolveNomeSupervisorReportExibicao } from "@/lib/gestor/resolve-nome-supervisor-report";
 import { DEFAULT_ORDEM_TABELA_TMA, isOrdemTabelaTma, type OrdemTabelaTma } from "@/lib/gestor/config-tabela-tma/types";
 import { ordenarOperadoresTma } from "@/lib/gestor/config-tabela-tma/ordenar-operadores-tma";
 import { getTmaThresholdConfig, statusTmaDe, type TmaStatus } from "./tma-status";
@@ -160,8 +161,11 @@ export async function getGestorTma(gestorId: string): Promise<GestorTmaResult> {
   return {
     operadores,
     reportHora: rows?.[0]?.report_hora ?? null,
-    reportNomeSupervisor: rows?.[0]?.report_nome_supervisor ?? null,
-    metaAtualMmSs: segundosParaMmSs(threshold ?? 731),
+    reportNomeSupervisor: await resolveNomeSupervisorReportExibicao(
+      admin,
+      rows?.[0]?.report_nome_supervisor,
+    ),
+    metaAtualMmSs: segundosParaMmSs(threshold ?? 780),
     ordemTabela,
   };
 }

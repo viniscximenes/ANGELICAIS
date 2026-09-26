@@ -1,6 +1,5 @@
 "use client";
 
-import { IconChartBar } from "@tabler/icons-react";
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
@@ -44,8 +43,7 @@ export function TmaPorTemaCard({ tmaPorBucketEquipe }: TmaPorTemaCardProps) {
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-          <IconChartBar size={20} className="text-foreground" />
+        <h3 className="ds-h3 font-semibold text-foreground">
           TMA por Tema (Gestor)
         </h3>
         <p className="ds-small text-muted-foreground mt-1">
@@ -60,8 +58,8 @@ export function TmaPorTemaCard({ tmaPorBucketEquipe }: TmaPorTemaCardProps) {
           const cor = cores[bucket];
 
           return (
-            <div key={bucket} className="space-y-1.5">
-              <div className="flex justify-between items-baseline text-xs">
+            <div key={bucket} className="space-y-1.5 border-b border-border/20 pb-3 last:border-0 last:pb-0 hover:bg-accent transition-colors rounded-md px-1 -mx-1">
+              <div className="flex flex-wrap justify-between items-baseline gap-x-2 gap-y-1 text-xs">
                 <span className="font-semibold text-foreground tracking-tight">
                   {SKILL_BUCKET_LABELS[bucket]}
                 </span>

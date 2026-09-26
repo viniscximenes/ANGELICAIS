@@ -1,4 +1,3 @@
-import { IconScale } from "@tabler/icons-react";
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import { resolverNomeExibicao, type NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
@@ -19,8 +18,7 @@ export function CardPesoDesigual({ operadores, nomeFantasia }: CardPesoDesigualP
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-          <IconScale size={20} className="text-foreground" />
+        <h3 className="ds-h3 font-semibold text-foreground">
           Peso Desigual
         </h3>
         <p className="ds-small text-muted-foreground mt-1">
@@ -28,7 +26,7 @@ export function CardPesoDesigual({ operadores, nomeFantasia }: CardPesoDesigualP
         </p>
       </div>
 
-      <StyledCard className="p-4 space-y-2.5" withGradient corners="all">
+      <StyledCard className="p-4 space-y-3.5" withGradient corners="all">
         {operadores.length === 0 ? (
           <p className="ds-small text-muted-foreground text-center py-4 italic">
             Nenhum operador com peso desigual hoje.
@@ -37,7 +35,7 @@ export function CardPesoDesigual({ operadores, nomeFantasia }: CardPesoDesigualP
           operadores.map((op) => {
             const nomeExibicao = resolverNomeExibicao(op.operatorEmail, nomeFantasia);
             return (
-              <div key={op.operatorEmail} className="flex items-center justify-between gap-3 border-b border-border/20 pb-2.5 last:border-0 last:pb-0">
+              <div key={op.operatorEmail} className="flex flex-wrap items-center justify-between gap-3 border-b border-border/20 pb-3 last:border-0 last:pb-0 hover:bg-accent transition-colors rounded-md px-1 -mx-1">
                 <div className="min-w-0">
                   <p className="ds-body text-xs font-semibold text-foreground truncate">{nomeExibicao}</p>
                   <p className="ds-small text-muted-foreground text-[11px] mt-0.5">

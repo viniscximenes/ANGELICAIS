@@ -1,6 +1,5 @@
 import { StyledCard } from "@/components/gestor/styled-card";
 import {
-  TABELA_CONTAINER_CLASS,
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
   TABELA_HEADER_CELL_ULTIMA_CLASS,
@@ -82,12 +81,12 @@ export function AnaliticoTmaTabela({ roster, porOperadorPorBucket }: Props) {
         </p>
       </div>
 
-      <StyledCard className="p-3" withGradient>
-        <div className={TABELA_CONTAINER_CLASS}>
+      <StyledCard className="p-0" withGradient>
+        <div className="overflow-hidden">
           <div className="overflow-x-auto overflow-y-auto scrollbar-tema" style={{ maxHeight: MAX_HEIGHT_PX }}>
             <div data-analitico-tma-tabela className="min-w-fit">
               <div
-                className={cn(TABELA_HEADER_CLASS, "text-foreground sticky top-0 z-20")}
+                className={cn(TABELA_HEADER_CLASS, "font-sans text-muted-foreground text-[11px] sticky top-0 z-20")}
                 style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA, background: STICKY_HEADER_BG }}
               >
                 <div
