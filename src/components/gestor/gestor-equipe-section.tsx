@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { IconEye, IconEyeOff, IconCoin } from "@tabler/icons-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { IconEye, IconEyeOff } from "@tabler/icons-react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 
@@ -10,12 +10,12 @@ import { EquipeTable } from "@/components/d-1/equipe-table";
 import { UploadDropzone } from "@/components/d-1/upload-dropzone";
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
 import { ConfigTabelaPopover } from "@/components/gestor/config-tabela-popover";
+import { LabeledSwitch } from "@/components/gestor/labeled-switch";
 import { StyledCard } from "@/components/gestor/styled-card";
 import { clearConsolidadoAction } from "@/lib/d1-db/actions/clear-consolidado-action";
 import { refreshConsolidadoAction } from "@/lib/d1-db/actions/refresh-consolidado-action";
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/d1-db/types";
 import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
-import { formatReportLabel } from "@/lib/gestor/format-report-label";
 import {
   DEFAULT_META_TX_RETENCAO,
   DEFAULT_ORDEM_TABELA,
@@ -35,7 +35,29 @@ import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
 import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog";
 import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
 
-const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+// Texto da 2ª linha do cabeçalho ("{nome} fez um report às {hora}") — mesma
+// checagem de "hora ausente/zerada" de formatReportLabel (@/lib/gestor/
+// format-report-label), mas com um texto mais curto: sem o "Equipe -" e sem
+// o "O supervisor" na frente do nome (pedido explícito desta rodada). Mantida
+// LOCAL (não uma alteração em formatReportLabel) porque essa função é
+// compartilhada por outras 3 tabelas (gestor-tma-section, tempo-indisp-section)
+// que continuam precisando do texto original.
+// Sem report ainda (hora nula/zerada): retorna null e a linha inteira some —
+// mesmo comportamento de antes (o `{formatReportLabel(...) && (...)}` já
+// escondia a linha nesse caso), só que agora não há mais fallback textual
+// tipo "-" ou "undefined" visível.
+function formatCabecalhoReport(
+  hora: string | null | undefined,
+  nomeSupervisor: string | null | undefined,
+): string | null {
+  if (!hora || hora === "—" || hora === "00:00" || hora === "00:00:00") return null;
+  const horaCurta = hora.match(/^(\d{1,2}:\d{2})/)?.[1] ?? hora;
+  const nome = nomeSupervisor?.trim();
+  if (nome) {
+    return `${nome} fez um report às ${horaCurta}`;
+  }
+  return `Atualizado às ${horaCurta}`;
+}
 
 // Intervalo do polling: reconsulta a base a cada 30s para refletir mudanças
 // sem precisar de F5. A tabela unificada Tempo Logado & Indisponibilidade
@@ -47,20 +69,59 @@ const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 // (analitico-tma-tabela.tsx/cards-resumo-tma.tsx) nunca teve polling.
 const POLL_INTERVAL_MS = 30_000;
 
-// CAUSA RAIZ da última coluna (Tx Retenção/RV Diário) cortada: o wrapper
-// abaixo define `width: 760px/920px` esperando que seja EXATAMENTE a
-// largura útil pro grid da EquipeTable (BASE_COLUMN_WIDTHS_PX soma 760 +
-// RV_COLUMN_PX quando ligado, ver equipe-table.tsx) — mas esse width é do
-// DIV EXTERNO, que ainda contém o StyledCard com padding (`p-3` = 12px por
-// lado) + borda (`border` = 1px por lado) por DENTRO dele. Como StyledCard
-// é `overflow-visible`, mas o container real da tabela (TABELA_CONTAINER_
-// CLASS) é `overflow-hidden` e só recebe a largura ATRIBUÍDA A ELE pelo
-// pai (760/920 menos o padding+borda do StyledCard), o grid interno (que
-// usa pixels fixos, não encolhe) ficava ~26px mais largo que esse espaço
-// disponível — os 26px que sobravam do lado direito eram cortados pelo
-// overflow-hidden. Compensado somando esse "chrome" do StyledCard à
-// largura do wrapper externo, pra área de conteúdo real bater 760/920.
-const TABELA_CARD_CHROME_PX = 26; // 2 × (padding 12px + borda 1px)
+// CAUSA RAIZ HISTÓRICA da última coluna (Tx Retenção/RV Diário) cortada: o
+// wrapper VISÍVEL abaixo precisa de uma largura EXPLÍCITA (é uma `transition:
+// width` em CSS, entre o estado com/sem coluna RV) que caiba o grid fixo da
+// EquipeTable (BASE_COLUMN_WIDTHS_PX = 760/920px, ver equipe-table.tsx) MAIS
+// o "chrome" do StyledCard por dentro dele (padding `p-3` + borda `border`).
+// Antes esse chrome era uma CONSTANTE hardcoded (26px) — frágil: qualquer
+// mudança futura de padding/border/radius do StyledCard (ex.: tema Zen
+// Linen escopado a esta página) deixaria a constante desatualizada e voltaria
+// a cortar a última coluna, silenciosamente.
+//
+// Corrigido MEDINDO o chrome real do próprio StyledCard renderizado
+// (getComputedStyle: padding-left/right + border-left/right-width), em vez
+// de uma constante — ver useCardChromePx abaixo. Se o padding/border/radius
+// do card mudar de novo (dentro do escopo desta página), a medição já
+// reflete o valor novo automaticamente, sem precisar lembrar de atualizar
+// nada aqui.
+//
+// O wrapper INVISÍVEL do PNG (mais abaixo) não precisa de nenhum desses dois
+// números: por ser `position: fixed` sem `right` definido, ele já shrink-wrap
+// (largura intrínseca = conteúdo real), então foi simplificado para não
+// forçar largura nenhuma — o card cresce exatamente o que precisar.
+function useCardChromePx(cardWrapperRef: RefObject<HTMLDivElement | null>): number {
+  // Fallback (padding 12px + borda 1px, dos dois lados) usado só até a
+  // primeira medição real no mount — mesmo valor que a constante antiga
+  // tinha, mas agora é só um chute inicial, não a fonte de verdade.
+  const [chromePx, setChromePx] = useState(26);
+
+  useLayoutEffect(() => {
+    function medir() {
+      const cardEl = cardWrapperRef.current?.firstElementChild as HTMLElement | null;
+      if (!cardEl) return;
+      const cs = getComputedStyle(cardEl);
+      const horizontal =
+        parseFloat(cs.paddingLeft) +
+        parseFloat(cs.paddingRight) +
+        parseFloat(cs.borderLeftWidth) +
+        parseFloat(cs.borderRightWidth);
+      if (Number.isFinite(horizontal) && horizontal > 0) {
+        setChromePx(Math.round(horizontal));
+      }
+    }
+    medir();
+    // Reagir a mudanças de padding/border por resize (ex.: breakpoints) ou
+    // troca de tema, que podem em tese variar o computed style.
+    const ro = new ResizeObserver(medir);
+    if (cardWrapperRef.current?.firstElementChild) {
+      ro.observe(cardWrapperRef.current.firstElementChild);
+    }
+    return () => ro.disconnect();
+  }, [cardWrapperRef]);
+
+  return chromePx;
+}
 
 interface GestorEquipeSectionProps {
   operadores: OperadorConsolidado[];
@@ -165,12 +226,14 @@ export function GestorEquipeSection({
         setOperadorMeta(result.data.meta);
         setOperadorDialogOpen(true);
       } else {
-        toast.error(result.error);
+        toast.error(result.error, { className: "reports-consolidado-toast" });
       }
     } catch (err) {
       if (!handleStaleActionError(err)) {
         console.error("[GestorEquipeSection] erro ao buscar detalhamento do operador:", err);
-        toast.error("Erro ao carregar detalhamento do operador.");
+        toast.error("Erro ao carregar detalhamento do operador.", {
+          className: "reports-consolidado-toast",
+        });
       }
     } finally {
       setOperadorDialogLoading(false);
@@ -191,8 +254,11 @@ export function GestorEquipeSection({
     });
   }
 
-  function handleToggleRvDiario() {
-    const novoValor = !showRvDiario;
+  // "Exibir RV" (antes "RV Diário") — mesma função de sempre: liga/desliga a
+  // coluna RV Diário da EquipeTable (showRvDiario), persistida por
+  // toggleShowRvDiarioAction. Só o rótulo/controle visual mudou (botão pill →
+  // switch, ver LabeledSwitch), pra bater com "Exibir RV" de /kpi/operadores.
+  function handleToggleRvDiario(novoValor: boolean) {
     setShowRvDiario(novoValor);
     toggleShowRvDiarioAction(novoValor).catch((err) => {
       if (!handleStaleActionError(err)) {
@@ -336,58 +402,73 @@ export function GestorEquipeSection({
   // salva em percentual (0-100), igual à meta do Dashboard de Retenção.
   const metaTxFracao = metaTxRetencao / 100;
 
+  // Chrome (padding+borda) do StyledCard visível, medido de verdade — ver
+  // comentário em useCardChromePx, acima.
+  const cardVisivelWrapperRef = useRef<HTMLDivElement>(null);
+  const cardChromePx = useCardChromePx(cardVisivelWrapperRef);
+
   return (
+    // initial={false}: esta seção já vem pronta via SSR (props, sem fetch
+    // client próprio) — animar de opacity:0 com delay de 150ms fazia o
+    // conteúdo real ficar invisível por um intervalo perceptível logo
+    // depois do loading.tsx sumir (motion renderiza o estado `initial` no
+    // SSR; só anima pra `animate` depois que o JS hidrata), causando a
+    // sequência "loading → tela vazia → dados" reportada em
+    // /reports/consolidado. `initial={false}` faz o motion.section montar
+    // direto no estado final (opacity:1), sem essa janela vazia — mantém
+    // motion.section (em vez de trocar por <section>) só pra não precisar
+    // tocar em mais nada da árvore/props que dependam do elemento ser um
+    // motion component.
     <motion.section
       id="equipe-section"
-      initial={{ opacity: 0, y: 12 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.15, duration: 0.25, ease: EASE_OUT_EXPO }}
       className="space-y-4"
     >
       <div>
         {/*
-          pt-0 (não py-4 nos dois lados): o espaço ACIMA do título "Equipe"
-          já vem do mb-* do <header> da página (page.tsx) — somar padding
-          próprio aqui em cima criava um vazio duplicado entre o cabeçalho
-          da página e este título. pb-4 continua igual (separa o título da
-          EquipeTable abaixo, isso não estava sendo reclamado).
+          Cabeçalho da página inteira (título "Consolidado" + linha de report)
+          — movido de page.tsx (Server Component) pra cá: o texto da 2ª linha
+          depende de nomeSupervisorReport/equipe.horaReport, que são estado
+          client atualizado pelo polling de 30s (refetchConsolidado, abaixo),
+          então só pode viver num Client Component. MESMAS classes literais
+          de /kpi/operadores (KpiEquipeSection) pro título+subtítulo.
         */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-0 pb-4">
-          <div className="flex items-center gap-3">
-            <h2 className="ds-h2">Equipe</h2>
-            {formatReportLabel(equipe.horaReport, nomeSupervisorReport) && (
-              <span className="ds-mono-sm text-foreground/80 font-medium">
-                - {formatReportLabel(equipe.horaReport, nomeSupervisorReport)}
-              </span>
-            )}
-          </div>
+        <div className="pt-4 mb-4">
+          <h1 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            Consolidado
+          </h1>
+        </div>
 
-          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={handleToggleRvDiario}
-              aria-pressed={showRvDiario}
-              className={cn(
-                "ds-mono-sm flex items-center gap-1.5 rounded-md border px-3 py-1.5 transition-all cursor-pointer shadow-sm select-none",
-                showRvDiario
-                  ? "bg-primary text-primary-foreground border-primary hover:opacity-90"
-                  : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/50 hover:text-foreground",
-              )}
-              style={{ fontSize: "12px" }}
-            >
-              <IconCoin size={14} aria-hidden="true" />
-              <span>RV Diário</span>
-            </button>
+        {/*
+          5ª rodada: subtítulo (nome+hora do report) e a linha de controles
+          deixaram de ser blocos empilhados e passaram a dividir a MESMA
+          linha — subtítulo à esquerda, controles à direita, ambos
+          verticalmente centralizados (items-center). Isso libera o espaço
+          vertical que a linha de controles ocupava sozinha antes, deixando a
+          tabela subir. Em telas estreitas (abaixo de sm), empilha de volta
+          (subtítulo em cima, controles embaixo) via flex-col/sm:flex-row,
+          mesma convenção de breakpoint já usada nas páginas migradas
+          (kpi-operadores.css/kpi-equipe-section) pra flex-col -> *:flex-row.
+          Ordem dos controles: [⚙ Config] [🗑 Limpar base] [Copiar imagem]
+          [Exibir RV] — "Limpar base" virou ícone-only (variant="icon-danger"
+          do ClearBaseButton) com o MESMO visual neutro/outline do botão de
+          engrenagem, posicionado logo ao lado dela.
+        */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pb-2">
+          {/* Sem report ainda (hora nula/zerada): o parágrafo some — ver
+              formatCabecalhoReport, acima. Quando ausente, renderiza um span
+              vazio pra manter o justify-between empurrando os controles pra
+              direita mesmo sem texto à esquerda. */}
+          {formatCabecalhoReport(equipe.horaReport, nomeSupervisorReport) ? (
+            <p className="font-sans text-muted-foreground text-sm font-normal">
+              {formatCabecalhoReport(equipe.horaReport, nomeSupervisorReport)}
+            </p>
+          ) : (
+            <span aria-hidden="true" />
+          )}
 
-            <CopyTableButton
-              operadores={operadores}
-              equipe={equipe}
-              supervisor={gestora}
-              nomeSupervisorReport={nomeSupervisorReport}
-            />
-            {showUpload && (
-              <ClearBaseButton action={clearConsolidadoAction} onCleared={handleBaseCleared} />
-            )}
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <ConfigTabelaPopover
               metaTxInicial={metaTxRetencao}
               ordemInicial={ordemTabela}
@@ -397,6 +478,24 @@ export function GestorEquipeSection({
               }}
               onOpenChange={setConfigPopoverOpen}
             />
+
+            {showUpload && (
+              <ClearBaseButton
+                action={clearConsolidadoAction}
+                onCleared={handleBaseCleared}
+                variant="icon-danger"
+                toastClassName="reports-consolidado-toast"
+              />
+            )}
+
+            <CopyTableButton
+              operadores={operadores}
+              equipe={equipe}
+              supervisor={gestora}
+              nomeSupervisorReport={nomeSupervisorReport}
+            />
+
+            <LabeledSwitch label="Exibir RV" checked={showRvDiario} onCheckedChange={handleToggleRvDiario} />
           </div>
         </div>
 
@@ -419,20 +518,17 @@ export function GestorEquipeSection({
             position: "fixed",
             top: "-99999px",
             left: "-99999px",
-            // 760px de base (as 5 colunas em `fr`) + 160px fixos da coluna
-            // RV quando ativa (mesmo valor de RV_COLUMN_PX em
-            // equipe-table.tsx) — os 760px continuam os MESMOS nos dois
-            // casos, só a coluna extra soma por cima. Largura calibrada
-            // pra "CANCELADOS"/"TX RETENÇÃO" (ds-body bold tracking-wide,
-            // os headers mais longos da tabela) não truncarem, mesmo já
-            // com padding reduzido nas células de header (px-3→px-2 em
-            // tabela-padrao.tsx) e min-w-0 garantindo que os tracks do
-            // grid do header/corpo fiquem idênticos. + TABELA_CARD_CHROME_PX
-            // compensa o padding/borda do StyledCard por dentro (ver
-            // comentário na constante).
-            width: showRvDiario
-              ? `${920 + TABELA_CARD_CHROME_PX}px`
-              : `${760 + TABELA_CARD_CHROME_PX}px`,
+            // SEM width explícita de propósito: `position: fixed` com só
+            // `top`/`left` definidos (sem `right`) faz o navegador dar
+            // shrink-wrap no elemento — a largura vira a largura intrínseca
+            // real do conteúdo (StyledCard + seu padding/borda reais + o
+            // grid fixo de 760/920px da EquipeTable por dentro). Antes esse
+            // valor era forçado por fora (760/920 + uma constante de chrome
+            // hardcoded) — se o padding/borda/radius do card mudasse, a
+            // constante ficava errada e cortava a última coluna
+            // silenciosamente. Deixando o wrapper se auto-dimensionar, ele
+            // nunca mais pode ficar mais estreito que o conteúdo real, por
+            // definição — não há mais nenhum número pra desatualizar.
           }}
         >
           <div data-tabela-png>
@@ -448,19 +544,27 @@ export function GestorEquipeSection({
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 border-t border-dashed border-border pt-4 lg:flex-row lg:items-stretch">
+        {/*
+          Sem borda/divisória aqui de propósito (removida nesta rodada) — o
+          espaço entre a linha de controles e a tabela/card "Anexar Base"
+          agora é só o gap vertical (pb-2 da linha acima + pt-2 daqui = 16px),
+          igual ao respiro entre cabeçalho e controles (mb-4 = 16px logo
+          acima), em vez do bloco antigo de 32px + linha tracejada.
+        */}
+        <div className="flex flex-col gap-4 pt-2 lg:flex-row lg:items-stretch">
           <div
             className={cn(
               "shrink-0 relative transition-[z-index] duration-0",
               configPopoverOpen && "z-[45]",
             )}
             style={{
-              // Mesma largura-base do wrapper do PNG acima (760/920px +
-              // TABELA_CARD_CHROME_PX) — ver comentário lá pro raciocínio
-              // completo.
+              // Largura-base da EquipeTable (760/920px, BASE_COLUMN_WIDTHS_PX
+              // em equipe-table.tsx) + o chrome REAL do StyledCard (padding +
+              // borda), medido em tempo real por useCardChromePx — nunca uma
+              // constante hardcoded (ver comentário na definição do hook).
               width: showRvDiario
-                ? `${920 + TABELA_CARD_CHROME_PX}px`
-                : `${760 + TABELA_CARD_CHROME_PX}px`,
+                ? `${920 + cardChromePx}px`
+                : `${760 + cardChromePx}px`,
               maxWidth: "100%",
               // Mesma curva/duração da animação interna do toggle RV
               // (spring do motion em equipe-table.tsx, ~300-400ms) — são
@@ -471,6 +575,7 @@ export function GestorEquipeSection({
               transition: "width 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           >
+            <div ref={cardVisivelWrapperRef} className="h-full">
             <StyledCard withGradient className="h-full p-3">
               <EquipeTable
                 key="gestor-equipe-visible"
@@ -486,6 +591,7 @@ export function GestorEquipeSection({
                     <button
                       type="button"
                       onClick={handleToggleOlho}
+                      aria-pressed={olhoAberto}
                       title={olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"}
                       // Mesma cor do texto do header ("Operador" e demais
                       // títulos, herdada de text-foreground em equipe-table.tsx)
@@ -502,6 +608,7 @@ export function GestorEquipeSection({
                 }
               />
             </StyledCard>
+            </div>
           </div>
 
           {showUpload && (

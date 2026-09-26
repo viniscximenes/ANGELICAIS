@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { OperadorQuartilItem } from "@/lib/retencao/get-quartil-operadores";
-import { IconAward } from "@tabler/icons-react";
 import { StyledCard } from "@/components/gestor/styled-card";
 
 interface DistribuicaoQuartisProps {
@@ -41,12 +40,11 @@ export function DistribuicaoQuartis({
   return (
     <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
       <div className={scrollInterno ? "shrink-0" : undefined}>
-        <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-          <IconAward size={20} className="text-foreground" />
-          Divisor De Quartil
+        <h3 className="ds-h3 font-semibold text-foreground">
+          Divisor de Quartil
         </h3>
         <p className="ds-small text-muted-foreground mt-1">
-          Operadores divididos em quartil, como Q1, Q2, Q3 e Q4 sobre a taxa de retenção.
+          Operadores agrupados por quartil de taxa de retenção.
         </p>
       </div>
 
@@ -69,18 +67,33 @@ export function DistribuicaoQuartis({
       >
         <div className={`flex flex-col xl:flex-row justify-between xl:items-center gap-4 border-b border-border/40 pb-4 ${scrollInterno ? "shrink-0" : ""}`}>
           <div className="flex flex-wrap items-center gap-3">
-            {/* Toggle Equipe vs Polo */}
-            <div className="flex p-0.5 bg-muted/30 rounded-lg border border-border/30 w-fit shrink-0">
+            {/*
+              Toggles no mesmo padrão visual confirmado em /kpi/operadores
+              (SegmentedControl): trilho `--seg-track`/`--seg-track-border` +
+              indicador `--seg-thumb` no item ativo (escuro no tema claro,
+              claro no tema escuro) + `focus-visible:ring-[--ring]` em vez de
+              borda branca de foco. Tokens já definidos em
+              reports-consolidado.css. Reaproveitado como classes puras (não
+              o componente inteiro, que é específico de /kpi/operadores).
+            */}
+            <div
+              role="radiogroup"
+              aria-label="Escopo do quartil"
+              className="flex items-center gap-1 rounded-[var(--radius)] border border-[var(--seg-track-border)] bg-[var(--seg-track)] p-1"
+            >
               {(["equipe", "polo"] as const).map((mode) => {
                 const isActive = toggleMode === mode;
                 return (
                   <button
                     key={mode}
+                    type="button"
+                    role="radio"
+                    aria-checked={isActive}
                     onClick={() => setToggleMode(mode)}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors capitalize cursor-pointer ${
+                    className={`h-8 rounded-[calc(var(--radius)-2px)] px-3 text-xs font-bold capitalize outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)] ${
                       isActive
-                        ? "bg-primary text-primary-foreground shadow"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "bg-[var(--seg-thumb)] text-[var(--seg-text-active)] border border-[var(--seg-thumb-border)]"
+                        : "text-[var(--seg-text)] hover:text-[var(--seg-text-active)]"
                     }`}
                   >
                     {mode}
@@ -89,18 +102,24 @@ export function DistribuicaoQuartis({
               })}
             </div>
 
-            {/* Toggle para selecionar o quartil */}
-            <div className="flex p-0.5 bg-muted/30 rounded-lg border border-border/30 w-fit shrink-0">
+            <div
+              role="radiogroup"
+              aria-label="Quartil selecionado"
+              className="flex items-center gap-1 rounded-[var(--radius)] border border-[var(--seg-track-border)] bg-[var(--seg-track)] p-1"
+            >
               {([1, 2, 3, 4] as const).map((q) => {
                 const isActive = selectedQuartil === q;
                 return (
                   <button
                     key={q}
+                    type="button"
+                    role="radio"
+                    aria-checked={isActive}
                     onClick={() => setSelectedQuartil(q)}
-                    className={`px-3 py-1.5 text-xs font-mono font-bold rounded-md transition-colors cursor-pointer ${
+                    className={`h-8 rounded-[calc(var(--radius)-2px)] px-3 text-xs font-bold outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)] ${
                       isActive
-                        ? "bg-primary text-primary-foreground shadow"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "bg-[var(--seg-thumb)] text-[var(--seg-text-active)] border border-[var(--seg-thumb-border)]"
+                        : "text-[var(--seg-text)] hover:text-[var(--seg-text-active)]"
                     }`}
                   >
                     Q{q}
@@ -114,20 +133,20 @@ export function DistribuicaoQuartis({
         <div className={scrollInterno ? "min-h-0 flex-1 overflow-auto" : "overflow-x-auto"}>
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="ds-mono-sm text-muted-foreground uppercase tracking-wider text-[11px] select-none border-b border-border/40 bg-muted/40">
-                <th className="py-2.5 px-4 font-semibold">Operador</th>
-                <th className="py-2.5 px-4 font-semibold text-center w-[90px]">Quartil</th>
-                <th className="py-2.5 px-4 font-semibold text-center w-[90px]">Pedidos</th>
-                <th className="py-2.5 px-4 font-semibold text-center w-[90px]">Retidos</th>
-                <th className="py-2.5 px-4 font-semibold text-center w-[90px]">Cancelados</th>
-                <th className="py-2.5 px-4 font-semibold text-center w-[120px]">Tx Retenção</th>
+              <tr className="ds-body text-muted-foreground uppercase tracking-wider text-[11px] font-bold select-none border-b border-border/40 bg-muted/40">
+                <th className="py-2.5 px-4">Operador</th>
+                <th className="py-2.5 px-4 text-center w-[90px]">Quartil</th>
+                <th className="py-2.5 px-4 text-center w-[90px]">Pedidos</th>
+                <th className="py-2.5 px-4 text-center w-[90px]">Retidos</th>
+                <th className="py-2.5 px-4 text-center w-[90px]">Cancelados</th>
+                <th className="py-2.5 px-4 text-center w-[120px]">Tx Retenção</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20">
               {list.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-xs text-muted-foreground italic">
-                    {toggleMode === "polo" 
+                  <td colSpan={6} className="py-8 text-center ds-body text-xs text-muted-foreground italic">
+                    {toggleMode === "polo"
                       ? `Nenhum operador da equipe está no Q${selectedQuartil} do polo.`
                       : `Nenhum operador da equipe neste quartil.`}
                   </td>
@@ -136,29 +155,29 @@ export function DistribuicaoQuartis({
                 list.map((op) => {
                   const displayName = op.login.includes("@") ? op.login.split("@")[0] : op.login;
                   const txFormatted = op.tx !== null ? `${(op.tx * 100).toFixed(1)}%` : "—";
-                  
+
                   // Verde se bateu a meta, vermelho se não bateu
                   const abaixo = op.tx === null || op.tx < metaFracao;
                   const txColor = abaixo ? "text-danger font-medium" : "text-success font-medium";
 
                   return (
-                    <tr key={op.login} className="hover:bg-muted/10 transition-colors">
-                      <td className="py-2.5 px-4 text-xs font-semibold text-foreground truncate max-w-[180px]">
+                    <tr key={op.login} className="hover:bg-accent transition-colors">
+                      <td className="py-2.5 px-4 ds-body text-xs font-semibold text-foreground truncate max-w-[180px]">
                         {displayName}
                       </td>
-                      <td className="py-2.5 px-4 text-center text-xs font-mono font-medium text-muted-foreground">
+                      <td className="py-2.5 px-4 text-center ds-mono-sm text-xs font-medium text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                         Q{selectedQuartil}
                       </td>
-                      <td className="py-2.5 px-4 text-center text-xs font-mono text-muted-foreground">
+                      <td className="py-2.5 px-4 text-center ds-mono-sm text-xs text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                         {op.total.toLocaleString("pt-BR")}
                       </td>
-                      <td className="py-2.5 px-4 text-center text-xs font-mono text-muted-foreground">
+                      <td className="py-2.5 px-4 text-center ds-mono-sm text-xs text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                         {op.retidos.toLocaleString("pt-BR")}
                       </td>
-                      <td className="py-2.5 px-4 text-center text-xs font-mono text-muted-foreground">
+                      <td className="py-2.5 px-4 text-center ds-mono-sm text-xs text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                         {op.cancelados.toLocaleString("pt-BR")}
                       </td>
-                      <td className={`py-2.5 px-4 text-center text-xs font-mono ${txColor}`}>
+                      <td className={`py-2.5 px-4 text-center ds-mono-sm text-xs ${txColor}`} style={{ fontVariantNumeric: "tabular-nums" }}>
                         {txFormatted}
                       </td>
                     </tr>

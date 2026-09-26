@@ -19,6 +19,24 @@ interface ExportPopupPngButtonProps {
   contentRef: React.RefObject<HTMLDivElement | null>;
   filename: string;
   className?: string;
+  /**
+   * Repassa `corDeFundoDoAlvo` pra `capturarComoPng`: resolve o --background
+   * do padding a partir do próprio `contentRef`, em vez da raiz do
+   * documento. Necessário quando `contentRef` vive dentro de um portal
+   * (Radix Dialog) sob um tema ESCOPADO via atributo (ex:
+   * [data-page="reports-consolidado"]) que a raiz do documento não carrega.
+   * Padrão `false` — não muda o comportamento de nenhum uso existente
+   * (ex: popup do TMA).
+   */
+  corDeFundoDoAlvo?: boolean;
+  /**
+   * Classe extra aplicada aos toasts (sonner) deste botão — ex.
+   * "reports-consolidado-toast", pra herdar o tema Zen Linen só nos toasts
+   * disparados a partir do /reports/consolidado, sem tocar no <Toaster/>
+   * global nem nos toasts de TMA/Tempo Indisponibilidade (que não passam
+   * essa prop e continuam com o visual padrão). Default: undefined.
+   */
+  toastClassName?: string;
 }
 
 /**
@@ -31,20 +49,22 @@ export function ExportPopupPngButton({
   contentRef,
   filename,
   className,
+  corDeFundoDoAlvo = false,
+  toastClassName,
 }: ExportPopupPngButtonProps) {
   const [state, setState] = useState<"idle" | "gerando" | "feito">("idle");
 
   async function handleClick() {
     const target = contentRef.current;
     if (!target) {
-      toast.error("Conteúdo não encontrado");
+      toast.error("Conteúdo não encontrado", { className: toastClassName });
       return;
     }
 
     setState("gerando");
 
     try {
-      const dataUrl = await capturarComoPng(target, { scale: 2 });
+      const dataUrl = await capturarComoPng(target, { scale: 2, corDeFundoDoAlvo });
 
       const link = document.createElement("a");
       link.href = dataUrl;
@@ -54,12 +74,12 @@ export function ExportPopupPngButton({
       document.body.removeChild(link);
 
       setState("feito");
-      toast.success("Imagem baixada");
+      toast.success("Imagem baixada", { className: toastClassName });
       setTimeout(() => setState("idle"), 2000);
     } catch (err) {
       console.error("[export-popup-png] erro:", err);
       setState("idle");
-      toast.error("Não foi possível gerar a imagem");
+      toast.error("Não foi possível gerar a imagem", { className: toastClassName });
     }
   }
 

@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 import {
   corNomeOperador,
   fundoLinhaRuim,
-  TABELA_CONTAINER_CLASS,
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
   TABELA_HEADER_CELL_ULTIMA_CLASS,
@@ -64,6 +63,30 @@ function formatRv(rv: number | null | undefined): string {
 }
 
 const META_TX_PADRAO = 0.6;
+
+/**
+ * Hover da linha — mesmo token (`--accent`) usado em `/kpi/operadores`
+ * (`hover:bg-accent` no `<tr>`, ver kpi-equipe-section.tsx). TABELA_LINHA_CLASS
+ * (compartilhada com Tempo Logado/Indisponibilidade/TMA, tabela-padrao.tsx)
+ * vem com `hover:bg-muted/40` — string-replace local, só dentro deste
+ * componente exclusivo desta rota, pra não editar o arquivo compartilhado
+ * nem vazar a mudança pras outras tabelas que o consomem.
+ *
+ * Isso sozinho NÃO bastava: globals.css tem uma regra global (fora do escopo
+ * permitido pra edição) `[data-theme="light"] [data-equipe-table] >
+ * div:not(:first-child):not(.font-bold):hover { background-color:
+ * var(--muted-hover-bg) !important }` — resquício do tema antigo,
+ * `--muted-hover-bg` é um cinza quase branco fora da paleta Zen Linen e não
+ * redefinido por esta página. Com `!important`, essa regra global vencia
+ * QUALQUER classe Tailwind aqui, daí o hover claro/esbranquiçado reportado.
+ * A correção completa está em reports-consolidado.css, com um seletor ainda
+ * mais específico (mesmo padrão + o escopo [data-page] a mais) escrevendo
+ * `var(--accent)` por cima, só para esta rota.
+ */
+const TABELA_LINHA_HOVER_CLASS = TABELA_LINHA_CLASS.replace(
+  "hover:bg-muted/40",
+  "hover:bg-accent",
+);
 
 function formatOperatorLabel(email: string): string {
   return email.split("@")[0] || email;
@@ -285,7 +308,16 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
     const gridTemplateColumns = `${BASE_COLUMN_WIDTHS_PX.join("px ")}px ${rvWidthPx}px`;
 
     return (
-      <div ref={ref} data-equipe-table className={TABELA_CONTAINER_CLASS}>
+      // Container PRÓPRIO sem border/rounded/elevation-1 (TABELA_CONTAINER_CLASS,
+      // usado pelas outras tabelas do mesmo padrão — Tempo Logado/
+      // Indisponibilidade/TMA — continua intocado em tabela-padrao.tsx). Este
+      // componente (EquipeTable) só é consumido por /reports/consolidado,
+      // sempre dentro de um StyledCard que JÁ fornece borda + padding + fundo
+      // — usar TABELA_CONTAINER_CLASS aqui duplicava esse chrome (2 bordas/2
+      // raios aninhados, um quadrado dentro do outro). `data-equipe-table`
+      // preservado (gancho do seletor global em globals.css pro fundo/borda
+      // do cabeçalho no tema claro — não depende da borda externa removida).
+      <div ref={ref} data-equipe-table className="overflow-hidden">
         {/*
           Cabeçalho Estilo Planilha — estilo de texto copiado LITERALMENTE
           do label "EQUIPE" (linha de totais, abaixo): lá o texto vem de
@@ -399,7 +431,7 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               tabIndex={clicavel ? 0 : undefined}
               title={clicavel ? "Ver detalhamento individual de atendimentos" : undefined}
               className={cn(
-                TABELA_LINHA_CLASS,
+                TABELA_LINHA_HOVER_CLASS,
                 "group border-l-2 border-l-transparent transition-[background-color,border-color,transform] duration-200 ease-out",
                 clicavel && "cursor-pointer",
                 hoverClass,

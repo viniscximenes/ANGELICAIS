@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/d1-db/types";
 import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 import { copyFormattedHtml, escapeHtml } from "@/lib/utils/copy-formatted-html";
+import { cn } from "@/lib/utils";
 
 function getHoraReport(equipe: ResumoEquipe): string {
   if (!equipe.horaReport || equipe.horaReport === "—") return "—";
@@ -55,14 +56,22 @@ export function CopyTableButton({ equipe }: CopyTableButtonProps) {
     const target = document.querySelector<HTMLElement>("[data-tabela-png]");
 
     if (!target) {
-      toast.error("Tabela não encontrada");
+      toast.error("Tabela não encontrada", { className: "reports-consolidado-toast" });
       return;
     }
 
     setState("copying");
 
     try {
-      const pngDataUrl = await capturarComoPng(target);
+      // corDeFundoDoAlvo: true — mesma correção aditiva da 16ª rodada
+      // (modal de detalhe do operador). Sem isso, a margem de ~28px ao
+      // redor da tabela sai com o --background do tema GLOBAL (globals.css,
+      // cinza-claro frio) em vez do bege Zen Linen escopado a
+      // [data-page="reports-consolidado"], porque o alvo (`[data-tabela-png]`)
+      // fica dentro de um wrapper `position: fixed` que a lib clona
+      // isoladamente — resolverTokenCss sem essa opção lê o token a partir
+      // da raiz do documento, não do próprio elemento capturado.
+      const pngDataUrl = await capturarComoPng(target, { corDeFundoDoAlvo: true });
       const hora = getHoraReport(equipe);
       const html = formatReportHtml(hora, pngDataUrl);
 
@@ -72,6 +81,7 @@ export function CopyTableButton({ equipe }: CopyTableButtonProps) {
       toast.success("Tabela copiada", {
         description: "Cole no Teams, Slack ou email (Ctrl+V)",
         duration: 2500,
+        className: "reports-consolidado-toast",
       });
 
       setTimeout(() => setState("idle"), 2000);
@@ -80,42 +90,40 @@ export function CopyTableButton({ equipe }: CopyTableButtonProps) {
       setState("idle");
       toast.error("Não foi possível copiar", {
         description: "Tente em outro navegador (Chrome/Edge)",
+        className: "reports-consolidado-toast",
       });
     }
   }
 
   return (
+    // Mesma família visual de /kpi/operadores (CopyKpiButton): botão outline
+    // h-8, min-w fixo (cabe "Copiar imagem") — troca de ícone/texto entre
+    // estados não desloca o layout ao redor.
     <button
       type="button"
       onClick={handleCopy}
-      className="bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-opacity cursor-pointer shadow-sm disabled:opacity-50"
-      style={{ fontSize: "12px" }}
+      disabled={state === "copying"}
+      className={cn(
+        "font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 min-w-[140px] items-center justify-center gap-1.5 rounded-md border bg-transparent px-3 text-sm font-medium outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]",
+      )}
     >
       {state === "copying" && (
-        <>
-          <IconLoader2
-            size={14}
-            className="animate-spin"
-            aria-hidden="true"
-          />
-          <span className="ds-mono-sm">Gerando...</span>
-        </>
+        <span className="inline-flex items-center gap-1.5">
+          <IconLoader2 size={14} className="animate-spin" aria-hidden="true" />
+          <span>Gerando...</span>
+        </span>
       )}
       {state === "done" && (
-        <>
-          <IconCheck
-            size={14}
-            style={{ color: "var(--success)" }}
-            aria-hidden="true"
-          />
-          <span className="ds-mono-sm">Copiado</span>
-        </>
+        <span className="inline-flex items-center gap-1.5" style={{ color: "var(--success)" }}>
+          <IconCheck size={14} aria-hidden="true" />
+          <span>Copiado</span>
+        </span>
       )}
       {state === "idle" && (
-        <>
+        <span className="inline-flex items-center gap-1.5">
           <IconCamera size={14} aria-hidden="true" />
-          <span className="ds-mono-sm">Copiar como imagem</span>
-        </>
+          <span>Copiar imagem</span>
+        </span>
       )}
     </button>
   );

@@ -9,6 +9,16 @@ interface CapturarComoPngOpcoes {
   scale?: number;
   /** Respiro ao redor do conteúdo, em px, preenchido com --background do tema atual (padrão 28). */
   padding?: number;
+  /**
+   * Resolve o --background do padding/moldura a partir do PRÓPRIO elemento
+   * capturado (`alvo`), em vez da raiz do documento (comportamento padrão,
+   * mantido pra não afetar chamadores existentes). Necessário em rotas com
+   * tema ESCOPADO via atributo (ex: [data-page="..."] em páginas com CSS de
+   * tema próprio) quando `alvo` fica fora da árvore com esse tema aplicado
+   * na raiz — ex: dentro de um portal Radix Dialog, onde a raiz do
+   * documento não carrega os tokens daquele tema escopado.
+   */
+  corDeFundoDoAlvo?: boolean;
 }
 
 /**
@@ -33,9 +43,13 @@ export async function capturarComoPng(
   alvo: HTMLElement,
   opcoes: CapturarComoPngOpcoes = {},
 ): Promise<string> {
-  const { scale = 3, padding = PADDING_PADRAO_PX } = opcoes;
+  const { scale = 3, padding = PADDING_PADRAO_PX, corDeFundoDoAlvo = false } = opcoes;
   const rect = alvo.getBoundingClientRect();
-  const backgroundColor = resolverTokenCss("--background", "#ffffff");
+  const backgroundColor = resolverTokenCss(
+    "--background",
+    "#ffffff",
+    corDeFundoDoAlvo ? alvo : undefined,
+  );
 
   return domToPng(alvo, {
     scale,

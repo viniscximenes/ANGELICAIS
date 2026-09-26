@@ -1,16 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { IconChartPie } from "@tabler/icons-react";
 import type { SegmentoResult, SegmentoItem } from "@/lib/retencao/get-por-segmento";
 import { StyledCard } from "@/components/gestor/styled-card";
 
 interface TabelaSegmentosProps {
   segmentos: SegmentoResult;
   meta: number; // Meta de 0 a 100
+  /**
+   * Quando true, ocupa 100% da altura do container pai (que precisa ter
+   * altura definida) e SÓ a lista de segmentos rola internamente — título e
+   * o toggle Marca/Unidade ficam fixos fora do scroll. Mesmo padrão de
+   * TabelaTemas/DistribuicaoQuartis, usado dentro do trilho horizontal de
+   * /reports/consolidado (retencao-horizontal-scroll.tsx).
+   */
+  scrollInterno?: boolean;
 }
 
-export function TabelaSegmentos({ segmentos, meta }: TabelaSegmentosProps) {
+/** Pluralização simples "N palavra" sem lib externa. */
+function pluralizar(n: number, singular: string, plural: string) {
+  return `${n} ${n === 1 ? singular : plural}`;
+}
+
+export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: TabelaSegmentosProps) {
   const [activeTab, setActiveTab] = useState<"marca" | "unidade">("marca");
 
   const activeData: SegmentoItem[] =
@@ -24,40 +36,59 @@ export function TabelaSegmentos({ segmentos, meta }: TabelaSegmentosProps) {
   ] as const;
 
   return (
-    <div className="space-y-3">
-      {/* ── Título e descrição fora do card ─────────────────────────── */}
-      <div>
-        <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-          <IconChartPie size={20} className="text-foreground" />
+    <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
+      <div className={scrollInterno ? "shrink-0" : undefined}>
+        <h3 className="ds-h3 font-semibold text-foreground">
           Desempenho por Segmento
         </h3>
         <p className="ds-small text-muted-foreground mt-1">
-          Visão agrupada de retenção por marca e filial de atendimento.
+          Retenção agrupada por marca e filial.
         </p>
       </div>
 
-      <StyledCard className="p-4 space-y-3" withGradient corners="all">
-        {/* Seletor Marca / Unidade */}
-        <div className="flex items-center border-b border-border/40 pb-3">
-          <div className="flex p-0.5 bg-muted/30 rounded-lg border border-border/30 w-fit">
-            {tabLabels.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                  activeTab === tab.id
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+      <StyledCard
+        className={scrollInterno ? "flex max-h-full flex-col gap-3 p-4" : "p-4 space-y-3"}
+        withGradient
+        corners="all"
+      >
+        {/* Seletor Marca / Unidade — mesmo padrão de toggle (tokens
+            --seg-track/--seg-thumb/--seg-text já definidos em
+            reports-consolidado.css) usado em DistribuicaoQuartis. */}
+        <div className={`flex items-center border-b border-border/40 pb-3 ${scrollInterno ? "shrink-0" : ""}`}>
+          <div
+            role="radiogroup"
+            aria-label="Agrupamento do segmento"
+            className="flex items-center gap-1 rounded-[var(--radius)] border border-[var(--seg-track-border)] bg-[var(--seg-track)] p-1"
+          >
+            {tabLabels.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={isActive}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`h-8 rounded-[calc(var(--radius)-2px)] px-3 text-xs font-bold outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)] ${
+                    isActive
+                      ? "bg-[var(--seg-thumb)] text-[var(--seg-text-active)] border border-[var(--seg-thumb-border)]"
+                      : "text-[var(--seg-text)] hover:text-[var(--seg-text-active)]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Conteúdo do Segmento em Coluna Única com Barra de Rolagem */}
-        <div className="max-h-[280px] overflow-y-auto space-y-3.5 pr-2 scrollbar-tema">
+        {/* Lista de segmentos com rolagem interna — mesma classe de
+            scrollbar temática usada no modal de metas (scrollbar-tema). */}
+        <div
+          className={`${
+            scrollInterno ? "min-h-0 flex-1" : "max-h-[280px]"
+          } overflow-y-auto space-y-3.5 pr-2 scrollbar-tema`}
+        >
           {activeData.length === 0 ? (
             <p className="ds-small text-muted-foreground text-center py-6 italic">
               Sem dados para este segmento.
@@ -75,20 +106,23 @@ export function TabelaSegmentos({ segmentos, meta }: TabelaSegmentosProps) {
                   displayName = "MOB";
                 }
 
+                const detalhe = `Pedidos: ${item.total} (${pluralizar(item.retidos, "retido", "retidos")} / ${pluralizar(item.cancelados, "cancelado", "cancelados")})`;
+
                 return (
-                  <div key={item.nome} className="space-y-1.5 border-b border-border/20 pb-3 last:border-0">
-                    <div className="flex justify-between items-baseline text-xs">
-                      <div className="font-semibold text-foreground text-xs tracking-tight truncate max-w-[50%]" title={item.nome}>
+                  <div key={item.nome} className="space-y-1.5 border-b border-border/20 pb-3 last:border-0 hover:bg-accent transition-colors rounded-md px-1 -mx-1">
+                    <div className="flex flex-wrap justify-between items-baseline gap-x-2 gap-y-1">
+                      <div className="ds-body font-semibold text-foreground text-xs tracking-tight truncate max-w-[50%]" title={item.nome}>
                         {displayName}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground text-[11px]">
-                          Vol: {item.total} ({item.retidos} ret / {item.cancelados} canc)
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="ds-small text-muted-foreground text-[11px]">
+                          {detalhe}
                         </span>
                         <span
-                          className={`font-mono font-semibold text-xs ${
+                          className={`ds-mono-sm font-semibold text-xs ${
                             isBelowMeta ? "text-danger" : "text-success"
                           }`}
+                          style={{ fontVariantNumeric: "tabular-nums" }}
                         >
                           {formattedTx}
                         </span>

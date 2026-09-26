@@ -31,7 +31,13 @@ const TRILHO_CARD = {
   efetividadeArgumento: 6,
 } as const;
 
-const ICON_CLASS = "h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200";
+// Antes: "text-neutral-700 dark:text-neutral-200" — cinza hardcoded fora do
+// tema (o projeto não usa a estratégia `.dark` do Tailwind, então o
+// `dark:` nunca disparava; o ícone ficava sempre no mesmo cinza médio,
+// independente do tema claro/escuro ativo). Agora lê --muted-foreground do
+// escopo [data-page="reports-consolidado"] (herdado via wrapperClassName/
+// dataPage em FloatingNavSidebar — ver comentário lá).
+const ICON_CLASS = "h-5 w-5 shrink-0 text-[color:var(--muted-foreground)]";
 
 /**
  * Navegação lateral animada (hover expande 60px → 300px, padrão Aceternity —
@@ -116,5 +122,11 @@ export function ConsolidadoNavSidebar() {
     },
   ];
 
-  return <FloatingNavSidebar links={links} />;
+  return (
+    <FloatingNavSidebar
+      links={links}
+      wrapperClassName="reports-consolidado-nav"
+      dataPage="reports-consolidado"
+    />
+  );
 }

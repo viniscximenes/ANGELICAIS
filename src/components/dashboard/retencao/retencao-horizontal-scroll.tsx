@@ -237,6 +237,25 @@ export function RetencaoHorizontalScroll({
       window.addEventListener("load", refresh);
       document.fonts?.ready?.then(refresh).catch(() => {});
 
+      // Troca de tema (dark/light): ThemeProvider (theme-provider.tsx) só
+      // troca o atributo `data-theme` no <html>, sem remontar nada — mas o
+      // conteúdo pinado (cards com padding/borda/fonte diferentes entre os
+      // dois temas Zen Linen, ver reports-consolidado.css) pode mudar de
+      // altura entre um tema e outro. Sem este observer, o `end`/pin-spacer
+      // calculados no tema anterior ficariam desatualizados até o próximo
+      // resize/refresh manual. Aditivo — não interfere em nenhuma fórmula
+      // de pin/snap/multiplier já existente, só chama o mesmo refresh().
+      const themeObserver = new MutationObserver(() => {
+        // Espera o próximo frame: a troca de tema já é feita com
+        // transições CSS suprimidas (ThemeProvider), então o layout novo
+        // já está estável no frame seguinte à mudança do atributo.
+        requestAnimationFrame(refresh);
+      });
+      themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-theme"],
+      });
+
       // ResizeObserver chamando refresh() direto no mesmo tick pode entrar
       // em loop: refresh() recalcula o pin, que pode alterar a própria
       // largura observada, disparando o observer de novo — o navegador
@@ -319,6 +338,7 @@ export function RetencaoHorizontalScroll({
       // mobile) ou quando o componente desmonta.
       return () => {
         window.removeEventListener("load", refresh);
+        themeObserver.disconnect();
         if (rafId) cancelAnimationFrame(rafId);
         resizeObserver.disconnect();
         heightResizeObserver?.disconnect();

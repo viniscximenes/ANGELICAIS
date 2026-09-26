@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { IconCopy, IconCheck, IconFilter, IconChevronDown, IconTrash } from "@tabler/icons-react";
+import { IconCopy, IconCheck, IconFilter, IconChevronDown, IconTrash, IconLoader2 } from "@tabler/icons-react";
 import { fetchContratosFiltradosAction } from "@/lib/retencao/actions";
 import type { TemaData } from "@/lib/retencao/get-por-tema";
 import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
@@ -116,6 +116,7 @@ function CustomSelect({ label, value, onChange, options, placeholder, searchable
         createPortal(
           <div
             ref={menuRef}
+            data-page="reports-consolidado"
             className="fixed z-[100] bg-popover border border-border rounded-lg shadow-xl max-h-56 overflow-y-auto scrollbar-tema py-1"
             style={{ top: menuRect.top, left: menuRect.left, width: menuRect.width }}
           >
@@ -151,7 +152,7 @@ function CustomSelect({ label, value, onChange, options, placeholder, searchable
                       ? "bg-primary text-primary-foreground font-semibold"
                       : opt.value === ""
                       ? "text-muted-foreground hover:text-foreground font-medium italic border-b border-border/20 mb-1"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
                   }`}
                 >
                   {opt.label}
@@ -251,16 +252,22 @@ export function CopiarContratos({
       if (result.success && result.data) {
         setContratos(result.data);
         if (result.data.length === 0) {
-          toast.info("Nenhum atendimento encontrado para a equipe com estes filtros.");
+          toast.info("Nenhum atendimento encontrado para a equipe com estes filtros.", {
+            className: "reports-consolidado-toast",
+          });
         } else {
-          toast.success(`${result.data.length} registro(s) da equipe localizado(s)!`);
+          toast.success(`${result.data.length} registro(s) da equipe localizado(s)!`, {
+            className: "reports-consolidado-toast",
+          });
         }
       } else {
-        toast.error(result.error || "Erro ao buscar registros da equipe.");
+        toast.error(result.error || "Erro ao buscar registros da equipe.", {
+          className: "reports-consolidado-toast",
+        });
       }
     } catch (err) {
       console.error(err);
-      toast.error("Erro inesperado ao gerar registros.");
+      toast.error("Erro inesperado ao gerar registros.", { className: "reports-consolidado-toast" });
     } finally {
       setLoading(false);
     }
@@ -272,11 +279,13 @@ export function CopiarContratos({
     try {
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
-      toast.success("Registros copiados para a área de transferência!");
+      toast.success("Registros copiados para a área de transferência!", {
+        className: "reports-consolidado-toast",
+      });
       setTimeout(() => setCopied(false), 2500);
     } catch (err) {
       console.error(err);
-      toast.error("Falha ao copiar registros.");
+      toast.error("Falha ao copiar registros.", { className: "reports-consolidado-toast" });
     }
   };
 
@@ -285,19 +294,18 @@ export function CopiarContratos({
     setStatus("todos");
     setSelectedMotivo("");
     setContratos([]);
-    toast.info("Filtros limpos!");
+    toast.info("Filtros limpos!", { className: "reports-consolidado-toast" });
   };
 
   return (
     <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
       {/* ── Título e descrição fora do card ─────────────────────────── */}
       <div className={scrollInterno ? "shrink-0" : undefined}>
-        <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-          <IconCopy size={20} className="text-foreground" />
+        <h3 className="ds-h3 font-semibold text-foreground">
           Copiar Contratos da Equipe
         </h3>
         <p className="ds-small text-muted-foreground mt-1">
-          Filtre e copie rapidamente a lista formatada (nome.sobrenome - status - motivo - contrato) da sua equipe.
+          Filtre e copie a lista formatada de contratos da equipe.
         </p>
       </div>
 
@@ -343,9 +351,13 @@ export function CopiarContratos({
           <button
             onClick={handleGerar}
             disabled={loading}
-            className="py-2.5 px-5 rounded-lg text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 shrink-0 shadow-sm h-[38px] w-full"
+            className="py-2.5 px-5 rounded-lg text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 shrink-0 shadow-sm h-[38px] w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
           >
-            <IconFilter size={15} />
+            {loading ? (
+              <IconLoader2 size={15} className="animate-spin" />
+            ) : (
+              <IconFilter size={15} />
+            )}
             {loading ? "Buscando..." : "Filtrar Contratos"}
           </button>
         </div>
@@ -354,27 +366,28 @@ export function CopiarContratos({
         {contratos.length > 0 && (
           <div className="space-y-3 border-t border-border/40 pt-4">
             <div className="flex justify-between items-center flex-wrap gap-2">
-              <span className="text-xs font-mono text-foreground font-semibold">
-                {contratos.length} contrato{contratos.length > 1 ? "s" : ""} localizado{contratos.length > 1 ? "s" : ""}
+              <span className="ds-body font-medium text-foreground">
+                <span className="font-semibold">{contratos.length}</span> contrato{contratos.length > 1 ? "s" : ""} localizado{contratos.length > 1 ? "s" : ""}
               </span>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleLimparFiltros}
-                  className="text-xs font-semibold text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/60 border border-border/50 flex items-center gap-1.5 cursor-pointer px-3.5 py-2 rounded-lg transition-all shadow-sm active:scale-95"
+                  className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 items-center justify-center gap-1.5 rounded-md border bg-transparent px-3 text-xs font-medium outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
                 >
-                  <IconTrash size={15} />
+                  <IconTrash size={14} />
                   Limpar Filtro
                 </button>
 
                 <button
                   onClick={handleCopy}
-                  className="text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg transition-all shadow-md active:scale-95"
+                  disabled={contratos.length === 0}
+                  className="text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
                 >
                   {copied ? (
                     <>
-                      <IconCheck size={16} className="text-white" />
-                      Copiado para a área de transferência!
+                      <IconCheck size={16} />
+                      Copiado!
                     </>
                   ) : (
                     <>
@@ -386,7 +399,7 @@ export function CopiarContratos({
               </div>
             </div>
 
-            <div className="bg-muted/20 border border-border/60 rounded-lg p-4 font-mono text-xs text-foreground leading-relaxed whitespace-pre-wrap select-text shadow-inner">
+            <div className="bg-muted/20 border border-border/60 rounded-lg p-4 ds-mono-sm text-foreground leading-relaxed whitespace-pre-wrap select-text shadow-inner max-h-72 overflow-y-auto scrollbar-tema">
               {contratos.map((c) => c.linhaFormatada).join("\n")}
             </div>
           </div>

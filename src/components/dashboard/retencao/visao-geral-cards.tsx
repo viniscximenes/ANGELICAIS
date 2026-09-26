@@ -2,7 +2,6 @@
 
 import { BlurFade } from "@/components/ui/blur-fade";
 import { NumberTicker } from "@/components/ui/number-ticker";
-import { StyledCard } from "@/components/gestor/styled-card";
 import type { VisaoGeralData } from "@/lib/retencao/get-visao-geral";
 
 interface VisaoGeralCardsProps {
@@ -19,16 +18,20 @@ type StatSecundario = {
 };
 
 /**
- * Hierarquia visual assimétrica (1 stat primário em destaque + secundários
- * menores ao redor) — mesma TÉCNICA de um bento grid de landing page, mas
- * só a técnica: cantoneiras (StyledCard), fonte monoespaçada e tokens de
- * cor do projeto continuam os mesmos, sem elementos de "card de marketing"
- * (sem rounded-3xl, sem bg-primary sólido grande, sem gráfico decorativo).
+ * Visual dos cards numéricos alinhado ao padrão de /kpi/gestor
+ * (KpiGestorCard, ver kpi-gestor-card.tsx): caixa neutra (bg-card/70 +
+ * border + shadow-sm), SEM cantoneiras (StyledCard) — lá as cantoneiras só
+ * aparecem no container do gráfico, não nos cards de número. Mesma classe
+ * de rótulo (ds-small text-muted-foreground uppercase tracking-wider) e
+ * mesma classe do valor grande (ds-display font-semibold).
  *
- * 1 linha só (não 2, como um bento grid típico) de propósito: este card
- * vive dentro do slot de altura fixa do trilho horizontal — aumentar a
- * altura aqui reabriria os ajustes de dimensionamento já calibrados nas
- * etapas anteriores.
+ * Hierarquia visual assimétrica (1 stat primário em destaque + secundários
+ * menores ao redor) preservada da rodada anterior — só a "casca" do card
+ * mudou de StyledCard pra caixa neutra.
+ *
+ * 1 linha só (não 2) de propósito: este card vive dentro do slot de altura
+ * fixa do trilho horizontal — aumentar a altura aqui reabriria os ajustes
+ * de dimensionamento já calibrados nas etapas anteriores.
  */
 export function VisaoGeralCards({ data, meta }: VisaoGeralCardsProps) {
   const { total, retidos, cancelados, tx } = data;
@@ -65,18 +68,19 @@ export function VisaoGeralCards({ data, meta }: VisaoGeralCardsProps) {
       */}
       {/* Stat primário: Taxa de Retenção — maior, cor condicional por meta */}
       <BlurFade delay={0} inView className="sm:col-span-2">
-        <StyledCard
-          className="flex h-full flex-col justify-center px-6 py-5"
-          withGradient
-          corners="left"
-        >
-          <p className="ds-small text-muted-foreground/80 mb-2 text-xs font-semibold tracking-wider uppercase">
+        <div className="relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 p-6 shadow-[var(--shadow-sm)] backdrop-blur-md">
+          <div
+            aria-hidden="true"
+            className="absolute top-0 left-0 h-full w-[3px]"
+            style={{ background: "var(--primary)" }}
+          />
+          <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             Taxa de Retenção
           </p>
           {!temDadoTx ? (
-            <p className={`ds-display text-5xl font-bold ${txClassName}`}>—</p>
+            <p className={`ds-display text-5xl font-semibold ${txClassName}`}>—</p>
           ) : (
-            <p className={`ds-display flex items-baseline text-5xl font-bold ${txClassName}`}>
+            <p className={`ds-display flex items-baseline text-5xl font-semibold ${txClassName}`}>
               <NumberTicker
                 value={tx! * 100}
                 decimalPlaces={1}
@@ -86,19 +90,15 @@ export function VisaoGeralCards({ data, meta }: VisaoGeralCardsProps) {
               <span>%</span>
             </p>
           )}
-        </StyledCard>
+        </div>
       </BlurFade>
 
       {/* Stats secundários: Pedidos / Retidos / Churn — menores, visual neutro */}
       <div className="grid grid-cols-3 gap-4 sm:col-span-3">
         {secundarios.map((item, idx) => (
           <BlurFade key={item.id} delay={0.06 * (idx + 1)} inView>
-            <StyledCard
-              className="flex h-full flex-col justify-center px-4 py-2.5"
-              withGradient
-              corners={idx === secundarios.length - 1 ? "right" : "none"}
-            >
-              <p className="ds-small text-muted-foreground/80 mb-1 text-xs font-semibold tracking-wider uppercase">
+            <div className="flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 p-4 shadow-[var(--shadow-sm)] backdrop-blur-md">
+              <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
                 {item.label}
               </p>
               <p className="ds-display text-foreground flex items-baseline text-3xl font-semibold">
@@ -109,7 +109,7 @@ export function VisaoGeralCards({ data, meta }: VisaoGeralCardsProps) {
                   className="text-foreground tracking-tight dark:text-foreground"
                 />
               </p>
-            </StyledCard>
+            </div>
           </BlurFade>
         ))}
       </div>

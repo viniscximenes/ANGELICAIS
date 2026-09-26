@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, Fragment } from "react";
-import { IconChevronDown, IconChevronRight, IconTags } from "@tabler/icons-react";
+import { IconChevronRight } from "@tabler/icons-react";
 import { StyledCard } from "@/components/gestor/styled-card";
 import type { TemaData } from "@/lib/retencao/get-por-tema";
 
@@ -57,12 +57,11 @@ export function TabelaTemas({
   return (
     <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
       <div className={scrollInterno ? "shrink-0" : undefined}>
-        <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-          <IconTags size={20} className="text-foreground" />
+        <h3 className="ds-h3 font-semibold text-foreground">
           Retenção por Tema
         </h3>
         <p className="ds-small text-muted-foreground mt-1">
-          Clique nos motivos para expandir e verificar os submotivos correspondentes.
+          Clique num motivo para ver os submotivos.
         </p>
       </div>
 
@@ -83,21 +82,27 @@ export function TabelaTemas({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="ds-mono-sm text-muted-foreground uppercase tracking-wider text-[11px] select-none border-b border-border/40 bg-muted/40">
+              {/*
+                Tipografia igual ao cabeçalho da tabela principal (EquipeTable/
+                tabela-padrao.tsx TABELA_HEADER_CLASS): ds-body (sans, não
+                mono) + font-bold + tracking-wider uppercase, herdado pelas
+                células filhas.
+              */}
+              <tr className="ds-body text-muted-foreground uppercase tracking-wider text-[11px] font-bold select-none border-b border-border/40 bg-muted/40">
                 <th className="py-2.5 px-4 text-center w-[40px] whitespace-nowrap"></th>
-                <th className="py-2.5 px-4 font-semibold whitespace-nowrap">
+                <th className="py-2.5 px-4 whitespace-nowrap">
                   Motivo
                 </th>
-                <th className="py-2.5 px-4 font-semibold text-center w-[110px] whitespace-nowrap">
+                <th className="py-2.5 px-4 text-center w-[110px] whitespace-nowrap">
                   Total
                 </th>
-                <th className="py-2.5 px-4 font-semibold text-center w-[110px] whitespace-nowrap">
+                <th className="py-2.5 px-4 text-center w-[110px] whitespace-nowrap">
                   Retidos
                 </th>
-                <th className="py-2.5 px-4 font-semibold text-center w-[110px] whitespace-nowrap">
+                <th className="py-2.5 px-4 text-center w-[110px] whitespace-nowrap">
                   Cancelados
                 </th>
-                <th className="py-2.5 px-4 font-semibold text-center w-[130px] whitespace-nowrap">
+                <th className="py-2.5 px-4 text-center w-[130px] whitespace-nowrap">
                   Tx Retenção
                 </th>
               </tr>
@@ -109,54 +114,75 @@ export function TabelaTemas({
 
                 return (
                   <Fragment key={tema.motivo}>
-                    {/* Linha do Motivo Principal */}
-                    <tr 
-                      className="hover:bg-muted/10 cursor-pointer transition-colors group"
+                    {/*
+                      Linha do Motivo Principal — hover:bg-accent, mesmo token
+                      corrigido na tabela principal (EquipeTable, ver
+                      TABELA_LINHA_HOVER_CLASS em equipe-table.tsx) em vez do
+                      hover:bg-muted/10 antigo.
+                    */}
+                    <tr
+                      className="hover:bg-accent cursor-pointer transition-colors group align-middle"
                       onClick={() => toggleExpand(tema.motivo)}
                     >
-                      <td className="py-3 px-4 text-center">
-                        <div className="text-muted-foreground/60 group-hover:text-foreground transition-colors inline-block">
-                          {isExpanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+                      <td className="py-3 px-4 text-center align-middle">
+                        {/*
+                          flex items-center justify-center centraliza a seta
+                          verticalmente com o texto da linha — antes o wrapper
+                          era inline-block, sem controle de alinhamento
+                          vertical próprio, dependendo só do valign herdado.
+                          transition-transform + rotate: chevron único que
+                          gira em vez de trocar de ícone, transição mais clara
+                          entre aberto/fechado.
+                        */}
+                        <div className="flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-colors">
+                          <IconChevronRight
+                            size={16}
+                            className={`transition-transform duration-200 ${isExpanded ? "rotate-90" : "rotate-0"}`}
+                          />
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-xs font-semibold text-foreground whitespace-nowrap">
+                      <td className="py-3 px-4 align-middle ds-body text-xs font-semibold text-foreground whitespace-nowrap">
                         {tema.motivo}
                       </td>
-                      <td className="py-3 px-4 text-center text-xs font-medium text-foreground">
+                      <td className="py-3 px-4 text-center align-middle ds-mono-sm text-xs font-medium text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                         {tema.total.toLocaleString("pt-BR")}
                       </td>
-                      <td className="py-3 px-4 text-center text-xs font-medium text-foreground">
+                      <td className="py-3 px-4 text-center align-middle ds-mono-sm text-xs font-medium text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                         {tema.retidos.toLocaleString("pt-BR")}
                       </td>
-                      <td className="py-3 px-4 text-center text-xs font-medium text-foreground">
+                      <td className="py-3 px-4 text-center align-middle ds-mono-sm text-xs font-medium text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                         {tema.cancelados.toLocaleString("pt-BR")}
                       </td>
-                      <td className={`py-3 px-4 text-center text-xs font-semibold ${getTxColor(tema.tx, tema.motivo)}`}>
+                      <td className={`py-3 px-4 text-center align-middle ds-mono-sm text-xs font-semibold ${getTxColor(tema.tx, tema.motivo)}`} style={{ fontVariantNumeric: "tabular-nums" }}>
                         {txFormatted}
                       </td>
                     </tr>
 
-                    {/* Submotivos em Drill-down */}
+                    {/* Submotivos em Drill-down — recuo maior + hierarquia
+                        visual (texto menor, cor muted) vs. a linha-pai
+                        (font-semibold text-foreground, acima). */}
                     {isExpanded && tema.submotivos.map((sub) => {
                       const subTxFormatted = sub.tx !== null ? `${(sub.tx * 100).toFixed(1)}%` : "—";
 
                       return (
-                        <tr key={sub.submotivo} className="bg-black/5 hover:bg-muted/10 border-b border-border/10 transition-colors">
-                          <td className="py-2.5 px-4"></td>
-                          <td className="py-2.5 px-4 pl-8 text-muted-foreground text-xs flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
-                            <span>{sub.submotivo}</span>
+                        <tr key={sub.submotivo} className="bg-black/5 hover:bg-accent border-b border-border/10 transition-colors align-middle">
+                          <td className="py-2.5 px-4 align-middle"></td>
+                          <td className="py-2.5 px-4 pl-10 align-middle ds-body text-muted-foreground text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
+                              <span>{sub.submotivo}</span>
+                            </div>
                           </td>
-                          <td className="py-2.5 px-4 text-center font-mono-sm text-muted-foreground text-xs">
+                          <td className="py-2.5 px-4 text-center align-middle ds-mono-sm text-muted-foreground text-xs" style={{ fontVariantNumeric: "tabular-nums" }}>
                             {sub.total.toLocaleString("pt-BR")}
                           </td>
-                          <td className="py-2.5 px-4 text-center font-mono-sm text-muted-foreground text-xs">
+                          <td className="py-2.5 px-4 text-center align-middle ds-mono-sm text-muted-foreground text-xs" style={{ fontVariantNumeric: "tabular-nums" }}>
                             {sub.retidos.toLocaleString("pt-BR")}
                           </td>
-                          <td className="py-2.5 px-4 text-center font-mono-sm text-muted-foreground text-xs">
+                          <td className="py-2.5 px-4 text-center align-middle ds-mono-sm text-muted-foreground text-xs" style={{ fontVariantNumeric: "tabular-nums" }}>
                             {sub.cancelados.toLocaleString("pt-BR")}
                           </td>
-                          <td className={`py-2.5 px-4 text-center font-mono-sm text-xs ${getTxColor(sub.tx, tema.motivo)}`}>
+                          <td className={`py-2.5 px-4 text-center align-middle ds-mono-sm text-xs ${getTxColor(sub.tx, tema.motivo)}`} style={{ fontVariantNumeric: "tabular-nums" }}>
                             {subTxFormatted}
                           </td>
                         </tr>

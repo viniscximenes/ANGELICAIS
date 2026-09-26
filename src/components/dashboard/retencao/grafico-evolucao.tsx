@@ -15,13 +15,22 @@ import {
 import { StyledCard } from "@/components/gestor/styled-card";
 import type { HoraEvolucaoData, TemaHoraData } from "@/lib/retencao/get-evolucao-hora";
 import type { ReactNode } from "react";
-import { IconChartLine } from "@tabler/icons-react";
 
 interface GraficoEvolucaoProps {
   dados: HoraEvolucaoData[];
   meta: number; // Meta de 0 a 100
   /** Slot à direita do título (ex.: engrenagem de configuração de metas). */
   acoes?: ReactNode;
+}
+
+// Rótulos das pontas do eixo ("< 08" / "≥ 20", vindos de get-evolucao-hora.ts)
+// reescritos só pra EXIBIÇÃO — sem símbolos `<`/`≥`, mesma informação (hora
+// bucket agrupa a hora cheia INTEIRA, ex.: "09" = 09:00 a 09:59). O dado em
+// si (`label` original) não muda, só o texto mostrado no eixo/tooltip.
+function formatEixoLabel(label: string): string {
+  if (label === "< 08") return "Até 08h";
+  if (label === "≥ 20") return "Após 20h";
+  return label;
 }
 
 // Mesma ordenação do card "Retenção por Tema": maior tx primeiro.
@@ -59,18 +68,19 @@ export function GraficoEvolucao({ dados, meta, acoes }: GraficoEvolucaoProps) {
       {/* ── Título fora do card ─────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-            <IconChartLine size={20} className="text-foreground" />
+          <h3 className="ds-h3 font-semibold text-foreground">
             Evolução de Taxa e Pedidos da Equipe
           </h3>
           <p className="ds-small text-muted-foreground mt-1">
-            Acompanhe a taxa de retenção (linha) e o volume de atendimentos (barras) ao longo das horas. (das 09:00 as 09:59 seria referente as 09:00)
+            Taxa de retenção e volume de atendimentos por hora — cada hora do eixo agrupa o intervalo inteiro (ex.: &quot;09&quot; = 09:00 a 09:59).
           </p>
         </div>
         {acoes && <div className="shrink-0">{acoes}</div>}
       </div>
 
-      {/* ── Card com cantos azuis (StyledCard) e fundo escurecido ──── */}
+      {/* Container do gráfico: StyledCard (cantoneiras) só aqui — mesmo
+          nível único usado em /kpi/evolucao (KpiPrincipalCard), sem
+          wrapper/borda extra ao redor. */}
       <StyledCard className="p-5" withGradient>
         <div className="w-full h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
@@ -95,6 +105,7 @@ export function GraficoEvolucao({ dados, meta, acoes }: GraficoEvolucaoProps) {
             
             <XAxis
               dataKey="label"
+              tickFormatter={formatEixoLabel}
               tickLine={false}
               axisLine={false}
               tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
@@ -126,7 +137,7 @@ export function GraficoEvolucao({ dados, meta, acoes }: GraficoEvolucaoProps) {
                 return (
                   <div className="bg-popover border border-border/80 rounded-lg p-3 shadow-md space-y-1.5 font-sans">
                     <p className="text-[11px] font-semibold text-foreground uppercase tracking-wider">
-                      Hora: {info.label}
+                      Hora: {formatEixoLabel(info.label)}
                     </p>
                     <div className="h-px bg-border/60 my-1" />
                     <p className="text-xs text-muted-foreground">

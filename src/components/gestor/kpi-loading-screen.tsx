@@ -31,7 +31,8 @@ interface KpiLoadingScreenProps {
     | "kpi-gestor"
     | "kpi-detalhado-polo"
     | "kpi-evolucao"
-    | "configuracoes-equipe";
+    | "configuracoes-equipe"
+    | "reports-consolidado";
   /** Nome da página pro rótulo acessível ("Carregando Operadores...") e pro texto visível. */
   titulo: string;
   /**
@@ -39,8 +40,11 @@ interface KpiLoadingScreenProps {
    * (gestor/evolução) — muda a forma dos blocos desfocados ao fundo.
    * "equipe" é um esqueleto dedicado à estrutura de /configuracoes/equipe
    * (toggle + tabela + linha de adicionar, sem a linha de ações das KPIs).
+   * "consolidado" é dedicado a /reports/consolidado (20ª rodada): tabela da
+   * equipe + placeholder genérico da seção Analítico abaixo, ver
+   * SkeletonConsolidado.
    */
-  formato: "tabela" | "cards" | "equipe";
+  formato: "tabela" | "cards" | "equipe" | "consolidado";
   /**
    * Largura do container central — as páginas de KPI usam "max-w-7xl"
    * (default, preserva o comportamento atual). /configuracoes/equipe usa
@@ -113,6 +117,46 @@ function SkeletonEquipe() {
   );
 }
 
+/**
+ * Esqueleto de /reports/consolidado: tabela da equipe (mesmo formato de
+ * SkeletonTabela, com uma linha a mais pra aproximar a altura real) seguida
+ * de um placeholder genérico pra seção "Analítico" — não replica os 8 cards
+ * em detalhe (o pedido explicitamente dispensa isso), só evita o "buraco"
+ * vazio: um bloco de título fantasma + uma grade de cards rasos, dando a
+ * mesma pista visual de "cards" sem fingir ser 8 componentes reais.
+ */
+function SkeletonConsolidado() {
+  return (
+    <div className="space-y-8">
+      <div className="overflow-hidden rounded-lg border border-border">
+        <div className="h-10 bg-card" />
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div key={i} className="h-11 border-t border-border/60 bg-background" />
+        ))}
+      </div>
+
+      {/*
+        Altura aproximada da MESMA ordem de grandeza do trilho horizontal
+        pinado (RetencaoHorizontalScroll, lg:h-[min(80vh,700px)]) — reduz a
+        diferença de altura entre o esqueleto e o conteúdo real que substitui
+        o Suspense fallback, evitando um salto de layout grande logo após o
+        loading.tsx sumir (que, combinado com a posição de scroll do
+        usuário, podia parecer um "vazio" momentâneo até o navegador
+        reposicionar o conteúdo real).
+      */}
+      <div className="space-y-4">
+        <div className="h-6 w-40 rounded bg-card" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-[110px] rounded-lg border border-border bg-card" />
+          ))}
+        </div>
+        <div className="h-[420px] rounded-lg border border-border bg-card lg:h-[600px]" />
+      </div>
+    </div>
+  );
+}
+
 export function KpiLoadingScreen({
   dataPage,
   titulo,
@@ -149,6 +193,8 @@ export function KpiLoadingScreen({
             <SkeletonTabela />
           ) : formato === "cards" ? (
             <SkeletonCards />
+          ) : formato === "consolidado" ? (
+            <SkeletonConsolidado />
           ) : (
             <SkeletonEquipe />
           )}

@@ -95,25 +95,31 @@ export function ConfigMetasPopover({
             type="button"
             title="Configurações de metas"
             aria-label="Configurações de metas"
-            className="bg-primary text-primary-foreground hover:opacity-90 flex cursor-pointer items-center justify-center rounded-md p-2 shadow-sm transition-opacity"
+            // Mesma família visual do botão de engrenagem do cabeçalho
+            // principal da página (ConfigTabelaPopover): outline h-8/w-8,
+            // sem preenchimento — ver config-tabela-popover.tsx.
+            className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-transparent outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
           >
-            <IconSettings size={14} aria-hidden="true" />
+            <IconSettings size={15} aria-hidden="true" />
           </button>
         </PopoverTrigger>
 
         <PopoverContent
+          data-page="reports-consolidado"
           align="end"
-          className="border-border/80 w-84 rounded-2xl border p-5 shadow-2xl backdrop-blur-md"
+          className="bg-popover text-popover-foreground border-border w-84 rounded-2xl border p-5 shadow-2xl"
         >
-          <PopoverHeader className="border-border/40 border-b pb-3">
-            <div>
-              <PopoverTitle className="text-foreground text-sm font-semibold">
-                Configurações de Metas
-              </PopoverTitle>
-              <p className="text-muted-foreground text-[11px]">
-                Defina as metas da taxa de retenção global (polo) e de cada tema.
-              </p>
-            </div>
+          {/* Cabeçalho + divisória: mesmo padrão do modal de referência
+              "Metas do Meu KPI" (kpi-gestor-metas-popover.tsx) — título sem
+              ícone (o botão de engrenagem já comunica a função) + descrição
+              curta, separados do corpo por border-b. */}
+          <PopoverHeader className="border-border/50 space-y-0.5 border-b pb-2">
+            <PopoverTitle className="text-foreground text-sm font-semibold">
+              Configurações de Metas
+            </PopoverTitle>
+            <p className="text-muted-foreground text-[11px]">
+              Defina a meta da taxa de retenção global (polo) e de cada tema.
+            </p>
           </PopoverHeader>
 
           <div className="space-y-4 pt-4">
@@ -121,7 +127,7 @@ export function ConfigMetasPopover({
             <div className="space-y-1.5">
               <Label
                 htmlFor="config-meta-global"
-                className="ds-mono-sm text-foreground/90 text-xs font-medium"
+                className="text-foreground text-xs font-medium"
               >
                 Meta Global (Polo)
               </Label>
@@ -135,7 +141,7 @@ export function ConfigMetasPopover({
                   step={0.1}
                   value={localGlobal}
                   onChange={(e) => setLocalGlobal(e.target.value)}
-                  className="border-border/80 bg-muted/30 focus:bg-background rounded-xl pr-8 text-sm font-semibold transition-all"
+                  className="pr-8 text-sm font-semibold"
                 />
                 <span className="text-muted-foreground pointer-events-none absolute right-3 text-xs font-bold">
                   %
@@ -143,21 +149,26 @@ export function ConfigMetasPopover({
               </div>
             </div>
 
-            {/* Metas por tema */}
+            {/* Metas por tema — grid com colunas alinhadas, mesmo padrão da
+                lista do modal de referência (kpi-gestor-metas-popover.tsx). */}
             <div className="space-y-2">
               <span className="text-muted-foreground block text-[10px] font-bold tracking-wider uppercase">
                 Metas por Tema
               </span>
-              <div className="space-y-2">
+              <div className="max-h-64 space-y-1 overflow-y-auto overscroll-contain pr-1 scrollbar-tema">
                 {TEMAS.map((tema) => (
-                  <div key={tema} className="flex items-center justify-between gap-2">
+                  <div
+                    key={tema}
+                    className="hover:bg-muted/40 grid grid-cols-[1fr_84px] items-center gap-2 rounded-md px-1 py-1 transition-colors"
+                  >
                     <Label
                       htmlFor={`meta-${tema}`}
-                      className="text-muted-foreground truncate text-xs font-normal"
+                      className="text-foreground truncate text-xs font-normal"
+                      title={tema}
                     >
                       {tema}
                     </Label>
-                    <div className="relative flex w-24 shrink-0 items-center">
+                    <div className="relative flex items-center">
                       <Input
                         id={`meta-${tema}`}
                         type="number"
@@ -167,7 +178,7 @@ export function ConfigMetasPopover({
                         step={0.1}
                         value={localThemes[tema] !== undefined ? localThemes[tema] : 60}
                         onChange={(e) => handleThemeChange(tema, e.target.value)}
-                        className="border-border/80 bg-muted/30 focus:bg-background rounded-xl pr-6 text-center text-xs font-semibold transition-all"
+                        className="h-7 pr-6 text-center text-xs font-semibold"
                       />
                       <span className="text-muted-foreground pointer-events-none absolute right-2 text-[10px] font-bold">
                         %
@@ -181,7 +192,7 @@ export function ConfigMetasPopover({
             <Button
               type="button"
               onClick={handleSave}
-              className="bg-primary hover:bg-primary/95 text-primary-foreground shadow-primary/20 mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-semibold shadow-md transition-all"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-semibold shadow-sm transition-colors"
             >
               <IconCheck size={14} aria-hidden="true" />
               <span>Salvar Metas</span>

@@ -141,7 +141,7 @@ export function RetencaoDetalheSection({
     const themesKey = `retencao_meta_temas_${gestorId}`;
     localStorage.setItem(globalKey, String(newGlobal));
     localStorage.setItem(themesKey, JSON.stringify(newThemes));
-    toast.success("Metas salvas com sucesso!");
+    toast.success("Metas salvas com sucesso!", { className: "reports-consolidado-toast" });
   };
 
   // Extraído do useEffect de mount pra poder ser reaproveitado também
@@ -344,7 +344,12 @@ export function RetencaoDetalheSection({
                 operadoresPolo={data!.quartilPolo}
                 meta={metaGlobal}
               />,
-              <TabelaSegmentos key="segmentos" segmentos={data!.porSegmento} meta={metaGlobal} />,
+              <TabelaSegmentos
+                key="segmentos"
+                scrollInterno
+                segmentos={data!.porSegmento}
+                meta={metaGlobal}
+              />,
               <CopiarContratos
                 key="copiar-contratos"
                 scrollInterno

@@ -1,0 +1,595 @@
+/*
+ * Tema Zen Linen — escopado a /reports/consolidado
+ * Fonte: tema/hhgg (21st.dev @serafimcloud/zen-linen)
+ * Cópia fiel do padrão já usado em /kpi/operadores, /kpi/gestor e
+ * /kpi/evolucao (mesma paleta, mesmos tokens derivados) — só o seletor de
+ * escopo muda. Ver comentários completos em kpi-operadores.css.
+ *
+ * Regras:
+ * - TODA regra começa com [data-page="reports-consolidado"]. O import do CSS
+ *   não isola nada; o seletor é que isola (o arquivo continua carregado após
+ *   navegação client-side).
+ * - Projeto: :root = dark (base) e [data-theme="light"] = claro.
+ * - --color-* e --radius-* são sobrescritos junto por segurança (utilities
+ *   Tailwind como bg-card leem --color-card).
+ * - StyledCard/EquipeTable/GraficoEvolucao NÃO foram alterados — eles já
+ *   consomem var(--background)/var(--card)/var(--success)/... via CSS, então
+ *   herdam automaticamente os tokens definidos aqui dentro do escopo
+ *   [data-page="reports-consolidado"], sem precisar editar esses componentes
+ *   compartilhados (StyledCard é usado em ~60 arquivos do projeto).
+ */
+
+/* ───────── ESCURO (base do projeto) ← .dark do tema ───────── */
+[data-page="reports-consolidado"] {
+  --background: #141414;
+  --foreground: #E8E3DA;
+  --card: #1C1C1C;
+  --card-foreground: #E8E3DA;
+  --popover: #1C1C1C;
+  --popover-foreground: #E8E3DA;
+  --primary: #D1CFC0;
+  --primary-foreground: #363636;
+  --secondary: #222222;
+  --secondary-foreground: #D1CFC0;
+  --muted: #2A2A2A;
+  --muted-foreground: #8E8A83;
+  --accent: #363636;
+  --accent-foreground: #D1CFC0;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #2C2C2C;
+  --input: #2C2C2C;
+  --ring: #D1CFC0;
+
+  --chart-1: #F26A4B;
+  --chart-2: #D9CFC2;
+  --chart-3: #8E8A83;
+  --chart-4: #5C5A56;
+  --chart-5: #3B3B3B;
+
+  --success: #8DB596;
+  --warning: #D9A74A;
+  --danger: #F07A62;
+
+  --elevation-1-bg: #1C1C1C;
+  --elevation-1-border: #2C2C2C;
+
+  /* Fundo do menu flutuante de seções (.reports-consolidado-nav). No
+     escuro, o mesmo nível de --elevation-1-bg/--card já reproduz a técnica
+     da sidebar principal (dashboard/sidebar.tsx): --sidebar no dark é
+     idêntico a --card, uma superfície MAIS CLARA que --background. Aqui
+     --elevation-1-bg já é #1C1C1C (mesmo tom de --card), então nenhuma
+     mudança é necessária neste tema — só o claro estava errado (ver bloco
+     abaixo). */
+  --nav-menu-bg: var(--elevation-1-bg);
+
+  --kpi-shadow: 0px 6px 15px 0px rgb(0 0 0 / 0.3);
+
+  --radius: 0.5rem;
+  --letter-spacing: 0.01em;
+
+  /* Seletor segmentado/switch — tokens próprios, ver kpi-operadores.css */
+  --seg-track: #1F1F1F;
+  --seg-track-border: #2C2C2C;
+  --seg-thumb: #F8F4EC;
+  --seg-thumb-border: #CFC8B8;
+  --seg-text: #8E8A83;
+  --seg-text-active: #1E1E1E;
+  --switch-off: #2C2C2C;
+  --switch-off-border: #3A3A3A;
+  --switch-on: #D1CFC0;
+  --switch-knob: #141414;
+  --switch-knob-off: #8E8A83;
+}
+
+/* ───────── CLARO ← :root do tema ───────── */
+[data-theme="light"] [data-page="reports-consolidado"] {
+  --background: #E9E4D8;
+  --foreground: #1E1E1E;
+  --card: #F4EFE4;
+  --card-foreground: #1E1E1E;
+  --popover: #F4EFE4;
+  --popover-foreground: #1E1E1E;
+  --primary: #2E2E2E;
+  --primary-foreground: #E6E4D7;
+  --secondary: #D8D2C4;
+  --secondary-foreground: #2E2E2E;
+  --muted: #CFC8B8;
+  --muted-foreground: #5E5A52;
+  --accent: #E6E4D7;
+  --accent-foreground: #2E2E2E;
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --border: #D2CBBB;
+  --input: #D2CBBB;
+  --ring: #2E2E2E;
+
+  --chart-1: #F26A4B;
+  --chart-2: #1E1E1E;
+  --chart-3: #5E5A52;
+  --chart-4: #A89F8F;
+  --chart-5: #CFC8B8;
+
+  --success: #3D6B47;
+  --warning: #93600F;
+  --danger: #B3321C;
+
+  --elevation-1-bg: #F4EFE4;
+  --elevation-1-border: #D2CBBB;
+
+  /* Fundo do menu flutuante de seções (.reports-consolidado-nav) — claro.
+     Antes usava --elevation-1-bg (#F4EFE4, igual a --card), que é MAIS CLARO
+     que --background (#E9E4D8): destoava, ficava "muito branco" numa faixa
+     grande e persistente na tela (diferente de um popover pequeno, onde
+     ficar mais claro que o fundo é o padrão esperado de "elevação").
+     A sidebar principal do sistema (dashboard/sidebar.tsx, token --sidebar
+     em globals.css) resolve isso com o efeito oposto no claro: --sidebar
+     (oklch 0.945) é mais ESCURO que --background (oklch 0.975), pra a
+     barra de navegação "de trilho" se distinguir da área de conteúdo sem
+     parecer uma superfície flutuante. Replicamos a mesma técnica aqui via
+     color-mix (mistura leve de --foreground no --background), em vez de
+     copiar o valor de --card. */
+  --nav-menu-bg: color-mix(in srgb, var(--background) 92%, var(--foreground) 8%);
+
+  --kpi-shadow: 0px 4px 10px 0px rgb(0 0 0 / 0.1);
+
+  --seg-track: #DDD7CA;
+  --seg-track-border: #D2CBBB;
+  --seg-thumb: #3A3A3A;
+  --seg-thumb-border: color-mix(in srgb, #E8E3DA 14%, transparent);
+  --seg-text: #5E5A52;
+  --seg-text-active: #F1ECE3;
+  --switch-off: #CFC8B8;
+  --switch-off-border: #C2BAA8;
+  --switch-on: #2E2E2E;
+  --switch-knob: #F4EFE4;
+  --switch-knob-off: #F4EFE4;
+}
+
+/* ───────── Ponte para as utilities do Tailwind (vale nos dois temas) ───────── */
+[data-page="reports-consolidado"] {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Fonte única da rota — variável vem do next/font carregado só em page.tsx. */
+  --font-sans: var(--font-zen-sans), "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letter-spacing);
+}
+
+/* ───────── Barra de rolagem (padrão das páginas migradas) ───────── */
+[data-page="reports-consolidado"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+[data-page="reports-consolidado"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-page="reports-consolidado"] ::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 999px;
+}
+[data-page="reports-consolidado"] ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+}
+
+/* ───────── Toasts desta página (sonner) ─────────
+ * Mesma exceção documentada em kpi-operadores.css: o <Toaster/> global monta
+ * em document.body, fora de [data-page="reports-consolidado"] — por isso a
+ * classe .reports-consolidado-toast (passada só em toasts desta rota) em vez
+ * do seletor de atributo.
+ */
+.reports-consolidado-toast {
+  --normal-bg: #1C1C1C;
+  --normal-text: #E8E3DA;
+  --normal-border: #2C2C2C;
+  background: var(--normal-bg) !important;
+  color: var(--normal-text) !important;
+  border: 1px solid var(--normal-border) !important;
+  font-family: var(--font-zen-sans), "Instrument Sans", ui-sans-serif, system-ui, sans-serif !important;
+}
+.reports-consolidado-toast [data-icon] svg {
+  color: #8DB596 !important;
+}
+.reports-consolidado-toast[data-type="error"] [data-icon] svg {
+  color: #F07A62 !important;
+}
+.reports-consolidado-toast[data-type="warning"] [data-icon] svg {
+  color: #D9A74A !important;
+}
+.reports-consolidado-toast[data-type="info"] [data-icon] svg,
+.reports-consolidado-toast[data-type="loading"] [data-icon] svg {
+  color: #D1CFC0 !important;
+}
+
+[data-theme="light"] .reports-consolidado-toast {
+  --normal-bg: #F4EFE4;
+  --normal-text: #1E1E1E;
+  --normal-border: #D2CBBB;
+  background: var(--normal-bg) !important;
+  color: var(--normal-text) !important;
+  border: 1px solid var(--normal-border) !important;
+}
+[data-theme="light"] .reports-consolidado-toast [data-icon] svg {
+  color: #3D6B47 !important;
+}
+[data-theme="light"] .reports-consolidado-toast[data-type="error"] [data-icon] svg {
+  color: #B3321C !important;
+}
+[data-theme="light"] .reports-consolidado-toast[data-type="warning"] [data-icon] svg {
+  color: #93600F !important;
+}
+[data-theme="light"] .reports-consolidado-toast[data-type="info"] [data-icon] svg,
+[data-theme="light"] .reports-consolidado-toast[data-type="loading"] [data-icon] svg {
+  color: #5B5647 !important;
+}
+
+/* ───────── Menu de seções flutuante (ConsolidadoNavSidebar) ─────────
+ * Renderizado como IRMÃO da div [data-page="reports-consolidado"] (position:
+ * fixed, precisa ficar fora do container centralizado) — não dentro da
+ * árvore normal do [data-page] principal. Por isso recebe seu PRÓPRIO
+ * data-page (ver `dataPage` em FloatingNavSidebar) só pra herdar as CSS
+ * custom properties do tema definidas acima, e uma classe própria
+ * (.reports-consolidado-nav) usada aqui como gancho pra sobrescrever as
+ * classes Tailwind hardcoded do hover-sidebar.tsx compartilhado (bg-sidebar,
+ * text-neutral-700/dark:text-neutral-200) — SEM editar esse componente
+ * compartilhado (TempoIndispNavSidebar não passa wrapperClassName/dataPage,
+ * então continua 100% com o visual de sempre).
+ */
+.reports-consolidado-nav .bg-sidebar {
+  background-color: var(--nav-menu-bg) !important;
+  box-shadow: var(--kpi-shadow);
+}
+.reports-consolidado-nav .border-border\/60 {
+  border-color: var(--elevation-1-border) !important;
+}
+/* Ícone já lê var(--muted-foreground) direto na classe (ICON_CLASS, ver
+   consolidado-nav-sidebar.tsx) — aqui só o rótulo de texto (span do
+   SidebarLink compartilhado), que continua hardcoded no componente base. */
+.reports-consolidado-nav .text-neutral-700 {
+  color: var(--muted-foreground) !important;
+}
+.reports-consolidado-nav a:hover .text-neutral-700 {
+  color: var(--foreground) !important;
+}
+/* Leve destaque de hover no item inteiro (não só no texto), pro contraste
+   ficar bom contra o novo fundo mais escuro (--nav-menu-bg) — mesmo padrão
+   de "hover:bg-muted/40" já usado nos popovers desta página
+   (config-tabela-popover.tsx). */
+.reports-consolidado-nav a:hover {
+  background-color: color-mix(in srgb, var(--foreground) 8%, transparent);
+  border-radius: 0.5rem;
+}
+.reports-consolidado-nav a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+/* ───────── Toggles (RV Diário, olho/nome fantasia) ─────────
+ * Mesmo padrão de estado de /kpi/operadores (LabeledSwitch): sem borda
+ * branca de foco (outline do navegador resetado e trocado por um anel na
+ * cor do tema, --ring), disabled visualmente apagado. Selecionado já usa
+ * bg-primary/text-primary-foreground (escuro no tema claro, claro no tema
+ * escuro — automático via --primary do bloco acima), então só o foco
+ * precisava de ajuste.
+ */
+[data-page="reports-consolidado"] button[aria-pressed] {
+  outline: none;
+}
+[data-page="reports-consolidado"] button[aria-pressed]:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+[data-page="reports-consolidado"] button[aria-pressed]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ───────── Hover das linhas da EquipeTable (Problema 1, 6ª rodada) ─────────
+ * globals.css tem uma regra GLOBAL (fora do escopo permitido pra edição):
+ *   [data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover
+ *   { background-color: var(--muted-hover-bg) !important; }
+ * `--muted-hover-bg` (oklch(0.93 0.002 240), ~#ededf0) é resquício do tema
+ * antigo — cinza quase branco fora da paleta Zen Linen, e não redefinido por
+ * esta página. Com !important, essa regra vence QUALQUER classe Tailwind
+ * (inclusive a troca pra hover:bg-accent feita em equipe-table.tsx), daí o
+ * hover claro/esbranquiçado no tema claro.
+ * Correção: seletor AINDA mais específico (mesmo padrão + o escopo
+ * [data-page] a mais) escrevendo var(--accent) por cima — só nesta rota,
+ * sem tocar em globals.css. Mesmo token usado no hover de linha de
+ * /kpi/operadores (hover:bg-accent no <tr>, kpi-equipe-section.tsx).
+ * Tema escuro não precisa de override — não existe regra global equivalente
+ * pra .dark/:root, a classe hover:bg-accent do componente já resolve.
+ */
+[data-theme="light"] [data-page="reports-consolidado"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover {
+  background-color: var(--accent) !important;
+}
+
+/* ───────── Dropzone "Anexar Base" (Problema 2, 6ª rodada) ─────────
+ * UploadDropzone lia `var(--upload-idle-bg, var(--card))` /
+ * `var(--muted-hover-bg, var(--card))` — tokens globais definidos só pro
+ * tema antigo (globals.css), pensados pra outro conjunto de cores (--muted
+ * ali é um cinza quase branco). Embora esses tokens globais, quando
+ * resolvidos DENTRO desta página, acabem puxando os valores locais de
+ * --muted/--card por causa da cascata de custom properties, o resultado
+ * ficava perto demais do próprio fundo do StyledCard ("ANEXAR BASE") — sem
+ * ler como uma área de drop distinta, e sem seguir explicitamente a paleta
+ * Zen Linen desta rota.
+ * Tokens PRÓPRIOS desta página, com color-mix a partir de --card/--muted
+ * (mesma técnica do StyledCard, que mistura --background/--card) — dão um
+ * tom claramente diferente do fundo do card ao redor, sem sair da paleta,
+ * nos dois temas. UploadDropzone referencia com fallback pro --card (ver
+ * upload-dropzone.tsx), então mesmo que este CSS não carregasse por algum
+ * motivo, o layout não quebra.
+ */
+[data-page="reports-consolidado"] {
+  --dropzone-idle-bg: color-mix(in srgb, var(--card) 55%, var(--muted) 45%);
+  --dropzone-hover-bg: color-mix(in srgb, var(--card) 35%, var(--muted) 65%);
+}
+
+/* Banner de erro do upload — `.status-danger` (globals.css) usa
+ * --danger-bg/--danger-border, tokens que esta página NÃO redefine (só
+ * --danger foi trazido pra paleta Zen Linen) — o banner saía com o
+ * vermelho/rosa saturado do tema antigo, destoando do resto. Override
+ * escopado, derivando fundo/borda do --danger já correto da paleta local
+ * via color-mix, em vez de mexer em `.status-danger` (compartilhada). */
+[data-page="reports-consolidado"] .status-danger {
+  color: var(--danger);
+  background: color-mix(in oklch, var(--danger) 12%, transparent);
+  border-color: color-mix(in oklch, var(--danger) 35%, transparent);
+}
+
+/* ───────── Clarear tons internos da imagem exportada (17ª rodada) ─────────
+ * `copy-table-button.tsx` captura `[data-tabela-png]` — um clone da MESMA
+ * EquipeTable (variant "screen") renderizada na tela, com os MESMOS tokens
+ * de tema (--background/--card/--muted). No tema claro, os tons Zen Linen
+ * (bege) que funcionam bem na tela — cercados de UI, texto, espaço em
+ * branco do resto da página — ficam mais fortes/saturados numa imagem
+ * ESTÁTICA isolada (sem esse contexto ao redor pra "diluir" a percepção),
+ * sobretudo no cabeçalho (bg-muted/40) e na linha de totais (bg-muted/20),
+ * que usam --muted (#CFC8B8, o tom mais saturado da paleta).
+ *
+ * Ajuste ESCOPADO só a este wrapper de export (nunca ao card visível da
+ * tela — o seletor exige [data-tabela-png] como ancestral) e só no tema
+ * claro: redefine --background/--card/--muted LOCALMENTE, misturando um
+ * pouco de branco em cima do token original do tema (color-mix), em vez de
+ * hardcodar um hex novo. Sutil (10-15% de branco) — mantém a mesma base de
+ * cor e a mesma proporção relativa entre os tokens (--muted continua mais
+ * escuro/saturado que --card/--background, então o cabeçalho continua se
+ * destacando das linhas, só que com menos saturação geral).
+ *
+ * Como --color-muted/--color-card/--color-background (ponte pras utilities
+ * Tailwind, ex. bg-muted/40) só GUARDAM uma referência `var(--muted)` etc
+ * (definida lá em cima, em [data-page="reports-consolidado"]), e variáveis
+ * CSS são substituídas no momento do USO (não da declaração), redefinir
+ * --muted/--card/--background aqui dentro já basta pra toda a EquipeTable
+ * (e o StyledCard ao redor dela) herdarem os valores mais claros — sem
+ * precisar duplicar a ponte nem tocar em equipe-table.tsx/styled-card.tsx.
+ *
+ * Não muda: --success/--warning/--danger/--accent (cores de status e hover
+ * continuam as mesmas), nem nenhuma dimensão (padding/border/radius) — só
+ * cor de fundo. Tema ESCURO não é afetado (seletor dentro de
+ * [data-theme="light"]).
+ */
+[data-theme="light"] [data-page="reports-consolidado"] [data-tabela-png] {
+  --background: color-mix(in srgb, var(--background) 88%, white 12%);
+  --card: color-mix(in srgb, var(--card) 90%, white 10%);
+  --muted: color-mix(in srgb, var(--muted) 85%, white 15%);
+}
+
+/* ───────── Dropzone "Anexar Base" — ícone único animado (22ª rodada) ─────────
+ * Substitui os dois blocos de texto permanentes ("Arraste o arquivo CSV...",
+ * "Apenas arquivos .csv · limite de 10.000 linhas") por um único ícone
+ * (IconFileSpreadsheet), sem texto visível fixo. A informação continua
+ * acessível via aria-label completo no elemento clicável (nome acessível
+ * pra leitor de tela) e via Tooltip (Radix, componente compartilhado — ver
+ * upload-dropzone.tsx) ao hover/focus. Mensagens de erro reais continuam
+ * aparecendo como texto (.status-danger, inalterado).
+ *
+ * Composição: anel de fundo sutil (.upload-dropzone-ring…, cor --primary em
+ * baixa opacidade) atrás do glifo, com profundidade via drop-shadow leve.
+ * Repouso: flutuação vertical mínima (2px) + pulsação leve de opacidade no
+ * anel — só pra sinalizar "isso é interativo", sem chamar atenção.
+ * Hover: glifo escala e muda pra --primary, sombra mais proeminente.
+ * Drag-active (arrastando um arquivo por cima, useDropzone.isDragActive):
+ * reação mais forte — anel pulsa mais rápido/expande mais, glifo escala mais
+ * e "salta" com uma pequena translação vertical (reforça "solte aqui").
+ * Drag-reject: navegadores só expõem o tipo do arquivo de forma confiável no
+ * evento `drop`, não durante o dragenter/dragover — então isDragReject do
+ * react-dropzone raramente dispara ANTES do drop em produção (limitação de
+ * plataforma, não deste componente). Quando o browser expõe o tipo cedo o
+ * suficiente, a borda/glifo reagem em --danger; do contrário, o usuário só
+ * vê a reação neutra de "convite" (estado active) até soltar, e a validação
+ * real (extensão, linhas, parse) acontece no drop, com erro em texto visível
+ * como já acontecia antes desta rodada.
+ * Processando: ícone trocado por spinner (Tabler IconLoader2, já usado no
+ * projeto) com opacidade reduzida — mesma lógica de disabled/opacity de
+ * sempre (useDropzone({ disabled })).
+ */
+.upload-dropzone-ring-reports-consolidado {
+  background: color-mix(in oklch, var(--primary) 14%, transparent);
+  opacity: 0.55;
+  transform: scale(0.86);
+  animation: upload-dz-ring-idle-reports-consolidado 3.2s ease-in-out infinite;
+}
+
+.upload-dropzone-glyph-reports-consolidado {
+  color: var(--muted-foreground);
+  filter: drop-shadow(0 1px 2px color-mix(in oklch, var(--foreground) 18%, transparent));
+  transition: color 0.25s ease, transform 0.25s ease, filter 0.25s ease;
+  animation: upload-dz-float-idle-reports-consolidado 3.6s ease-in-out infinite;
+}
+
+/* Hover (mouse real — cobre também o :hover nativo, além do estado React
+   isHovering usado só pro background) */
+.upload-dropzone-root-reports-consolidado:hover .upload-dropzone-glyph-reports-consolidado {
+  color: var(--primary);
+  transform: scale(1.08);
+  filter: drop-shadow(0 3px 6px color-mix(in oklch, var(--primary) 30%, transparent));
+}
+.upload-dropzone-root-reports-consolidado:hover .upload-dropzone-ring-reports-consolidado {
+  opacity: 0.8;
+}
+
+/* Foco por teclado — mesmo reforço visual do hover, já que o anel de foco
+   (--ring) é aplicado no elemento raiz via focus-visible:ring-2 no JSX */
+.upload-dropzone-root-reports-consolidado:focus-visible .upload-dropzone-glyph-reports-consolidado {
+  color: var(--primary);
+  transform: scale(1.08);
+}
+
+/* Drag-active: reação mais forte que o hover comum */
+.upload-dropzone-root-reports-consolidado[data-dropzone-state="active"] .upload-dropzone-glyph-reports-consolidado {
+  color: var(--primary);
+  animation: upload-dz-drop-invite-reports-consolidado 0.9s ease-in-out infinite;
+  filter: drop-shadow(0 4px 10px color-mix(in oklch, var(--primary) 40%, transparent));
+}
+.upload-dropzone-root-reports-consolidado[data-dropzone-state="active"] .upload-dropzone-ring-reports-consolidado {
+  animation: upload-dz-ring-active-reports-consolidado 1.1s ease-in-out infinite;
+}
+
+/* Drag-reject (quando o browser expõe o tipo inválido cedo o bastante) */
+.upload-dropzone-root-reports-consolidado[data-dropzone-state="reject"] .upload-dropzone-glyph-reports-consolidado {
+  color: var(--danger);
+  animation: none;
+  transform: scale(1.02);
+}
+.upload-dropzone-root-reports-consolidado[data-dropzone-state="reject"] .upload-dropzone-ring-reports-consolidado {
+  background: color-mix(in oklch, var(--danger) 18%, transparent);
+  animation: none;
+  opacity: 0.7;
+}
+
+/* Processando/desabilitado: para toda animação, ícone/spinner com opacidade
+   reduzida (o container já aplica opacity: 0.5 via style inline) */
+.upload-dropzone-root-reports-consolidado[data-dropzone-state="processing"] .upload-dropzone-glyph-reports-consolidado,
+.upload-dropzone-root-reports-consolidado[data-dropzone-state="processing"] .upload-dropzone-ring-reports-consolidado {
+  animation: none;
+}
+
+/* Dica de texto exclusiva de touch (sm:hidden no JSX já esconde em telas
+   maiores com espaço pra hover/tooltip funcionar bem) */
+.upload-dropzone-touch-hint-reports-consolidado {
+  opacity: 0.85;
+}
+
+@keyframes upload-dz-float-idle-reports-consolidado {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes upload-dz-ring-idle-reports-consolidado {
+  0%, 100% { opacity: 0.45; transform: scale(0.86); }
+  50% { opacity: 0.65; transform: scale(0.94); }
+}
+
+@keyframes upload-dz-ring-active-reports-consolidado {
+  0%, 100% { opacity: 0.55; transform: scale(0.95); }
+  50% { opacity: 0.95; transform: scale(1.15); }
+}
+
+@keyframes upload-dz-drop-invite-reports-consolidado {
+  0%, 100% { transform: translateY(0) scale(1.1); }
+  50% { transform: translateY(3px) scale(1.16); }
+}
+
+/* prefers-reduced-motion: remove todas as animações novas — mesmo padrão já
+   usado no UploadProgressModal (21ª rodada) */
+@media (prefers-reduced-motion: reduce) {
+  .upload-dropzone-glyph-reports-consolidado,
+  .upload-dropzone-ring-reports-consolidado,
+  .upload-dropzone-root-reports-consolidado[data-dropzone-state="active"] .upload-dropzone-glyph-reports-consolidado,
+  .upload-dropzone-root-reports-consolidado[data-dropzone-state="active"] .upload-dropzone-ring-reports-consolidado {
+    animation: none !important;
+  }
+  .upload-dropzone-root-reports-consolidado:hover .upload-dropzone-glyph-reports-consolidado {
+    transform: none;
+  }
+}
+
+/* ───────── Modal de upload (UploadProgressModal) — variant="reports-consolidado" ─────────
+ * upload-progress-modal.tsx é COMPARTILHADO com
+ * upload-tempo-logado-dropzone.tsx (mesma lógica de etapas). Só
+ * upload-dropzone.tsx (exclusivo desta rota) passa
+ * variant="reports-consolidado", que troca `elevation-3`/`ds-h2`/`ds-mono`
+ * genéricos por esta classe — Tempo Logado nunca passa a prop, então
+ * continua 100% com o card `elevation-3` de sempre.
+ *
+ * O componente não é um portal de verdade (sem createPortal — é um
+ * position:fixed dentro da própria árvore da página), então var(--card)/
+ * var(--border) já herdariam certo mesmo sem o `data-page` no backdrop; ele
+ * é aplicado mesmo assim (mesmo padrão das outras rotas desta série) só pra
+ * permitir seletor CSS explícito aqui, sem depender de onde no DOM a árvore
+ * do modal fica pendurada.
+ */
+.reports-consolidado-upload-modal {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 50px -12px color-mix(in oklch, var(--foreground) 25%, transparent);
+}
+
+/* ───────── Toasts desta página (sonner) — texto da descrição ─────────
+ * CAUSA RAIZ do "toast continua com tema antigo" mesmo depois de conectar
+ * .reports-consolidado-toast: o bloco acima só sobrescreve background/
+ * border/color do elemento RAIZ do toast ([data-sonner-toast], o próprio
+ * <li>). A cor do TÍTULO já vem certa (sonner usa `color: inherit` em
+ * [data-title]), mas a cor da DESCRIÇÃO (usada por vários toasts desta
+ * rota — anexar base, copiar tabela, salvar configurações) vem de uma regra
+ * própria do CSS embutido do sonner, `[data-sonner-toast][data-styled=true]
+ * [data-description] { color: #3f3f3f }` — um cinza-escuro HARDCODED, sem
+ * !important, mas também sem depender de nenhuma CSS var nossa, então
+ * nunca era coberta pela regra anterior (que não tinha seletor nenhum para
+ * [data-description]). No tema escuro isso deixava a descrição quase
+ * ilegível (cinza escuro sobre o fundo escuro do card); no tema claro ela
+ * ficava "certa por acaso" (cinza escuro sobre fundo claro), mascarando o
+ * problema — mas ainda fora da paleta Zen Linen. Corrigido com !important
+ * pra vencer essa regra sem depender de especificidade/ordem, herdando
+ * var(--normal-text) (já redefinido acima, por tema) com leve transparência
+ * pra manter a hierarquia visual "descrição é secundária" sem voltar a um
+ * cinza hardcoded fora do tema.
+ */
+.reports-consolidado-toast [data-description] {
+  color: color-mix(in oklch, var(--normal-text) 78%, transparent) !important;
+}
+/* Botão de fechar (close-button, quando exibido): border hardcoded do
+ * sonner (--gray4) não acompanha tema — alinhado ao --normal-border já
+ * herdado (custom property, resolve certo por herança mesmo sem
+ * !important, mas o valor de BORDER em si sonner define direto por fora da
+ * var em alguns estados de hover — !important garante consistência). */
+.reports-consolidado-toast [data-close-button] {
+  border-color: var(--normal-border) !important;
+}
