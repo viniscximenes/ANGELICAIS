@@ -32,7 +32,8 @@ interface KpiLoadingScreenProps {
     | "kpi-detalhado-polo"
     | "kpi-evolucao"
     | "configuracoes-equipe"
-    | "reports-consolidado";
+    | "reports-consolidado"
+    | "reports-tempo-indisponibilidade";
   /** Nome da página pro rótulo acessível ("Carregando Operadores...") e pro texto visível. */
   titulo: string;
   /**

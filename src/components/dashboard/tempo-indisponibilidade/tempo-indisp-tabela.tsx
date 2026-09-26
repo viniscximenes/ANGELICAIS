@@ -9,7 +9,6 @@ import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasi
 import {
   corNomeOperador,
   fundoLinhaRuim,
-  TABELA_CONTAINER_CLASS,
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
   TABELA_HEADER_CELL_ULTIMA_CLASS,
@@ -20,6 +19,39 @@ import {
   ValorSemantico,
   ValorSemDado,
 } from "@/components/gestor/tabela-padrao";
+
+/**
+ * Hover da linha — mesmo token (`--accent`) usado em EquipeTable
+ * (/reports/consolidado, ver equipe-table.tsx: TABELA_LINHA_HOVER_CLASS).
+ * TABELA_LINHA_CLASS (compartilhada com Equipe/TMA, tabela-padrao.tsx) vem
+ * com `hover:bg-muted/40` — string-replace local, só dentro deste
+ * componente exclusivo desta rota, pra não editar o arquivo compartilhado
+ * nem vazar a mudança pras outras tabelas que o consomem. Sem isso, o hover
+ * no tema ESCURO divergia do consolidado (bg-muted/40 vs bg-accent) — o
+ * !important escopado de reports-tempo-indisp.css só cobre o tema CLARO
+ * (globals.css só tem a regra global equivalente pro claro), então no
+ * escuro é esta classe Tailwind que decide a cor.
+ *
+ * CAUSA REAL de essa troca sozinha NÃO bastar (rodada anterior desta mesma
+ * tarefa): a linha também recebe `style={{ background: fundoLinhaRuim(...)
+ * ?? "transparent", ... }}` — um `background` INLINE sempre presente, mesmo
+ * quando a linha não é "ruim" (caía no fallback "transparent"). Estilo
+ * inline tem precedência sobre QUALQUER classe (sem `!important`),
+ * `hover:bg-accent` incluída — por isso, no tema escuro (sem a regra
+ * `!important` que existe só pro claro), o fundo da linha inteira nunca
+ * mudava no hover; só a borda esquerda (`border-color`, propriedade
+ * diferente, não coberta pelo `background` inline) reagia. EquipeTable
+ * (consolidado) NUNCA teve esse fallback — usa só `background:
+ * fundoLinhaRuim(belowMeta)`, que retorna `undefined` quando a linha não é
+ * ruim, e um `style` com valor `undefined` faz o React OMITIR a propriedade
+ * inline por completo, liberando `hover:bg-accent` (ou a regra `!important`
+ * do claro) pra decidir a cor. Corrigido abaixo removendo o `?? "transparent"`
+ * — agora idêntico ao consolidado nesse ponto.
+ */
+const TABELA_LINHA_HOVER_CLASS = TABELA_LINHA_CLASS.replace(
+  "hover:bg-muted/40",
+  "hover:bg-accent",
+);
 
 import type { OperadorAnaliticoTempoIndisp } from "./merge-tempo-indisp";
 
@@ -52,16 +84,6 @@ const COLUNAS = [
   { label: "Pausa Particular %", widthPx: 190 },
   { label: "Outras Pausas %", widthPx: 170 },
 ] as const;
-
-/**
- * Soma das larguras MÍNIMAS — usada pelo wrapper offscreen do PNG
- * (tempo-indisp-section.tsx) pra dimensionar a captura. O PNG usa um
- * container de largura FIXA (não responsivo como a tela), então ali o
- * `1fr` da última coluna resolve pro próprio mínimo (não sobra espaço pra
- * distribuir) — a soma nominal continua sendo a largura exata necessária,
- * sem cortar nem sobrar.
- */
-export const TEMPO_INDISP_TABELA_WIDTH_PX = COLUNAS.reduce((sum, c) => sum + c.widthPx, 0);
 
 const GRID_COLS = COLUNAS.map((c, idx) =>
   idx === COLUNAS.length - 1 ? `minmax(${c.widthPx}px, 1fr)` : `${c.widthPx}px`,
@@ -173,7 +195,17 @@ const ScreenTable = forwardRef<
     olhoAberto && nomeFantasia.ativo ? { ...nomeFantasia, ativo: false } : nomeFantasia;
 
   return (
-    <div ref={ref} className={TABELA_CONTAINER_CLASS}>
+    // Container PRÓPRIO sem border/rounded/elevation-1 (TABELA_CONTAINER_CLASS
+    // continua intocado em tabela-padrao.tsx, ainda usado por outras tabelas
+    // do mesmo padrão) — mesmo ajuste já feito em EquipeTable (consolidado,
+    // ver equipe-table.tsx): este componente só é consumido dentro de um
+    // StyledCard que JÁ fornece borda + cantoneiras + padding, então aplicar
+    // TABELA_CONTAINER_CLASS aqui duplicava esse chrome (2 bordas/2 raios
+    // aninhados — a caixa arredondada extra reportada, com o cabeçalho da
+    // tabela também saindo arredondado por causa do overflow-hidden dela).
+    // `data-tempo-indisp-tabela` preservado como gancho neutro, análogo a
+    // `data-equipe-table`.
+    <div ref={ref} data-tempo-indisp-tabela className="overflow-hidden">
       {/*
         overflow-x-auto: quando a soma das 9 colunas fixas (COLUNAS acima)
         não cabe na largura disponível, o WRAPPER rola horizontalmente —
@@ -315,14 +347,14 @@ const ScreenTable = forwardRef<
                 tabIndex={clicavel ? 0 : undefined}
                 onClick={clicavel ? () => onRowClick!(op) : undefined}
                 className={cn(
-                  TABELA_LINHA_CLASS,
+                  TABELA_LINHA_HOVER_CLASS,
                   "group border-l-2 border-l-transparent transition-[background-color,border-color,transform] duration-200 ease-out",
                   clicavel && "cursor-pointer",
                   hoverClass,
                 )}
                 style={{
                   gridTemplateColumns: GRID_COLS,
-                  background: fundoLinhaRuim(ruimNaLinha) ?? "transparent",
+                  background: fundoLinhaRuim(ruimNaLinha),
                   borderBottom: isLast ? "none" : "1px solid var(--border)/40",
                   opacity: isAusente ? 0.4 : 1,
                   minHeight: LINHA_MIN_HEIGHT_PX,

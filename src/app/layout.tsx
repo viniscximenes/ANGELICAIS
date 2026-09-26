@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { Toaster } from "sonner";
 
 import { FaviconNavigationBridge } from "@/components/dashboard/favicon-navigation-bridge";
@@ -9,6 +10,7 @@ import { ProgressBarProvider } from "@/components/dashboard/progress-provider";
 import { ThemeProvider } from "@/components/dashboard/theme-provider";
 import { LenisProvider } from "@/components/providers/lenis-provider";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { FAVICON_EARLY_SCRIPT } from "@/lib/favicon/favicon-early-script";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
@@ -39,6 +41,13 @@ export default async function RootLayout({
       )}
     >
       <body>
+        {/* beforeInteractive: injetado no <head> e executado durante o parse
+            do HTML, antes do bundle React carregar/hidratar — ver
+            favicon-early-script.ts pro porquê. Next.js exige que scripts
+            beforeInteractive fiquem no root layout. */}
+        <Script id="favicon-early" strategy="beforeInteractive">
+          {FAVICON_EARLY_SCRIPT}
+        </Script>
         <FaviconNavigationBridge />
         <HideProgressBarForRoutes />
         <ProgressBarProvider>

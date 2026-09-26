@@ -4,11 +4,9 @@ import { IconClockExclamation } from "@tabler/icons-react";
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import {
-  TABELA_CONTAINER_CLASS,
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
   TABELA_HEADER_CELL_ULTIMA_CLASS,
-  TABELA_HEADER_CLASS,
   TABELA_LINHA_CLASS,
   TABELA_NOME_CELL_CLASS,
   TABELA_VALOR_CELL_CLASS,
@@ -56,6 +54,10 @@ const GRID_COLS = [`minmax(${PISO_OPERADOR_PX}px, 1.6fr)`, ...COLUNAS.map(() => 
 
 export const ESTOURO_PAUSA_MIN_WIDTH_PX = PISO_OPERADOR_PX + COLUNAS.length * DATA_COL_PISO_PX;
 
+/** Cabeçalho — mesmo estilo sans (não mono) de EquipeTable/TempoIndispTabela, ver aderencia-analitico.tsx. */
+const HEADER_ROW_CLASS =
+  "ds-body grid gap-0 bg-muted/40 font-bold text-foreground tracking-wide uppercase";
+
 interface Props {
   operadores: OperadorAnaliticoTempoIndisp[];
 }
@@ -100,12 +102,13 @@ export function EstouroPausaAnalitico({ operadores }: Props) {
         </div>
       </div>
 
+      {/* Sem TABELA_CONTAINER_CLASS dentro do StyledCard — ver comentário em aderencia-analitico.tsx. */}
       <StyledCard className="p-3" withGradient>
-        <div className={TABELA_CONTAINER_CLASS}>
+        <div className="overflow-hidden">
           <div className="overflow-x-auto scrollbar-tema">
             <div data-estouro-pausa-tabela className="min-w-fit">
               <div
-                className={TABELA_HEADER_CLASS}
+                className={HEADER_ROW_CLASS}
                 style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA }}
               >
                 <div className={cn(TABELA_HEADER_CELL_CLASS, "sticky left-0 z-10")}>Operador</div>

@@ -4,11 +4,9 @@ import { IconClock } from "@tabler/icons-react";
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import {
-  TABELA_CONTAINER_CLASS,
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
   TABELA_HEADER_CELL_ULTIMA_CLASS,
-  TABELA_HEADER_CLASS,
   TABELA_LINHA_CLASS,
   TABELA_NOME_CELL_CLASS,
   TABELA_VALOR_CELL_CLASS,
@@ -104,12 +102,13 @@ function fmt(s: string): string {
 const STICKY_HEADER_BG = "color-mix(in oklch, var(--muted) 40%, var(--card))";
 
 /**
- * Cor dos títulos desta tabela: mesma família/peso/tamanho/tracking/caixa
- * de TABELA_HEADER_CLASS (que já usa text-muted-foreground), mas um cinza
- * AINDA mais claro — via opacidade do próprio token (sem hex hardcoded),
- * pedido explicitamente pra esta tabela ser mais discreta que as outras.
+ * Cabeçalho — mesmo estilo sans (ds-body, não ds-mono-sm) de
+ * EquipeTable/TempoIndispTabela (ver aderencia-analitico.tsx), com a cor
+ * ainda mais discreta (text-muted-foreground/70 em vez de text-foreground)
+ * pedida explicitamente pra esta tabela ficar mais discreta que as outras.
  */
-const PAUSAS_HEADER_COR_CLASS = "text-muted-foreground/70";
+const HEADER_ROW_CLASS =
+  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground/70";
 
 interface Props {
   operadores: GestorIndispLinha[];
@@ -139,8 +138,9 @@ export function PausasDetalhadasAnalitico({ operadores }: Props) {
         </p>
       </div>
 
+      {/* Sem TABELA_CONTAINER_CLASS dentro do StyledCard — ver comentário em aderencia-analitico.tsx. */}
       <StyledCard className="p-3" withGradient>
-        <div className={TABELA_CONTAINER_CLASS}>
+        <div className="overflow-hidden">
           {/*
             overflow-x-auto: rede de segurança pra quando o card é mais
             estreito que a soma dos pisos — mesma técnica de
@@ -150,7 +150,7 @@ export function PausasDetalhadasAnalitico({ operadores }: Props) {
           <div className="overflow-x-auto scrollbar-tema">
             <div data-pausas-tabela className="min-w-fit">
               <div
-                className={cn(TABELA_HEADER_CLASS, PAUSAS_HEADER_COR_CLASS)}
+                className={HEADER_ROW_CLASS}
                 style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA }}
               >
                 {/*

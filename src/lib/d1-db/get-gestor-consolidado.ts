@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveNomeSupervisorReportExibicao } from "@/lib/gestor/resolve-nome-supervisor-report";
 import { getEmailPrefix, getEmailVariants } from "@/lib/utils/email-variants";
 import { dataRefHojeBR } from "./parse";
 import { getRosterOperadoresGestor } from "./get-roster-gestor";
@@ -217,6 +218,11 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
       txPorMotivo,
     },
     reportHora: rows[0]?.report_hora ?? null,
-    reportNomeSupervisor: rows[0]?.report_nome_supervisor ?? null,
+    // Só formatação de exibição ("GABRIEL HENRIQUE XIMENES DA SILVA" →
+    // "Gabriel Ximenes") — ver resolveNomeSupervisorReportExibicao.
+    reportNomeSupervisor: await resolveNomeSupervisorReportExibicao(
+      admin,
+      rows[0]?.report_nome_supervisor ?? null,
+    ),
   };
 }

@@ -4,11 +4,9 @@ import { IconClockCheck } from "@tabler/icons-react";
 
 import { StyledCard } from "@/components/gestor/styled-card";
 import {
-  TABELA_CONTAINER_CLASS,
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
   TABELA_HEADER_CELL_ULTIMA_CLASS,
-  TABELA_HEADER_CLASS,
   TABELA_LINHA_CLASS,
   TABELA_NOME_CELL_CLASS,
   TABELA_VALOR_CELL_CLASS,
@@ -96,6 +94,17 @@ const COLUNAS_COM_COR: Set<0 | 1 | 2 | 3> = new Set([1, 2, 3]);
 /** Fundo opaco da coluna Operador (sticky) no cabeçalho — mesma técnica já usada em pausas-detalhadas-analitico.tsx. */
 const STICKY_HEADER_BG = "color-mix(in oklch, var(--muted) 40%, var(--card))";
 
+/**
+ * Cabeçalho — MESMO estilo local usado no cabeçalho da tabela principal
+ * (TempoIndispTabela/EquipeTable): ds-body/font-bold/text-foreground/
+ * tracking-wide, em vez de TABELA_HEADER_CLASS (ds-mono-sm/font-bold/
+ * text-muted-foreground/tracking-wider) — alinhado à tipografia sans usada
+ * nas tabelas analíticas do consolidado (TabelaTemas/DistribuicaoQuartis),
+ * que também não usam fonte monoespaçada no cabeçalho.
+ */
+const HEADER_ROW_CLASS =
+  "ds-body grid gap-0 bg-muted/40 font-bold text-foreground tracking-wide uppercase";
+
 const GRID_COLS = [
   `minmax(${PISO_OPERADOR_PX}px, 1.6fr)`,
   ...COLUNAS_HORARIO.map(() => `minmax(${DATA_COL_PISO_PX}px, 1fr)`),
@@ -163,8 +172,18 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
         </div>
       </div>
 
+      {/*
+        SEM TABELA_CONTAINER_CLASS (rounded-xl + border + elevation-1) por
+        dentro do StyledCard — mesmo ajuste do container principal (ver
+        tempo-indisp-tabela.tsx): o StyledCard (rounded-none, cantoneiras)
+        já fornece o chrome do card; duplicar um wrapper arredondado aqui
+        dentro criava a mesma "caixa extra" reportada na tabela principal,
+        só que dentro de cada card do Analítico. TabelaTemas/DistribuicaoQuartis
+        (consolidado) também não têm esse wrapper extra — a tabela fica
+        direto dentro do StyledCard.
+      */}
       <StyledCard className="p-3" withGradient>
-        <div className={TABELA_CONTAINER_CLASS}>
+        <div className="overflow-hidden">
           {/*
             overflow-x-auto: rede de segurança horizontal (mesmo padrão de
             PausasDetalhadasAnalitico/TabelaTemas) — INDEPENDENTE do
@@ -178,7 +197,7 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
           <div className="overflow-x-auto scrollbar-tema">
             <div data-aderencia-tabela className="min-w-fit">
               <div
-                className={TABELA_HEADER_CLASS}
+                className={HEADER_ROW_CLASS}
                 style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA }}
               >
                 <div

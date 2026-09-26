@@ -31,17 +31,18 @@ interface Props {
    */
   onCleared?: () => void | Promise<void>;
   /**
-   * "default" (padrão, usado por TMA/Tempo Indisponibilidade/Pausas — NÃO
-   * alterado) = pílula compacta py-1.5/12px de sempre. "compact" (só usado
-   * pelo /reports/consolidado até a 4ª rodada) = mesma família visual (h-8,
+   * "default" (padrão, usado por TMA/Pausas — NÃO alterado) = pílula
+   * compacta py-1.5/12px de sempre. "compact" (só usado pelo
+   * /reports/consolidado até a 4ª rodada) = mesma família visual (h-8,
    * text-sm, rounded-md) dos demais controles outline daquela página,
    * mantendo o preenchimento destructive sólido (cor de alerta) pra não se
-   * confundir com uma ação neutra. "icon-danger" (5ª rodada, só
-   * /reports/consolidado) = ícone-only, MESMO visual (outline neutro, h-8
-   * w-8, border-border) do botão de engrenagem (ConfigTabelaPopover) — não é
-   * preenchido nem vermelho, só o ícone de lixeira muda; rótulo "Limpar
-   * base" vira aria-label + tooltip (Radix Tooltip, mesmo padrão visual do
-   * tema já usado em export-popup-png-button.tsx) em vez de texto visível.
+   * confundir com uma ação neutra. "icon-danger" (5ª rodada, /reports/
+   * consolidado e /reports/tempo-indisponibilidade) = ícone-only, MESMO
+   * visual (outline neutro, h-8 w-8, border-border) do botão de engrenagem
+   * (ConfigTabelaPopover/ConfigTabelaTempoIndispPopover) — não é preenchido
+   * nem vermelho, só o ícone de lixeira muda; rótulo "Limpar base" vira
+   * aria-label + tooltip (Radix Tooltip, mesmo padrão visual do tema já
+   * usado em export-popup-png-button.tsx) em vez de texto visível.
    */
   variant?: "default" | "compact" | "icon-danger";
   /**

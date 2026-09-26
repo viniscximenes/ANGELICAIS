@@ -17,7 +17,6 @@ import { refreshIndisponibilidadeAction } from "@/lib/d1-db/actions/refresh-indi
 import { refreshTempoLogadoAction } from "@/lib/d1-db/actions/refresh-tempo-logado-action";
 import type { GestorIndispLinha, GestorTempoLogadoLinha } from "@/lib/d1-db/types";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
-import { formatReportLabel } from "@/lib/gestor/format-report-label";
 import { ordenarOperadoresTempoIndisp } from "@/lib/gestor/config-tabela-tempo-indisp/ordenar-operadores-tempo-indisp";
 import type { OrdemTabelaTempoIndisp } from "@/lib/gestor/config-tabela-tempo-indisp/types";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
@@ -35,9 +34,28 @@ import { mergeOperadoresTempoIndisp, type OperadorAnaliticoTempoIndisp } from ".
 import { OperadorAnaliticoDialog } from "./operador-analitico-dialog";
 import { PausasDetalhadasAnalitico } from "./pausas-detalhadas-analitico";
 import { PausasNaoRealizadasAnalitico } from "./pausas-nao-realizadas-analitico";
-import { TEMPO_INDISP_TABELA_WIDTH_PX, TempoIndispTabela } from "./tempo-indisp-tabela";
+import { TempoIndispTabela } from "./tempo-indisp-tabela";
 
-const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+// Texto da 2ª linha do cabeçalho ("{nome} fez um report às {hora}") — MESMA
+// lógica/formato de formatCabecalhoReport em gestor-equipe-section.tsx
+// (/reports/consolidado), duplicada aqui (não extraída pra um util
+// compartilhado) só pra não mexer no arquivo do consolidado. Diferente de
+// formatReportLabel (@/lib/gestor/format-report-label), que ainda é usada
+// pelas outras 2 tabelas do painel do gestor (TMA) com o texto mais longo
+// ("O supervisor ... fez ...").
+// Sem report ainda (hora nula/zerada): retorna null e a linha inteira some.
+function formatCabecalhoReport(
+  hora: string | null | undefined,
+  nomeSupervisor: string | null | undefined,
+): string | null {
+  if (!hora || hora === "—" || hora === "00:00" || hora === "00:00:00") return null;
+  const horaCurta = hora.match(/^(\d{1,2}:\d{2})/)?.[1] ?? hora;
+  const nome = nomeSupervisor?.trim();
+  if (nome) {
+    return `${nome} fez um report às ${horaCurta}`;
+  }
+  return `Atualizado às ${horaCurta}`;
+}
 
 interface TempoIndispSectionProps {
   operadoresTempoLogadoIniciais: GestorTempoLogadoLinha[];
@@ -156,47 +174,45 @@ export function TempoIndispSection({
     : { forecast: null, items: [], percentualTotal: null };
 
   return (
-    <motion.section
-      id="tempo-indisp-section"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.15, duration: 0.25, ease: EASE_OUT_EXPO }}
-      className="space-y-4"
-    >
+    <>
       {/*
-        Título + divisória + conteúdo, todos dentro de UMA <div> (sem
-        space-y própria) — mesma estrutura de GestorEquipeSection no
-        consolidado. Precisa ser um wrapper só: o space-y-4 do
-        motion.section pai soma margin-top a cada FILHO DIRETO dele, então
-        se a linha de título e o wrapper de conteúdo fossem filhos diretos
-        separados, o space-y-4 somaria em cima do pt-4 do conteúdo,
-        dobrando o respiro. Com os dois dentro desta <div>, o motion.section
-        só vê um filho aqui (mais o dialog, sem layout) e o espaçamento fica
-        só o que os paddings pb-4/pt-4 definem.
+        Cabeçalho (título "Tempo Logado & Indisponibilidade" + linha de
+        report + controles) — MESMO padrão de GestorEquipeSection no
+        consolidado: h1 + uma linha só dividindo subtítulo (à esquerda) e
+        controles (à direita), sem eyebrow, sem breadcrumb e sem o antigo
+        título de seção "Equipe" com divisória tracejada por baixo (removido
+        aqui: informação redundante, a navegação lateral já indica que é a
+        tabela de Equipe). Fica FORA do motion.section abaixo (não anima
+        fade/slide) — igual ao comportamento anterior, em que este cabeçalho
+        vinha estático de page.tsx (Server Component); só migrou pra cá
+        porque agora depende de estado client (horaReport/nomeSupervisorReport,
+        atualizados por refetch() após Limpar Base ou salvar a meta).
+        Ordem dos controles, igual ao consolidado: [⚙ Config] [🗑 Limpar
+        base] [Copiar imagem] — sem toggle "Exibir RV" (não existe
+        equivalente nesta tabela).
       */}
       <div>
-        {/*
-          pt-0 (não py-4 nos dois lados): o espaço ACIMA do título "Equipe"
-          já vem do mb-4 do <header> da página (page.tsx) — mesmo padrão de
-          GestorEquipeSection no consolidado. Somar padding próprio aqui em
-          cima criaria um vazio duplicado entre o cabeçalho da página e este
-          título.
-        */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-0 pb-4">
-          <div className="flex items-center gap-3">
-            <h2 className="ds-h2">Equipe</h2>
-            {formatReportLabel(horaReport, nomeSupervisorReport) && (
-              <span className="ds-mono-sm text-foreground/80 font-medium">
-                - {formatReportLabel(horaReport, nomeSupervisorReport)}
-              </span>
-            )}
-          </div>
+        <div className="pt-4 mb-4">
+          <h1 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            Tempo Logado &amp; Indisponibilidade
+          </h1>
+        </div>
 
-          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-            <CopyTempoIndispButton horaReport={horaReport ?? "—"} />
-            {showUpload && (
-              <ClearBaseButton action={clearTempoLogadoAction} onCleared={refetch} />
-            )}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pb-2">
+          {/* Sem report ainda (hora nula/zerada): o parágrafo some — ver
+              formatCabecalhoReport, acima. Quando ausente, renderiza um span
+              vazio pra manter o justify-between empurrando os controles pra
+              direita mesmo sem texto à esquerda — mesmo padrão do
+              consolidado. */}
+          {formatCabecalhoReport(horaReport, nomeSupervisorReport) ? (
+            <p className="font-sans text-muted-foreground text-sm font-normal">
+              {formatCabecalhoReport(horaReport, nomeSupervisorReport)}
+            </p>
+          ) : (
+            <span aria-hidden="true" />
+          )}
+
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <ConfigTabelaTempoIndispPopover
               metaIndisponibilidadeInicial={metaIndisponibilidade}
               ordemInicial={ordemTabela}
@@ -212,17 +228,48 @@ export function TempoIndispSection({
               }}
               onOpenChange={setConfigPopoverOpen}
             />
+
+            {showUpload && (
+              <ClearBaseButton
+                action={clearTempoLogadoAction}
+                onCleared={refetch}
+                variant="icon-danger"
+                toastClassName="reports-tempo-indisp-toast"
+              />
+            )}
+
+            <CopyTempoIndispButton horaReport={horaReport ?? "—"} />
           </div>
         </div>
+      </div>
 
+      {/*
+        initial={false}: mesmo motivo de GestorEquipeSection
+        (gestor-equipe-section.tsx, /reports/consolidado) — esta seção já vem
+        pronta via SSR (props, sem fetch client próprio). Animar de
+        opacity:0/y:12 com delay fazia a tabela "subir" na tela DEPOIS do
+        loading.tsx sumir (motion renderiza o estado `initial` no SSR; só
+        anima pra `animate` depois que o JS hidrata) — uma segunda animação
+        de entrada emendada na do loading. `initial={false}` monta direto no
+        estado final (opacity:1, y:0), sem essa animação extra — mantém
+        motion.section (em vez de <section>) só pra não precisar tocar em
+        mais nada da árvore.
+      */}
+      <motion.section
+        id="tempo-indisp-section"
+        initial={false}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-4"
+      >
+      <div>
         {/*
-          Divisória sob o título + conteúdo — mesma estrutura de
-          GestorEquipeSection no consolidado: border-t border-dashed
-          border-border pt-4 (não é um <hr>, é a borda superior deste
-          wrapper). O respiro ACIMA da linha vem do pb-4 da linha de título
-          logo acima; o respiro ABAIXO vem do pt-4 aqui.
+          Sem divisória/borda tracejada aqui de propósito (removida nesta
+          rodada, mesmo padrão do consolidado) — o espaço entre a linha de
+          controles e o card "Anexar Base"/tabela agora é só o gap vertical
+          (pb-2 da linha de controles acima + pt-2 daqui), igual ao respiro
+          entre título e controles no cabeçalho logo acima.
         */}
-        <div className="flex flex-col gap-4 border-t border-dashed border-border pt-4">
+        <div className="flex flex-col gap-4 pt-2">
           {/*
             Anexar base — mesmo padrão do consolidado (GestorEquipeSection):
             fica SEMPRE visível quando showUpload, independente de já haver
@@ -355,16 +402,26 @@ export function TempoIndispSection({
         nomes reais só porque o gestor estava com o olho aberto na tela no
         momento do clique.
 
-        width = TEMPO_INDISP_TABELA_WIDTH_PX (soma das larguras MÍNIMAS das
-        colunas, incl. a última em minmax(170px,1fr)) + 24px (padding p-3 do
-        StyledCard, 12px de cada lado) + 2px (border de 1px de cada lado do
-        próprio wrapper "excel" da tabela, `border: "1px solid #c0c0c0"` em
-        tempo-indisp-tabela.tsx) — exatamente a largura que a variante
-        "excel" precisa pra renderizar todas as colunas com título completo
-        (a última no seu mínimo, sem sobrar nem faltar 1fr pra distribuir),
-        sem o `overflow: hidden` do wrapper Excel cortar nada. Medido via
-        Puppeteer: sem esses +2px de border, a última coluna ficava 2-3px
-        maior que o espaço disponível e era cortada pelo overflow:hidden.
+        SEM `width` explícita de propósito — MESMO mecanismo do wrapper
+        equivalente do consolidado (`data-equipe-png-wrapper`, ver
+        gestor-equipe-section.tsx): `position: fixed` com só `top`/`left`
+        definidos (sem `right` nem `width`) faz o navegador dar shrink-wrap
+        no elemento, cuja largura vira a largura INTRÍNSECA do conteúdo real
+        (StyledCard + padding/borda reais + o grid da tabela por dentro).
+        Isso também elimina a barra de rolagem horizontal que aparecia na
+        imagem copiada: a variante "screen" da tabela (ScreenTable, dentro de
+        TempoIndispTabela) tem seu próprio wrapper interno
+        `overflow-x-auto` (necessário na TELA, onde a largura disponível é
+        limitada pelo layout responsivo) — com uma largura FORÇADA por fora
+        (o valor antigo aqui, calibrado por engano com a matemática da
+        variante "excel", que nem é a renderizada neste wrapper), esse
+        `overflow-x-auto` podia ficar alguns pixels mais estreito que o
+        conteúdo real e abrir uma barra de rolagem sempre visível na captura
+        (a lib `modern-screenshot` clona o DOM tal como está, barra
+        incluída). Sem `width` forçada, o wrapper (e, por herança, o
+        `overflow-x-auto` interno) sempre tem exatamente a largura do
+        conteúdo — nunca sobra espaço pra rolar, em nenhum cenário, sem
+        depender de nenhuma conta em pixels.
       */}
       <div
         aria-hidden="true"
@@ -372,7 +429,6 @@ export function TempoIndispSection({
           position: "fixed",
           top: "-99999px",
           left: "-99999px",
-          width: `${TEMPO_INDISP_TABELA_WIDTH_PX + 24 + 2}px`,
         }}
       >
         <div data-tempo-indisp-png>
@@ -393,6 +449,7 @@ export function TempoIndispSection({
         open={dialogOpen}
         onOpenChange={setDialogOpen}
       />
-    </motion.section>
+      </motion.section>
+    </>
   );
 }

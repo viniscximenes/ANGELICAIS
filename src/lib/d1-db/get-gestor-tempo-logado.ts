@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveNomeSupervisorReportExibicao } from "@/lib/gestor/resolve-nome-supervisor-report";
 import { getEmailPrefix, getEmailVariants } from "@/lib/utils/email-variants";
 import { getRosterOperadoresGestor } from "./get-roster-gestor";
 import { dataRefHojeBR, horaParaSegundos } from "./parse";
@@ -91,10 +92,17 @@ export async function getGestorTempoLogado(gestorId: string): Promise<GestorTemp
     (r) => r.report_hora && r.report_hora !== "00:00:00" && r.report_hora !== "00:00",
   );
 
+  const nomeSupervisorReportBruto =
+    rowComHora?.report_nome_supervisor ?? rows[0]?.report_nome_supervisor ?? null;
+
   return {
     operadores,
     horaReport: rowComHora?.report_hora ?? rows[0]?.report_hora ?? undefined,
-    nomeSupervisorReport:
-      rowComHora?.report_nome_supervisor ?? rows[0]?.report_nome_supervisor ?? null,
+    // Só formatação de exibição ("GABRIEL HENRIQUE XIMENES DA SILVA" →
+    // "Gabriel Ximenes") — ver resolveNomeSupervisorReportExibicao.
+    nomeSupervisorReport: await resolveNomeSupervisorReportExibicao(
+      admin,
+      nomeSupervisorReportBruto,
+    ),
   };
 }

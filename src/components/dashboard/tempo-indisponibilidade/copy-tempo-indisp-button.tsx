@@ -7,17 +7,20 @@ import { toast } from "sonner";
 import { buildClipboardReportHtml } from "@/lib/gestor/build-clipboard-report-html";
 import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 import { copyFormattedHtml, escapeHtml } from "@/lib/utils/copy-formatted-html";
+import { cn } from "@/lib/utils";
 
 interface CopyTempoIndispButtonProps {
   horaReport: string;
 }
 
 /**
- * Botão único "Copiar como imagem" da seção Tempo Logado & Indisponibilidade
- * — substitui os dois botões antigos (um por tabela). Mesmo rótulo/ícone/
- * estados do CopyTableButton do consolidado. Captura o wrapper offscreen
- * único ([data-tempo-indisp-png]), que já força o nome fantasia (não recebe
- * olhoAberto) — ver comentário em tempo-indisp-section.tsx.
+ * Botão único "Copiar imagem" da seção Tempo Logado & Indisponibilidade —
+ * substitui os dois botões antigos (um por tabela). MESMO rótulo/ícone/
+ * estados/visual (outline h-8, min-w-[140px]) do CopyTableButton do
+ * consolidado — antes era um botão cheio (bg-primary) com o texto "Copiar
+ * como imagem". Captura o wrapper offscreen único ([data-tempo-indisp-png]),
+ * que já força o nome fantasia (não recebe olhoAberto) — ver comentário em
+ * tempo-indisp-section.tsx.
  */
 export function CopyTempoIndispButton({ horaReport }: CopyTempoIndispButtonProps) {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
@@ -25,14 +28,20 @@ export function CopyTempoIndispButton({ horaReport }: CopyTempoIndispButtonProps
   async function handleCopy() {
     const target = document.querySelector<HTMLElement>("[data-tempo-indisp-png]");
     if (!target) {
-      toast.error("Tabela não encontrada");
+      toast.error("Tabela não encontrada", { className: "reports-tempo-indisp-toast" });
       return;
     }
 
     setState("copying");
 
     try {
-      const pngDataUrl = await capturarComoPng(target);
+      // corDeFundoDoAlvo: true — mesma correção do CopyTableButton do
+      // consolidado: sem isso, a margem ao redor da tabela sai com o
+      // --background do tema GLOBAL (cinza-claro) em vez do bege Zen Linen
+      // escopado a [data-page="reports-tempo-indisponibilidade"], porque o
+      // alvo ([data-tempo-indisp-png]) fica dentro de um wrapper
+      // `position: fixed` que a lib clona isoladamente.
+      const pngDataUrl = await capturarComoPng(target, { corDeFundoDoAlvo: true });
       const hora =
         horaReport && horaReport !== "—"
           ? horaReport.match(/^(\d{1,2}:\d{2})/)?.[1] ?? horaReport
@@ -52,6 +61,7 @@ export function CopyTempoIndispButton({ horaReport }: CopyTempoIndispButtonProps
       toast.success("Tabela copiada", {
         description: "Cole no Teams, Slack ou email (Ctrl+V)",
         duration: 2500,
+        className: "reports-tempo-indisp-toast",
       });
       setTimeout(() => setState("idle"), 2000);
     } catch (err) {
@@ -59,35 +69,40 @@ export function CopyTempoIndispButton({ horaReport }: CopyTempoIndispButtonProps
       setState("idle");
       toast.error("Não foi possível copiar", {
         description: "Tente em outro navegador (Chrome/Edge)",
+        className: "reports-tempo-indisp-toast",
       });
     }
   }
 
   return (
+    // Mesma família visual do CopyTableButton do consolidado: botão outline
+    // h-8, min-w fixo (cabe "Copiar imagem") — troca de ícone/texto entre
+    // estados não desloca o layout ao redor.
     <button
       type="button"
       onClick={handleCopy}
       disabled={state === "copying"}
-      className="bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-opacity cursor-pointer shadow-sm disabled:opacity-50"
-      style={{ fontSize: "12px" }}
+      className={cn(
+        "font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 min-w-[140px] items-center justify-center gap-1.5 rounded-md border bg-transparent px-3 text-sm font-medium outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]",
+      )}
     >
       {state === "copying" && (
-        <>
+        <span className="inline-flex items-center gap-1.5">
           <IconLoader2 size={14} className="animate-spin" aria-hidden="true" />
-          <span className="ds-mono-sm">Gerando...</span>
-        </>
+          <span>Gerando...</span>
+        </span>
       )}
       {state === "done" && (
-        <>
-          <IconCheck size={14} style={{ color: "var(--success)" }} aria-hidden="true" />
-          <span className="ds-mono-sm">Copiado</span>
-        </>
+        <span className="inline-flex items-center gap-1.5" style={{ color: "var(--success)" }}>
+          <IconCheck size={14} aria-hidden="true" />
+          <span>Copiado</span>
+        </span>
       )}
       {state === "idle" && (
-        <>
+        <span className="inline-flex items-center gap-1.5">
           <IconCamera size={14} aria-hidden="true" />
-          <span className="ds-mono-sm">Copiar como imagem</span>
-        </>
+          <span>Copiar imagem</span>
+        </span>
       )}
     </button>
   );

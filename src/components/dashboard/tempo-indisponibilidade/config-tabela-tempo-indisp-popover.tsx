@@ -74,6 +74,7 @@ export function ConfigTabelaTempoIndispPopover({
     if (Number.isNaN(valor) || valor < 0 || valor > 100) {
       toast.error("Meta inválida", {
         description: "Informe um valor entre 0 e 100.",
+        className: "reports-tempo-indisp-toast",
       });
       return;
     }
@@ -82,16 +83,19 @@ export function ConfigTabelaTempoIndispPopover({
       try {
         const result = await saveConfigTabelaTempoIndispAction(valor, ordem);
         if (result.success) {
-          toast.success("Configurações salvas");
+          toast.success("Configurações salvas", { className: "reports-tempo-indisp-toast" });
           onSaved(valor, ordem);
           setOpen(false);
           onOpenChange?.(false);
         } else {
-          toast.error("Erro ao salvar", { description: result.error });
+          toast.error("Erro ao salvar", {
+            description: result.error,
+            className: "reports-tempo-indisp-toast",
+          });
         }
       } catch (err) {
         if (handleStaleActionError(err)) return;
-        toast.error("Erro inesperado ao salvar");
+        toast.error("Erro inesperado ao salvar", { className: "reports-tempo-indisp-toast" });
         console.error("[ConfigTabelaTempoIndispPopover] erro:", err);
       }
     });
@@ -119,29 +123,41 @@ export function ConfigTabelaTempoIndispPopover({
           <button
             type="button"
             title="Configurações da tabela"
-            className="bg-primary text-primary-foreground hover:opacity-90 flex items-center justify-center rounded-md p-2 transition-opacity cursor-pointer shadow-sm disabled:opacity-50"
-            style={{ fontSize: "12px" }}
+            // MESMO visual do botão de engrenagem do consolidado
+            // (ConfigTabelaPopover): outline neutro h-8/w-8, sem
+            // preenchimento — antes era um botão cheio (bg-primary),
+            // destoando do resto da linha de controles.
+            className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-transparent outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
           >
-            <IconSettings size={14} aria-hidden="true" />
+            <IconSettings size={15} aria-hidden="true" />
           </button>
         </PopoverTrigger>
 
-        <PopoverContent align="end" className="w-84 rounded-2xl border border-border/80 p-5 shadow-2xl backdrop-blur-md">
-          <PopoverHeader className="pb-3 border-b border-border/40">
-            <div>
-              <PopoverTitle className="text-sm font-semibold text-foreground">Configurações da Tabela</PopoverTitle>
-              <p className="text-[11px] text-muted-foreground">Personalize meta e ordenação da equipe</p>
-            </div>
+        <PopoverContent
+          data-page="reports-tempo-indisponibilidade"
+          align="end"
+          className="bg-popover text-popover-foreground border-border w-84 rounded-2xl border p-5 shadow-2xl"
+        >
+          {/* Cabeçalho + divisória: mesmo padrão do ConfigTabelaPopover
+              (consolidado), que por sua vez segue o modal de referência
+              "Configurações de Metas" (config-metas-popover.tsx). */}
+          <PopoverHeader className="border-border/50 space-y-0.5 border-b pb-2">
+            <PopoverTitle className="text-foreground text-sm font-semibold">
+              Configurações da Tabela
+            </PopoverTitle>
+            <p className="text-muted-foreground text-[11px]">
+              Ajuste a meta de indisponibilidade e a ordenação da tabela.
+            </p>
           </PopoverHeader>
 
           <div className="space-y-4 pt-4">
             <div className="space-y-1.5">
               <Label
                 htmlFor="config-meta-indisp"
-                className="ds-mono-sm text-xs font-medium text-foreground/90 flex items-center justify-between"
+                className="text-foreground text-xs font-medium flex items-center justify-between"
               >
                 <span>Meta Indisp. %</span>
-                <span className="text-[10px] text-muted-foreground">Padrão: 14.5%</span>
+                <span className="text-muted-foreground text-[10px]">Padrão: 14.5%</span>
               </Label>
               <div className="relative flex items-center">
                 <Input
@@ -154,16 +170,16 @@ export function ConfigTabelaTempoIndispPopover({
                   value={meta}
                   onChange={(e) => setMeta(e.target.value)}
                   disabled={isPending}
-                  className="pr-8 rounded-xl border-border/80 bg-muted/30 focus:bg-background text-sm font-semibold transition-all"
+                  className="pr-8 text-sm font-semibold"
                 />
-                <span className="absolute right-3 text-xs font-bold text-muted-foreground pointer-events-none">%</span>
+                <span className="text-muted-foreground pointer-events-none absolute right-3 text-xs font-bold">%</span>
               </div>
             </div>
 
             <div className="space-y-1.5">
               <Label
                 htmlFor="config-ordem-tempo-indisp"
-                className="ds-mono-sm text-xs font-medium text-foreground/90"
+                className="text-foreground text-xs font-medium"
               >
                 Ordenação dos Operadores
               </Label>
@@ -173,14 +189,14 @@ export function ConfigTabelaTempoIndispPopover({
                   id="config-ordem-tempo-indisp"
                   disabled={isPending}
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="w-full flex items-center justify-between rounded-xl border border-border/80 bg-muted/30 px-3.5 py-2.5 text-xs font-medium text-foreground hover:bg-muted/50 hover:border-primary/40 focus:outline-none transition-all cursor-pointer"
+                  className="border-border bg-transparent text-foreground hover:bg-accent w-full flex items-center justify-between rounded-lg border px-3.5 py-2.5 text-xs font-medium transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus:outline-none cursor-pointer"
                 >
                   <span>{selectedOption?.label ?? "Selecione..."}</span>
                   <IconChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", dropdownOpen && "rotate-180")} />
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute left-0 right-0 z-50 mt-1.5 rounded-xl border border-border/80 bg-popover p-1 shadow-2xl">
+                  <div className="absolute left-0 right-0 z-50 mt-1.5 rounded-lg border border-border bg-popover text-popover-foreground p-1 shadow-2xl">
                     {ORDEM_TABELA_TEMPO_INDISP_OPTIONS.map((opt) => {
                       const isSelected = opt.value === ordem;
                       return (
@@ -192,10 +208,10 @@ export function ConfigTabelaTempoIndispPopover({
                             setDropdownOpen(false);
                           }}
                           className={cn(
-                            "w-full flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors text-left cursor-pointer",
+                            "w-full flex items-center justify-between rounded-md px-3 py-2 text-xs font-medium transition-colors text-left cursor-pointer",
                             isSelected
                               ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                              : "text-foreground hover:bg-muted/60"
+                              : "text-foreground hover:bg-accent"
                           )}
                         >
                           <span>{opt.label}</span>
@@ -212,7 +228,7 @@ export function ConfigTabelaTempoIndispPopover({
               type="button"
               onClick={handleSave}
               disabled={isPending}
-              className="w-full mt-2 py-2.5 rounded-xl bg-primary hover:bg-primary/95 text-primary-foreground font-semibold text-xs shadow-md shadow-primary/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-semibold shadow-sm transition-colors focus-visible:ring-[var(--ring)]"
             >
               {isPending ? (
                 <>

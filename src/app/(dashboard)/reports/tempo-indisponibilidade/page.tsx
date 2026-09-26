@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Instrument_Sans } from "next/font/google";
 
+import "./reports-tempo-indisp.css";
 import { TempoIndispSection } from "@/components/dashboard/tempo-indisponibilidade/tempo-indisp-section";
 import { TempoIndispNavSidebar } from "@/components/gestor/tempo-indisp-nav-sidebar";
 import { SignatureFooter } from "@/components/gestor/signature-footer";
@@ -14,12 +16,22 @@ import { getGestorTempoLogado } from "@/lib/d1-db/get-gestor-tempo-logado";
 import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
 import { getConfigAderencia } from "@/lib/gestor/config-aderencia/get-config-aderencia";
 import { getConfigTabelaTempoIndisp } from "@/lib/gestor/config-tabela-tempo-indisp/get-config-tabela-tempo-indisp";
-import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 
 export const metadata: Metadata = {
   title: "Reports - Tempo Logado & Indisponibilidade",
 };
+
+// Fonte do tema Zen Linen — carregada só nesta rota, mesmo padrão de
+// /reports/consolidado, /kpi/operadores etc: next/font/google gera uma
+// variável escopada ao módulo que a importa, referenciada só dentro de
+// [data-page="reports-tempo-indisponibilidade"] em reports-tempo-indisp.css,
+// então não afeta nenhuma outra página.
+const zenSans = Instrument_Sans({
+  subsets: ["latin", "latin-ext"],
+  weight: "variable",
+  variable: "--font-zen-sans",
+});
 
 export const revalidate = 300;
 
@@ -62,7 +74,10 @@ export default async function ReportsTempoIndisponibilidadePage() {
   ) {
     return (
       <PageTransition>
-        <div className="flex min-h-[60vh] items-center justify-center px-6">
+        <div
+          data-page="reports-tempo-indisponibilidade"
+          className={`flex min-h-[60vh] items-center justify-center px-6 ${zenSans.variable}`}
+        >
           <div
             className="elevation-1 ds-body text-muted-foreground max-w-md rounded-xl px-6 py-10 text-center"
             style={{ border: "1px solid var(--border)" }}
@@ -79,9 +94,6 @@ export default async function ReportsTempoIndisponibilidadePage() {
     );
   }
 
-  const nomeGestora = dataTempoLogado.operadores.find((op) => op.gestor)?.gestor ?? "";
-  const gestora = nomeGestora ? formatNomeProprio(nomeGestora) : "Equipe";
-
   const showUpload = can(user.profile.role, "manage_d1_base");
 
   const nomeFantasia = {
@@ -89,8 +101,17 @@ export default async function ReportsTempoIndisponibilidadePage() {
     mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
   };
 
+  // NÃO envolvido em <PageTransition> (diferente do branch "sem dados"
+  // acima) — mesmo motivo documentado em reports/consolidado/page.tsx:
+  // PageTransition faz um fade a partir de opacity:0 via motion/react, que
+  // só anima depois que o JS hidrata no client. Como esta página agora tem
+  // loading.tsx cobrindo a espera do Server Component, esse fade adicional
+  // faria o HTML real (já com os dados) ficar invisível por uma janela
+  // perceptível entre o loading.tsx sumir e a hidratação terminar —
+  // exatamente a sequência "loading → tela vazia → dados" já corrigida no
+  // consolidado. Removendo o fade aqui, o swap loading→conteúdo fica direto.
   return (
-    <PageTransition>
+    <>
       {/*
         Navegação lateral animada, EXCLUSIVA desta página — mesmo
         componente/mecanismo do ConsolidadoNavSidebar (ambos delegam a
@@ -100,20 +121,20 @@ export default async function ReportsTempoIndisponibilidadePage() {
       */}
       <TempoIndispNavSidebar />
 
-      <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
+      <div
+        data-page="reports-tempo-indisponibilidade"
+        className={`min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
+      >
         <div className="mx-auto max-w-7xl">
-          <header className="border-border mb-4 flex flex-col gap-2 border-b border-dashed pb-4">
-            <span className="text-muted-foreground text-xs tracking-wide uppercase">
-              Painel do Gestor
-            </span>
-            <div className="flex flex-wrap items-baseline gap-3">
-              <h1 className="ds-h1">Tempo Logado & Indisponibilidade</h1>
-              <span className="ds-mono-sm text-muted-foreground">
-                / Reports · {gestora}
-              </span>
-            </div>
-          </header>
-
+          {/*
+            Cabeçalho (título "Tempo Logado & Indisponibilidade" + linha
+            "{supervisor} fez um report às {hora}" + controles) é renderizado
+            DENTRO de TempoIndispSection, não aqui — mesmo motivo do
+            GestorEquipeSection em /reports/consolidado: o texto do report e
+            os controles (engrenagem, limpar base) dependem de estado client
+            atualizado por refetch() após ações do gestor, então só podem
+            viver num Client Component. Ver o topo de TempoIndispSection.
+          */}
           <TempoIndispSection
             operadoresTempoLogadoIniciais={dataTempoLogado.operadores}
             operadoresIndisponibilidadeIniciais={dataIndisponibilidade.operadores}
@@ -141,6 +162,6 @@ export default async function ReportsTempoIndisponibilidadePage() {
           <SignatureFooter />
         </div>
       </div>
-    </PageTransition>
+    </>
   );
 }

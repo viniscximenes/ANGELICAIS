@@ -74,6 +74,35 @@ function linksDeIcone(): HTMLLinkElement[] {
   return Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]'));
 }
 
+/**
+ * Chave usada pra persistir "a animação está ativa" entre reloads (ver
+ * FAVICON_EARLY_ORIGINAL_ATTR e o script inline de favicon-early-script.ts).
+ * sessionStorage sobrevive a um F5 (diferente do contador em memória, que
+ * zera) — é assim que o script inline no <head> sabe, ainda durante o parse
+ * do HTML (antes do bundle React carregar/hidratar), que deve mostrar
+ * nosso favicon "carregando" em vez de deixar o navegador com o favicon
+ * estático padrão até a hidratação ligar esta animação de novo.
+ */
+const SESSION_KEY = "favicon-loading-active";
+
+/** data-attribute que o script inline usa pra guardar o href ORIGINAL do
+ * <link rel="icon"> antes de sobrescrevê-lo com o frame estático — pra essa
+ * função aqui conseguir restaurar o valor certo depois, mesmo quando o
+ * script inline já rodou primeiro (senão hrefsOriginais capturaria o data
+ * URI do frame estático como se fosse o "original"). */
+const FAVICON_EARLY_ORIGINAL_ATTR = "faviconOriginalHref";
+
+function marcarSessao(ativo: boolean) {
+  try {
+    if (ativo) sessionStorage.setItem(SESSION_KEY, "1");
+    else sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    // sessionStorage pode lançar em modo privado/bloqueado — não é crítico,
+    // só perde a continuidade entre reloads, a animação client-side normal
+    // continua funcionando.
+  }
+}
+
 function iniciarAnimacao() {
   if (typeof window === "undefined") return;
   if (!canvas) {
@@ -85,8 +114,16 @@ function iniciarAnimacao() {
   const links = linksDeIcone();
   if (links.length === 0) return; // sem <link rel="icon"> na página — nada a animar
 
-  hrefsOriginais = links.map((link) => ({ link, href: link.href }));
+  hrefsOriginais = links.map((link) => {
+    // Se o script inline (favicon-early-script.ts) já rodou antes deste
+    // módulo carregar, o href atual do link é o frame estático dele, não o
+    // favicon de verdade — o original de verdade está guardado no dataset.
+    const original = link.dataset[FAVICON_EARLY_ORIGINAL_ATTR];
+    if (original !== undefined) delete link.dataset[FAVICON_EARLY_ORIGINAL_ATTR];
+    return { link, href: original ?? link.href };
+  });
   inicio = performance.now();
+  marcarSessao(true);
 
   intervalId = setInterval(() => {
     const t = (performance.now() - inicio) / 1000;
@@ -108,6 +145,7 @@ function pararAnimacao() {
     link.href = href;
   }
   hrefsOriginais = [];
+  marcarSessao(false);
 }
 
 /** Pede a animação de "carregando" — incrementa o contador; só (re)inicia o desenho se estava parado (0 → 1). */

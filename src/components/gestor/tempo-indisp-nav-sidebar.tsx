@@ -25,7 +25,12 @@ const TRILHO_CARD = {
   estouroPausa: 3,
 } as const;
 
-const ICON_CLASS = "h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200";
+// Antes: "text-neutral-700 dark:text-neutral-200" — cinza hardcoded fora do
+// tema (o projeto não usa a estratégia `.dark` do Tailwind, então o `dark:`
+// nunca disparava). Agora lê --muted-foreground do escopo
+// [data-page="reports-tempo-indisponibilidade"] (herdado via
+// wrapperClassName/dataPage abaixo) — mesmo ajuste de ConsolidadoNavSidebar.
+const ICON_CLASS = "h-5 w-5 shrink-0 text-[color:var(--muted-foreground)]";
 
 /**
  * Mesma altura do header fixo do app (app-header.tsx: `sticky top-0 z-30
@@ -116,5 +121,11 @@ export function TempoIndispNavSidebar() {
     },
   ];
 
-  return <FloatingNavSidebar links={links} />;
+  return (
+    <FloatingNavSidebar
+      links={links}
+      wrapperClassName="reports-tempo-indisp-nav"
+      dataPage="reports-tempo-indisponibilidade"
+    />
+  );
 }

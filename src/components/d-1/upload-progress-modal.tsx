@@ -12,22 +12,39 @@ interface UploadProgressModalProps {
   rowsWritten: number;
   /**
    * Variante visual — aditiva, default "default" preserva o visual EXATO de
-   * hoje (usado por upload-tempo-logado-dropzone.tsx, sem passar a prop).
-   * "reports-consolidado" é usada só por upload-dropzone.tsx (exclusivo de
-   * /reports/consolidado): aplica `data-page="reports-consolidado"` no
-   * backdrop (mesma técnica de escopo de CSS já usada em outros overlays
-   * desta série, mesmo o componente não sendo um portal de verdade — ele já
-   * renderiza dentro da árvore da página via position:fixed, então herdaria
-   * as CSS vars do tema mesmo sem o atributo; ele é reforçado aqui só pra
-   * seguir o mesmo padrão e permitir seletores CSS explícitos em
-   * reports-consolidado.css) e troca classes/tokens genéricos
-   * (elevation-3, ds-h2, ds-mono) pelas classes do tema Zen Linen definidas
-   * em reports-consolidado.css. A lógica de etapas (STEPS/getStepStatus) e
-   * a acessibilidade (aria-live/role=status, prefers-reduced-motion) são
-   * IDÊNTICAS nas duas variantes — só a casca visual muda.
+   * hoje (usado por qualquer chamador que não passe a prop). Cada variante
+   * "temática" (uma por rota migrada ao tema Zen Linen que usa este modal)
+   * aplica `data-page="<rota>"` no backdrop (mesma técnica de escopo de CSS
+   * já usada em outros overlays desta série, mesmo o componente não sendo
+   * um portal de verdade — ele já renderiza dentro da árvore da página via
+   * position:fixed, então herdaria as CSS vars do tema mesmo sem o
+   * atributo; ele é reforçado aqui só pra seguir o mesmo padrão e permitir
+   * seletores CSS explícitos no CSS da rota) e troca classes/tokens
+   * genéricos (elevation-3, ds-h2, ds-mono) pelas classes do tema Zen Linen
+   * definidas no CSS daquela rota. A lógica de etapas (STEPS/getStepStatus)
+   * e a acessibilidade (aria-live/role=status, prefers-reduced-motion) são
+   * IDÊNTICAS em todas as variantes — só a casca visual muda.
+   * - "reports-consolidado": usada só por upload-dropzone.tsx (exclusivo de
+   *   /reports/consolidado).
+   * - "reports-tempo-indisp": usada só por upload-tempo-logado-dropzone.tsx
+   *   (exclusivo de /reports/tempo-indisponibilidade).
    */
-  variant?: "default" | "reports-consolidado";
+  variant?: "default" | "reports-consolidado" | "reports-tempo-indisp";
 }
+
+const VARIANT_CONFIG: Record<
+  "reports-consolidado" | "reports-tempo-indisp",
+  { dataPage: string; modalClass: string }
+> = {
+  "reports-consolidado": {
+    dataPage: "reports-consolidado",
+    modalClass: "reports-consolidado-upload-modal",
+  },
+  "reports-tempo-indisp": {
+    dataPage: "reports-tempo-indisponibilidade",
+    modalClass: "reports-tempo-indisp-upload-modal",
+  },
+};
 
 const STEPS: Array<{
   id: NonNullable<UploadStep>;
@@ -80,7 +97,8 @@ export function UploadProgressModal({
   rowsWritten,
   variant = "default",
 }: UploadProgressModalProps) {
-  const isConsolidado = variant === "reports-consolidado";
+  const themedConfig = variant !== "default" ? VARIANT_CONFIG[variant] : null;
+  const isThemed = themedConfig !== null;
   const isOpen = step !== null;
   const currentIndex = step ? STEPS.findIndex((s) => s.id === step) : -1;
   // +1 pra já mostrar progresso ao entrar na primeira etapa, em vez de 0%.
@@ -110,7 +128,7 @@ export function UploadProgressModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={fadeTransition}
-          data-page={isConsolidado ? "reports-consolidado" : undefined}
+          data-page={themedConfig?.dataPage}
           className="fixed inset-0 z-50 flex items-center justify-center"
           style={{
             background:
@@ -126,15 +144,15 @@ export function UploadProgressModal({
             role="status"
             aria-live="polite"
             className={
-              isConsolidado
-                ? "reports-consolidado-upload-modal mx-4 w-full max-w-md rounded-2xl p-9"
+              themedConfig
+                ? `${themedConfig.modalClass} mx-4 w-full max-w-md rounded-2xl p-9`
                 : "elevation-3 mx-4 w-full max-w-md rounded-2xl p-9"
             }
           >
-            <h3 className={isConsolidado ? "ds-h3 mb-1.5" : "ds-h2 mb-1.5"}>
+            <h3 className={isThemed ? "ds-h3 mb-1.5" : "ds-h2 mb-1.5"}>
               Atualizando base
             </h3>
-            <p className={`${isConsolidado ? "ds-body" : "ds-small"} text-muted-foreground mb-7`}>
+            <p className={`${isThemed ? "ds-body" : "ds-small"} text-muted-foreground mb-7`}>
               {step === "done"
                 ? `${rowsWritten} linhas inseridas com sucesso`
                 : "Aguarde enquanto processamos seu arquivo"}
@@ -148,7 +166,7 @@ export function UploadProgressModal({
             <div
               className="mb-8 h-1.5 w-full overflow-hidden rounded-full"
               style={{
-                background: isConsolidado ? "var(--muted, var(--border))" : "var(--elevation-1-bg)",
+                background: isThemed ? "var(--muted, var(--border))" : "var(--elevation-1-bg)",
               }}
             >
               <motion.div
@@ -265,7 +283,7 @@ export function UploadProgressModal({
                     >
                       <p
                         className={
-                          isConsolidado
+                          isThemed
                             ? "ds-body font-semibold"
                             : "ds-mono font-semibold tracking-wide"
                         }
@@ -283,7 +301,7 @@ export function UploadProgressModal({
                       </p>
                       <p
                         className={
-                          isConsolidado
+                          isThemed
                             ? "ds-small text-muted-foreground/70 mt-0.5"
                             : "ds-mono-sm text-muted-foreground/70 mt-0.5 text-[11px]"
                         }

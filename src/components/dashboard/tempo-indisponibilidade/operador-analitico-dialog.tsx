@@ -11,7 +11,6 @@ import {
 import { ExportPopupPngButton } from "@/components/dashboard/export-popup-png-button";
 import { getDataPngHoje } from "@/components/dashboard/export-popup-png-theme";
 import { StyledCard } from "@/components/gestor/styled-card";
-import type { CardCorners } from "@/components/gestor/styled-card";
 import type { AderenciaOperador } from "@/lib/d1-db/calcular-aderencia";
 
 import {
@@ -22,7 +21,6 @@ import {
   formatLogout,
 } from "./format-operador-analitico";
 import type { OperadorAnaliticoTempoIndisp } from "./merge-tempo-indisp";
-import { OperadorAnaliticoPngContent } from "./operador-analitico-png-content";
 
 interface Props {
   operador: OperadorAnaliticoTempoIndisp | null;
@@ -45,7 +43,7 @@ export function OperadorAnaliticoDialog({
 
   // Nome real (email antes do @) — sempre este no PNG, nunca nome fantasia.
   const nomeReal = operador.email.split("@")[0] || operador.email;
-  const { header: dataHeader, file: dataFile } = getDataPngHoje();
+  const { file: dataFile } = getDataPngHoje();
 
   const resumo = [
     { label: "Tempo Logado", valor: operador.tempoLogado || "—" },
@@ -54,173 +52,226 @@ export function OperadorAnaliticoDialog({
     { label: "Hora Logout", valor: formatLogout(operador.statusTL, operador.horaLogout) },
   ];
 
+  // Escopo do tema Zen Linen (reports-tempo-indisp.css): resolvido a partir
+  // de QUALQUER elemento com [data-page="reports-tempo-indisponibilidade"]
+  // já montado no DOM — este Dialog roda em portal (document.body), então a
+  // raiz do documento (comportamento padrão de getComputedStyle/resolverTokenCss)
+  // NÃO carrega os tokens escopados dessa rota. Mesmo padrão de
+  // OperadorDetalheDialog (/reports/consolidado).
+  const elementoEscopoTema =
+    typeof document !== "undefined"
+      ? document.querySelector<HTMLElement>('[data-page="reports-tempo-indisponibilidade"]')
+      : null;
+
+  // Fonte do tema (Instrument Sans / --font-zen-sans): a variável só existe
+  // como classe (zenSans.variable) no elemento raiz da página REAL — este
+  // Dialog, em portal, ficaria fora dessa árvore e uma var() não resolvida
+  // invalidaria toda a declaração font-family (não cai no fallback
+  // "Instrument Sans" da lista, cai na fonte herdada de fora do tema).
+  // Resolve o font-family já COMPUTADO no container real da página e aplica
+  // direto no DialogContent — mesma técnica de OperadorDetalheDialog.
+  const fontFamilyEscopo = elementoEscopoTema
+    ? getComputedStyle(elementoEscopoTema).fontFamily
+    : undefined;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-2xl bg-background border-border/80 p-6 shadow-2xl">
+      {/*
+        data-page="reports-tempo-indisponibilidade": este DialogContent é
+        renderizado em portal (document.body), fora da árvore [data-page] da
+        rota — sem o atributo aqui, ele não herdaria as CSS custom properties
+        do tema Zen Linen definidas em reports-tempo-indisp.css. Mesmo padrão
+        de OperadorDetalheDialog (/reports/consolidado).
+      */}
+      <DialogContent
+        data-page="reports-tempo-indisponibilidade"
+        className="max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-2xl bg-background border-border/80 p-6 shadow-2xl"
+        style={fontFamilyEscopo ? { fontFamily: fontFamilyEscopo } : undefined}
+      >
         <ExportPopupPngButton
           contentRef={pngRef}
           filename={`${nomeReal}_${dataFile}.png`}
           className="absolute top-2 right-10"
+          corDeFundoDoAlvo
+          toastClassName="reports-tempo-indisp-toast"
+          // SEM tooltipDataPage de propósito (rodada anterior desta mesma
+          // tarefa introduziu essa prop e QUEBROU o fundo do tooltip —
+          // causa raiz: [data-page="reports-tempo-indisponibilidade"], em
+          // reports-tempo-indisp.css, não é só uma "ponte" de custom
+          // properties — o MESMO seletor também define `background-color:
+          // var(--background)` e `color: var(--foreground)` REAIS (regra
+          // pensada pro elemento raiz da página, não pro TooltipContent).
+          // Colocar esse atributo direto no TooltipContent (via essa prop)
+          // fazia essa regra bater nele também, sobrescrevendo o
+          // `bg-foreground`/`text-background` do tooltip padrão (Tailwind,
+          // mesma especificidade, mas carregado ANTES no cascade) com as
+          // cores INVERTIDAS (fundo escuro igual ao fundo da própria
+          // página por trás, texto claro) — a "caixa" ficava da mesma cor
+          // do que está atrás dela, por isso parecia sumir (só a seta
+          // sobrava visível, porque ela seta bg-foreground/fill-foreground
+          // direto nela mesma, sem carregar o atributo [data-page]).
+          // Sem a prop, este tooltip usa o MESMO caminho (sem scoping de
+          // tema) do ExportPopupPngButton do modal de detalhe do
+          // consolidado (OperadorDetalheDialog, que também nunca passou
+          // tooltipDataPage) — visual idêntico ao de antes, caixa de fundo
+          // de volta nos dois temas.
         />
 
-        {/* Wrapper offscreen (tema claro forçado) — só existe pra captura do PNG */}
+        {/*
+          Sem template separado pra exportação: o PNG captura este mesmo
+          wrapper (via pngRef + ExportPopupPngButton), com background
+          explícito porque o fundo do DialogContent fica no ancestral, fora
+          do que é capturado. A imagem sai igual ao modal na tela, no tema
+          ATUAL da sessão (claro ou escuro) — não mais um template forçado em
+          tema claro fixo. Mesmo padrão de OperadorDetalheDialog
+          (/reports/consolidado). `data-tempo-indisp-png` é o gancho já usado
+          por reports-tempo-indisp.css pra clarear levemente os tons internos
+          da imagem exportada no tema claro (ver comentário lá).
+        */}
         <div
-          aria-hidden="true"
-          style={{ position: "fixed", top: "-99999px", left: "-99999px", pointerEvents: "none" }}
+          ref={pngRef}
+          data-tempo-indisp-png
+          style={{ backgroundColor: "var(--background)" }}
         >
-          <OperadorAnaliticoPngContent
-            ref={pngRef}
-            operador={operador}
-            nomeReal={nomeReal}
-            dataHeader={dataHeader}
-            aderencia={aderencia}
-          />
-        </div>
+          <DialogHeader className="border-b border-dashed border-border/60 pb-3 space-y-1.5">
+            <DialogTitle className="ds-h3 text-foreground font-semibold tracking-tight text-xl">
+              {nomeExibido}
+            </DialogTitle>
+          </DialogHeader>
 
-        <DialogHeader className="border-b border-dashed border-border/60 pb-3 space-y-1.5">
-          <DialogTitle className="ds-h3 text-foreground font-semibold tracking-tight text-xl">
-            {nomeExibido}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-6 pt-2">
-          {/* ── Resumo ─────────────────────────────────────────── */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {resumo.map((c, idx) => {
-              const corners: CardCorners =
-                idx === 0 ? "left" : idx === resumo.length - 1 ? "right" : "none";
-
-              return (
-                <StyledCard
+          <div className="space-y-6 pt-2">
+            {/* ── Resumo ─────────────────────────────────────────── */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {resumo.map((c) => (
+                // Mesma caixa neutra dos cards de número já padronizada em
+                // OperadorDetalheDialog (/reports/consolidado): border-border
+                // + bg-card/70 + shadow-[var(--shadow-sm)] + backdrop-blur-md,
+                // sem cantoneiras — StyledCard fica só pro container das
+                // tabelas abaixo.
+                <div
                   key={c.label}
-                  className="px-4 py-3.5 flex flex-col justify-center"
-                  withGradient
-                  corners={corners}
+                  className="flex flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-3.5 shadow-[var(--shadow-sm)] backdrop-blur-md"
                 >
-                  <p className="ds-small text-muted-foreground/80 mb-1 text-xs font-semibold tracking-wider uppercase">
+                  <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
                     {c.label}
                   </p>
                   <p className="ds-display text-2xl font-semibold tabular-nums text-foreground">
                     {c.valor}
                   </p>
-                </StyledCard>
-              );
-            })}
-          </div>
-
-          {/* ── Aderência (real x programado) ─────────────────────── */}
-          <div className="space-y-2">
-            <h4 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-              Aderência
-            </h4>
-            <StyledCard className="p-0 overflow-hidden" withGradient>
-              {aderencia.forecast === null ? (
-                <p className="ds-small text-muted-foreground p-6 text-center">
-                  Horários programados não cadastrados para este operador.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-left text-sm">
-                    <thead>
-                      <tr className="ds-mono-sm text-muted-foreground border-border/40 border-b text-[11px] tracking-wider uppercase">
-                        <th className="px-4 py-2.5 font-semibold">Item</th>
-                        <th className="px-4 py-2.5 text-center font-semibold">Forecast</th>
-                        <th className="px-4 py-2.5 text-center font-semibold">Real</th>
-                        <th className="px-4 py-2.5 text-center font-semibold">Diferença</th>
-                        <th className="px-4 py-2.5 text-center font-semibold">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {aderencia.items.map((item) => (
-                        <tr
-                          key={item.label}
-                          className="border-border/20 hover:bg-muted/10 border-b transition-colors last:border-0"
-                        >
-                          <td className="text-foreground px-4 py-2.5 text-xs font-medium">
-                            {item.label}
-                          </td>
-                          <td className="text-foreground px-4 py-2.5 text-center font-mono text-xs">
-                            {item.horaForecast ?? "—"}
-                          </td>
-                          <td className="text-foreground px-4 py-2.5 text-center font-mono text-xs">
-                            {item.horaReal ?? "—"}
-                          </td>
-                          <td className="text-muted-foreground px-4 py-2.5 text-center font-mono text-xs">
-                            {formatDiferenca(item.diferencaMin)}
-                          </td>
-                          <td className="px-4 py-2.5 text-center text-xs font-semibold">
-                            {item.dentroTolerancia === null ? (
-                              <span className="text-muted-foreground">—</span>
-                            ) : item.dentroTolerancia ? (
-                              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                                OK
-                              </span>
-                            ) : (
-                              <span className="text-red-500 dark:text-red-400 font-medium">
-                                FORA
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
-              )}
-            </StyledCard>
-          </div>
+              ))}
+            </div>
 
-          {/* ── Pausas detalhadas (d1_indisponibilidade) ──────────── */}
-          {(() => {
-            const pausasComDados = PAUSA_FIELDS.filter((f) => {
-              const val = operador.pausas[f.key];
-              return val && val !== "00:00:00" && val !== "—";
-            });
-
-            return (
-              <div className="space-y-2">
-                <h4 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-                  Pausas Detalhadas
-                </h4>
-                <StyledCard className="p-0 overflow-hidden" withGradient>
-                  {pausasComDados.length === 0 ? (
-                    <p className="ds-small text-muted-foreground p-6 text-center">
-                      Nenhuma pausa registrada para este operador.
-                    </p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse text-left text-sm">
-                        <thead>
-                          <tr className="ds-mono-sm text-muted-foreground border-border/40 border-b text-[11px] tracking-wider uppercase">
-                            <th className="px-4 py-2.5 font-semibold">Pausa</th>
-                            <th className="px-4 py-2.5 text-center font-semibold">Duração</th>
+            {/* ── Aderência (real x programado) ─────────────────────── */}
+            <div className="space-y-2">
+              <h3 className="ds-h3 font-semibold text-foreground">Aderência</h3>
+              <StyledCard className="p-0 overflow-hidden" withGradient>
+                {aderencia.forecast === null ? (
+                  <p className="ds-small text-muted-foreground p-6 text-center">
+                    Horários programados não cadastrados para este operador.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-left text-sm">
+                      <thead>
+                        <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 text-[11px] font-bold tracking-wider uppercase">
+                          <th className="px-4 py-2.5 font-semibold">Item</th>
+                          <th className="px-4 py-2.5 text-center font-semibold">Forecast</th>
+                          <th className="px-4 py-2.5 text-center font-semibold">Real</th>
+                          <th className="px-4 py-2.5 text-center font-semibold">Diferença</th>
+                          <th className="px-4 py-2.5 text-center font-semibold">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {aderencia.items.map((item) => (
+                          <tr
+                            key={item.label}
+                            className="border-border/20 hover:bg-accent border-b transition-colors last:border-0"
+                          >
+                            <td className="text-foreground ds-body px-4 py-2.5 text-xs font-medium">
+                              {item.label}
+                            </td>
+                            <td className="text-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
+                              {item.horaForecast ?? "—"}
+                            </td>
+                            <td className="text-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
+                              {item.horaReal ?? "—"}
+                            </td>
+                            <td className="text-muted-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
+                              {formatDiferenca(item.diferencaMin)}
+                            </td>
+                            <td className="px-4 py-2.5 text-center text-xs font-semibold">
+                              {item.dentroTolerancia === null ? (
+                                <span className="text-muted-foreground">—</span>
+                              ) : item.dentroTolerancia ? (
+                                <span style={{ color: "var(--success)" }} className="font-medium">
+                                  OK
+                                </span>
+                              ) : (
+                                <span style={{ color: "var(--danger)" }} className="font-medium">
+                                  FORA
+                                </span>
+                              )}
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody>
-                          {pausasComDados.map((f) => {
-                            const val = operador.pausas[f.key];
-                            return (
-                              <tr
-                                key={f.key}
-                                className="border-border/20 hover:bg-muted/10 border-b transition-colors last:border-0"
-                              >
-                                <td className="text-foreground px-4 py-2.5 text-xs font-medium">
-                                  {f.label}
-                                </td>
-                                <td className="px-4 py-2.5 text-center font-mono text-xs text-foreground font-semibold">
-                                  {val}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </StyledCard>
-              </div>
-            );
-          })()}
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </StyledCard>
+            </div>
+
+            {/* ── Pausas detalhadas (d1_indisponibilidade) ──────────── */}
+            {(() => {
+              const pausasComDados = PAUSA_FIELDS.filter((f) => {
+                const val = operador.pausas[f.key];
+                return val && val !== "00:00:00" && val !== "—";
+              });
+
+              return (
+                <div className="space-y-2">
+                  <h3 className="ds-h3 font-semibold text-foreground">Pausas Detalhadas</h3>
+                  <StyledCard className="p-0 overflow-hidden" withGradient>
+                    {pausasComDados.length === 0 ? (
+                      <p className="ds-small text-muted-foreground p-6 text-center">
+                        Nenhuma pausa registrada para este operador.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse text-left text-sm">
+                          <thead>
+                            <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 text-[11px] font-bold tracking-wider uppercase">
+                              <th className="px-4 py-2.5 font-semibold">Pausa</th>
+                              <th className="px-4 py-2.5 text-center font-semibold">Duração</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pausasComDados.map((f) => {
+                              const val = operador.pausas[f.key];
+                              return (
+                                <tr
+                                  key={f.key}
+                                  className="border-border/20 hover:bg-accent border-b transition-colors last:border-0"
+                                >
+                                  <td className="text-foreground ds-body px-4 py-2.5 text-xs font-medium">
+                                    {f.label}
+                                  </td>
+                                  <td className="text-foreground ds-mono-sm px-4 py-2.5 text-center text-xs font-semibold tabular-nums">
+                                    {val}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </StyledCard>
+                </div>
+              );
+            })()}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

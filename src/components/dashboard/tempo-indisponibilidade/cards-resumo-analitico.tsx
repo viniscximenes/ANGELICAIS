@@ -2,7 +2,6 @@
 
 import { BlurFade } from "@/components/ui/blur-fade";
 import { NumberTicker } from "@/components/ui/number-ticker";
-import { StyledCard } from "@/components/gestor/styled-card";
 import { META_TEMPO_LOGADO_SEGUNDOS } from "@/lib/d1-db/types";
 
 import type { OperadorAnaliticoTempoIndisp } from "./merge-tempo-indisp";
@@ -89,18 +88,17 @@ export function CardsResumoAnalitico({
     indispMedia === null ? undefined : indispMedia < metaIndisponibilidade ? "var(--success)" : "var(--danger)";
 
   return (
-    // Mesma técnica de VisaoGeralCards (consolidado): grid-cols-1 empilha
-    // em mobile; a partir de sm, uma grade única cujas colunas viram
-    // "unidades" — card grande = 2 unidades, pequeno = 1 (mesma proporção
-    // 2:1 do card primário/secundários de lá, só generalizada pra 2
-    // grandes em vez de 1: 2+2+1+1 = 6 colunas). sm:items-end — MESMA
-    // classe de VisaoGeralCards (lá aplicada porque o grupo dos 3 pequenos
-    // é um subgrid/wrapper que senão esticaria pra altura do grande; aqui
-    // os 4 cards são filhos DIRETOS do grid, mas o efeito de items-end é
-    // idêntico: cada item ocupa só a própria altura de conteúdo — os
-    // pequenos não esticam — e é alinhado pela BASE da linha, que é a
-    // altura do maior item (os cards grandes). Sobra de espaço fica ACIMA
-    // dos pequenos, não abaixo.
+    // Mesmo padrão de VisaoGeralCards (consolidado): caixa neutra
+    // (rounded-lg border border-border bg-card/70 shadow-sm backdrop-blur),
+    // SEM cantoneiras (StyledCard) — lá as cantoneiras só aparecem no
+    // container do gráfico/tabela, não nos cards de número. grid-cols-1
+    // empilha em mobile; a partir de sm, uma grade única cujas colunas
+    // viram "unidades" — card grande = 2 unidades, pequeno = 1 (mesma
+    // proporção 2:1 do card primário/secundários de lá, só generalizada
+    // pra 2 grandes em vez de 1: 2+2+1+1 = 6 colunas). sm:items-end —
+    // MESMA classe de VisaoGeralCards, cada item ocupa só a própria
+    // altura de conteúdo (os pequenos não esticam) e é alinhado pela BASE
+    // da linha (altura do maior item, os cards grandes).
     // text-4xl xl:text-5xl nos dois cards grandes (abaixo): VisaoGeralCards
     // não tem NENHUM passo de fonte responsivo (é text-5xl fixo) porque o
     // valor dele (ex. "62.3%") é curto — o nosso "Tempo Logado" é HH:MM:SS
@@ -112,33 +110,30 @@ export function CardsResumoAnalitico({
     // número solto, é o próximo degrau padrão da escala.
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-6 sm:items-end">
       <BlurFade delay={0} inView className="sm:col-span-2">
-        <StyledCard
-          className="flex h-full flex-col justify-center px-6 py-5"
-          withGradient
-          corners="left"
-        >
-          <p className="ds-small text-muted-foreground/80 mb-2 text-xs font-semibold tracking-wider uppercase">
+        <div className="relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 px-6 py-5 shadow-[var(--shadow-sm)] backdrop-blur-md">
+          <div
+            aria-hidden="true"
+            className="absolute top-0 left-0 h-full w-[3px]"
+            style={{ background: "var(--primary)" }}
+          />
+          <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             Tempo Logado
           </p>
-          <p className={`ds-display tracking-tight text-4xl xl:text-5xl font-bold tabular-nums ${tempoLogadoClass}`}>
+          <p className={`ds-display tracking-tight text-4xl xl:text-5xl font-semibold tabular-nums ${tempoLogadoClass}`}>
             {tempoLogadoMedioSegundos === null ? "—" : formatTempoSegundos(tempoLogadoMedioSegundos)}
           </p>
-        </StyledCard>
+        </div>
       </BlurFade>
 
       <BlurFade delay={0.06} inView className="sm:col-span-2">
-        <StyledCard
-          className="flex h-full flex-col justify-center px-6 py-5"
-          withGradient
-          corners="none"
-        >
-          <p className="ds-small text-muted-foreground/80 mb-2 text-xs font-semibold tracking-wider uppercase">
+        <div className="flex h-full flex-col justify-center gap-2 rounded-lg border border-border bg-card/70 px-6 py-5 shadow-[var(--shadow-sm)] backdrop-blur-md">
+          <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             Indisp. %
           </p>
           {indispMedia === null ? (
-            <p className={`ds-display tracking-tight text-4xl xl:text-5xl font-bold ${indispClass}`}>—</p>
+            <p className={`ds-display tracking-tight text-4xl xl:text-5xl font-semibold ${indispClass}`}>—</p>
           ) : (
-            <p className={`ds-display flex items-baseline tracking-tight text-4xl xl:text-5xl font-bold ${indispClass}`}>
+            <p className={`ds-display flex items-baseline tracking-tight text-4xl xl:text-5xl font-semibold ${indispClass}`}>
               <NumberTicker
                 value={indispMedia}
                 decimalPlaces={1}
@@ -149,16 +144,12 @@ export function CardsResumoAnalitico({
               <span>%</span>
             </p>
           )}
-        </StyledCard>
+        </div>
       </BlurFade>
 
       <BlurFade delay={0.12} inView className="sm:col-span-1">
-        <StyledCard
-          className="flex h-full flex-col justify-center px-4 py-2.5"
-          withGradient
-          corners="none"
-        >
-          <p className="ds-small text-muted-foreground/80 mb-1 text-xs font-semibold tracking-wider uppercase">
+        <div className="flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
+          <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             NR17 %
           </p>
           {nr17Media === null ? (
@@ -174,16 +165,12 @@ export function CardsResumoAnalitico({
               <span>%</span>
             </p>
           )}
-        </StyledCard>
+        </div>
       </BlurFade>
 
       <BlurFade delay={0.18} inView className="sm:col-span-1">
-        <StyledCard
-          className="flex h-full flex-col justify-center px-4 py-2.5"
-          withGradient
-          corners="right"
-        >
-          <p className="ds-small text-muted-foreground/80 mb-1 text-xs font-semibold tracking-wider uppercase">
+        <div className="flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
+          <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             Particular %
           </p>
           {particularMedia === null ? (
@@ -199,7 +186,7 @@ export function CardsResumoAnalitico({
               <span>%</span>
             </p>
           )}
-        </StyledCard>
+        </div>
       </BlurFade>
     </div>
   );

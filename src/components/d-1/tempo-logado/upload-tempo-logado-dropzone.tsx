@@ -1,11 +1,17 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { IconFileSpreadsheet, IconUpload } from "@tabler/icons-react";
+import { IconFileSpreadsheet, IconLoader2, IconUpload } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
 import { UploadProgressModal } from "@/components/d-1/upload-progress-modal";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { uploadTempoLogadoAction } from "@/lib/d1-db/actions/upload-tempo-logado-action";
 import { useFaviconLoading } from "@/lib/favicon/use-favicon-loading";
 
@@ -54,7 +60,7 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
       if (firstLineBreak === -1 || csvText.length < 50) {
         setStep(null);
         setErrorMessage("CSV vazio ou inválido.");
-        toast.error("CSV vazio");
+        toast.error("CSV vazio", { className: "reports-tempo-indisp-toast" });
         return;
       }
 
@@ -72,6 +78,7 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
         setErrorMessage(uploadResult.error);
         toast.error("Falha ao atualizar base", {
           description: uploadResult.error,
+          className: "reports-tempo-indisp-toast",
         });
         return;
       }
@@ -80,6 +87,7 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
       setStep("done");
       toast.success("Base atualizada", {
         description: `${uploadResult.rowsWritten} linhas inseridas`,
+        className: "reports-tempo-indisp-toast",
       });
 
       setTimeout(() => {
@@ -89,7 +97,7 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
     } catch (err) {
       setStep(null);
       setErrorMessage("Erro ao ler arquivo");
-      toast.error("Não foi possível ler o arquivo");
+      toast.error("Não foi possível ler o arquivo", { className: "reports-tempo-indisp-toast" });
       console.error("[upload-tempo-logado] read error:", err);
     }
   }, []);
@@ -118,6 +126,14 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
   // Favicon animado ("carregando") — step volta pra null em todo caminho
   // de erro (ver catches acima), então cobre sucesso e falha igual.
   useFaviconLoading(isProcessing);
+
+  const dropzoneState = isProcessing
+    ? "processing"
+    : isDragReject
+      ? "reject"
+      : isDragActive
+        ? "active"
+        : "idle";
 
   if (compact) {
     return (
@@ -166,60 +182,94 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
     );
   }
 
+  // Ícone único animado, sem texto permanente — mesmo padrão de
+  // UploadDropzone (/reports/consolidado, 22ª rodada): a informação
+  // continua acessível via aria-label completo (leitor de tela) e via
+  // Tooltip (hover/foco). Mensagens de erro reais continuam em texto
+  // visível (.status-danger).
+  const accessibleName =
+    "Anexar base CSV de tempo logado e indisponibilidade. Arraste um arquivo ou clique para selecionar. Apenas arquivos .csv, limite de 50.000 linhas.";
+
+  const rootProps = getRootProps({
+    onMouseEnter: () => setIsHovering(true),
+    onMouseLeave: () => setIsHovering(false),
+  });
+
   return (
     <>
-      <div
-        {...getRootProps({
-          onMouseEnter: () => setIsHovering(true),
-          onMouseLeave: () => setIsHovering(false),
-        })}
-        className="relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed transition-all duration-300 hover:border-primary"
-        style={{
-          // Mesmo mecanismo de fundo do UploadDropzone (consolidado):
-          // --upload-idle-bg/--muted-hover-bg só existem em
-          // [data-theme="light"] (globals.css); em dark, o fallback var(--card)
-          // entra automaticamente, sem precisar de override específico aqui.
-          background: isDragActive
-            ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
-            : isHovering
-              ? "var(--muted-hover-bg, var(--card))"
-              : "var(--upload-idle-bg, var(--card))",
-          borderColor: isDragReject
-            ? "var(--danger)"
-            : isDragActive
-              ? "var(--primary)"
-              : "var(--border)",
-          boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "var(--shadow-sm, none)",
-          padding: "1rem 1.25rem",
-          opacity: isProcessing ? 0.5 : 1,
-          pointerEvents: isProcessing ? "none" : "auto",
-          minHeight: "90px",
-        }}
-      >
-        <input {...getInputProps()} />
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              {...rootProps}
+              role="button"
+              tabIndex={isProcessing ? -1 : 0}
+              aria-label={accessibleName}
+              aria-disabled={isProcessing}
+              aria-busy={isProcessing}
+              data-dropzone-state={dropzoneState}
+              className="upload-dropzone-root-reports-tempo-indisp relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed outline-none transition-all duration-300 hover:border-primary focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+              style={{
+                background: isDragActive
+                  ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
+                  : isHovering
+                    ? "var(--dropzone-hover-bg, var(--card))"
+                    : "var(--dropzone-idle-bg, var(--card))",
+                borderColor: isDragReject
+                  ? "var(--danger)"
+                  : isDragActive
+                    ? "var(--primary)"
+                    : "var(--border)",
+                borderWidth: isDragActive ? "2px" : "1px",
+                boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "var(--shadow-sm, none)",
+                padding: "1rem 1.25rem",
+                opacity: isProcessing ? 0.5 : 1,
+                pointerEvents: isProcessing ? "none" : "auto",
+                cursor: isProcessing ? "not-allowed" : "pointer",
+                minHeight: "90px",
+              }}
+            >
+              <input {...getInputProps()} />
 
-        <div className="flex flex-col items-center justify-center gap-1 text-center">
-          <p className="ds-body text-foreground font-semibold">
-            {isDragActive
-              ? "Solte o arquivo para enviar"
-              : "Arraste o arquivo CSV aqui ou clique para selecionar"}
-          </p>
-          <p className="ds-mono-sm text-muted-foreground/80 text-[11px]">
-            Apenas arquivos .csv · limite de 50.000 linhas
-          </p>
-        </div>
+              <div className="flex flex-col items-center justify-center gap-2 text-center">
+                <div
+                  className="upload-dropzone-icon-reports-tempo-indisp relative flex h-11 w-11 items-center justify-center"
+                  aria-hidden="true"
+                >
+                  <span className="upload-dropzone-ring-reports-tempo-indisp absolute inset-0 rounded-full" />
 
-        {errorMessage && !isProcessing && (
-          <div
-            role="alert"
-            className="status-danger ds-small mt-4 flex items-center justify-center gap-2 rounded-md p-3"
-          >
-            {errorMessage}
-          </div>
-        )}
-      </div>
+                  {isProcessing ? (
+                    <IconLoader2 size={22} className="relative animate-spin text-muted-foreground" />
+                  ) : (
+                    <IconFileSpreadsheet
+                      size={22}
+                      className="upload-dropzone-glyph-reports-tempo-indisp relative"
+                    />
+                  )}
+                </div>
 
-      <UploadProgressModal step={step} rowsWritten={rowsWritten} />
+                <p className="upload-dropzone-touch-hint-reports-tempo-indisp ds-mono-sm text-muted-foreground/80 text-[11px] sm:hidden">
+                  Toque para selecionar um CSV
+                </p>
+              </div>
+
+              {errorMessage && !isProcessing && (
+                <div
+                  role="alert"
+                  className="status-danger ds-small mt-4 flex items-center justify-center gap-2 rounded-md p-3"
+                >
+                  {errorMessage}
+                </div>
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            Arraste um CSV aqui ou clique para selecionar · até 50.000 linhas
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      <UploadProgressModal step={step} rowsWritten={rowsWritten} variant="reports-tempo-indisp" />
     </>
   );
 }

@@ -318,7 +318,7 @@
   cursor: not-allowed;
 }
 
-/* ───────── Hover das linhas da EquipeTable (Problema 1, 6ª rodada) ─────────
+/* ───────── Hover das linhas da EquipeTable (tema claro) ─────────
  * globals.css tem uma regra GLOBAL (fora do escopo permitido pra edição):
  *   [data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover
  *   { background-color: var(--muted-hover-bg) !important; }
@@ -328,14 +328,32 @@
  * (inclusive a troca pra hover:bg-accent feita em equipe-table.tsx), daí o
  * hover claro/esbranquiçado no tema claro.
  * Correção: seletor AINDA mais específico (mesmo padrão + o escopo
- * [data-page] a mais) escrevendo var(--accent) por cima — só nesta rota,
- * sem tocar em globals.css. Mesmo token usado no hover de linha de
- * /kpi/operadores (hover:bg-accent no <tr>, kpi-equipe-section.tsx).
+ * [data-page] a mais) escrevendo por cima — só nesta rota, sem tocar em
+ * globals.css.
+ *
+ * Tom do hover: --accent (usado antes) fica perto demais de --card no claro
+ * (#E6E4D7 vs #F4EFE4) — resultado pouco perceptível e, por contraste com o
+ * bege quente ao redor, lido como "esverdeado/desbotado". Troca pra
+ * --muted (#CFC8B8), já o tom "bege mais escuro" da própria paleta Zen
+ * Linen desta rota (mesmo token usado no cabeçalho da tabela, bg-muted/40)
+ * — bem mais escuro que --card/--background, sem cor nova fora do tema.
  * Tema escuro não precisa de override — não existe regra global equivalente
- * pra .dark/:root, a classe hover:bg-accent do componente já resolve.
+ * pra .dark/:root, a classe hover:bg-accent do componente já resolve (e
+ * continua sem mudança nenhuma aqui).
+ *
+ * Linhas "ruins" (abaixo da meta) carregam sempre a classe Tailwind
+ * `hover:border-l-[var(--danger)]` (ver hoverClass em equipe-table.tsx)
+ * mesmo sem estar em hover — reaproveitada aqui como seletor (mesmo nome de
+ * classe gerado pelo Tailwind, escapado) pra dar a essas linhas um hover
+ * com leve tom de --danger por cima do bege, em vez do bege neutro das
+ * linhas boas — perceptível e coerente com o vermelho de fundo que já têm
+ * em repouso (fundoLinhaRuim, tabela-padrao.tsx).
  */
 [data-theme="light"] [data-page="reports-consolidado"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover {
-  background-color: var(--accent) !important;
+  background-color: var(--muted) !important;
+}
+[data-theme="light"] [data-page="reports-consolidado"] [data-equipe-table] > div.hover\:border-l-\[var\(--danger\)\]:hover {
+  background-color: color-mix(in srgb, var(--danger) 16%, var(--muted) 84%) !important;
 }
 
 /* ───────── Dropzone "Anexar Base" (Problema 2, 6ª rodada) ─────────

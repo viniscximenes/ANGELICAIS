@@ -6,11 +6,11 @@ import { usePathname } from "next/navigation";
 /**
  * Esconde a barra azul do bprogress (topo da tela, cor fixa #3b82f6 — ver
  * progress-provider.tsx, NÃO alterado) em /kpi/operadores, /kpi/gestor,
- * /kpi/detalhado-polo, /kpi/evolucao, /configuracoes/equipe e
- * /reports/consolidado: essas seis já têm loading.tsx próprio (fundo
- * borrado, tema Zen Linen), a barra genérica ficaria redundante e destoando
- * ali. Nenhuma outra página é afetada — a barra continua normal em todo o
- * resto do site.
+ * /kpi/detalhado-polo, /kpi/evolucao, /configuracoes/equipe,
+ * /reports/consolidado e /reports/tempo-indisponibilidade: essas sete já têm
+ * loading.tsx próprio (fundo borrado, tema Zen Linen), a barra genérica
+ * ficaria redundante e destoando ali. Nenhuma outra página é afetada — a
+ * barra continua normal em todo o resto do site.
  *
  * Duas camadas, pra não deixar a barra "piscar" nem por um frame ao ENTRAR
  * nessas rotas (agora seis, com /reports/consolidado — que também ganhou
@@ -37,6 +37,7 @@ const ROTAS_SEM_BARRA = [
   "/kpi/evolucao",
   "/configuracoes/equipe",
   "/reports/consolidado",
+  "/reports/tempo-indisponibilidade",
 ];
 const HIDE_CLASS = "hide-bprogress-bar";
 
