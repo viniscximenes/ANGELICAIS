@@ -39,6 +39,7 @@ const ROTAS_SEM_BARRA = [
   "/reports/consolidado",
   "/reports/tempo-indisponibilidade",
   "/reports/tma-peso",
+  "/operacao/diario",
 ];
 const HIDE_CLASS = "hide-bprogress-bar";
 

@@ -34,7 +34,8 @@ interface KpiLoadingScreenProps {
     | "configuracoes-equipe"
     | "reports-consolidado"
     | "reports-tempo-indisponibilidade"
-    | "reports-tma-peso";
+    | "reports-tma-peso"
+    | "operacao-diario";
   /** Nome da página pro rótulo acessível ("Carregando Operadores...") e pro texto visível. */
   titulo: string;
   /**
@@ -46,7 +47,13 @@ interface KpiLoadingScreenProps {
    * equipe + placeholder genérico da seção Analítico abaixo, ver
    * SkeletonConsolidado.
    */
-  formato: "tabela" | "cards" | "equipe" | "consolidado" | "tma-peso";
+  formato:
+    | "tabela"
+    | "cards"
+    | "equipe"
+    | "consolidado"
+    | "tma-peso"
+    | "diario";
   /**
    * Largura do container central — as páginas de KPI usam "max-w-7xl"
    * (default, preserva o comportamento atual). /configuracoes/equipe usa
@@ -191,6 +198,27 @@ function SkeletonTmaPeso() {
   );
 }
 
+function SkeletonDiario() {
+  return (
+    <div className="space-y-8">
+      <div className="border border-border bg-card p-4 sm:p-6">
+        <div className="h-3 w-24 rounded bg-muted" />
+        <div className="mt-4 h-28 rounded-md border border-dashed border-border bg-muted/40" />
+      </div>
+
+      <section className="space-y-4">
+        <div className="h-6 w-36 rounded bg-card" />
+        <div className="overflow-hidden border border-border bg-card p-3">
+          <div className="h-10 bg-muted/70" />
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="h-12 border-t border-border/60 bg-background" />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export function KpiLoadingScreen({
   dataPage,
   titulo,
@@ -232,6 +260,8 @@ export function KpiLoadingScreen({
             <SkeletonConsolidado />
           ) : formato === "tma-peso" ? (
             <SkeletonTmaPeso />
+          ) : formato === "diario" ? (
+            <SkeletonDiario />
           ) : (
             <SkeletonEquipe />
           )}
@@ -244,7 +274,9 @@ export function KpiLoadingScreen({
         aria-live="polite"
         className={
           indicatorPosition === "after-header"
-            ? "pointer-events-none absolute inset-x-0 top-[12rem] flex flex-col items-center gap-3 lg:top-[13.25rem]"
+            ? showActionsRow
+              ? "pointer-events-none absolute inset-x-0 top-[12rem] flex flex-col items-center gap-3 lg:top-[13.25rem]"
+              : "pointer-events-none absolute inset-x-0 top-[9rem] flex flex-col items-center gap-3 lg:top-[10.25rem]"
             : "pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3"
         }
       >

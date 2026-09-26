@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { Instrument_Sans } from "next/font/google";
 import { redirect } from "next/navigation";
 
+import "./operacao-diario.css";
 import { DiarioSection } from "@/components/equipe/diario/diario-section";
-import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { getJustificativasPadrao } from "@/lib/equipe/diario/get-justificativas-padrao";
@@ -12,6 +13,12 @@ import { getEquipeAction } from "@/lib/gestor/equipe/actions";
 export const metadata: Metadata = {
   title: "Operação - Diário",
 };
+
+const zenSans = Instrument_Sans({
+  subsets: ["latin", "latin-ext"],
+  weight: "variable",
+  variable: "--font-zen-sans",
+});
 
 export const dynamic = "force-dynamic";
 
@@ -38,30 +45,30 @@ export default async function OperacaoDiarioPage() {
   const operadoresValidos = roster.ok
     ? roster.data.operadores.map((o) => o.email.split("@")[0])
     : [];
+  const nomeGestor = formatNomeProprio(user.profile.fullName);
 
   return (
-    <PageTransition>
-      <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
-        <div className="mx-auto max-w-7xl">
-          <header className="border-border flex flex-col gap-2 border-b border-dashed pb-4">
-            <span className="text-muted-foreground text-xs tracking-wide uppercase">
-              PAINEL GESTOR
-            </span>
-            <div className="flex flex-wrap items-baseline gap-3">
-              <h1 className="ds-h1 font-bold">Diário</h1>
-              <span className="ds-mono-sm text-muted-foreground">
-                / Operação · {formatNomeProprio(user.profile.fullName)}
-              </span>
-            </div>
-          </header>
+    <div
+      data-page="operacao-diario"
+      className={`${zenSans.variable} min-h-screen px-6 py-8 lg:px-12 lg:py-12`}
+    >
+      <div className="mx-auto max-w-7xl">
+        <header className="pb-6 pt-4">
+          <h1 className="text-3xl font-semibold tracking-[-0.04em] text-foreground sm:text-4xl">
+            Diário
+          </h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {nomeGestor}
+          </p>
+        </header>
 
-          <DiarioSection
-            operadoresValidos={operadoresValidos}
-            rosterErro={roster.ok ? null : roster.error}
-            justificativasPadrao={justificativasPadrao}
-          />
-        </div>
+        <DiarioSection
+          operadoresValidos={operadoresValidos}
+          rosterErro={roster.ok ? null : roster.error}
+          justificativasPadrao={justificativasPadrao}
+          fontVariableClassName={zenSans.variable}
+        />
       </div>
-    </PageTransition>
+    </div>
   );
 }
