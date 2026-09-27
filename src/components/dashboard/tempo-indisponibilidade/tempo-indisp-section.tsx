@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import { UploadTempoLogadoDropzone } from "@/components/d-1/tempo-logado/upload-tempo-logado-dropzone";
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
@@ -91,14 +92,63 @@ export function TempoIndispSection({
   // Ao (re)carregar a página, o navegador tenta restaurar a posição de
   // scroll anterior (ex.: estava no meio do trilho do Analítico) — some com
   // o cabeçalho e deixa a página abrindo "no meio". Desligamos a restauração
-  // automática e forçamos o topo uma vez, só nesta rota (mesmo ajuste de
+  // automática e forçamos o topo, só nesta rota (mesmo ajuste de
   // /reports/consolidado).
-  useEffect(() => {
+  //
+  // Um scrollTo(0,0) único na montagem não bastava: o navegador pode tentar
+  // RESTAURAR a posição salva mais de uma vez enquanto o layout da página
+  // ainda está se ajustando (fontes, imagens, ScrollTrigger recalculando o
+  // pin) — comportamento nativo, assíncrono, sem um gancho JS pra saber
+  // exatamente quando ele vai tentar de novo.
+  //
+  // Corrigido com uma "guarda" por alguns frames: a cada
+  // requestAnimationFrame, se o scroll saiu de 0 sem o usuário ter mexido o
+  // mouse/toque/teclado, volta pro topo e chama ScrollTrigger.update()
+  // (recalcula só o PROGRESSO dos triggers contra o novo scroll — não usa
+  // .refresh(), que remede layout de TODOS os ScrollTriggers da página e
+  // reflowava até o painel de anexo ao lado da tabela). A guarda se
+  // desliga sozinha no primeiro gesto real do usuário (wheel/touch/tecla)
+  // ou depois de UNLOCK_MS, o que vier primeiro — nunca prende um scroll
+  // manual do usuário. useLayoutEffect (não useEffect): a PRIMEIRA correção
+  // roda antes do navegador pintar o frame inicial, sem flash.
+  useLayoutEffect(() => {
     if (typeof window === "undefined") return;
     const previous = window.history.scrollRestoration;
     window.history.scrollRestoration = "manual";
+
+    const UNLOCK_MS = 2000;
+    let active = true;
+    let rafId = 0;
+
+    const stop = () => {
+      if (!active) return;
+      active = false;
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchstart", stop);
+      window.removeEventListener("keydown", stop);
+      window.clearTimeout(timeoutId);
+    };
+
+    const tick = () => {
+      if (!active) return;
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+        ScrollTrigger.update();
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+
     window.scrollTo(0, 0);
+    tick();
+
+    window.addEventListener("wheel", stop, { passive: true });
+    window.addEventListener("touchstart", stop, { passive: true });
+    window.addEventListener("keydown", stop);
+    const timeoutId = window.setTimeout(stop, UNLOCK_MS);
+
     return () => {
+      stop();
       window.history.scrollRestoration = previous;
     };
   }, []);
