@@ -79,7 +79,7 @@ export function LinhaGestorComparativo({
             {nome}
           </span>
           {destaque && (
-            <span className="ds-mono-sm text-primary text-[10px] uppercase tracking-wider">
+            <span className="ds-small text-primary text-[10px] font-semibold uppercase tracking-wider">
               Você
             </span>
           )}

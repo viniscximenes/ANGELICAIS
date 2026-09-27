@@ -49,7 +49,7 @@ export function TabelaOperadoresComparativo({
           Operadores
         </h4>
         <p className="ds-small text-muted-foreground mt-1">
-          Identificador real do operador (login), sem apelido.
+          Login do operador, sem apelido.
         </p>
       </div>
 

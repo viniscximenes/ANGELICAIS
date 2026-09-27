@@ -68,12 +68,16 @@ export function ComparativoConsolidadoSection({
       if (res.success) {
         setDetalhes((prev) => ({ ...prev, [gestorId]: res.data }));
       } else {
-        toast.error(res.error);
+        toast.error(res.error, {
+          className: "operacao-comparativo-consolidado-toast",
+        });
         setAbertoId((cur) => (cur === gestorId ? null : cur));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao carregar o detalhe do gestor.");
+      toast.error("Erro ao carregar o detalhe do gestor.", {
+        className: "operacao-comparativo-consolidado-toast",
+      });
       setAbertoId((cur) => (cur === gestorId ? null : cur));
     } finally {
       setCarregandoId((cur) => (cur === gestorId ? null : cur));
@@ -101,8 +105,8 @@ export function ComparativoConsolidadoSection({
         <div>
           <h2 className="ds-h3 font-semibold text-foreground">Comparativo entre gestores</h2>
           <p className="ds-small text-muted-foreground mt-1">
-            Abra um gestor para ver a evolução por hora, a retenção por tema e a
-            tabela de operadores dele.
+            Abra um gestor para ver evolução por hora, retenção por tema e
+            operadores.
           </p>
         </div>
 
