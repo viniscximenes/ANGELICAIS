@@ -6,7 +6,8 @@ import { motion } from "motion/react";
 import { UploadTempoLogadoDropzone } from "@/components/d-1/tempo-logado/upload-tempo-logado-dropzone";
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
 import { AguardandoDadosCard } from "@/components/gestor/aguardando-dados-card";
-import { StyledCard } from "@/components/gestor/styled-card";
+import { KpiLoadingScreen } from "@/components/gestor/kpi-loading-screen";
+import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
 import type { PausaProgramadaDb } from "@/lib/bases/pausas-programadas/types";
 import {
   buildForecastPorOperador,
@@ -57,6 +58,8 @@ function formatCabecalhoReport(
   return `Atualizado às ${horaCurta}`;
 }
 
+const MIN_REFRESH_LOADING_MS = 3_000;
+
 interface TempoIndispSectionProps {
   operadoresTempoLogadoIniciais: GestorTempoLogadoLinha[];
   operadoresIndisponibilidadeIniciais: GestorIndispLinha[];
@@ -104,6 +107,7 @@ export function TempoIndispSection({
   // tabela acima do overlay de blur (z-40) enquanto o popover está aberto —
   // mesmo padrão de configPopoverOpen em GestorEquipeSection.
   const [configPopoverOpen, setConfigPopoverOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [selecionado, setSelecionado] = useState<OperadorAnaliticoTempoIndisp | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -142,6 +146,20 @@ export function TempoIndispSection({
     }
   }
 
+  async function handleBaseCleared() {
+    const inicio = Date.now();
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      const faltam = MIN_REFRESH_LOADING_MS - (Date.now() - inicio);
+      if (faltam > 0) {
+        await new Promise((resolve) => setTimeout(resolve, faltam));
+      }
+      setIsRefreshing(false);
+    }
+  }
+
   const operadoresMergedBrutos = mergeOperadoresTempoIndisp(operadoresTL, operadoresIndisp);
   const operadoresMerged = ordenarOperadoresTempoIndisp(operadoresMergedBrutos, ordemTabela);
 
@@ -175,11 +193,24 @@ export function TempoIndispSection({
 
   return (
     <>
+      {isRefreshing && (
+        <div className="fixed inset-0 z-[100]">
+          <KpiLoadingScreen
+            dataPage="reports-tempo-indisponibilidade"
+            titulo="Tempo Logado & Indisponibilidade"
+            formato="tempo-indisponibilidade"
+            indicatorPosition="after-header"
+            spinnerVariant="dots"
+          />
+        </div>
+      )}
+
       {/*
         Cabeçalho (título "Tempo Logado & Indisponibilidade" + linha de
         report + controles) — MESMO padrão de GestorEquipeSection no
-        consolidado: h1 + uma linha só dividindo subtítulo (à esquerda) e
-        controles (à direita), sem eyebrow, sem breadcrumb e sem o antigo
+        consolidado: título, subtítulo com pt-3 e controles em uma linha
+        própria logo abaixo com pt-4, todos alinhados à esquerda. Sem
+        eyebrow, sem breadcrumb e sem o antigo
         título de seção "Equipe" com divisória tracejada por baixo (removido
         aqui: informação redundante, a navegação lateral já indica que é a
         tabela de Equipe). Fica FORA do motion.section abaixo (não anima
@@ -192,54 +223,46 @@ export function TempoIndispSection({
         equivalente nesta tabela).
       */}
       <div>
-        <div className="pt-4 mb-4">
+        <div className="pt-4">
           <h1 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             Tempo Logado &amp; Indisponibilidade
           </h1>
-        </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pb-2">
-          {/* Sem report ainda (hora nula/zerada): o parágrafo some — ver
-              formatCabecalhoReport, acima. Quando ausente, renderiza um span
-              vazio pra manter o justify-between empurrando os controles pra
-              direita mesmo sem texto à esquerda — mesmo padrão do
-              consolidado. */}
-          {formatCabecalhoReport(horaReport, nomeSupervisorReport) ? (
-            <p className="font-sans text-muted-foreground text-sm font-normal">
+          {formatCabecalhoReport(horaReport, nomeSupervisorReport) && (
+            <p className="font-sans text-muted-foreground pt-3 text-sm font-normal">
               {formatCabecalhoReport(horaReport, nomeSupervisorReport)}
             </p>
-          ) : (
-            <span aria-hidden="true" />
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 pt-4 pb-2">
+          <ConfigTabelaTempoIndispPopover
+            metaIndisponibilidadeInicial={metaIndisponibilidade}
+            ordemInicial={ordemTabela}
+            onSaved={(meta, ordem) => {
+              setMetaIndisponibilidade(meta);
+              setOrdemTabela(ordem);
+              // Refetch imediato com a meta recém-salva (metaOverride):
+              // cumpriuMeta é recalculado no servidor
+              // (get-gestor-indisponibilidade.ts), não no client — sem
+              // isso, a cor da linha/o card "dentro da meta" só
+              // refletiriam a meta nova no próximo poll de 30s.
+              void refetch(meta);
+            }}
+            onOpenChange={setConfigPopoverOpen}
+          />
+
+          {showUpload && (
+            <ClearBaseButton
+              action={clearTempoLogadoAction}
+              onCleared={handleBaseCleared}
+              variant="icon-danger"
+              holdToConfirm
+              toastClassName="reports-tempo-indisp-toast"
+            />
           )}
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <ConfigTabelaTempoIndispPopover
-              metaIndisponibilidadeInicial={metaIndisponibilidade}
-              ordemInicial={ordemTabela}
-              onSaved={(meta, ordem) => {
-                setMetaIndisponibilidade(meta);
-                setOrdemTabela(ordem);
-                // Refetch imediato com a meta recém-salva (metaOverride):
-                // cumpriuMeta é recalculado no servidor
-                // (get-gestor-indisponibilidade.ts), não no client — sem
-                // isso, a cor da linha/o card "dentro da meta" só
-                // refletiriam a meta nova no próximo poll de 30s.
-                void refetch(meta);
-              }}
-              onOpenChange={setConfigPopoverOpen}
-            />
-
-            {showUpload && (
-              <ClearBaseButton
-                action={clearTempoLogadoAction}
-                onCleared={refetch}
-                variant="icon-danger"
-                toastClassName="reports-tempo-indisp-toast"
-              />
-            )}
-
-            <CopyTempoIndispButton horaReport={horaReport ?? "—"} />
-          </div>
+          <CopyTempoIndispButton horaReport={horaReport ?? "—"} />
         </div>
       </div>
 
@@ -265,31 +288,17 @@ export function TempoIndispSection({
         {/*
           Sem divisória/borda tracejada aqui de propósito (removida nesta
           rodada, mesmo padrão do consolidado) — o espaço entre a linha de
-          controles e o card "Anexar Base"/tabela agora é só o gap vertical
+          controles e o card de anexo/tabela agora é só o gap vertical
           (pb-2 da linha de controles acima + pt-2 daqui), igual ao respiro
           entre título e controles no cabeçalho logo acima.
         */}
-        <div className="flex flex-col gap-4 pt-2">
-          {/*
-            Anexar base — mesmo padrão do consolidado (GestorEquipeSection):
-            fica SEMPRE visível quando showUpload, independente de já haver
-            dado do dia carregado. Antes vivia dentro do branch "hasDados
-            true", o que escondia o dropzone bem no caso em que ele mais
-            precisa aparecer (equipe cadastrada mas base de hoje ainda não
-            enviada).
-          */}
-          {showUpload && (
-            <div className="min-h-[90px] w-full">
-              <StyledCard withGradient className="flex h-full flex-col p-3">
-                <span className="text-muted-foreground mb-3 block text-xs font-semibold uppercase tracking-wider">
-                  Anexar Base
-                </span>
-                <div className="min-h-0 flex-1">
-                  <UploadTempoLogadoDropzone />
-                </div>
-              </StyledCard>
-            </div>
-          )}
+          <div className="flex flex-col gap-4 pt-2">
+            {/*
+              Anexo horizontal — somente o dropzone, sem StyledCard externo e
+              sem título próprio. Ocupa toda a largura da coluna, alinhado à
+              tabela abaixo, e continua sempre visível quando showUpload.
+            */}
+          {showUpload && <UploadTempoLogadoDropzone />}
 
           <div className="space-y-6">
             {/*
@@ -303,12 +312,10 @@ export function TempoIndispSection({
               não existe padrão equivalente no consolidado (lá a tabela
               nunca some, só cada linha fica neutra).
 
-              p-3 (não p-0): mesmo respiro do consolidado entre a borda/
-              cantoneiras do StyledCard e o wrapper da tabela (ver
-              GestorEquipeSection, StyledCard withGradient className="h-full
-              p-3" em volta de EquipeTable). Sem overflow-hidden aqui — já
-              vem de TABELA_CONTAINER_CLASS dentro de TempoIndispTabela;
-              duplicar no StyledCard externo clipava as cantoneiras.
+              KpiFrame: mesmo visual atual do consolidado, mantendo somente
+              as cantoneiras e o p-3, sem fundo/borda/raio de container.
+              Sem overflow-hidden aqui — o wrapper interno da tabela já
+              cuida do recorte necessário.
 
               z-[45] enquanto o popover da engrenagem está aberto — mesmo
               truque de GestorEquipeSection pra tabela ficar ACIMA do
@@ -319,7 +326,7 @@ export function TempoIndispSection({
               id="tempo-indisp-tabela"
               className={cn("relative transition-[z-index] duration-0", configPopoverOpen && "z-[45]")}
             >
-              <StyledCard withGradient className="p-3">
+              <KpiFrame>
                 <TempoIndispTabela
                   key="tempo-indisp-visible"
                   operadores={operadoresMerged}
@@ -328,7 +335,7 @@ export function TempoIndispSection({
                   onToggleOlho={handleToggleOlho}
                   onRowClick={abrirDialog}
                 />
-              </StyledCard>
+              </KpiFrame>
             </div>
 
             {/*
@@ -340,8 +347,10 @@ export function TempoIndispSection({
             */}
             {(() => {
               const cabecalhoAnalitico = (
-                <header className="border-border border-b border-dashed pt-2 pb-4 mb-6">
-                  <h2 className="ds-h2 font-bold">Analítico</h2>
+                <header className="pt-2 pb-4 mb-6">
+                  <h2 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+                    Analítico
+                  </h2>
                 </header>
               );
 
@@ -396,8 +405,9 @@ export function TempoIndispSection({
 
       {/*
         Wrapper INVISÍVEL usado SÓ pela captura do PNG — vive off-screen pra
-        não afetar o layout. Renderiza o MESMO StyledCard + tabela do site
-        (variant "screen"), nos dois temas. `olhoAberto` NÃO é repassado de
+        não afetar o layout. Renderiza o mesmo KpiFrame + tabela do site
+        (variant "screen"), preservando as cantoneiras na imagem copiada.
+        `olhoAberto` NÃO é repassado de
         propósito: a exportação sempre força o nome fantasia, nunca revela
         nomes reais só porque o gestor estava com o olho aberto na tela no
         momento do clique.
@@ -407,7 +417,7 @@ export function TempoIndispSection({
         gestor-equipe-section.tsx): `position: fixed` com só `top`/`left`
         definidos (sem `right` nem `width`) faz o navegador dar shrink-wrap
         no elemento, cuja largura vira a largura INTRÍNSECA do conteúdo real
-        (StyledCard + padding/borda reais + o grid da tabela por dentro).
+        (KpiFrame + seu padding real + o grid da tabela por dentro).
         Isso também elimina a barra de rolagem horizontal que aparecia na
         imagem copiada: a variante "screen" da tabela (ScreenTable, dentro de
         TempoIndispTabela) tem seu próprio wrapper interno
@@ -432,13 +442,13 @@ export function TempoIndispSection({
         }}
       >
         <div data-tempo-indisp-png>
-          <StyledCard withGradient className="p-3">
+          <KpiFrame>
             <TempoIndispTabela
               key="tempo-indisp-png"
               operadores={operadoresMerged}
               nomeFantasia={nomeFantasia}
             />
-          </StyledCard>
+          </KpiFrame>
         </div>
       </div>
 

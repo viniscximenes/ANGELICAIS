@@ -2,7 +2,6 @@
 
 import { IconClockExclamation } from "@tabler/icons-react";
 
-import { StyledCard } from "@/components/gestor/styled-card";
 import {
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
@@ -56,7 +55,7 @@ export const ESTOURO_PAUSA_MIN_WIDTH_PX = PISO_OPERADOR_PX + COLUNAS.length * DA
 
 /** Cabeçalho — mesmo estilo sans (não mono) de EquipeTable/TempoIndispTabela, ver aderencia-analitico.tsx. */
 const HEADER_ROW_CLASS =
-  "ds-body grid gap-0 bg-muted/40 font-bold text-foreground tracking-wide uppercase";
+  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground/70";
 
 interface Props {
   operadores: OperadorAnaliticoTempoIndisp[];
@@ -102,9 +101,8 @@ export function EstouroPausaAnalitico({ operadores }: Props) {
         </div>
       </div>
 
-      {/* Sem TABELA_CONTAINER_CLASS dentro do StyledCard — ver comentário em aderencia-analitico.tsx. */}
-      <StyledCard className="p-3" withGradient>
-        <div className="overflow-hidden">
+      {/* Sem container visual — mesmo padrão atual das tabelas analíticas do Consolidado. */}
+      <div className="overflow-hidden">
           <div className="overflow-x-auto scrollbar-tema">
             <div data-estouro-pausa-tabela className="min-w-fit">
               <div
@@ -168,8 +166,7 @@ export function EstouroPausaAnalitico({ operadores }: Props) {
               })}
             </div>
           </div>
-        </div>
-      </StyledCard>
+      </div>
     </div>
   );
 }

@@ -582,6 +582,17 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
   --dropzone-hover-bg: color-mix(in srgb, var(--card) 35%, var(--muted) 65%);
 }
 
+/* Exceção compartilhada com Tempo/Indisponibilidade: no tema claro, o
+ * hover anima apenas o conteúdo interno do anexo, sem escurecer o fundo ou
+ * a borda pontilhada. Estados de drag/rejeição continuam sinalizados. */
+[data-theme="light"] [data-page="reports-consolidado"] {
+  --dropzone-hover-bg: color-mix(in srgb, var(--card) 55%, var(--muted) 45%);
+}
+
+[data-theme="light"] [data-page="reports-consolidado"] .upload-dropzone-root-reports-consolidado[data-dropzone-state="idle"]:hover {
+  border-color: var(--border) !important;
+}
+
 /* Banner de erro do upload — `.status-danger` (globals.css) usa
  * --danger-bg/--danger-border, tokens que esta página NÃO redefine (só
  * --danger foi trazido pra paleta Zen Linen) — o banner saía com o

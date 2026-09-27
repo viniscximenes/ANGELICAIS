@@ -6,12 +6,7 @@ import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
 import { UploadProgressModal } from "@/components/d-1/upload-progress-modal";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { ReactBitsFolder } from "@/components/ui/react-bits-folder";
 import { uploadTempoLogadoAction } from "@/lib/d1-db/actions/upload-tempo-logado-action";
 import { useFaviconLoading } from "@/lib/favicon/use-favicon-loading";
 
@@ -85,10 +80,6 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
 
       setRowsWritten(uploadResult.rowsWritten);
       setStep("done");
-      toast.success("Base atualizada", {
-        description: `${uploadResult.rowsWritten} linhas inseridas`,
-        className: "reports-tempo-indisp-toast",
-      });
 
       setTimeout(() => {
         setStep(null);
@@ -184,9 +175,8 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
 
   // Ícone único animado, sem texto permanente — mesmo padrão de
   // UploadDropzone (/reports/consolidado, 22ª rodada): a informação
-  // continua acessível via aria-label completo (leitor de tela) e via
-  // Tooltip (hover/foco). Mensagens de erro reais continuam em texto
-  // visível (.status-danger).
+  // continua acessível via aria-label completo (leitor de tela).
+  // Mensagens de erro reais continuam em texto visível (.status-danger).
   const accessibleName =
     "Anexar base CSV de tempo logado e indisponibilidade. Arraste um arquivo ou clique para selecionar. Apenas arquivos .csv, limite de 50.000 linhas.";
 
@@ -197,77 +187,74 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
 
   return (
     <>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              {...rootProps}
-              role="button"
-              tabIndex={isProcessing ? -1 : 0}
-              aria-label={accessibleName}
-              aria-disabled={isProcessing}
-              aria-busy={isProcessing}
-              data-dropzone-state={dropzoneState}
-              className="upload-dropzone-root-reports-tempo-indisp relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed outline-none transition-all duration-300 hover:border-primary focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
-              style={{
-                background: isDragActive
-                  ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
-                  : isHovering
-                    ? "var(--dropzone-hover-bg, var(--card))"
-                    : "var(--dropzone-idle-bg, var(--card))",
-                borderColor: isDragReject
-                  ? "var(--danger)"
-                  : isDragActive
-                    ? "var(--primary)"
-                    : "var(--border)",
-                borderWidth: isDragActive ? "2px" : "1px",
-                boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "var(--shadow-sm, none)",
-                padding: "1rem 1.25rem",
-                opacity: isProcessing ? 0.5 : 1,
-                pointerEvents: isProcessing ? "none" : "auto",
-                cursor: isProcessing ? "not-allowed" : "pointer",
-                minHeight: "90px",
-              }}
-            >
-              <input {...getInputProps()} />
+      <div
+        {...rootProps}
+        role="button"
+        tabIndex={isProcessing ? -1 : 0}
+        aria-label={accessibleName}
+        aria-disabled={isProcessing}
+        aria-busy={isProcessing}
+        data-dropzone-state={dropzoneState}
+        className="upload-dropzone-root-reports-tempo-indisp relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed outline-none transition-all duration-300 hover:border-primary focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+        style={{
+          background: isDragActive
+            ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
+            : isHovering
+              ? "var(--dropzone-hover-bg, var(--card))"
+              : "var(--dropzone-idle-bg, var(--card))",
+          borderColor: isDragReject
+            ? "var(--danger)"
+            : isDragActive
+              ? "var(--primary)"
+              : "var(--border)",
+          borderWidth: isDragActive ? "2px" : "1px",
+          boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "var(--shadow-sm, none)",
+          padding: "1rem 1.25rem",
+          opacity: isProcessing ? 0.5 : 1,
+          pointerEvents: isProcessing ? "none" : "auto",
+          cursor: isProcessing ? "not-allowed" : "pointer",
+          minHeight: "140px",
+        }}
+      >
+        <input {...getInputProps()} />
 
-              <div className="flex flex-col items-center justify-center gap-2 text-center">
-                <div
-                  className="upload-dropzone-icon-reports-tempo-indisp relative flex h-11 w-11 items-center justify-center"
-                  aria-hidden="true"
-                >
-                  <span className="upload-dropzone-ring-reports-tempo-indisp absolute inset-0 rounded-full" />
+        <div className="flex flex-col items-center justify-center gap-3 text-center">
+          <div className="relative flex min-h-16 min-w-24 items-center justify-center" aria-hidden="true">
+            {isProcessing ? (
+              <IconLoader2 size={26} className="animate-spin text-muted-foreground" />
+            ) : (
+              <ReactBitsFolder
+                size={0.68}
+                open={isHovering || isDragActive}
+                color={isDragReject ? "var(--danger)" : "var(--primary)"}
+                backColor={
+                  isDragReject
+                    ? "color-mix(in srgb, var(--danger) 78%, #000 22%)"
+                    : "color-mix(in srgb, var(--primary) 78%, #000 22%)"
+                }
+                paperColors={[
+                  "var(--upload-folder-paper-1, color-mix(in srgb, var(--primary-foreground) 72%, var(--muted) 28%))",
+                  "var(--upload-folder-paper-2, color-mix(in srgb, var(--primary-foreground) 86%, var(--card) 14%))",
+                  "var(--upload-folder-paper-3, var(--primary-foreground))",
+                ]}
+              />
+            )}
+          </div>
 
-                  {isProcessing ? (
-                    <IconLoader2 size={22} className="relative animate-spin text-muted-foreground" />
-                  ) : (
-                    <IconFileSpreadsheet
-                      size={22}
-                      className="upload-dropzone-glyph-reports-tempo-indisp relative"
-                    />
-                  )}
-                </div>
+          <p className="upload-dropzone-touch-hint-reports-tempo-indisp ds-mono-sm text-muted-foreground/80 text-[11px] sm:hidden">
+            Toque para selecionar um CSV
+          </p>
+        </div>
 
-                <p className="upload-dropzone-touch-hint-reports-tempo-indisp ds-mono-sm text-muted-foreground/80 text-[11px] sm:hidden">
-                  Toque para selecionar um CSV
-                </p>
-              </div>
-
-              {errorMessage && !isProcessing && (
-                <div
-                  role="alert"
-                  className="status-danger ds-small mt-4 flex items-center justify-center gap-2 rounded-md p-3"
-                >
-                  {errorMessage}
-                </div>
-              )}
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="top">
-            Arraste um CSV aqui ou clique para selecionar · até 50.000 linhas
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+        {errorMessage && !isProcessing && (
+          <div
+            role="alert"
+            className="status-danger ds-small mt-4 flex items-center justify-center gap-2 rounded-md p-3"
+          >
+            {errorMessage}
+          </div>
+        )}
+      </div>
 
       <UploadProgressModal step={step} rowsWritten={rowsWritten} variant="reports-tempo-indisp" />
     </>

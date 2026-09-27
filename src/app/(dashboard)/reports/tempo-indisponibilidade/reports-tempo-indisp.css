@@ -77,6 +77,11 @@
   --switch-on: #D1CFC0;
   --switch-knob: #141414;
   --switch-knob-off: #8E8A83;
+
+  /* Mesmas camadas do Folder (React Bits) do report Consolidado. */
+  --upload-folder-paper-1: #4B4B48;
+  --upload-folder-paper-2: #73716C;
+  --upload-folder-paper-3: #A8A49C;
 }
 
 /* ───────── CLARO ← :root do tema ───────── */
@@ -132,6 +137,11 @@
   --switch-on: #2E2E2E;
   --switch-knob: #F4EFE4;
   --switch-knob-off: #F4EFE4;
+
+  /* Mesmas camadas do Folder (React Bits) do report Consolidado. */
+  --upload-folder-paper-1: #817B70;
+  --upload-folder-paper-2: #A89F8F;
+  --upload-folder-paper-3: #CFC8B8;
 }
 
 /* ───────── Ponte para as utilities do Tailwind (vale nos dois temas) ───────── */
@@ -177,10 +187,15 @@
   letter-spacing: var(--letter-spacing);
 }
 
-/* ───────── Barra de rolagem (padrão das páginas migradas) ───────── */
+/* ───────── Barra de rolagem — mesmo acabamento do Consolidado ───────── */
+[data-page="reports-tempo-indisponibilidade"] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
 [data-page="reports-tempo-indisponibilidade"] ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 [data-page="reports-tempo-indisponibilidade"] ::-webkit-scrollbar-track {
   background: transparent;
@@ -188,9 +203,59 @@
 [data-page="reports-tempo-indisponibilidade"] ::-webkit-scrollbar-thumb {
   background-color: var(--border);
   border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 [data-page="reports-tempo-indisponibilidade"] ::-webkit-scrollbar-thumb:hover {
   background-color: var(--muted-foreground);
+  background-clip: padding-box;
+}
+[data-page="reports-tempo-indisponibilidade"] ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+html:has([data-page="reports-tempo-indisponibilidade"]),
+body:has([data-page="reports-tempo-indisponibilidade"]) {
+  scrollbar-width: thin;
+  scrollbar-color: #2C2C2C transparent;
+}
+[data-theme="light"]:has([data-page="reports-tempo-indisponibilidade"]),
+[data-theme="light"] body:has([data-page="reports-tempo-indisponibilidade"]) {
+  scrollbar-color: #D2CBBB transparent;
+}
+
+html:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar,
+body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-track,
+body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-track {
+  background: transparent;
+}
+html:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-thumb,
+body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-thumb {
+  background-color: #2C2C2C;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+[data-theme="light"]:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-thumb,
+[data-theme="light"] body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-thumb {
+  background-color: #D2CBBB;
+}
+html:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-thumb:hover,
+body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-thumb:hover {
+  background-color: #8E8A83;
+  background-clip: padding-box;
+}
+[data-theme="light"]:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-thumb:hover,
+[data-theme="light"] body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-thumb:hover {
+  background-color: #5E5A52;
+}
+html:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-corner,
+body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* ───────── Toasts desta página (sonner) ─────────
@@ -293,6 +358,77 @@
   cursor: not-allowed;
 }
 
+/* Ao cancelar o HoldButton, o preenchimento volta a zero durante
+ * --hb-release. Se a largura começar a fechar no mesmo instante, a crista
+ * ondulada recalcula a posição contra uma largura em movimento e parece se
+ * desprender da barra. Nesta rota, aguardamos o retorno terminar antes de
+ * recolher o botão; expansão e confirmação continuam inalteradas. */
+[data-page="reports-tempo-indisponibilidade"] button[aria-label="Segure para limpar a base"][data-phase="idle"] {
+  transition-delay: var(--hb-release), 0ms, 0ms, 0ms !important;
+}
+
+/* Mesmo indicador de loading do Consolidado, com a cor herdada do tema. */
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner {
+  --uib-size: 3rem;
+  --uib-speed: .9s;
+  --uib-color: var(--foreground);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: var(--uib-size);
+  height: var(--uib-size);
+}
+
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  width: 100%;
+}
+
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot::before {
+  content: "";
+  width: 20%;
+  height: 20%;
+  border-radius: 50%;
+  background-color: var(--uib-color);
+  transform: scale(0);
+  opacity: 0.5;
+  animation: reports-tempo-indisp-dot-pulse calc(var(--uib-speed) * 1.111) ease-in-out infinite;
+  box-shadow: 0 0 20px color-mix(in srgb, var(--foreground) 30%, transparent);
+}
+
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(2) { transform: rotate(45deg); }
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(2)::before { animation-delay: calc(var(--uib-speed) * -0.875); }
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(3) { transform: rotate(90deg); }
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(3)::before { animation-delay: calc(var(--uib-speed) * -0.75); }
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(4) { transform: rotate(135deg); }
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(4)::before { animation-delay: calc(var(--uib-speed) * -0.625); }
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(5) { transform: rotate(180deg); }
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(5)::before { animation-delay: calc(var(--uib-speed) * -0.5); }
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(6) { transform: rotate(225deg); }
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(6)::before { animation-delay: calc(var(--uib-speed) * -0.375); }
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(7) { transform: rotate(270deg); }
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(7)::before { animation-delay: calc(var(--uib-speed) * -0.25); }
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(8) { transform: rotate(315deg); }
+[data-page="reports-tempo-indisponibilidade"] .dot-spinner__dot:nth-child(8)::before { animation-delay: calc(var(--uib-speed) * -0.125); }
+
+@keyframes reports-tempo-indisp-dot-pulse {
+  0%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 /* ───────── Hover das linhas da TempoIndispTabela (tema claro) ─────────
  * MESMO bug documentado em reports-consolidado.css: globals.css tem uma
  * regra GLOBAL (fora do escopo permitido pra edição) equivalente também
@@ -320,11 +456,70 @@
  * das linhas boas — perceptível e coerente com o vermelho de fundo que já
  * têm em repouso (fundoLinhaRuim, tabela-padrao.tsx).
  */
-[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] [data-tempo-indisp-table] > div:not(:first-child):not(.font-bold):hover {
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] [data-tempo-indisp-table] > div:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
   background-color: var(--muted) !important;
 }
-[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] [data-tempo-indisp-table] > div.hover\:border-l-\[var\(--danger\)\]:hover {
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] [data-tempo-indisp-table] > div.hover\:border-l-\[var\(--danger\)\]:not([data-sem-dados="true"]):hover {
   background-color: color-mix(in srgb, var(--danger) 16%, var(--muted) 84%) !important;
+}
+
+/* No tema escuro, a cor inline da linha negativa impedia o hover de alterar
+ * o fundo. O mesmo reforço do Consolidado preserva o tom de perigo e torna a
+ * mudança perceptível. Linhas sem dados continuam totalmente neutras. */
+[data-page="reports-tempo-indisponibilidade"] [data-tempo-indisp-table] > div.hover\:border-l-\[var\(--danger\)\]:not([data-sem-dados="true"]):hover {
+  background-color: color-mix(in oklch, var(--danger) 14%, transparent) !important;
+}
+
+/* Mesmo tom secundário aplicado ao título superior da tabela do
+ * Consolidado no tema claro. Esta tabela não possui linha de totais
+ * equivalente a "EQUIPE", então o seletor fica restrito ao cabeçalho e não
+ * altera por engano o nome do último operador. */
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] [data-tempo-indisp-table] > div:first-child {
+  color: var(--muted-foreground) !important;
+}
+
+/* Os quatro indicadores do Analítico precisam se separar do fundo claro sem
+ * voltar ao branco do card padrão. A mistura abaixo fica só um tom abaixo do
+ * background da página; o tema escuro mantém integralmente o bg-card/70. */
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] .tempo-indisp-resumo-card {
+  background-color: color-mix(in srgb, var(--background) 82%, var(--muted) 18%) !important;
+}
+
+/* ───────── Tabelas do Analítico (tema claro) ─────────
+ * Os quatro blocos usavam combinações diferentes de text-foreground e
+ * text-muted-foreground/70 no cabeçalho, enquanto a coluna sticky do
+ * operador alternava entre var(--card), uma mistura opaca e o fundo
+ * herdado. Normalizamos todos pelos mesmos tokens da paleta Zen Linen:
+ * títulos em muted-foreground, cabeçalho sticky no mesmo bege opaco e as
+ * células com o nome do operador em um bege um pouco mais marcado para
+ * separar visualmente a coluna fixa do restante da linha. */
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] :is(
+  [data-pausas-tabela],
+  [data-aderencia-tabela],
+  [data-pausas-nao-realizadas-tabela],
+  [data-estouro-pausa-tabela]
+) > div:first-child {
+  background-color: var(--muted) !important;
+  border-bottom: 2px solid var(--border) !important;
+  color: color-mix(in srgb, var(--muted-foreground) 70%, transparent) !important;
+}
+
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] :is(
+  [data-pausas-tabela],
+  [data-aderencia-tabela],
+  [data-pausas-nao-realizadas-tabela],
+  [data-estouro-pausa-tabela]
+) > div:first-child > div:first-child {
+  background-color: color-mix(in srgb, var(--card) 60%, var(--muted) 40%) !important;
+}
+
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] :is(
+  [data-pausas-tabela],
+  [data-aderencia-tabela],
+  [data-pausas-nao-realizadas-tabela],
+  [data-estouro-pausa-tabela]
+) > div:not(:first-child) > div:first-child {
+  background-color: color-mix(in srgb, var(--card) 68%, var(--muted) 32%) !important;
 }
 
 /* ───────── Banner de erro do upload ─────────
@@ -339,17 +534,18 @@
   border-color: color-mix(in oklch, var(--danger) 35%, transparent);
 }
 
-/* ───────── Clarear tons internos da imagem exportada ─────────
- * Mesmo ajuste de reports-consolidado.css (17ª rodada), aplicado ao wrapper
- * de export desta rota ([data-tempo-indisp-png], em vez de [data-tabela-png]
- * — nome do atributo próprio de tempo-indisp-section.tsx). Só o tema claro é
- * afetado; o card visível na tela nunca é (o seletor exige
- * [data-tempo-indisp-png] como ancestral).
+/* ───────── Imagem exportada no tema claro ─────────
+ * Mesma correção do Consolidado: redefinir --background usando ele próprio
+ * criava um ciclo de custom property no elemento capturado. A resolução do
+ * token falhava e a biblioteca caía em branco puro, diferente da tabela da
+ * página. Os valores-base abaixo são os próprios tokens do tema claro desta
+ * rota; o color-mix preserva o mesmo ajuste suave usado no Consolidado sem
+ * criar autorreferência. O seletor continua restrito ao clone de exportação.
  */
 [data-theme="light"] [data-page="reports-tempo-indisponibilidade"] [data-tempo-indisp-png] {
-  --background: color-mix(in srgb, var(--background) 88%, white 12%);
-  --card: color-mix(in srgb, var(--card) 90%, white 10%);
-  --muted: color-mix(in srgb, var(--muted) 85%, white 15%);
+  --background: color-mix(in srgb, #E9E4D8 88%, white 12%);
+  --card: color-mix(in srgb, #F4EFE4 90%, white 10%);
+  --muted: color-mix(in srgb, #CFC8B8 85%, white 15%);
 }
 
 /* ───────── Dropzone "Anexar Base" — ícone único animado ─────────
@@ -359,6 +555,31 @@
 [data-page="reports-tempo-indisponibilidade"] {
   --dropzone-idle-bg: color-mix(in srgb, var(--card) 55%, var(--muted) 45%);
   --dropzone-hover-bg: color-mix(in srgb, var(--card) 35%, var(--muted) 65%);
+}
+
+/* No tema claro, hover mantém a casca do card totalmente estável. A
+ * animação interna da pasta continua ativa; drag/reject/processing não são
+ * abrangidos porque possuem outro data-dropzone-state. */
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] {
+  --dropzone-hover-bg: color-mix(in srgb, var(--card) 55%, var(--muted) 45%);
+}
+
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] .upload-dropzone-root-reports-tempo-indisp[data-dropzone-state="idle"]:hover {
+  border-color: var(--border) !important;
+}
+
+/* ───────── Placeholder do anexo na tela de loading (kpi-loading-screen.tsx) ─────────
+ * globals.css tem uma regra GLOBAL (fora do escopo permitido pra edição) que
+ * escurece qualquer .border-dashed no hover, no tema claro:
+ *   [data-theme="light"] .border-dashed:hover { border-color: var(--primary) !important; }
+ * Isso atinge também a caixa tracejada muda do esqueleto de loading (não tem
+ * classe própria, só utilities Tailwind), fazendo a borda "animar" ao passar
+ * o mouse ali mesmo estando tudo desabilitado. O dropzone real já tem a
+ * regra acima cancelando o mesmo efeito; aqui cancelamos de novo, restrita a
+ * esta rota, pra cobrir a caixa do loading também.
+ */
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] .border-dashed:hover {
+  border-color: var(--border) !important;
 }
 
 .upload-dropzone-ring-reports-tempo-indisp {

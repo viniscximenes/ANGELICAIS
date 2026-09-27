@@ -110,7 +110,7 @@ export function CardsResumoAnalitico({
     // número solto, é o próximo degrau padrão da escala.
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-6 sm:items-end">
       <BlurFade delay={0} inView className="sm:col-span-2">
-        <div className="relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 px-6 py-5 shadow-[var(--shadow-sm)] backdrop-blur-md">
+        <div className="tempo-indisp-resumo-card relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 px-6 py-5 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <div
             aria-hidden="true"
             className="absolute top-0 left-0 h-full w-[3px]"
@@ -126,7 +126,7 @@ export function CardsResumoAnalitico({
       </BlurFade>
 
       <BlurFade delay={0.06} inView className="sm:col-span-2">
-        <div className="flex h-full flex-col justify-center gap-2 rounded-lg border border-border bg-card/70 px-6 py-5 shadow-[var(--shadow-sm)] backdrop-blur-md">
+        <div className="tempo-indisp-resumo-card flex h-full flex-col justify-center gap-2 rounded-lg border border-border bg-card/70 px-6 py-5 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             Indisp. %
           </p>
@@ -148,7 +148,7 @@ export function CardsResumoAnalitico({
       </BlurFade>
 
       <BlurFade delay={0.12} inView className="sm:col-span-1">
-        <div className="flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
+        <div className="tempo-indisp-resumo-card flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             NR17 %
           </p>
@@ -169,7 +169,7 @@ export function CardsResumoAnalitico({
       </BlurFade>
 
       <BlurFade delay={0.18} inView className="sm:col-span-1">
-        <div className="flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
+        <div className="tempo-indisp-resumo-card flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             Particular %
           </p>

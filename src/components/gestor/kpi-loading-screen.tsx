@@ -16,6 +16,7 @@
  */
 
 import { DotSpinner } from "@/components/gestor/dot-spinner";
+import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
 
 interface KpiLoadingScreenProps {
   /**
@@ -132,11 +133,17 @@ function SkeletonActionsRow({ formato }: { formato: LoadingFormato }) {
     );
   }
 
-  if (
-    formato === "consolidado" ||
-    formato === "tempo-indisponibilidade" ||
-    formato === "tma-peso"
-  ) {
+  if (formato === "tempo-indisponibilidade") {
+    return (
+      <div className="flex gap-2">
+        <div className="h-8 w-8 rounded-md bg-card" />
+        <div className="h-8 w-8 rounded-md bg-card" />
+        <div className="h-8 w-[148px] rounded-md bg-card" />
+      </div>
+    );
+  }
+
+  if (formato === "consolidado" || formato === "tma-peso") {
     return (
       <div className="ml-auto flex gap-2">
         <div className="h-8 w-8 rounded-md bg-card" />
@@ -314,20 +321,101 @@ function SkeletonConsolidado() {
 }
 
 function SkeletonTempoIndisponibilidade() {
-  return (
-    <div className="space-y-6">
-      <div className="h-[90px] rounded-lg border border-border bg-card" />
-      <SkeletonTable rows={10} />
+  const colunas = [200, 150, 110, 140, 120, 110, 190, 170] as const;
+  const gridTemplateColumns = colunas
+    .map((largura, indice) => indice === colunas.length - 1 ? `minmax(${largura}px, 1fr)` : `${largura}px`)
+    .join(" ");
 
-      <div className="space-y-4">
-        <div className="h-6 w-28 rounded bg-card" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-6 sm:items-end">
-          <div className="h-[118px] rounded-lg border border-border bg-card sm:col-span-2" />
-          <div className="h-[118px] rounded-lg border border-border bg-card sm:col-span-2" />
-          <div className="h-[86px] rounded-lg border border-border bg-card" />
-          <div className="h-[86px] rounded-lg border border-border bg-card" />
-        </div>
-        <div className="h-[420px] rounded-lg border border-border bg-card lg:h-[600px]" />
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Anexo fica acima da tabela e ocupa toda a largura nesta página. */}
+      <div className="flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card/40 p-6">
+        <div className="h-8 w-8 rounded-full bg-muted-foreground/15" />
+        <div className="h-3 w-32 rounded-md bg-muted-foreground/15" />
+      </div>
+
+      <div className="space-y-6">
+        {/* Tabela principal abaixo do anexo, usando toda a largura e altura. */}
+        <KpiFrame className="h-full">
+          <div className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <div className="w-full min-w-[1190px]">
+                <div
+                  className="grid h-9 gap-0 border-l-2 border-l-transparent bg-muted/40"
+                  style={{ gridTemplateColumns }}
+                >
+                  {colunas.map((_, i) => (
+                    <div key={i} className="flex items-center justify-center border-r border-border/40 px-3 last:border-r-0">
+                      <div className="h-3 w-[68%] rounded bg-muted-foreground/20" />
+                    </div>
+                  ))}
+                </div>
+
+                {Array.from({ length: 13 }).map((_, row) => (
+                  <div
+                    key={row}
+                    className="grid h-11 gap-0 border-t border-l-2 border-t-border/40 border-l-transparent"
+                    style={{ gridTemplateColumns }}
+                  >
+                    {colunas.map((_, col) => (
+                      <div key={col} className="flex items-center justify-center border-r border-border/30 px-3 last:border-r-0">
+                        <div className={`h-3 rounded bg-card ${col === 0 ? "w-[72%]" : "w-10"}`} />
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </KpiFrame>
+
+        {/* Primeiro trecho do Analítico nas mesmas posições do conteúdo real. */}
+        <section>
+          <header className="pt-2 pb-4 mb-6">
+            <div className="h-9 w-40 rounded-md bg-card md:h-10" />
+          </header>
+
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-6 sm:items-end">
+              <div className="h-[118px] rounded-lg border border-border bg-card/70 sm:col-span-2" />
+              <div className="h-[118px] rounded-lg border border-border bg-card/70 sm:col-span-2" />
+              <div className="h-[86px] rounded-lg border border-border bg-card/70" />
+              <div className="h-[86px] rounded-lg border border-border bg-card/70" />
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <div className="h-5 w-64 rounded bg-card" />
+                <div className="mt-2 h-3 w-[420px] max-w-full rounded bg-card/70" />
+              </div>
+              <div className="overflow-hidden">
+                <div className="h-9 bg-muted/40" />
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-11 border-t border-border/40 bg-background" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/** Placeholder mudo da navegação lateral desta página. Replica a casca da
+ * sidebar real, mas usa cinco formas neutras no lugar dos cinco links para
+ * não deixar controles interativos disponíveis durante o loading. */
+function SkeletonTempoIndispNavSidebar() {
+  return (
+    <div
+      aria-hidden="true"
+      data-page="reports-tempo-indisponibilidade"
+      className="fixed top-24 right-4 z-40 hidden lg:block"
+    >
+      <div className="border-border/60 flex w-[60px] flex-col items-center gap-3 rounded-xl border py-4 shadow-lg">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-5 w-5 rounded-full bg-muted-foreground/15" />
+        ))}
       </div>
     </div>
   );
@@ -413,16 +501,30 @@ export function KpiLoadingScreen({
       data-page={dataPage}
       className="relative min-h-screen overflow-hidden px-6 py-8 lg:px-12 lg:py-12"
     >
+      {formato === "tempo-indisponibilidade" && <SkeletonTempoIndispNavSidebar />}
+
       <div
         className={`mx-auto ${maxWidthClassName} animate-in fade-in duration-300 motion-reduce:animate-none`}
       >
         {/* Cabeçalho fantasma — mesma métrica do cabeçalho real (título + subtítulo + linha de ações, quando existir), pra altura/posição não pularem quando o conteúdo de verdade entrar. */}
         <div className="pt-4">
-          <div className="h-9 w-40 rounded-md bg-card md:h-10 md:w-48" />
+          <div
+            className={
+              formato === "tempo-indisponibilidade"
+                ? "h-9 w-[440px] max-w-full rounded-md bg-card md:h-10"
+                : "h-9 w-40 rounded-md bg-card md:h-10 md:w-48"
+            }
+          />
           <div className="mt-3 h-4 w-64 rounded bg-card/70" />
         </div>
         {showActionsRow && (
-          <div className="flex items-center gap-3 pt-4 pb-4">
+          <div
+            className={
+              formato === "tempo-indisponibilidade"
+                ? "flex items-center gap-3 pt-4 pb-2"
+                : "flex items-center gap-3 pt-4 pb-4"
+            }
+          >
             <SkeletonActionsRow formato={formato} />
           </div>
         )}
@@ -430,7 +532,7 @@ export function KpiLoadingScreen({
         {/* Esqueleto do conteúdo — desfocado e apagado, só pra sugerir a forma (tabela, grid de cards ou a estrutura de equipe) sem parecer dado real incompleto. */}
         <div
           aria-hidden="true"
-          className={`${showActionsRow ? "pt-4" : "pt-8"} opacity-40 blur-[2px]`}
+          className={`${showActionsRow ? (formato === "tempo-indisponibilidade" ? "pt-2" : "pt-4") : "pt-8"} ${formato === "tempo-indisponibilidade" ? "" : "opacity-40 blur-[2px]"}`}
         >
           {formato === "kpi-operadores" ? (
             <SkeletonKpiOperadores />
@@ -465,7 +567,9 @@ export function KpiLoadingScreen({
         role="status"
         aria-live="polite"
         className={
-          indicatorPosition === "after-header"
+          formato === "tempo-indisponibilidade"
+            ? "pointer-events-none absolute inset-x-0 top-[33%] flex flex-col items-center gap-3 -translate-y-1/2"
+            : indicatorPosition === "after-header"
             ? showActionsRow
               ? "pointer-events-none absolute inset-x-0 top-[12rem] flex flex-col items-center gap-3 lg:top-[13.25rem]"
               : "pointer-events-none absolute inset-x-0 top-[9rem] flex flex-col items-center gap-3 lg:top-[10.25rem]"

@@ -1,11 +1,10 @@
 // Suspense fallback do Next.js pra /reports/tempo-indisponibilidade —
 // mostrado automaticamente enquanto o Server Component de page.tsx (async,
 // aguarda getGestorTempoLogado + getGestorIndisponibilidade + outras 3
-// chamadas em paralelo) ainda não resolveu. Mesmo padrão de
-// /reports/consolidado, via o componente compartilhado KpiLoadingScreen,
-// mas com formato próprio: anexo em largura total, tabela unificada e os
-// quatro cards do resumo analítico nas mesmas posições da página real.
-// Único mecanismo de loading desta rota (não soma com overlay manual).
+// chamadas em paralelo, mais o piso mínimo de 3s de page.tsx) ainda não
+// resolveu. O mesmo formato também é usado no overlay do refresh manual.
+// O esqueleto próprio replica cabeçalho, controles, anexo, tabela e o
+// primeiro bloco analítico nas posições atuais da página real.
 import "./reports-tempo-indisp.css";
 import { KpiLoadingScreen } from "@/components/gestor/kpi-loading-screen";
 
@@ -16,6 +15,7 @@ export default function LoadingReportsTempoIndisponibilidade() {
       titulo="Tempo Logado & Indisponibilidade"
       formato="tempo-indisponibilidade"
       indicatorPosition="after-header"
+      spinnerVariant="dots"
     />
   );
 }

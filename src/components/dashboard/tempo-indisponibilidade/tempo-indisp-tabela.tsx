@@ -345,6 +345,7 @@ const ScreenTable = forwardRef<
                 key={op.email}
                 role={clicavel ? "button" : undefined}
                 tabIndex={clicavel ? 0 : undefined}
+                data-sem-dados={semDados ? "true" : undefined}
                 onClick={clicavel ? () => onRowClick!(op) : undefined}
                 className={cn(
                   TABELA_LINHA_HOVER_CLASS,

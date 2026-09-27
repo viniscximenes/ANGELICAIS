@@ -57,12 +57,9 @@ export function CopyTempoIndispButton({ horaReport }: CopyTempoIndispButtonProps
 
       await copyFormattedHtml(html);
 
+      // O próprio botão muda para "Copiado" por 2s, seguindo o mesmo
+      // feedback visual do Consolidado sem exibir um popup adicional.
       setState("done");
-      toast.success("Tabela copiada", {
-        description: "Cole no Teams, Slack ou email (Ctrl+V)",
-        duration: 2500,
-        className: "reports-tempo-indisp-toast",
-      });
       setTimeout(() => setState("idle"), 2000);
     } catch (err) {
       console.error("[copy-tempo-indisp] erro:", err);

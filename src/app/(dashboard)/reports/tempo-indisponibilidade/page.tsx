@@ -35,7 +35,21 @@ const zenSans = Instrument_Sans({
 
 export const revalidate = 300;
 
+// Mesmo piso mínimo de /reports/consolidado: o fallback de loading permanece
+// por pelo menos 3s contando desde a entrada na página. Se as buscas já
+// consumirem esse tempo, não há espera adicional.
+const MIN_LOADING_MS = 3_000;
+
+async function aguardarPisoMinimo(desde: number) {
+  const faltam = MIN_LOADING_MS - (Date.now() - desde);
+  if (faltam > 0) {
+    await new Promise((resolve) => setTimeout(resolve, faltam));
+  }
+}
+
 export default async function ReportsTempoIndisponibilidadePage() {
+  const inicioCarregamento = Date.now();
+
   const user = await getCurrentUser();
 
   if (!user) redirect("/login");
@@ -65,6 +79,8 @@ export default async function ReportsTempoIndisponibilidadePage() {
       getPausasProgramadas(rosterD1),
       getConfigAderencia(user.profile.id),
     ]);
+
+  await aguardarPisoMinimo(inicioCarregamento);
 
   // Os dois datasets vêm do mesmo upload de BASE - 2 — se um vier vazio,
   // tratamos como falha (evita renderizar a página pela metade).

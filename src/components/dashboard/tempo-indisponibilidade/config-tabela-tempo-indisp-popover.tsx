@@ -122,7 +122,7 @@ export function ConfigTabelaTempoIndispPopover({
         <PopoverTrigger asChild>
           <button
             type="button"
-            title="Configurações da tabela"
+            aria-label="Configurações da tabela"
             // MESMO visual do botão de engrenagem do consolidado
             // (ConfigTabelaPopover): outline neutro h-8/w-8, sem
             // preenchimento — antes era um botão cheio (bg-primary),
@@ -136,18 +136,15 @@ export function ConfigTabelaTempoIndispPopover({
         <PopoverContent
           data-page="reports-tempo-indisponibilidade"
           align="end"
-          className="bg-popover text-popover-foreground border-border w-84 rounded-2xl border p-5 shadow-2xl"
+          className="bg-popover text-popover-foreground border-border w-72 rounded-2xl border p-4 shadow-2xl"
         >
           {/* Cabeçalho + divisória: mesmo padrão do ConfigTabelaPopover
               (consolidado), que por sua vez segue o modal de referência
               "Configurações de Metas" (config-metas-popover.tsx). */}
-          <PopoverHeader className="border-border/50 space-y-0.5 border-b pb-2">
-            <PopoverTitle className="text-foreground text-sm font-semibold">
+          <PopoverHeader className="border-border/50 border-b pb-2">
+            <PopoverTitle className="ds-h3 font-semibold text-foreground">
               Configurações da Tabela
             </PopoverTitle>
-            <p className="text-muted-foreground text-[11px]">
-              Ajuste a meta de indisponibilidade e a ordenação da tabela.
-            </p>
           </PopoverHeader>
 
           <div className="space-y-4 pt-4">
@@ -170,7 +167,7 @@ export function ConfigTabelaTempoIndispPopover({
                   value={meta}
                   onChange={(e) => setMeta(e.target.value)}
                   disabled={isPending}
-                  className="pr-8 text-sm font-semibold"
+                  className="pr-8 text-sm font-semibold focus-visible:border-input focus-visible:ring-0"
                 />
                 <span className="text-muted-foreground pointer-events-none absolute right-3 text-xs font-bold">%</span>
               </div>

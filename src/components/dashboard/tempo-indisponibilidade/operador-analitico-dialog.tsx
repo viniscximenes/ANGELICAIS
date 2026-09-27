@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { ExportPopupPngButton } from "@/components/dashboard/export-popup-png-button";
 import { getDataPngHoje } from "@/components/dashboard/export-popup-png-theme";
-import { StyledCard } from "@/components/gestor/styled-card";
 import type { AderenciaOperador } from "@/lib/d1-db/calcular-aderencia";
 
 import {
@@ -47,7 +46,7 @@ export function OperadorAnaliticoDialog({
 
   const resumo = [
     { label: "Tempo Logado", valor: operador.tempoLogado || "—" },
-    { label: "% Indisponibilidade", valor: fmtPct(operador.indisponibilidade) },
+    { label: "Indisponibilidade", valor: fmtPct(operador.indisponibilidade) },
     { label: "Hora Login", valor: formatLogin(operador.horaLogin) },
     { label: "Hora Logout", valor: formatLogout(operador.statusTL, operador.horaLogout) },
   ];
@@ -124,16 +123,17 @@ export function OperadorAnaliticoDialog({
           do que é capturado. A imagem sai igual ao modal na tela, no tema
           ATUAL da sessão (claro ou escuro) — não mais um template forçado em
           tema claro fixo. Mesmo padrão de OperadorDetalheDialog
-          (/reports/consolidado). `data-tempo-indisp-png` é o gancho já usado
-          por reports-tempo-indisp.css pra clarear levemente os tons internos
-          da imagem exportada no tema claro (ver comentário lá).
+          (/reports/consolidado). Sem `data-tempo-indisp-png` aqui: esse
+          atributo é exclusivo do clone oculto da tabela principal e, no
+          tema claro, clareia seus tokens para a captura. Aplicá-lo ao modal
+          visível criava uma segunda camada quase branca dentro do fundo do
+          tema.
         */}
         <div
           ref={pngRef}
-          data-tempo-indisp-png
           style={{ backgroundColor: "var(--background)" }}
         >
-          <DialogHeader className="border-b border-dashed border-border/60 pb-3 space-y-1.5">
+          <DialogHeader className="pb-3 space-y-1.5">
             <DialogTitle className="ds-h3 text-foreground font-semibold tracking-tight text-xl">
               {nomeExibido}
             </DialogTitle>
@@ -143,14 +143,11 @@ export function OperadorAnaliticoDialog({
             {/* ── Resumo ─────────────────────────────────────────── */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {resumo.map((c) => (
-                // Mesma caixa neutra dos cards de número já padronizada em
-                // OperadorDetalheDialog (/reports/consolidado): border-border
-                // + bg-card/70 + shadow-[var(--shadow-sm)] + backdrop-blur-md,
-                // sem cantoneiras — StyledCard fica só pro container das
-                // tabelas abaixo.
+                // Mesmo padrão do OperadorDetalheDialog do Consolidado:
+                // sem borda/fundo, apenas o espaçamento interno do texto.
                 <div
                   key={c.label}
-                  className="flex flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-3.5 shadow-[var(--shadow-sm)] backdrop-blur-md"
+                  className="flex flex-col justify-center gap-1 px-4 py-3.5"
                 >
                   <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
                     {c.label}
@@ -165,7 +162,7 @@ export function OperadorAnaliticoDialog({
             {/* ── Aderência (real x programado) ─────────────────────── */}
             <div className="space-y-2">
               <h3 className="ds-h3 font-semibold text-foreground">Aderência</h3>
-              <StyledCard className="p-0 overflow-hidden" withGradient>
+              <div className="overflow-hidden">
                 {aderencia.forecast === null ? (
                   <p className="ds-small text-muted-foreground p-6 text-center">
                     Horários programados não cadastrados para este operador.
@@ -219,7 +216,7 @@ export function OperadorAnaliticoDialog({
                     </table>
                   </div>
                 )}
-              </StyledCard>
+              </div>
             </div>
 
             {/* ── Pausas detalhadas (d1_indisponibilidade) ──────────── */}
@@ -232,7 +229,7 @@ export function OperadorAnaliticoDialog({
               return (
                 <div className="space-y-2">
                   <h3 className="ds-h3 font-semibold text-foreground">Pausas Detalhadas</h3>
-                  <StyledCard className="p-0 overflow-hidden" withGradient>
+                  <div className="overflow-hidden">
                     {pausasComDados.length === 0 ? (
                       <p className="ds-small text-muted-foreground p-6 text-center">
                         Nenhuma pausa registrada para este operador.
@@ -267,7 +264,7 @@ export function OperadorAnaliticoDialog({
                         </table>
                       </div>
                     )}
-                  </StyledCard>
+                  </div>
                 </div>
               );
             })()}

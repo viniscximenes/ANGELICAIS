@@ -2,7 +2,6 @@
 
 import { IconClock } from "@tabler/icons-react";
 
-import { StyledCard } from "@/components/gestor/styled-card";
 import {
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
@@ -138,9 +137,8 @@ export function PausasDetalhadasAnalitico({ operadores }: Props) {
         </p>
       </div>
 
-      {/* Sem TABELA_CONTAINER_CLASS dentro do StyledCard — ver comentário em aderencia-analitico.tsx. */}
-      <StyledCard className="p-3" withGradient>
-        <div className="overflow-hidden">
+      {/* Sem container visual — mesmo padrão atual das tabelas analíticas do Consolidado. */}
+      <div className="overflow-hidden">
           {/*
             overflow-x-auto: rede de segurança pra quando o card é mais
             estreito que a soma dos pisos — mesma técnica de
@@ -193,11 +191,9 @@ export function PausasDetalhadasAnalitico({ operadores }: Props) {
                     }}
                   >
                     {/*
-                      Fundo opaco var(--card) — mesma cor de base que o
-                      StyledCard usa pro card (o gradiente de withGradient é
-                      um detalhe sutil por cima disso), o bastante pra
-                      cobrir o conteúdo das colunas que passam por baixo ao
-                      rolar. Sem zebra (fundo uniforme) — mesmo padrão da
+                      Fundo opaco var(--card), o bastante pra cobrir o
+                      conteúdo das colunas que passam por baixo ao rolar.
+                      Sem zebra (fundo uniforme) — mesmo padrão da
                       tabela de operadores quando não há estado semântico
                       (aqui nunca há, de propósito). whitespace-nowrap
                       (herdado de TABELA_NOME_CELL_CLASS) + piso calculado
@@ -245,8 +241,7 @@ export function PausasDetalhadasAnalitico({ operadores }: Props) {
               })}
             </div>
           </div>
-        </div>
-      </StyledCard>
+      </div>
     </div>
   );
 }

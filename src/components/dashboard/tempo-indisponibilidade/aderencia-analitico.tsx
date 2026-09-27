@@ -2,7 +2,6 @@
 
 import { IconClockCheck } from "@tabler/icons-react";
 
-import { StyledCard } from "@/components/gestor/styled-card";
 import {
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
@@ -103,7 +102,7 @@ const STICKY_HEADER_BG = "color-mix(in oklch, var(--muted) 40%, var(--card))";
  * que também não usam fonte monoespaçada no cabeçalho.
  */
 const HEADER_ROW_CLASS =
-  "ds-body grid gap-0 bg-muted/40 font-bold text-foreground tracking-wide uppercase";
+  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground/70";
 
 const GRID_COLS = [
   `minmax(${PISO_OPERADOR_PX}px, 1.6fr)`,
@@ -120,9 +119,8 @@ interface Props {
 }
 
 /**
- * Card "Aderência" — mesma apresentação visual do card "Evolução de Taxa e
- * Pedidos da Equipe" do consolidado (StyledCard com cantoneiras, título com
- * ícone + texto de observação abaixo), mas com uma tabela (não gráfico):
+ * Bloco "Aderência" — título com ícone e texto de observação, seguido da
+ * tabela sem container visual, como os blocos analíticos do Consolidado:
  * uma linha por operador, comparando horário previsto x real de Login e das
  * 3 pausas que já entram na aderência do dialog hoje (calcularAderenciaOperador,
  * de @/lib/d1-db/calcular-aderencia — REAPROVEITADA aqui, chamada uma vez
@@ -172,22 +170,12 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
         </div>
       </div>
 
-      {/*
-        SEM TABELA_CONTAINER_CLASS (rounded-xl + border + elevation-1) por
-        dentro do StyledCard — mesmo ajuste do container principal (ver
-        tempo-indisp-tabela.tsx): o StyledCard (rounded-none, cantoneiras)
-        já fornece o chrome do card; duplicar um wrapper arredondado aqui
-        dentro criava a mesma "caixa extra" reportada na tabela principal,
-        só que dentro de cada card do Analítico. TabelaTemas/DistribuicaoQuartis
-        (consolidado) também não têm esse wrapper extra — a tabela fica
-        direto dentro do StyledCard.
-      */}
-      <StyledCard className="p-3" withGradient>
-        <div className="overflow-hidden">
+      {/* Sem container visual — mesmo padrão atual das tabelas analíticas do Consolidado. */}
+      <div className="overflow-hidden">
           {/*
             overflow-x-auto: rede de segurança horizontal (mesmo padrão de
-            PausasDetalhadasAnalitico/TabelaTemas) — INDEPENDENTE do
-            overflow-y-auto acima, que é do StyledCard pai, não deste div.
+            PausasDetalhadasAnalitico/TabelaTemas). Sem container visual,
+            este wrapper cuida apenas da rolagem horizontal.
             Sem data-lenis-prevent: o consolidado (TabelaTemas,
             DistribuicaoQuartis) também não usa esse atributo em nenhuma das
             tabelas roláveis que já convivem com o trilho GSAP hoje — não
@@ -285,8 +273,7 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
               })}
             </div>
           </div>
-        </div>
-      </StyledCard>
+      </div>
     </div>
   );
 }
