@@ -312,9 +312,9 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
       // usado pelas outras tabelas do mesmo padrão — Tempo Logado/
       // Indisponibilidade/TMA — continua intocado em tabela-padrao.tsx). Este
       // componente (EquipeTable) só é consumido por /reports/consolidado,
-      // sempre dentro de um StyledCard que JÁ fornece borda + padding + fundo
-      // — usar TABELA_CONTAINER_CLASS aqui duplicava esse chrome (2 bordas/2
-      // raios aninhados, um quadrado dentro do outro). `data-equipe-table`
+      // dentro do KpiFrame da rota, que fornece padding e cantoneiras sem
+      // criar um container com fundo/borda/raio — usar
+      // TABELA_CONTAINER_CLASS aqui recriaria esse container. `data-equipe-table`
       // preservado (gancho do seletor global em globals.css pro fundo/borda
       // do cabeçalho no tema claro — não depende da borda externa removida).
       <div ref={ref} data-equipe-table className="overflow-hidden">
@@ -429,7 +429,7 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               }
               role={clicavel ? "button" : undefined}
               tabIndex={clicavel ? 0 : undefined}
-              title={clicavel ? "Ver detalhamento individual de atendimentos" : undefined}
+              data-sem-dados={semAtendimentos ? "true" : undefined}
               className={cn(
                 TABELA_LINHA_HOVER_CLASS,
                 "group border-l-2 border-l-transparent transition-[background-color,border-color,transform] duration-200 ease-out",
@@ -558,7 +558,9 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               gridTemplateColumns,
             }}
           >
-            <div className="min-w-0 truncate px-3 py-2.5 text-center border-r border-border/40 text-foreground tracking-wide">
+            <div
+              className="min-w-0 truncate px-3 py-2.5 text-center border-r border-border/40 text-foreground tracking-wide"
+            >
               EQUIPE
             </div>
             <div

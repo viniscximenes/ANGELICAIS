@@ -80,6 +80,12 @@
   --switch-on: #D1CFC0;
   --switch-knob: #141414;
   --switch-knob-off: #8E8A83;
+
+  /* Folhas do Folder (React Bits) no tema escuro: três cinzas quentes e
+     progressivos para separar as camadas sem sair da paleta Zen Linen. */
+  --upload-folder-paper-1: #4B4B48;
+  --upload-folder-paper-2: #73716C;
+  --upload-folder-paper-3: #A8A49C;
 }
 
 /* ───────── CLARO ← :root do tema ───────── */
@@ -144,6 +150,12 @@
   --switch-on: #2E2E2E;
   --switch-knob: #F4EFE4;
   --switch-knob-off: #F4EFE4;
+
+  /* Folhas do Folder (React Bits) no card de anexo: tons de linho mais
+     escuros no tema claro, com contraste entre as três camadas. */
+  --upload-folder-paper-1: #817B70;
+  --upload-folder-paper-2: #A89F8F;
+  --upload-folder-paper-3: #CFC8B8;
 }
 
 /* ───────── Ponte para as utilities do Tailwind (vale nos dois temas) ───────── */
@@ -189,10 +201,35 @@
   letter-spacing: var(--letter-spacing);
 }
 
-/* ───────── Barra de rolagem (padrão das páginas migradas) ───────── */
+/* ───────── Barra de rolagem (fina, no tema da página) ─────────
+ * Antes: 10px/quadrada, visual "de sistema" destoando do resto do site.
+ * Ajustada pro mesmo padrão discreto de `.scrollbar-tema` (globals.css):
+ * mais fina, trilho invisível, thumb translúcido com respiro (border
+ * "recortando" o thumb via background-clip).
+ *
+ * Duas partes:
+ * 1) [data-page="reports-consolidado"] ::-webkit-scrollbar — estiliza as
+ *    barras de CONTAINERS internos com overflow (tabelas, trilho, popovers),
+ *    que são descendentes do próprio elemento com o atributo.
+ * 2) html/body :has([data-page="reports-consolidado"]) — a barra VERTICAL da
+ *    PÁGINA em si é do <html>/<body>, que são ANCESTRAIS do elemento
+ *    marcado, não descendentes — a regra acima nunca alcança essa barra, por
+ *    isso ela continuava com a cor do tema global (dark/light padrão do
+ *    site) em vez do Zen Linen desta rota. `:has()` resolve isso sem
+ *    precisar tocar no layout compartilhado. Cores hardcoded (não dá pra
+ *    usar var(--border) aqui: a custom property só existe dentro do
+ *    elemento com o atributo, e html/body ficam FORA dele) — mesmos valores
+ *    de --border/--muted-foreground definidos acima (dark: linhas 24-40,
+ *    light: linhas 92-109).
+ */
+[data-page="reports-consolidado"] {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--border) transparent;
+}
+
 [data-page="reports-consolidado"] ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 [data-page="reports-consolidado"] ::-webkit-scrollbar-track {
   background: transparent;
@@ -200,9 +237,129 @@
 [data-page="reports-consolidado"] ::-webkit-scrollbar-thumb {
   background-color: var(--border);
   border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 [data-page="reports-consolidado"] ::-webkit-scrollbar-thumb:hover {
   background-color: var(--muted-foreground);
+  background-clip: padding-box;
+}
+[data-page="reports-consolidado"] ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+html:has([data-page="reports-consolidado"]),
+body:has([data-page="reports-consolidado"]) {
+  scrollbar-width: thin;
+  scrollbar-color: #2C2C2C transparent;
+}
+[data-theme="light"]:has([data-page="reports-consolidado"]),
+[data-theme="light"] body:has([data-page="reports-consolidado"]) {
+  scrollbar-color: #D2CBBB transparent;
+}
+
+html:has([data-page="reports-consolidado"])::-webkit-scrollbar,
+body:has([data-page="reports-consolidado"])::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html:has([data-page="reports-consolidado"])::-webkit-scrollbar-track,
+body:has([data-page="reports-consolidado"])::-webkit-scrollbar-track {
+  background: transparent;
+}
+html:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb,
+body:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb {
+  background-color: #2C2C2C;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+[data-theme="light"]:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb,
+[data-theme="light"] body:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb {
+  background-color: #D2CBBB;
+}
+html:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb:hover,
+body:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb:hover {
+  background-color: #8E8A83;
+  background-clip: padding-box;
+}
+[data-theme="light"]:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb:hover,
+[data-theme="light"] body:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb:hover {
+  background-color: #5E5A52;
+}
+html:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner,
+body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ───────── Spinner de loading (Uiverse.io by abrahamcalsin, "dot-spinner") ─────────
+ * https://uiverse.io/abrahamcalsin/serious-turkey-52 — substitui o círculo
+ * genérico (border-spin) + texto "Carregando Consolidado..." nas telas de
+ * loading desta rota (Suspense inicial e overlay de refresh manual).
+ * ÚNICA adaptação ao original: --uib-color deixou de ser um hex fixo
+ * (#183153) e passou a ler var(--foreground) — acompanha o tema Zen Linen
+ * desta página (claro/escuro) automaticamente, igual ao spinner antigo.
+ * --uib-size ajustado (pedido explícito de aumentar) — 3rem.
+ */
+[data-page="reports-consolidado"] .dot-spinner {
+  --uib-size: 3rem;
+  --uib-speed: .9s;
+  --uib-color: var(--foreground);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: var(--uib-size);
+  width: var(--uib-size);
+}
+
+[data-page="reports-consolidado"] .dot-spinner__dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  width: 100%;
+}
+
+[data-page="reports-consolidado"] .dot-spinner__dot::before {
+  content: '';
+  height: 20%;
+  width: 20%;
+  border-radius: 50%;
+  background-color: var(--uib-color);
+  transform: scale(0);
+  opacity: 0.5;
+  animation: reports-consolidado-dot-pulse calc(var(--uib-speed) * 1.111) ease-in-out infinite;
+  box-shadow: 0 0 20px color-mix(in srgb, var(--foreground) 30%, transparent);
+}
+
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(2) { transform: rotate(45deg); }
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(2)::before { animation-delay: calc(var(--uib-speed) * -0.875); }
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(3) { transform: rotate(90deg); }
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(3)::before { animation-delay: calc(var(--uib-speed) * -0.75); }
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(4) { transform: rotate(135deg); }
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(4)::before { animation-delay: calc(var(--uib-speed) * -0.625); }
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(5) { transform: rotate(180deg); }
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(5)::before { animation-delay: calc(var(--uib-speed) * -0.5); }
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(6) { transform: rotate(225deg); }
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(6)::before { animation-delay: calc(var(--uib-speed) * -0.375); }
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(7) { transform: rotate(270deg); }
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(7)::before { animation-delay: calc(var(--uib-speed) * -0.25); }
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(8) { transform: rotate(315deg); }
+[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(8)::before { animation-delay: calc(var(--uib-speed) * -0.125); }
+
+@keyframes reports-consolidado-dot-pulse {
+  0%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* ───────── Toasts desta página (sonner) ─────────
@@ -348,12 +505,59 @@
  * com leve tom de --danger por cima do bege, em vez do bege neutro das
  * linhas boas — perceptível e coerente com o vermelho de fundo que já têm
  * em repouso (fundoLinhaRuim, tabela-padrao.tsx).
+ *
+ * `:not([data-sem-dados="true"])` em TODAS as regras abaixo: operador sem
+ * nenhum atendimento no dia (pedidos=0 ou txRetencao null — mesmo critério
+ * de opacidade da linha, ver `data-sem-dados` em equipe-table.tsx) não é
+ * clicável e não deve reagir a hover NENHUM, nos dois temas — sem isso,
+ * essa regra (com !important, criada pra vencer a regra global de
+ * globals.css) também vencia o `hover:bg-transparent` que a própria linha
+ * já usa pra ficar neutra, pintando ela por engano.
  */
-[data-theme="light"] [data-page="reports-consolidado"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover {
+[data-theme="light"] [data-page="reports-consolidado"] [data-equipe-table] > div:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
   background-color: var(--muted) !important;
 }
-[data-theme="light"] [data-page="reports-consolidado"] [data-equipe-table] > div.hover\:border-l-\[var\(--danger\)\]:hover {
+[data-theme="light"] [data-page="reports-consolidado"] [data-equipe-table] > div.hover\:border-l-\[var\(--danger\)\]:not([data-sem-dados="true"]):hover {
   background-color: color-mix(in srgb, var(--danger) 16%, var(--muted) 84%) !important;
+}
+
+/* ───────── Hover das linhas "ruins" (tema escuro) ─────────
+ * No escuro, linhas abaixo da meta já têm um fundo vermelho PERMANENTE
+ * (fundoLinhaRuim, inline style — sempre vence qualquer classe Tailwind de
+ * hover, incluindo o hover:bg-accent herdado da linha base). Resultado:
+ * passar o mouse não mudava NENHUMA cor nessas linhas, só a borda esquerda
+ * + o leve translateX (hoverClass) — diferente das linhas boas, que
+ * clareiam via hover:bg-accent normalmente. Regra abaixo dá o MESMO
+ * feedback de cor no hover, por cima do vermelho de repouso (mistura mais
+ * --danger, escurecendo/intensificando em vez de clarear — clarear com
+ * branco pareceria "rosa", destoante da paleta escura). SEM
+ * `[data-theme="light"]` de propósito: mas a regra do claro (acima) é MAIS
+ * específica (um seletor de atributo a mais), então continua vencendo lá —
+ * esta só passa a valer de fato no escuro.
+ */
+[data-page="reports-consolidado"] [data-equipe-table] > div.hover\:border-l-\[var\(--danger\)\]:not([data-sem-dados="true"]):hover {
+  background-color: color-mix(in oklch, var(--danger) 14%, transparent) !important;
+}
+
+/* ───────── "Título" superior e inferior da EquipeTable (tema claro) ─────────
+ * Pedido explícito: só no tema claro, deixar a cor do texto do cabeçalho
+ * (Operador/Retidos/Cancelados/Pedidos/Tx Retenção — linha :first-child) e
+ * do rótulo "EQUIPE" (linha de totais, :last-child) mais bege/suave — em vez
+ * do --foreground quase preto (#1E1E1E) — igual ao tom já usado pra texto
+ * secundário no resto do site (--muted-foreground, #5E5A52). Confirmado
+ * funcionando NA TELA. A imagem exportada pelo "Copiar imagem" recebe um
+ * reforço adicional no momento da captura (setProperty com !important
+ * direto no elemento, antes de chamar capturarComoPng) — ver handleCopy em
+ * copy-table-button.tsx — porque essa regra sozinha não bastava pra imagem
+ * (a lib de captura nem sempre honra a cascata externa da mesma forma que o
+ * navegador ao pintar a tela). Tema escuro inalterado (fora do seletor
+ * [data-theme="light"]).
+ */
+[data-theme="light"] [data-page="reports-consolidado"] [data-equipe-table] > div:first-child {
+  color: var(--muted-foreground) !important;
+}
+[data-theme="light"] [data-page="reports-consolidado"] [data-equipe-table] > div:last-child > div:first-child {
+  color: var(--muted-foreground) !important;
 }
 
 /* ───────── Dropzone "Anexar Base" (Problema 2, 6ª rodada) ─────────
@@ -422,140 +626,28 @@
  * cor de fundo. Tema ESCURO não é afetado (seletor dentro de
  * [data-theme="light"]).
  */
-[data-theme="light"] [data-page="reports-consolidado"] [data-tabela-png] {
-  --background: color-mix(in srgb, var(--background) 88%, white 12%);
-  --card: color-mix(in srgb, var(--card) 90%, white 10%);
-  --muted: color-mix(in srgb, var(--muted) 85%, white 15%);
-}
-
-/* ───────── Dropzone "Anexar Base" — ícone único animado (22ª rodada) ─────────
- * Substitui os dois blocos de texto permanentes ("Arraste o arquivo CSV...",
- * "Apenas arquivos .csv · limite de 10.000 linhas") por um único ícone
- * (IconFileSpreadsheet), sem texto visível fixo. A informação continua
- * acessível via aria-label completo no elemento clicável (nome acessível
- * pra leitor de tela) e via Tooltip (Radix, componente compartilhado — ver
- * upload-dropzone.tsx) ao hover/focus. Mensagens de erro reais continuam
- * aparecendo como texto (.status-danger, inalterado).
- *
- * Composição: anel de fundo sutil (.upload-dropzone-ring…, cor --primary em
- * baixa opacidade) atrás do glifo, com profundidade via drop-shadow leve.
- * Repouso: flutuação vertical mínima (2px) + pulsação leve de opacidade no
- * anel — só pra sinalizar "isso é interativo", sem chamar atenção.
- * Hover: glifo escala e muda pra --primary, sombra mais proeminente.
- * Drag-active (arrastando um arquivo por cima, useDropzone.isDragActive):
- * reação mais forte — anel pulsa mais rápido/expande mais, glifo escala mais
- * e "salta" com uma pequena translação vertical (reforça "solte aqui").
- * Drag-reject: navegadores só expõem o tipo do arquivo de forma confiável no
- * evento `drop`, não durante o dragenter/dragover — então isDragReject do
- * react-dropzone raramente dispara ANTES do drop em produção (limitação de
- * plataforma, não deste componente). Quando o browser expõe o tipo cedo o
- * suficiente, a borda/glifo reagem em --danger; do contrário, o usuário só
- * vê a reação neutra de "convite" (estado active) até soltar, e a validação
- * real (extensão, linhas, parse) acontece no drop, com erro em texto visível
- * como já acontecia antes desta rodada.
- * Processando: ícone trocado por spinner (Tabler IconLoader2, já usado no
- * projeto) com opacidade reduzida — mesma lógica de disabled/opacity de
- * sempre (useDropzone({ disabled })).
+/*
+ * BUG encontrado (causa real do "sai tudo branco" na imagem exportada, só
+ * no tema claro): as 3 linhas abaixo redefiniam `--background`/`--card`/
+ * `--muted` referenciando `var(--background)`/`var(--card)`/`var(--muted)`
+ * — MAS como é a MESMA custom property sendo redefinida NO MESMO seletor,
+ * isso é uma referência CIRCULAR (o `var()` não enxerga o valor herdado do
+ * ancestral, aponta pra si mesma). Por spec, uma custom property circular
+ * vira "guaranteed-invalid" — `getComputedStyle(...).getPropertyValue
+ * ("--background")` retornava STRING VAZIA neste elemento específico
+ * (confirmado). `resolverTokenCss` (capturar-como-png.ts), ao ler
+ * --background pra pintar o fundo/margem do PNG exportado, caía no
+ * fallback hardcoded da função (`#ffffff`) — daí o fundo sair branco só no
+ * tema claro (o escuro nunca teve essa regra). Corrigido usando os HEX
+ * literais do tema claro (--background/--card/--muted, definidos acima em
+ * [data-theme="light"] [data-page="reports-consolidado"], linhas 93/95/103)
+ * em vez de var() auto-referenciado — mesmo resultado visual (10-15% de
+ * branco misturado), sem o ciclo.
  */
-.upload-dropzone-ring-reports-consolidado {
-  background: color-mix(in oklch, var(--primary) 14%, transparent);
-  opacity: 0.55;
-  transform: scale(0.86);
-  animation: upload-dz-ring-idle-reports-consolidado 3.2s ease-in-out infinite;
-}
-
-.upload-dropzone-glyph-reports-consolidado {
-  color: var(--muted-foreground);
-  filter: drop-shadow(0 1px 2px color-mix(in oklch, var(--foreground) 18%, transparent));
-  transition: color 0.25s ease, transform 0.25s ease, filter 0.25s ease;
-  animation: upload-dz-float-idle-reports-consolidado 3.6s ease-in-out infinite;
-}
-
-/* Hover (mouse real — cobre também o :hover nativo, além do estado React
-   isHovering usado só pro background) */
-.upload-dropzone-root-reports-consolidado:hover .upload-dropzone-glyph-reports-consolidado {
-  color: var(--primary);
-  transform: scale(1.08);
-  filter: drop-shadow(0 3px 6px color-mix(in oklch, var(--primary) 30%, transparent));
-}
-.upload-dropzone-root-reports-consolidado:hover .upload-dropzone-ring-reports-consolidado {
-  opacity: 0.8;
-}
-
-/* Foco por teclado — mesmo reforço visual do hover, já que o anel de foco
-   (--ring) é aplicado no elemento raiz via focus-visible:ring-2 no JSX */
-.upload-dropzone-root-reports-consolidado:focus-visible .upload-dropzone-glyph-reports-consolidado {
-  color: var(--primary);
-  transform: scale(1.08);
-}
-
-/* Drag-active: reação mais forte que o hover comum */
-.upload-dropzone-root-reports-consolidado[data-dropzone-state="active"] .upload-dropzone-glyph-reports-consolidado {
-  color: var(--primary);
-  animation: upload-dz-drop-invite-reports-consolidado 0.9s ease-in-out infinite;
-  filter: drop-shadow(0 4px 10px color-mix(in oklch, var(--primary) 40%, transparent));
-}
-.upload-dropzone-root-reports-consolidado[data-dropzone-state="active"] .upload-dropzone-ring-reports-consolidado {
-  animation: upload-dz-ring-active-reports-consolidado 1.1s ease-in-out infinite;
-}
-
-/* Drag-reject (quando o browser expõe o tipo inválido cedo o bastante) */
-.upload-dropzone-root-reports-consolidado[data-dropzone-state="reject"] .upload-dropzone-glyph-reports-consolidado {
-  color: var(--danger);
-  animation: none;
-  transform: scale(1.02);
-}
-.upload-dropzone-root-reports-consolidado[data-dropzone-state="reject"] .upload-dropzone-ring-reports-consolidado {
-  background: color-mix(in oklch, var(--danger) 18%, transparent);
-  animation: none;
-  opacity: 0.7;
-}
-
-/* Processando/desabilitado: para toda animação, ícone/spinner com opacidade
-   reduzida (o container já aplica opacity: 0.5 via style inline) */
-.upload-dropzone-root-reports-consolidado[data-dropzone-state="processing"] .upload-dropzone-glyph-reports-consolidado,
-.upload-dropzone-root-reports-consolidado[data-dropzone-state="processing"] .upload-dropzone-ring-reports-consolidado {
-  animation: none;
-}
-
-/* Dica de texto exclusiva de touch (sm:hidden no JSX já esconde em telas
-   maiores com espaço pra hover/tooltip funcionar bem) */
-.upload-dropzone-touch-hint-reports-consolidado {
-  opacity: 0.85;
-}
-
-@keyframes upload-dz-float-idle-reports-consolidado {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
-}
-
-@keyframes upload-dz-ring-idle-reports-consolidado {
-  0%, 100% { opacity: 0.45; transform: scale(0.86); }
-  50% { opacity: 0.65; transform: scale(0.94); }
-}
-
-@keyframes upload-dz-ring-active-reports-consolidado {
-  0%, 100% { opacity: 0.55; transform: scale(0.95); }
-  50% { opacity: 0.95; transform: scale(1.15); }
-}
-
-@keyframes upload-dz-drop-invite-reports-consolidado {
-  0%, 100% { transform: translateY(0) scale(1.1); }
-  50% { transform: translateY(3px) scale(1.16); }
-}
-
-/* prefers-reduced-motion: remove todas as animações novas — mesmo padrão já
-   usado no UploadProgressModal (21ª rodada) */
-@media (prefers-reduced-motion: reduce) {
-  .upload-dropzone-glyph-reports-consolidado,
-  .upload-dropzone-ring-reports-consolidado,
-  .upload-dropzone-root-reports-consolidado[data-dropzone-state="active"] .upload-dropzone-glyph-reports-consolidado,
-  .upload-dropzone-root-reports-consolidado[data-dropzone-state="active"] .upload-dropzone-ring-reports-consolidado {
-    animation: none !important;
-  }
-  .upload-dropzone-root-reports-consolidado:hover .upload-dropzone-glyph-reports-consolidado {
-    transform: none;
-  }
+[data-theme="light"] [data-page="reports-consolidado"] [data-tabela-png] {
+  --background: color-mix(in srgb, #E9E4D8 88%, white 12%);
+  --card: color-mix(in srgb, #F4EFE4 90%, white 10%);
+  --muted: color-mix(in srgb, #CFC8B8 85%, white 15%);
 }
 
 /* ───────── Modal de upload (UploadProgressModal) — variant="reports-consolidado" ─────────

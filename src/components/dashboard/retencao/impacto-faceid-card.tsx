@@ -2,7 +2,6 @@
 
 import { BlurFade } from "@/components/ui/blur-fade";
 import { NumberTicker } from "@/components/ui/number-ticker";
-import { StyledCard } from "@/components/gestor/styled-card";
 import type { ImpactoFaceIdData } from "@/lib/retencao/get-impacto-faceid";
 
 interface ImpactoFaceIdCardProps {
@@ -73,13 +72,12 @@ export function ImpactoFaceIdCard({ data, scrollInterno = false }: ImpactoFaceId
 
       {/*
         Tabela de operadores — mesmo padrão visual/dimensionamento de
-        tabela-temas.tsx: StyledCard sem padding próprio, overflow-y-auto
-        quando scrollInterno (dentro do trilho), fit-content fora dele.
+        tabela-temas.tsx, sem container próprio (StyledCard removido a
+        pedido), overflow-y-auto quando scrollInterno (dentro do trilho),
+        fit-content fora dele.
       */}
-      <StyledCard
-        className={scrollInterno ? "min-h-0 flex-1 overflow-y-auto p-0 scrollbar-tema" : "p-0 overflow-hidden scrollbar-tema"}
-        withGradient
-        corners="all"
+      <div
+        className={scrollInterno ? "min-h-0 flex-1 overflow-y-auto scrollbar-tema" : "overflow-hidden scrollbar-tema"}
       >
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -150,7 +148,7 @@ export function ImpactoFaceIdCard({ data, scrollInterno = false }: ImpactoFaceId
             )}
           </table>
         </div>
-      </StyledCard>
+      </div>
     </div>
   );
 }

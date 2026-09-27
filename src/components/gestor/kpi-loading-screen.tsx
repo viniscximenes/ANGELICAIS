@@ -15,6 +15,8 @@
  * cima, sem blur.
  */
 
+import { DotSpinner } from "@/components/gestor/dot-spinner";
+
 interface KpiLoadingScreenProps {
   /**
    * Mesmo valor usado no wrapper da página real (data-page="kpi-operadores"/
@@ -77,6 +79,18 @@ interface KpiLoadingScreenProps {
    * sem inseri-lo no fluxo e sem deslocar o skeleton.
    */
   indicatorPosition?: "center" | "after-header";
+  /**
+   * "ring" (padrão, preserva todas as rotas existentes): círculo genérico
+   * (border animate-spin) + texto "Carregando {titulo}...".
+   * "dots": spinner Uiverse.io by abrahamcalsin ("dot-spinner", ver
+   * dot-spinner.tsx) + SEM texto visível (só sr-only) — usado pelo overlay
+   * de refresh manual de /reports/consolidado (handleBaseCleared em
+   * gestor-equipe-section.tsx), mesmo ícone do loading.tsx daquela rota.
+   * Depende da regra CSS `.dot-spinner*` de reports-consolidado.css
+   * (escopada a [data-page="reports-consolidado"]) — só usar com
+   * dataPage="reports-consolidado".
+   */
+  spinnerVariant?: "ring" | "dots";
 }
 
 type LoadingFormato = KpiLoadingScreenProps["formato"];
@@ -259,6 +273,12 @@ function SkeletonEquipe() {
 /**
  * /reports/consolidado: tabela e anexo lado a lado; abaixo, o primeiro
  * slide do Analítico com o card principal, três secundários e o gráfico.
+ *
+ * Os 4 cards de resumo (card principal + 3 secundários) mantêm borda/fundo
+ * — mesma caixa neutra de VisaoGeralCards, que não foi alterada. O gráfico
+ * de evolução, por outro lado, NÃO tem mais container próprio (StyledCard
+ * removido a pedido) — o esqueleto reflete isso: sem borda, só uma forma
+ * (`bg-card/60`) sugerindo a área do gráfico, do MESMO tamanho/posição.
  */
 function SkeletonConsolidado() {
   return (
@@ -287,7 +307,7 @@ function SkeletonConsolidado() {
             ))}
           </div>
         </div>
-        <div className="h-[420px] rounded-lg border border-border bg-card lg:h-[600px]" />
+        <div className="h-[420px] rounded-lg bg-card/60 lg:h-[600px]" />
       </div>
     </div>
   );
@@ -386,6 +406,7 @@ export function KpiLoadingScreen({
   maxWidthClassName = "max-w-7xl",
   showActionsRow = true,
   indicatorPosition = "center",
+  spinnerVariant = "ring",
 }: KpiLoadingScreenProps) {
   return (
     <div
@@ -451,11 +472,17 @@ export function KpiLoadingScreen({
             : "pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3"
         }
       >
-        <span
-          aria-hidden="true"
-          className="size-8 animate-spin rounded-full border-2 border-border border-t-foreground motion-reduce:animate-none"
-        />
-        <p className="ds-small text-muted-foreground">Carregando {titulo}...</p>
+        {spinnerVariant === "dots" ? (
+          <DotSpinner />
+        ) : (
+          <>
+            <span
+              aria-hidden="true"
+              className="size-8 animate-spin rounded-full border-2 border-border border-t-foreground motion-reduce:animate-none"
+            />
+            <p className="ds-small text-muted-foreground">Carregando {titulo}...</p>
+          </>
+        )}
         <span className="sr-only">Carregando {titulo}, aguarde.</span>
       </div>
     </div>

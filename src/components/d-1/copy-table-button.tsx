@@ -30,13 +30,29 @@ function formatReportHtml(
   // o Teams nunca remove). O report é um <div> (bloco) com <i> dentro: o div
   // garante a quebra de linha e o <i> o itálico. A <img> fica em bloco com
   // display:block (+ <br> de reforço) para não fluir ao lado do texto.
+  // Cor do texto FIXA (#1E1E1E, não var(--foreground)/herdada): este HTML é
+  // colado fora do site (Teams/Slack/email), sempre em fundo claro — sem
+  // cor própria, os dois textos (título "D-1 CONSOLIDADO" e a linha "report
+  // às HH:MM") herdavam a cor do documento de ORIGEM (o container invisível
+  // de copyFormattedHtml é anexado ao <body> real da página, que reflete o
+  // tema GLOBAL do dashboard, tipicamente escuro → texto branco), saindo
+  // ilegíveis sobre o fundo branco do destino, mesmo com o tema de
+  // /reports/consolidado no claro. Cor fixa = sempre legível, os dois
+  // "títulos" (acima e abaixo), independente do tema ativo no momento da
+  // cópia.
+  // Cor repetida no <b>/<i> internos (não só no <h2>/<div> pai): alguns
+  // destinos de colar (ex.: Slack, Gmail) só respeitam a cor aplicada no
+  // elemento que carrega o texto de fato, ignorando a do ancestral — mesmo
+  // sendo herdável em CSS puro, o sanitizador de colagem desses apps às
+  // vezes reseta a cor herdada e só preserva a que está no MESMO nó do texto.
+  const TITULO_COR = "color: #1E1E1E;";
   const parts: string[] = [
-    `<h2 style="font-size: 16px; margin: 0;"><b>D-1 CONSOLIDADO</b></h2>`,
-    `<div style="margin-top: 4px;"><i>${formatReportTexto(hora)}</i></div>`,
+    `<h2 style="font-size: 16px; margin: 0; ${TITULO_COR}"><b style="${TITULO_COR}">D-1 CONSOLIDADO</b></h2>`,
+    `<div style="margin-top: 4px; ${TITULO_COR}"><i style="${TITULO_COR}">${formatReportTexto(hora)}</i></div>`,
     `<br>`,
     `<div style="margin-top: 8px;"><img src="${pngDataUrl}" style="display: block; max-width: 1000px; width: 100%;" alt="Tabela consolidado"></div>`,
   ];
-  return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">${parts.join("")}</div>`;
+  return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1E1E1E;">${parts.join("")}</div>`;
 }
 
 interface CopyTableButtonProps {
@@ -62,6 +78,16 @@ export function CopyTableButton({ equipe }: CopyTableButtonProps) {
 
     setState("copying");
 
+    // SEM tratamento especial por tema aqui de propósito (pedido explícito):
+    // tentativas anteriores de forçar cor só pro tema claro (via CSS e via
+    // JS na captura) não resolviam de forma confiável e só complicavam o
+    // fluxo. A captura agora é IDÊNTICA nos dois temas — reflete
+    // exatamente o que está na tela (via capturarComoPng/corDeFundoDoAlvo,
+    // que já lê --background/--foreground reais do tema ativo), igual
+    // sempre funcionou pro tema escuro. Se o resultado no claro sair com um
+    // contraste diferente do que se imaginava, é porque é fiel à tela real
+    // — ajustar o visual, se necessário, é responsabilidade do CSS da
+    // página (reports-consolidado.css), não de um caso especial aqui.
     try {
       // corDeFundoDoAlvo: true — mesma correção aditiva da 16ª rodada
       // (modal de detalhe do operador). Sem isso, a margem de ~28px ao
@@ -77,12 +103,10 @@ export function CopyTableButton({ equipe }: CopyTableButtonProps) {
 
       await copyFormattedHtml(html);
 
+      // Toast de sucesso removido a pedido — o próprio botão já vira
+      // "Copiado" (ícone + texto, ver estado "done" abaixo) por 2s, feedback
+      // suficiente sem o popup extra.
       setState("done");
-      toast.success("Tabela copiada", {
-        description: "Cole no Teams, Slack ou email (Ctrl+V)",
-        duration: 2500,
-        className: "reports-consolidado-toast",
-      });
 
       setTimeout(() => setState("idle"), 2000);
     } catch (err) {

@@ -1,6 +1,5 @@
 "use client";
 
-import { StyledCard } from "@/components/gestor/styled-card";
 import type { ArgumentoItem } from "@/lib/retencao/get-efetividade-argumento";
 
 interface EfetividadeArgumentoCardProps {
@@ -42,10 +41,8 @@ export function EfetividadeArgumentoCard({
         </p>
       </div>
 
-      <StyledCard
-        className={scrollInterno ? "max-h-full overflow-y-auto p-0" : "p-0 overflow-hidden"}
-        withGradient
-        corners="all"
+      <div
+        className={scrollInterno ? "max-h-full overflow-y-auto scrollbar-tema" : "overflow-hidden"}
       >
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -85,7 +82,7 @@ export function EfetividadeArgumentoCard({
             </tbody>
           </table>
         </div>
-      </StyledCard>
+      </div>
     </div>
   );
 }

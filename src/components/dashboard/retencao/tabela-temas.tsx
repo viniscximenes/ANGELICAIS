@@ -2,7 +2,6 @@
 
 import { useState, useMemo, Fragment } from "react";
 import { IconChevronRight } from "@tabler/icons-react";
-import { StyledCard } from "@/components/gestor/styled-card";
 import type { TemaData } from "@/lib/retencao/get-por-tema";
 
 interface TabelaTemasProps {
@@ -72,12 +71,11 @@ export function TabelaTemas({
         wrapper pai com h-full). Poucos temas → card baixo, sem sobra vazia.
         Muitos temas (até estourar o teto) → overflow-y-auto entra em ação.
         O espaço "sobrando" abaixo do card fica no wrapper pai (sem fundo
-        próprio), não dentro da borda do StyledCard.
+        próprio). Container visual (StyledCard) removido a pedido — sobra
+        só o wrapper de scroll/overflow, sem borda/fundo.
       */}
-      <StyledCard
-        className={scrollInterno ? "max-h-full overflow-y-auto p-0" : "p-0 overflow-hidden"}
-        withGradient
-        corners="all"
+      <div
+        className={scrollInterno ? "max-h-full overflow-y-auto scrollbar-tema" : "overflow-hidden"}
       >
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -194,7 +192,7 @@ export function TabelaTemas({
             </tbody>
           </table>
         </div>
-      </StyledCard>
+      </div>
     </div>
   );
 }

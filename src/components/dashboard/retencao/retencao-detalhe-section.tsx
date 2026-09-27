@@ -221,10 +221,9 @@ export function RetencaoDetalheSection({
   // Simplificado: removido o label "Detalhamento Analítico" e a repetição
   // de gestora/"report às HH:MM" — essa informação já aparece no
   // cabeçalho da EquipeTable logo acima ("Equipe - O supervisor [nome] fez
-  // um report às HH:MM"), repetir aqui era redundante. Mesma divisória
-  // tracejada (border-b border-dashed) já usada no header da página
-  // (page.tsx) e em outros títulos do site — reaproveitada, não é um
-  // estilo novo.
+  // um report às HH:MM"), repetir aqui era redundante. Divisória tracejada
+  // removida a pedido (linhas pontilhadas tiradas de toda a página
+  // reports/consolidado).
   // CAUSA do espaçamento sumindo só no estado "com dados": o gap ABAIXO da
   // divisória vinha do `space-y-6` do <section> pai — que só funciona
   // quando `cabecalho` é filho DIRETO dele (caminhos loading/error/vazio,
@@ -235,8 +234,10 @@ export function RetencaoDetalheSection({
   // `mb-6` agora mora no PRÓPRIO header, funcionando igual nos dois lugares
   // onde `cabecalho` é usado.
   const cabecalho = (
-    <header className="border-border border-b border-dashed pt-2 pb-4 mb-6">
-      <h2 className="ds-h2 font-bold">Analítico</h2>
+    <header className="pt-2 pb-4 mb-6">
+      <h2 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+        Analítico
+      </h2>
     </header>
   );
 

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { OperadorQuartilItem } from "@/lib/retencao/get-quartil-operadores";
-import { StyledCard } from "@/components/gestor/styled-card";
 
 interface DistribuicaoQuartisProps {
   operadores: OperadorQuartilItem[];
@@ -57,13 +56,11 @@ export function DistribuicaoQuartis({
         — dentro de um container de altura auto/capada, um filho flex-1
         simplesmente assume a altura do próprio conteúdo (não estica), e só
         passa a rolar quando o conjunto bate no teto do `max-h-full`. O
-        espaço "sobrando" fica no wrapper pai (sem fundo), não dentro do
-        StyledCard.
+        espaço "sobrando" fica no wrapper pai (sem fundo). Container visual
+        (StyledCard) removido a pedido.
       */}
-      <StyledCard
-        className={scrollInterno ? "flex max-h-full flex-col gap-4 p-5" : "p-5 space-y-4"}
-        withGradient
-        corners="all"
+      <div
+        className={scrollInterno ? "flex max-h-full flex-col gap-4" : "space-y-4"}
       >
         <div className={`flex flex-col xl:flex-row justify-between xl:items-center gap-4 border-b border-border/40 pb-4 ${scrollInterno ? "shrink-0" : ""}`}>
           <div className="flex flex-wrap items-center gap-3">
@@ -93,7 +90,7 @@ export function DistribuicaoQuartis({
                     className={`h-8 rounded-[calc(var(--radius)-2px)] px-3 text-xs font-bold capitalize outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)] ${
                       isActive
                         ? "bg-[var(--seg-thumb)] text-[var(--seg-text-active)] border border-[var(--seg-thumb-border)]"
-                        : "text-[var(--seg-text)] hover:text-[var(--seg-text-active)]"
+                        : "text-[var(--seg-text)] hover:text-foreground"
                     }`}
                   >
                     {mode}
@@ -119,7 +116,7 @@ export function DistribuicaoQuartis({
                     className={`h-8 rounded-[calc(var(--radius)-2px)] px-3 text-xs font-bold outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)] ${
                       isActive
                         ? "bg-[var(--seg-thumb)] text-[var(--seg-text-active)] border border-[var(--seg-thumb-border)]"
-                        : "text-[var(--seg-text)] hover:text-[var(--seg-text-active)]"
+                        : "text-[var(--seg-text)] hover:text-foreground"
                     }`}
                   >
                     Q{q}
@@ -130,7 +127,7 @@ export function DistribuicaoQuartis({
           </div>
         </div>
 
-        <div className={scrollInterno ? "min-h-0 flex-1 overflow-auto" : "overflow-x-auto"}>
+        <div className={scrollInterno ? "min-h-0 flex-1 overflow-auto scrollbar-tema" : "overflow-x-auto"}>
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="ds-body text-muted-foreground uppercase tracking-wider text-[11px] font-bold select-none border-b border-border/40 bg-muted/40">
@@ -187,7 +184,7 @@ export function DistribuicaoQuartis({
             </tbody>
           </table>
         </div>
-      </StyledCard>
+      </div>
     </div>
   );
 }

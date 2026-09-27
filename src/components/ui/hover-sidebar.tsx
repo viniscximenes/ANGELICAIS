@@ -97,9 +97,11 @@ export const DesktopSidebar = ({
         // branco puro, nem um cinza novo/hardcoded como bg-neutral-100
         // (quase branco) / dark:bg-neutral-800 (cinza claro, destoava do
         // dark mode real do site) que estavam aqui antes.
-        "h-full px-4 py-4 hidden md:flex md:flex-col bg-sidebar w-[300px] shrink-0",
+        "h-full px-4 py-4 hidden md:flex md:flex-col bg-sidebar shrink-0",
+        animate ? "w-[60px]" : "w-[300px]",
         className
       )}
+      initial={false}
       animate={{
         width: animate ? (open ? "300px" : "60px") : "300px",
       }}
@@ -189,11 +191,16 @@ export const SidebarLink = ({
     >
       {link.icon}
       <motion.span
+        initial={false}
         animate={{
           display: animate ? (open ? "inline-block" : "none") : "inline-block",
           opacity: animate ? (open ? 1 : 0) : 1,
         }}
-        className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
+        style={{
+          display: animate ? (open ? "inline-block" : "none") : "inline-block",
+          opacity: animate ? (open ? 1 : 0) : 1,
+        }}
+        className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre !p-0 !m-0"
       >
         {link.label}
       </motion.span>

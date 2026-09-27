@@ -12,7 +12,6 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
-import { StyledCard } from "@/components/gestor/styled-card";
 import type { HoraEvolucaoData, TemaHoraData } from "@/lib/retencao/get-evolucao-hora";
 import type { ReactNode } from "react";
 
@@ -78,11 +77,9 @@ export function GraficoEvolucao({ dados, meta, acoes }: GraficoEvolucaoProps) {
         {acoes && <div className="shrink-0">{acoes}</div>}
       </div>
 
-      {/* Container do gráfico: StyledCard (cantoneiras) só aqui — mesmo
-          nível único usado em /kpi/evolucao (KpiPrincipalCard), sem
-          wrapper/borda extra ao redor. */}
-      <StyledCard className="p-5" withGradient>
-        <div className="w-full h-[280px]">
+      {/* Container do gráfico removido a pedido (sem StyledCard/borda) —
+          só o wrapper com a altura fixa que o ResponsiveContainer precisa. */}
+      <div className="w-full h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}
@@ -264,7 +261,6 @@ export function GraficoEvolucao({ dados, meta, acoes }: GraficoEvolucaoProps) {
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-    </StyledCard>
     </div>
   );
 }

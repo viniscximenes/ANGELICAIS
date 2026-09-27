@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { IconCheck, IconChevronDown, IconInfoCircle, IconLoader2, IconSettings } from "@tabler/icons-react";
+import { IconCheck, IconChevronDown, IconLoader2, IconSettings } from "@tabler/icons-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -117,7 +117,7 @@ export function ConfigTabelaPopover({
         <PopoverTrigger asChild>
           <button
             type="button"
-            title="Configurações da tabela"
+            aria-label="Configurações da tabela"
             // Mesma família visual do botão de engrenagem de /kpi/operadores
             // (ConfigKpiOperadoresPopover): outline h-8/w-8, sem preenchimento.
             className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-transparent outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
@@ -129,17 +129,18 @@ export function ConfigTabelaPopover({
         <PopoverContent
           data-page="reports-consolidado"
           align="end"
-          className="bg-popover text-popover-foreground border-border w-84 rounded-2xl border p-5 shadow-2xl"
+          className="bg-popover text-popover-foreground border-border w-72 rounded-2xl border p-4 shadow-2xl"
         >
-          {/* Cabeçalho + divisória: mesmo padrão do modal de referência
-              "Configurações de Metas" (config-metas-popover.tsx). */}
-          <PopoverHeader className="border-border/50 space-y-0.5 border-b pb-2">
-            <PopoverTitle className="text-foreground text-sm font-semibold">
+          {/* Cabeçalho enxuto — só o título (subtítulo explicativo removido a
+              pedido: card menor, só com o que é útil). Fonte trocada de
+              `text-sm font-semibold` (sem font-family própria, dependia de
+              herança) pra `ds-h3` — MESMA classe usada nos títulos de card
+              do resto da página (ex.: "Retenção por Tema"), que fixa
+              font-family: var(--font-sans) explicitamente. */}
+          <PopoverHeader className="border-border/50 border-b pb-2">
+            <PopoverTitle className="ds-h3 font-semibold text-foreground">
               Configurações da Tabela
             </PopoverTitle>
-            <p className="text-muted-foreground text-[11px]">
-              Ajuste a meta de retenção e a ordenação da tabela.
-            </p>
           </PopoverHeader>
 
           <div className="space-y-4 pt-4">
@@ -162,7 +163,10 @@ export function ConfigTabelaPopover({
                   value={metaTx}
                   onChange={(e) => setMetaTx(e.target.value)}
                   disabled={isPending}
-                  className="pr-8 text-sm font-semibold"
+                  // Sem o anel de foco padrão do Input (shared component) —
+                  // pedido explícito nesta popover: focus-visible:border-ring/
+                  // ring-3 sobrescritos pra manter a borda neutra de sempre.
+                  className="pr-8 text-sm font-semibold focus-visible:border-input focus-visible:ring-0"
                 />
                 <span className="text-muted-foreground pointer-events-none absolute right-3 text-xs font-bold">%</span>
               </div>
@@ -213,10 +217,6 @@ export function ConfigTabelaPopover({
                     })}
                   </div>
                 )}
-              </div>
-              <div className="flex items-start gap-1.5 pt-0.5 text-[11px] text-muted-foreground">
-                <IconInfoCircle size={13} className="shrink-0 text-muted-foreground mt-0.5" aria-hidden="true" />
-                <span>Operadores sem atendimento no dia permanecem no final da listagem.</span>
               </div>
             </div>
 

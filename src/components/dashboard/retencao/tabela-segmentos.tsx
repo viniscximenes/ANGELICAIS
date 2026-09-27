@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { SegmentoResult, SegmentoItem } from "@/lib/retencao/get-por-segmento";
-import { StyledCard } from "@/components/gestor/styled-card";
 
 interface TabelaSegmentosProps {
   segmentos: SegmentoResult;
@@ -46,10 +45,8 @@ export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: Tabe
         </p>
       </div>
 
-      <StyledCard
-        className={scrollInterno ? "flex max-h-full flex-col gap-3 p-4" : "p-4 space-y-3"}
-        withGradient
-        corners="all"
+      <div
+        className={scrollInterno ? "flex max-h-full flex-col gap-3" : "space-y-3"}
       >
         {/* Seletor Marca / Unidade — mesmo padrão de toggle (tokens
             --seg-track/--seg-thumb/--seg-text já definidos em
@@ -72,7 +69,7 @@ export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: Tabe
                   className={`h-8 rounded-[calc(var(--radius)-2px)] px-3 text-xs font-bold outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)] ${
                     isActive
                       ? "bg-[var(--seg-thumb)] text-[var(--seg-text-active)] border border-[var(--seg-thumb-border)]"
-                      : "text-[var(--seg-text)] hover:text-[var(--seg-text-active)]"
+                      : "text-[var(--seg-text)] hover:text-foreground"
                   }`}
                 >
                   {tab.label}
@@ -143,7 +140,7 @@ export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: Tabe
               })
           )}
         </div>
-      </StyledCard>
+      </div>
     </div>
   );
 }

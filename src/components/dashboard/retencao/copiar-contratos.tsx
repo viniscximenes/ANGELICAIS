@@ -8,7 +8,6 @@ import type { TemaData } from "@/lib/retencao/get-por-tema";
 import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
 import type { ContratoFiltradoItem } from "@/lib/retencao/get-contratos-filtrados";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
-import { StyledCard } from "@/components/gestor/styled-card";
 import { toast } from "sonner";
 
 interface CopiarContratosProps {
@@ -315,10 +314,8 @@ export function CopiarContratos({
         max-h-full (teto herdado do wrapper pai). Mesmo padrão já aplicado
         em tabela-temas.tsx/distribuicao-quartis.tsx.
       */}
-      <StyledCard
-        className={scrollInterno ? "max-h-full overflow-y-auto p-5 space-y-5" : "p-5 space-y-5"}
-        withGradient
-        corners="all"
+      <div
+        className={scrollInterno ? "max-h-full overflow-y-auto scrollbar-tema space-y-5" : "space-y-5"}
       >
         {/* Filtros em Grade Única Responsiva */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
@@ -404,7 +401,7 @@ export function CopiarContratos({
             </div>
           </div>
         )}
-      </StyledCard>
+      </div>
     </div>
   );
 }

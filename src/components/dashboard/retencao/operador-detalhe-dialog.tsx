@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/dialog";
 import { ExportPopupPngButton } from "@/components/dashboard/export-popup-png-button";
 import { getDataPngHoje } from "@/components/dashboard/export-popup-png-theme";
-import { StyledCard } from "@/components/gestor/styled-card";
 import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
 import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
 import { resolverTokenCss } from "@/lib/utils/resolver-token-css";
@@ -263,7 +262,7 @@ export function OperadorDetalheDialog({
         */}
         <div ref={pngRef} style={{ backgroundColor: "var(--background)" }}>
         {/* Cabeçalho */}
-        <DialogHeader className="border-b border-dashed border-border/60 pb-3 space-y-1.5">
+        <DialogHeader className="pb-3 space-y-1.5">
           <DialogTitle className="ds-h3 text-foreground font-semibold tracking-tight text-xl">
             {nomeExibido}
           </DialogTitle>
@@ -298,14 +297,11 @@ export function OperadorDetalheDialog({
               const valueColorClass = idx === 0 ? (abaixo ? "text-danger" : "text-success") : "text-foreground";
 
               return (
-                // Mesma caixa neutra dos cards de número já padronizados em
-                // visao-geral-cards.tsx (border-border + bg-card/70 +
-                // shadow-[var(--shadow-sm)] + backdrop-blur-md), sem
-                // cantoneiras — StyledCard fica só pro container do gráfico
-                // e da tabela abaixo.
+                // Container removido a pedido (sem borda/fundo) — sobra só
+                // o espaçamento interno do texto.
                 <div
                   key={c.label}
-                  className="flex flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-3.5 shadow-[var(--shadow-sm)] backdrop-blur-md"
+                  className="flex flex-col justify-center gap-1 px-4 py-3.5"
                 >
                   <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
                     {c.label}
@@ -323,8 +319,7 @@ export function OperadorDetalheDialog({
             <h3 className="ds-h3 font-semibold text-foreground">
               Evolução por Hora
             </h3>
-            <StyledCard className="p-4" withGradient>
-              <div className="w-full h-[220px]">
+            <div className="w-full h-[220px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={chartData}
@@ -493,7 +488,6 @@ export function OperadorDetalheDialog({
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
-            </StyledCard>
           </div>
 
           {/* ── Retenção por tema ──────────────────────────────── */}
@@ -501,7 +495,7 @@ export function OperadorDetalheDialog({
             <h3 className="ds-h3 font-semibold text-foreground">
               Retenção por Tema
             </h3>
-            <StyledCard className="p-0 overflow-hidden" withGradient>
+            <div className="overflow-hidden">
               {operador.porMotivo.length === 0 ? (
                 <p className="ds-small text-muted-foreground p-6 text-center text-xs">
                   Nenhum atendimento registrado para este operador no dia.
@@ -558,7 +552,7 @@ export function OperadorDetalheDialog({
                   </table>
                 </div>
               )}
-            </StyledCard>
+            </div>
           </div>
         </div>
         </div>

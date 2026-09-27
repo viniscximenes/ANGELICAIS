@@ -9,9 +9,9 @@ import { CopyTableButton } from "@/components/d-1/copy-table-button";
 import { EquipeTable } from "@/components/d-1/equipe-table";
 import { UploadDropzone } from "@/components/d-1/upload-dropzone";
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
+import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
 import { ConfigTabelaPopover } from "@/components/gestor/config-tabela-popover";
 import { LabeledSwitch } from "@/components/gestor/labeled-switch";
-import { StyledCard } from "@/components/gestor/styled-card";
 import { clearConsolidadoAction } from "@/lib/d1-db/actions/clear-consolidado-action";
 import { refreshConsolidadoAction } from "@/lib/d1-db/actions/refresh-consolidado-action";
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/d1-db/types";
@@ -34,6 +34,7 @@ import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individ
 import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
 import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog";
 import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
+import { KpiLoadingScreen } from "@/components/gestor/kpi-loading-screen";
 
 // Texto da 2ª linha do cabeçalho ("{nome} fez um report às {hora}") — mesma
 // checagem de "hora ausente/zerada" de formatReportLabel (@/lib/gestor/
@@ -69,20 +70,29 @@ function formatCabecalhoReport(
 // (analitico-tma-tabela.tsx/cards-resumo-tma.tsx) nunca teve polling.
 const POLL_INTERVAL_MS = 30_000;
 
+// Piso mínimo (ms) da tela de loading exibida durante o refresh MANUAL
+// (botão "Limpar base") — mesma lógica/duração do piso mínimo do
+// carregamento inicial (ver MIN_LOADING_MS em page.tsx), só que client-side:
+// se o refetch já demorou mais que isso, não espera nada extra (Math.max
+// trava em 0); se voltou rápido, segura a tela de loading até completar
+// MIN_REFRESH_LOADING_MS, pra não "piscar". Só cobre o refetch DISPARADO
+// PELO USUÁRIO (handleBaseCleared) — o polling silencioso de 30s continua
+// sem overlay nenhum, não faria sentido cobrir a tabela a cada meio minuto.
+const MIN_REFRESH_LOADING_MS = 3_000;
+
 // CAUSA RAIZ HISTÓRICA da última coluna (Tx Retenção/RV Diário) cortada: o
 // wrapper VISÍVEL abaixo precisa de uma largura EXPLÍCITA (é uma `transition:
 // width` em CSS, entre o estado com/sem coluna RV) que caiba o grid fixo da
 // EquipeTable (BASE_COLUMN_WIDTHS_PX = 760/920px, ver equipe-table.tsx) MAIS
-// o "chrome" do StyledCard por dentro dele (padding `p-3` + borda `border`).
-// Antes esse chrome era uma CONSTANTE hardcoded (26px) — frágil: qualquer
-// mudança futura de padding/border/radius do StyledCard (ex.: tema Zen
-// Linen escopado a esta página) deixaria a constante desatualizada e voltaria
+// o espaçamento horizontal do KpiFrame por dentro dele (`p-3`). Antes esse
+// chrome era uma CONSTANTE hardcoded (26px) — frágil: qualquer mudança
+// futura no frame deixaria a constante desatualizada e voltaria
 // a cortar a última coluna, silenciosamente.
 //
-// Corrigido MEDINDO o chrome real do próprio StyledCard renderizado
+// Corrigido MEDINDO o chrome real do próprio frame renderizado
 // (getComputedStyle: padding-left/right + border-left/right-width), em vez
-// de uma constante — ver useCardChromePx abaixo. Se o padding/border/radius
-// do card mudar de novo (dentro do escopo desta página), a medição já
+// de uma constante — ver useCardChromePx abaixo. Se o padding do frame
+// mudar de novo, a medição já
 // reflete o valor novo automaticamente, sem precisar lembrar de atualizar
 // nada aqui.
 //
@@ -169,6 +179,9 @@ export function GestorEquipeSection({
   // não dispara fetch de dados — só persiste a preferência (upsert parcial,
   // mesmo padrão do handleToggleOlho).
   const [showRvDiario, setShowRvDiario] = useState(showRvDiarioInicial);
+
+  // Overlay de loading do refresh manual (ver MIN_REFRESH_LOADING_MS acima).
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Detalhamento individual do operador (clique no nome da EquipeTable) —
   // busca sob demanda via fetchOperadorDetalheAction (retencao_atendimentos),
@@ -319,8 +332,18 @@ export function GestorEquipeSection({
   // limpa as duas tabelas no mesmo clique, mas cada seção busca seus dados
   // de forma independente, então cada lado precisa do próprio refetch.
   async function handleBaseCleared() {
-    await refetchConsolidado();
-    notifyBaseAtualizada();
+    const inicio = Date.now();
+    setIsRefreshing(true);
+    try {
+      await refetchConsolidado();
+      notifyBaseAtualizada();
+    } finally {
+      const faltam = MIN_REFRESH_LOADING_MS - (Date.now() - inicio);
+      if (faltam > 0) {
+        await new Promise((resolve) => setTimeout(resolve, faltam));
+      }
+      setIsRefreshing(false);
+    }
   }
 
   // Polling: reconsulta a base a cada 30s (sem F5) e atualiza operadores +
@@ -408,17 +431,38 @@ export function GestorEquipeSection({
   const cardChromePx = useCardChromePx(cardVisivelWrapperRef);
 
   return (
-    // initial={false}: esta seção já vem pronta via SSR (props, sem fetch
-    // client próprio) — animar de opacity:0 com delay de 150ms fazia o
-    // conteúdo real ficar invisível por um intervalo perceptível logo
-    // depois do loading.tsx sumir (motion renderiza o estado `initial` no
-    // SSR; só anima pra `animate` depois que o JS hidrata), causando a
-    // sequência "loading → tela vazia → dados" reportada em
-    // /reports/consolidado. `initial={false}` faz o motion.section montar
-    // direto no estado final (opacity:1), sem essa janela vazia — mantém
-    // motion.section (em vez de trocar por <section>) só pra não precisar
-    // tocar em mais nada da árvore/props que dependam do elemento ser um
-    // motion component.
+    <>
+      {/*
+        Overlay de refresh manual (ver handleBaseCleared/MIN_REFRESH_LOADING_MS
+        acima) — reaproveita o MESMO esqueleto do Suspense fallback inicial
+        (KpiLoadingScreen formato="consolidado"), fixo por cima da página
+        inteira (z acima do header/sidebar do layout do dashboard), pra dar a
+        mesma sensação de "recarregando" que o F5 já dava antes, sem de fato
+        recarregar a página (preserva scroll, popovers fechados etc.).
+      */}
+      {isRefreshing && (
+        <div className="fixed inset-0 z-[100]">
+          <KpiLoadingScreen
+            dataPage="reports-consolidado"
+            titulo="Consolidado"
+            formato="consolidado"
+            indicatorPosition="after-header"
+            spinnerVariant="dots"
+          />
+        </div>
+      )}
+
+    {/* initial={false}: esta seção já vem pronta via SSR (props, sem fetch
+        client próprio) — animar de opacity:0 com delay de 150ms fazia o
+        conteúdo real ficar invisível por um intervalo perceptível logo
+        depois do loading.tsx sumir (motion renderiza o estado `initial` no
+        SSR; só anima pra `animate` depois que o JS hidrata), causando a
+        sequência "loading → tela vazia → dados" reportada em
+        /reports/consolidado. `initial={false}` faz o motion.section montar
+        direto no estado final (opacity:1), sem essa janela vazia — mantém
+        motion.section (em vez de trocar por <section>) só pra não precisar
+        tocar em mais nada da árvore/props que dependam do elemento ser um
+        motion component. */}
     <motion.section
       id="equipe-section"
       initial={false}
@@ -434,69 +478,57 @@ export function GestorEquipeSection({
           então só pode viver num Client Component. MESMAS classes literais
           de /kpi/operadores (KpiEquipeSection) pro título+subtítulo.
         */}
-        <div className="pt-4 mb-4">
+        <div className="pt-4">
           <h1 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             Consolidado
           </h1>
+
+          {formatCabecalhoReport(equipe.horaReport, nomeSupervisorReport) && (
+            <p className="font-sans text-muted-foreground pt-3 text-sm font-normal">
+              {formatCabecalhoReport(equipe.horaReport, nomeSupervisorReport)}
+            </p>
+          )}
         </div>
 
         {/*
-          5ª rodada: subtítulo (nome+hora do report) e a linha de controles
-          deixaram de ser blocos empilhados e passaram a dividir a MESMA
-          linha — subtítulo à esquerda, controles à direita, ambos
-          verticalmente centralizados (items-center). Isso libera o espaço
-          vertical que a linha de controles ocupava sozinha antes, deixando a
-          tabela subir. Em telas estreitas (abaixo de sm), empilha de volta
-          (subtítulo em cima, controles embaixo) via flex-col/sm:flex-row,
-          mesma convenção de breakpoint já usada nas páginas migradas
-          (kpi-operadores.css/kpi-equipe-section) pra flex-col -> *:flex-row.
+          Controles em uma linha própria abaixo do subtítulo, seguindo a
+          hierarquia de /kpi/operadores: título → subtítulo (pt-3) → controles
+          (pt-4). Sem justify-between/ml-auto, para o grupo começar alinhado
+          ao texto do report em vez de ficar na extrema direita da tabela.
           Ordem dos controles: [⚙ Config] [🗑 Limpar base] [Copiar imagem]
           [Exibir RV] — "Limpar base" virou ícone-only (variant="icon-danger"
           do ClearBaseButton) com o MESMO visual neutro/outline do botão de
           engrenagem, posicionado logo ao lado dela.
         */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pb-2">
-          {/* Sem report ainda (hora nula/zerada): o parágrafo some — ver
-              formatCabecalhoReport, acima. Quando ausente, renderiza um span
-              vazio pra manter o justify-between empurrando os controles pra
-              direita mesmo sem texto à esquerda. */}
-          {formatCabecalhoReport(equipe.horaReport, nomeSupervisorReport) ? (
-            <p className="font-sans text-muted-foreground text-sm font-normal">
-              {formatCabecalhoReport(equipe.horaReport, nomeSupervisorReport)}
-            </p>
-          ) : (
-            <span aria-hidden="true" />
+        <div className="flex flex-wrap items-center gap-2 pt-4 pb-2">
+          <ConfigTabelaPopover
+            metaTxInicial={metaTxRetencao}
+            ordemInicial={ordemTabela}
+            onSaved={(metaTx, ordem) => {
+              setMetaTxRetencao(metaTx);
+              setOrdemTabela(ordem);
+            }}
+            onOpenChange={setConfigPopoverOpen}
+          />
+
+          {showUpload && (
+            <ClearBaseButton
+              action={clearConsolidadoAction}
+              onCleared={handleBaseCleared}
+              variant="icon-danger"
+              holdToConfirm
+              toastClassName="reports-consolidado-toast"
+            />
           )}
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <ConfigTabelaPopover
-              metaTxInicial={metaTxRetencao}
-              ordemInicial={ordemTabela}
-              onSaved={(metaTx, ordem) => {
-                setMetaTxRetencao(metaTx);
-                setOrdemTabela(ordem);
-              }}
-              onOpenChange={setConfigPopoverOpen}
-            />
+          <CopyTableButton
+            operadores={operadores}
+            equipe={equipe}
+            supervisor={gestora}
+            nomeSupervisorReport={nomeSupervisorReport}
+          />
 
-            {showUpload && (
-              <ClearBaseButton
-                action={clearConsolidadoAction}
-                onCleared={handleBaseCleared}
-                variant="icon-danger"
-                toastClassName="reports-consolidado-toast"
-              />
-            )}
-
-            <CopyTableButton
-              operadores={operadores}
-              equipe={equipe}
-              supervisor={gestora}
-              nomeSupervisorReport={nomeSupervisorReport}
-            />
-
-            <LabeledSwitch label="Exibir RV" checked={showRvDiario} onCheckedChange={handleToggleRvDiario} />
-          </div>
+          <LabeledSwitch label="Exibir RV" checked={showRvDiario} onCheckedChange={handleToggleRvDiario} />
         </div>
 
         {/*
@@ -532,7 +564,7 @@ export function GestorEquipeSection({
           }}
         >
           <div data-tabela-png>
-            <StyledCard withGradient className="p-3">
+            <KpiFrame>
               <EquipeTable
                 key="gestor-equipe-png"
                 operadores={operadoresPngOrdenados}
@@ -540,7 +572,7 @@ export function GestorEquipeSection({
                 metaTx={metaTxFracao}
                 showRvDiario={showRvDiario}
               />
-            </StyledCard>
+            </KpiFrame>
           </div>
         </div>
 
@@ -559,8 +591,8 @@ export function GestorEquipeSection({
             )}
             style={{
               // Largura-base da EquipeTable (760/920px, BASE_COLUMN_WIDTHS_PX
-              // em equipe-table.tsx) + o chrome REAL do StyledCard (padding +
-              // borda), medido em tempo real por useCardChromePx — nunca uma
+              // em equipe-table.tsx) + o espaçamento REAL do KpiFrame,
+              // medido em tempo real por useCardChromePx — nunca uma
               // constante hardcoded (ver comentário na definição do hook).
               width: showRvDiario
                 ? `${920 + cardChromePx}px`
@@ -576,51 +608,44 @@ export function GestorEquipeSection({
             }}
           >
             <div ref={cardVisivelWrapperRef} className="h-full">
-            <StyledCard withGradient className="h-full p-3">
-              <EquipeTable
-                key="gestor-equipe-visible"
-                operadores={operadoresOrdenados}
-                equipe={equipe}
-                metaTx={metaTxFracao}
-                showRvDiario={showRvDiario}
-                onOperadorClick={handleOperadorClick}
-                onOperadorHoverStart={handleOperadorHoverStart}
-                onOperadorHoverEnd={handleOperadorHoverEnd}
-                headerButton={
-                  nomeFantasia?.ativo && (
-                    <button
-                      type="button"
-                      onClick={handleToggleOlho}
-                      aria-pressed={olhoAberto}
-                      title={olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"}
-                      // Mesma cor do texto do header ("Operador" e demais
-                      // títulos, herdada de text-foreground em equipe-table.tsx)
-                      // — antes usava text-muted-foreground/60, uma cor própria
-                      // que destoava do resto do header. inline-block (não
-                      // inline-flex) pra participar do fluxo de texto normal
-                      // da célula e ser centralizado JUNTO com "Operador" pelo
-                      // text-align:center herdado, em vez de ficar solto.
-                      className="text-foreground/80 hover:text-foreground transition-colors inline-block align-middle ml-1.5"
-                    >
-                      {olhoAberto ? <IconEye size={14} /> : <IconEyeOff size={14} />}
-                    </button>
-                  )
-                }
-              />
-            </StyledCard>
+              <KpiFrame className="h-full">
+                <EquipeTable
+                  key="gestor-equipe-visible"
+                  operadores={operadoresOrdenados}
+                  equipe={equipe}
+                  metaTx={metaTxFracao}
+                  showRvDiario={showRvDiario}
+                  onOperadorClick={handleOperadorClick}
+                  onOperadorHoverStart={handleOperadorHoverStart}
+                  onOperadorHoverEnd={handleOperadorHoverEnd}
+                  headerButton={
+                    nomeFantasia?.ativo && (
+                      <button
+                        type="button"
+                        onClick={handleToggleOlho}
+                        aria-pressed={olhoAberto}
+                        title={olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"}
+                        // Mesma cor do texto do header ("Operador" e demais
+                        // títulos, herdada de text-foreground em equipe-table.tsx)
+                        // — antes usava text-muted-foreground/60, uma cor própria
+                        // que destoava do resto do header. inline-block (não
+                        // inline-flex) pra participar do fluxo de texto normal
+                        // da célula e ser centralizado JUNTO com "Operador" pelo
+                        // text-align:center herdado, em vez de ficar solto.
+                        className="text-foreground/80 hover:text-foreground transition-colors inline-block align-middle ml-1.5"
+                      >
+                        {olhoAberto ? <IconEye size={14} /> : <IconEyeOff size={14} />}
+                      </button>
+                    )
+                  }
+                />
+              </KpiFrame>
             </div>
           </div>
 
           {showUpload && (
-            <div className="min-h-[180px] min-w-0 flex-1">
-              <StyledCard withGradient className="flex h-full flex-col p-3">
-                <span className="text-muted-foreground mb-3 block text-xs font-semibold uppercase tracking-wider">
-                  Anexar Base
-                </span>
-                <div className="min-h-0 flex-1">
-                  <UploadDropzone />
-                </div>
-              </StyledCard>
+            <div className="min-h-[180px] min-w-0 flex-1 self-stretch">
+              <UploadDropzone />
             </div>
           )}
         </div>
@@ -635,5 +660,6 @@ export function GestorEquipeSection({
         quartil={operadorQuartil}
       />
     </motion.section>
+    </>
   );
 }

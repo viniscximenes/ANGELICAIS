@@ -93,7 +93,6 @@ export function ConfigMetasPopover({
         <PopoverTrigger asChild>
           <button
             type="button"
-            title="Configurações de metas"
             aria-label="Configurações de metas"
             // Mesma família visual do botão de engrenagem do cabeçalho
             // principal da página (ConfigTabelaPopover): outline h-8/w-8,
@@ -107,29 +106,29 @@ export function ConfigMetasPopover({
         <PopoverContent
           data-page="reports-consolidado"
           align="end"
-          className="bg-popover text-popover-foreground border-border w-84 rounded-2xl border p-5 shadow-2xl"
+          className="bg-popover text-popover-foreground border-border w-72 rounded-2xl border p-4 shadow-2xl"
         >
-          {/* Cabeçalho + divisória: mesmo padrão do modal de referência
-              "Metas do Meu KPI" (kpi-gestor-metas-popover.tsx) — título sem
-              ícone (o botão de engrenagem já comunica a função) + descrição
-              curta, separados do corpo por border-b. */}
-          <PopoverHeader className="border-border/50 space-y-0.5 border-b pb-2">
-            <PopoverTitle className="text-foreground text-sm font-semibold">
+          {/* Cabeçalho enxuto — só o título (subtítulo explicativo removido a
+              pedido: card menor, só com o que é útil). Fonte trocada de
+              `text-sm font-semibold` (sem font-family própria) pra `ds-h3` —
+              MESMA classe usada nos títulos de card do resto da página (ex.:
+              "Retenção por Tema"), que fixa font-family: var(--font-sans)
+              explicitamente, em vez de depender de herança. */}
+          <PopoverHeader className="border-border/50 border-b pb-2">
+            <PopoverTitle className="ds-h3 font-semibold text-foreground">
               Configurações de Metas
             </PopoverTitle>
-            <p className="text-muted-foreground text-[11px]">
-              Defina a meta da taxa de retenção global (polo) e de cada tema.
-            </p>
           </PopoverHeader>
 
-          <div className="space-y-4 pt-4">
-            {/* Meta global */}
+          <div className="space-y-4 pt-2">
+            {/* Meta global — rótulo "(Polo)"/"Equipe" removido a pedido (é a
+                meta da equipe, redundante dizer isso aqui). */}
             <div className="space-y-1.5">
               <Label
                 htmlFor="config-meta-global"
                 className="text-foreground text-xs font-medium"
               >
-                Meta Global (Polo)
+                Meta Global
               </Label>
               <div className="relative flex items-center">
                 <Input
@@ -141,7 +140,9 @@ export function ConfigMetasPopover({
                   step={0.1}
                   value={localGlobal}
                   onChange={(e) => setLocalGlobal(e.target.value)}
-                  className="pr-8 text-sm font-semibold"
+                  // Sem o anel de foco padrão do Input (shared component) —
+                  // mesmo ajuste do popover "Configurações da Tabela".
+                  className="pr-8 text-sm font-semibold focus-visible:border-input focus-visible:ring-0"
                 />
                 <span className="text-muted-foreground pointer-events-none absolute right-3 text-xs font-bold">
                   %
@@ -178,7 +179,7 @@ export function ConfigMetasPopover({
                         step={0.1}
                         value={localThemes[tema] !== undefined ? localThemes[tema] : 60}
                         onChange={(e) => handleThemeChange(tema, e.target.value)}
-                        className="h-7 pr-6 text-center text-xs font-semibold"
+                        className="h-7 pr-6 text-center text-xs font-semibold focus-visible:border-input focus-visible:ring-0"
                       />
                       <span className="text-muted-foreground pointer-events-none absolute right-2 text-[10px] font-bold">
                         %

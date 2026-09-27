@@ -58,7 +58,7 @@ export const DEFAULT_KPI_GESTOR_METAS: Record<
   { meta: number | string | null; direcao: "gte" | "lte" | "forecast" | "diff_bruta" | null }
 > = {
   abs: { meta: 5, direcao: "lte" },
-  tma: { meta: "12:11", direcao: "lte" },
+  tma: { meta: "13:00", direcao: "lte" },
   csat: { meta: null, direcao: null },
   nr17: { meta: 10.5, direcao: "lte" },
   churn: { meta: null, direcao: "forecast" },

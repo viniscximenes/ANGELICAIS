@@ -113,7 +113,7 @@ export function SegmentedControl({
               "focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]",
               ativo
                 ? "font-semibold text-[var(--seg-text-active)]"
-                : "font-medium text-[var(--seg-text)] hover:text-[var(--seg-text-active)]",
+                : "font-medium text-[var(--seg-text)] hover:text-foreground",
             )}
           >
             {ativo && (

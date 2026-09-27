@@ -108,10 +108,11 @@ export function ConfigKpiPopover({
           <button
             type="button"
             title="Colunas da tabela"
-            className="bg-primary text-primary-foreground hover:opacity-90 flex items-center justify-center rounded-md p-2 transition-opacity cursor-pointer shadow-sm disabled:opacity-50"
+            className="border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 flex items-center gap-1.5 rounded-md border bg-transparent px-3 py-1.5 transition-colors cursor-pointer disabled:opacity-50"
             style={{ fontSize: "12px" }}
           >
             <IconSettings size={14} aria-hidden="true" />
+            <span className="font-sans text-xs">Colunas</span>
           </button>
         </PopoverTrigger>
 

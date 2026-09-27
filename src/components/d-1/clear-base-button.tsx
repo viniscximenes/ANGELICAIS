@@ -11,6 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { HoldButton } from "@/components/ui/hold-button";
 import { cn } from "@/lib/utils";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 
@@ -38,13 +39,14 @@ interface Props {
    * mantendo o preenchimento destructive sólido (cor de alerta) pra não se
    * confundir com uma ação neutra. "icon-danger" (5ª rodada, /reports/
    * consolidado e /reports/tempo-indisponibilidade) = ícone-only, MESMO
-   * visual (outline neutro, h-8 w-8, border-border) do botão de engrenagem
-   * (ConfigTabelaPopover/ConfigTabelaTempoIndispPopover) — não é preenchido
-   * nem vermelho, só o ícone de lixeira muda; rótulo "Limpar base" vira
-   * aria-label + tooltip (Radix Tooltip, mesmo padrão visual do tema já
-   * usado em export-popup-png-button.tsx) em vez de texto visível.
+   * visual compacto do botão de engrenagem quando ocioso. Com
+   * `holdToConfirm`, usa o Hold Button do React Bits: expande
+   * horizontalmente, revela "Limpar Base" e só executa a ação após a
+   * pressão contínua completar.
    */
   variant?: "default" | "compact" | "icon-danger";
+  /** Ativa a confirmação por pressão contínua somente onde for solicitado. */
+  holdToConfirm?: boolean;
   /**
    * Classe extra aplicada aos toasts (sonner) desta ação — ex.
    * "reports-consolidado-toast", pra herdar o tema Zen Linen só nos toasts
@@ -55,7 +57,13 @@ interface Props {
   toastClassName?: string;
 }
 
-export function ClearBaseButton({ action, onCleared, variant = "default", toastClassName }: Props) {
+export function ClearBaseButton({
+  action,
+  onCleared,
+  variant = "default",
+  holdToConfirm = false,
+  toastClassName,
+}: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -78,6 +86,29 @@ export function ClearBaseButton({ action, onCleared, variant = "default", toastC
     });
   }
 
+  if (variant === "icon-danger" && holdToConfirm) {
+    return (
+      <HoldButton
+        disabled={isPending}
+        ariaLabel="Segure para limpar a base"
+        icon={<IconTrash size={15} aria-hidden="true" />}
+        doneIcon={<IconLoader2 size={15} className="animate-spin" aria-hidden="true" />}
+        doneLabel="Limpando..."
+        fillColor="var(--seg-thumb)"
+        fillTextColor="var(--seg-text-active)"
+        textColor="var(--muted-foreground)"
+        holdTime={1600}
+        releaseTime={200}
+        resetAfter={1200}
+        expandedWidth={116}
+        onHold={handleClick}
+        className="font-sans border border-border"
+      >
+        Limpar Base
+      </HoldButton>
+    );
+  }
+
   if (variant === "icon-danger") {
     return (
       <TooltipProvider>
@@ -89,12 +120,7 @@ export function ClearBaseButton({ action, onCleared, variant = "default", toastC
               disabled={isPending}
               aria-label="Limpar base"
               title="Limpar base"
-              // Mesma família visual do botão de engrenagem
-              // (ConfigTabelaPopover): outline h-8/w-8, sem preenchimento —
-              // só o ícone muda (lixeira). Não usa cor destructive de
-              // propósito (pedido explícito: mesmo visual neutro do botão de
-              // config, não vermelho/preenchido).
-              className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-transparent outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
+              className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border bg-transparent outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
             >
               {isPending ? (
                 <IconLoader2 size={15} className="animate-spin" aria-hidden="true" />

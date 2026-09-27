@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { IconFileSpreadsheet, IconLoader2 } from "@tabler/icons-react";
+import { IconLoader2 } from "@tabler/icons-react";
 import Papa from "papaparse";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
@@ -11,13 +11,8 @@ import { useFaviconLoading } from "@/lib/favicon/use-favicon-loading";
 import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
 import { registrarExibicaoPopupComparativoAction } from "@/lib/retencao/comparativo/registrar-exibicao-popup-action";
 import { ComparativoPopupDialog } from "@/components/operacional/comparativo-consolidado/comparativo-popup-dialog";
+import { ReactBitsFolder } from "@/components/ui/react-bits-folder";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { UploadProgressModal } from "./upload-progress-modal";
 
 export type UploadStep =
@@ -81,10 +76,6 @@ export function UploadDropzone({ compact = false }: UploadDropzoneProps = {}) {
 
     setRowsWritten(uploadResult.rowsWritten);
     setStep("done");
-    toast.success("Base updated", {
-      description: `${uploadResult.rowsWritten} linhas inseridas`,
-      className: "reports-consolidado-toast",
-    });
 
     // Gatilho específico do upload concluído (não polling): uploadConsolidadoAction
     // grava retencao_atendimentos E d1_consolidado na mesma chamada, mas só a
@@ -224,19 +215,16 @@ export function UploadDropzone({ compact = false }: UploadDropzoneProps = {}) {
 
   return (
     <>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              {...rootProps}
-              role="button"
-              tabIndex={isProcessing ? -1 : 0}
-              aria-label={accessibleName}
-              aria-disabled={isProcessing}
-              aria-busy={isProcessing}
-              data-dropzone-state={dropzoneState}
-              className="upload-dropzone-root-reports-consolidado relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed outline-none transition-all duration-300 hover:border-primary focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
-              style={{
+      <div
+        {...rootProps}
+        role="button"
+        tabIndex={isProcessing ? -1 : 0}
+        aria-label={accessibleName}
+        aria-disabled={isProcessing}
+        aria-busy={isProcessing}
+        data-dropzone-state={dropzoneState}
+        className="upload-dropzone-root-reports-consolidado relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed outline-none transition-all duration-300 hover:border-primary focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+        style={{
                 // Tokens PRÓPRIOS desta página (reports-consolidado.css), com
                 // color-mix a partir de --card/--muted — mesma técnica do
                 // StyledCard, mas com um tom mais escuro/definido que o fundo
@@ -263,54 +251,51 @@ export function UploadDropzone({ compact = false }: UploadDropzoneProps = {}) {
                 pointerEvents: isProcessing ? "none" : "auto",
                 cursor: isProcessing ? "not-allowed" : "pointer",
                 minHeight: compact ? "auto" : "100%",
-              }}
-            >
-              <input {...getInputProps()} />
+        }}
+      >
+        <input {...getInputProps()} />
 
-              <div className="flex flex-col items-center justify-center gap-3 text-center">
-                <div
-                  className={`upload-dropzone-icon-reports-consolidado relative flex items-center justify-center ${
-                    compact ? "h-9 w-9" : "h-14 w-14"
-                  }`}
-                  aria-hidden="true"
-                >
-                  {/* Anel de fundo — pulsa sutilmente em repouso, mais forte durante drag */}
-                  <span className="upload-dropzone-ring-reports-consolidado absolute inset-0 rounded-full" />
+        <div className="flex flex-col items-center justify-center gap-3 text-center">
+          <div className="relative flex min-h-16 min-w-24 items-center justify-center" aria-hidden="true">
+            {isProcessing ? (
+              <IconLoader2
+                size={compact ? 20 : 26}
+                className="animate-spin text-muted-foreground"
+              />
+            ) : (
+              <ReactBitsFolder
+                size={compact ? 0.42 : 0.68}
+                open={isHovering || isDragActive}
+                color={isDragReject ? "var(--danger)" : "var(--primary)"}
+                backColor={
+                  isDragReject
+                    ? "color-mix(in srgb, var(--danger) 78%, #000 22%)"
+                    : "color-mix(in srgb, var(--primary) 78%, #000 22%)"
+                }
+                paperColors={[
+                  "var(--upload-folder-paper-1, color-mix(in srgb, var(--primary-foreground) 72%, var(--muted) 28%))",
+                  "var(--upload-folder-paper-2, color-mix(in srgb, var(--primary-foreground) 86%, var(--card) 14%))",
+                  "var(--upload-folder-paper-3, var(--primary-foreground))",
+                ]}
+              />
+            )}
+          </div>
 
-                  {isProcessing ? (
-                    <IconLoader2
-                      size={compact ? 20 : 26}
-                      className="relative animate-spin text-muted-foreground"
-                    />
-                  ) : (
-                    <IconFileSpreadsheet
-                      size={compact ? 20 : 26}
-                      className="upload-dropzone-glyph-reports-consolidado relative"
-                    />
-                  )}
-                </div>
+          {/* Dica sempre perceptível em touch/telas pequenas, já que hover não existe. */}
+          <p className="upload-dropzone-touch-hint-reports-consolidado ds-mono-sm text-muted-foreground/80 text-[11px] sm:hidden">
+            Toque para selecionar um CSV
+          </p>
+        </div>
 
-                {/* Dica sempre perceptível em touch/telas pequenas, já que hover não existe — some visualmente em telas com ponteiro fino (mouse), onde a tooltip/aria já cobre a explicação. */}
-                <p className="upload-dropzone-touch-hint-reports-consolidado ds-mono-sm text-muted-foreground/80 text-[11px] sm:hidden">
-                  Toque para selecionar um CSV
-                </p>
-              </div>
-
-              {errorMessage && !isProcessing && (
-                <div
-                  role="alert"
-                  className="status-danger ds-small mt-4 flex items-center justify-center gap-2 rounded-md p-3"
-                >
-                  {errorMessage}
-                </div>
-              )}
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="top">
-            Arraste um CSV aqui ou clique para selecionar · até 10.000 linhas
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+        {errorMessage && !isProcessing && (
+          <div
+            role="alert"
+            className="status-danger ds-small mt-4 flex items-center justify-center gap-2 rounded-md p-3"
+          >
+            {errorMessage}
+          </div>
+        )}
+      </div>
 
       <UploadProgressModal step={step} rowsWritten={rowsWritten} variant="reports-consolidado" />
 

@@ -38,7 +38,28 @@ const zenSans = Instrument_Sans({
 
 export const revalidate = 300;
 
+// Loading "fake" de piso mínimo: o loading.tsx (Suspense fallback, formato
+// "consolidado" do KpiLoadingScreen) foi desenhado pra replicar a posição
+// exata dos cards da página real — mas se os dados voltarem rápido (ex.:
+// cache quente, rede boa), ele só pisca na tela por uma fração de segundo,
+// que o pedido considerou "ruim"/instável visualmente. Não dá pra controlar
+// isso no client (loading.tsx é só o fallback declarativo do Suspense do
+// Next, sem lógica própria) — o jeito é atrasar A PRÓPRIA resolução deste
+// Server Component até completar MIN_LOADING_MS, contados desde a entrada
+// na função. Se a busca real já demorou mais que isso, `aguardarPisoMinimo`
+// não espera nada (Math.max trava em 0) — só estica quando sobrou tempo.
+const MIN_LOADING_MS = 3_000;
+
+async function aguardarPisoMinimo(desde: number) {
+  const faltam = MIN_LOADING_MS - (Date.now() - desde);
+  if (faltam > 0) {
+    await new Promise((resolve) => setTimeout(resolve, faltam));
+  }
+}
+
 export default async function ReportsConsolidadoPage() {
+  const inicioCarregamento = Date.now();
+
   const user = await getCurrentUser();
 
   if (!user) {
@@ -68,6 +89,11 @@ export default async function ReportsConsolidadoPage() {
     ativo: nomeFantasiaConfig.ativo,
     mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
   };
+
+  // Piso mínimo de loading (ver comentário em MIN_LOADING_MS acima) —
+  // aplicado depois de TODAS as buscas (inclusive getCurrentUser, no início
+  // da função), cobrindo os dois caminhos abaixo (vazio e com dados).
+  await aguardarPisoMinimo(inicioCarregamento);
 
   if (data.operadores.length === 0) {
     return (
