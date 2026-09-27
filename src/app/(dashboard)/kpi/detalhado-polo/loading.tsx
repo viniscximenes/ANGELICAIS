@@ -10,7 +10,7 @@ export default function LoadingKpiDetalhadoPolo() {
     <KpiLoadingScreen
       dataPage="kpi-detalhado-polo"
       titulo="Detalhado Polo"
-      formato="tabela"
+      formato="kpi-detalhado-polo"
     />
   );
 }

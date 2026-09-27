@@ -8,5 +8,5 @@ import "./kpi-evolucao.css";
 import { KpiLoadingScreen } from "@/components/gestor/kpi-loading-screen";
 
 export default function LoadingKpiEvolucao() {
-  return <KpiLoadingScreen dataPage="kpi-evolucao" titulo="Evolução" formato="cards" />;
+  return <KpiLoadingScreen dataPage="kpi-evolucao" titulo="Evolução" formato="kpi-evolucao" />;
 }

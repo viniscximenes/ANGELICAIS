@@ -35,25 +35,28 @@ interface KpiLoadingScreenProps {
     | "reports-consolidado"
     | "reports-tempo-indisponibilidade"
     | "reports-tma-peso"
-    | "operacao-diario";
+    | "operacao-diario"
+    | "operacao-comparativo-consolidado";
   /** Nome da página pro rótulo acessível ("Carregando Operadores...") e pro texto visível. */
   titulo: string;
   /**
-   * Esqueleto: "tabela" (operadores/detalhado-polo) ou "cards"
-   * (gestor/evolução) — muda a forma dos blocos desfocados ao fundo.
-   * "equipe" é um esqueleto dedicado à estrutura de /configuracoes/equipe
-   * (toggle + tabela + linha de adicionar, sem a linha de ações das KPIs).
-   * "consolidado" é dedicado a /reports/consolidado (20ª rodada): tabela da
-   * equipe + placeholder genérico da seção Analítico abaixo, ver
-   * SkeletonConsolidado.
+   * Cada rota migrada usa um formato dedicado, com os cards principais na
+   * mesma ordem, proporção e posição relativa da página real. "tabela" e
+   * "cards" ficam disponíveis como fallback para consumidores antigos.
    */
   formato:
     | "tabela"
     | "cards"
+    | "kpi-operadores"
+    | "kpi-gestor"
+    | "kpi-detalhado-polo"
+    | "kpi-evolucao"
     | "equipe"
     | "consolidado"
+    | "tempo-indisponibilidade"
     | "tma-peso"
-    | "diario";
+    | "diario"
+    | "comparativo";
   /**
    * Largura do container central — as páginas de KPI usam "max-w-7xl"
    * (default, preserva o comportamento atual). /configuracoes/equipe usa
@@ -76,6 +79,78 @@ interface KpiLoadingScreenProps {
   indicatorPosition?: "center" | "after-header";
 }
 
+type LoadingFormato = KpiLoadingScreenProps["formato"];
+
+function SkeletonActionsRow({ formato }: { formato: LoadingFormato }) {
+  if (formato === "kpi-operadores") {
+    return (
+      <>
+        <div className="h-8 w-64 rounded-[var(--radius)] bg-card" />
+        <div className="ml-auto flex gap-2">
+          <div className="h-8 w-8 rounded-md bg-card" />
+          <div className="h-8 w-8 rounded-md bg-card" />
+          <div className="h-8 w-24 rounded-md bg-card" />
+        </div>
+      </>
+    );
+  }
+
+  if (formato === "kpi-gestor") {
+    return (
+      <>
+        <div className="h-8 w-64 rounded-[var(--radius)] bg-card" />
+        <div className="ml-auto h-8 w-32 rounded-md bg-card" />
+      </>
+    );
+  }
+
+  if (formato === "kpi-detalhado-polo") {
+    return <div className="h-8 w-64 rounded-md bg-card" />;
+  }
+
+  if (formato === "kpi-evolucao") {
+    return (
+      <>
+        <div className="h-8 w-52 rounded-md bg-card" />
+        <div className="h-8 w-56 rounded-[var(--radius)] bg-card" />
+        <div className="h-5 w-44 rounded-full bg-card" />
+      </>
+    );
+  }
+
+  if (
+    formato === "consolidado" ||
+    formato === "tempo-indisponibilidade" ||
+    formato === "tma-peso"
+  ) {
+    return (
+      <div className="ml-auto flex gap-2">
+        <div className="h-8 w-8 rounded-md bg-card" />
+        <div className="h-8 w-8 rounded-md bg-card" />
+        <div className="h-8 w-32 rounded-md bg-card" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="h-8 w-64 rounded-[var(--radius)] bg-card" />
+      <div className="ml-auto h-8 w-8 rounded-md bg-card" />
+    </>
+  );
+}
+
+function SkeletonTable({ rows = 9 }: { rows?: number }) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-border">
+      <div className="h-10 bg-card" />
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="h-11 border-t border-border/60 bg-background" />
+      ))}
+    </div>
+  );
+}
+
 function SkeletonCards() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -90,12 +165,60 @@ function SkeletonCards() {
 }
 
 function SkeletonTabela() {
+  return <SkeletonTable />;
+}
+
+function SkeletonKpiOperadores() {
+  return <SkeletonTable rows={10} />;
+}
+
+function SkeletonKpiGestor() {
   return (
-    <div className="overflow-hidden rounded-lg border border-border">
-      <div className="h-10 bg-card" />
-      {Array.from({ length: 9 }).map((_, i) => (
-        <div key={i} className="h-11 border-t border-border/60 bg-background" />
+    <div className="space-y-8">
+      {["principais", "complementares"].map((secao) => (
+        <section key={secao} className="space-y-3">
+          <div className="h-5 w-36 rounded bg-card" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-[150px] rounded-lg border border-border bg-card" />
+            ))}
+          </div>
+        </section>
       ))}
+    </div>
+  );
+}
+
+function SkeletonKpiDetalhadoPolo() {
+  return <SkeletonTable rows={10} />;
+}
+
+function SkeletonKpiEvolucao() {
+  return (
+    <div className="space-y-8">
+      <div className="h-20 rounded-lg border border-dashed border-border bg-card" />
+      <div className="h-36 rounded-lg border border-border bg-card" />
+
+      <div className="space-y-10">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <section key={i} className="space-y-3">
+            <div className="flex items-end justify-between gap-4">
+              <div className="h-5 w-40 rounded bg-card" />
+              <div className="h-8 w-20 rounded bg-card" />
+            </div>
+            <div className="h-[320px] rounded-lg border border-border bg-card" />
+          </section>
+        ))}
+      </div>
+
+      <section className="space-y-3">
+        <div className="h-4 w-44 rounded bg-card" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-28 rounded-lg border border-border bg-card" />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
@@ -134,21 +257,15 @@ function SkeletonEquipe() {
 }
 
 /**
- * Esqueleto de /reports/consolidado: tabela da equipe (mesmo formato de
- * SkeletonTabela, com uma linha a mais pra aproximar a altura real) seguida
- * de um placeholder genérico pra seção "Analítico" — não replica os 8 cards
- * em detalhe (o pedido explicitamente dispensa isso), só evita o "buraco"
- * vazio: um bloco de título fantasma + uma grade de cards rasos, dando a
- * mesma pista visual de "cards" sem fingir ser 8 componentes reais.
+ * /reports/consolidado: tabela e anexo lado a lado; abaixo, o primeiro
+ * slide do Analítico com o card principal, três secundários e o gráfico.
  */
 function SkeletonConsolidado() {
   return (
     <div className="space-y-8">
-      <div className="overflow-hidden rounded-lg border border-border">
-        <div className="h-10 bg-card" />
-        {Array.from({ length: 10 }).map((_, i) => (
-          <div key={i} className="h-11 border-t border-border/60 bg-background" />
-        ))}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,760px)_1fr]">
+        <SkeletonTable rows={10} />
+        <div className="min-h-[180px] rounded-lg border border-border bg-card" />
       </div>
 
       {/*
@@ -162,10 +279,33 @@ function SkeletonConsolidado() {
       */}
       <div className="space-y-4">
         <div className="h-6 w-40 rounded bg-card" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-[110px] rounded-lg border border-border bg-card" />
-          ))}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end">
+          <div className="h-[118px] rounded-lg border border-border bg-card sm:col-span-2" />
+          <div className="grid grid-cols-3 gap-4 sm:col-span-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-[86px] rounded-lg border border-border bg-card" />
+            ))}
+          </div>
+        </div>
+        <div className="h-[420px] rounded-lg border border-border bg-card lg:h-[600px]" />
+      </div>
+    </div>
+  );
+}
+
+function SkeletonTempoIndisponibilidade() {
+  return (
+    <div className="space-y-6">
+      <div className="h-[90px] rounded-lg border border-border bg-card" />
+      <SkeletonTable rows={10} />
+
+      <div className="space-y-4">
+        <div className="h-6 w-28 rounded bg-card" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-6 sm:items-end">
+          <div className="h-[118px] rounded-lg border border-border bg-card sm:col-span-2" />
+          <div className="h-[118px] rounded-lg border border-border bg-card sm:col-span-2" />
+          <div className="h-[86px] rounded-lg border border-border bg-card" />
+          <div className="h-[86px] rounded-lg border border-border bg-card" />
         </div>
         <div className="h-[420px] rounded-lg border border-border bg-card lg:h-[600px]" />
       </div>
@@ -201,20 +341,40 @@ function SkeletonTmaPeso() {
 function SkeletonDiario() {
   return (
     <div className="space-y-8">
-      <div className="border border-border bg-card p-4 sm:p-6">
+      <div className="h-[90px] rounded-lg border border-border bg-card p-3">
         <div className="h-3 w-24 rounded bg-muted" />
-        <div className="mt-4 h-28 rounded-md border border-dashed border-border bg-muted/40" />
+        <div className="mt-3 h-11 rounded-md border border-dashed border-border bg-muted/40" />
       </div>
 
       <section className="space-y-4">
         <div className="h-6 w-36 rounded bg-card" />
-        <div className="overflow-hidden border border-border bg-card p-3">
-          <div className="h-10 bg-muted/70" />
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-12 border-t border-border/60 bg-background" />
-          ))}
-        </div>
+        <SkeletonTable rows={7} />
       </section>
+    </div>
+  );
+}
+
+/**
+ * Esqueleto de /operacao/comparativo-consolidado: o bloco fixo "Meus
+ * indicadores" (grade de 4 cards, mesmo formato de VisaoGeralCards) seguido
+ * de algumas linhas fantasmas de gestor (mesma altura de
+ * LinhaGestorComparativo fechada).
+ */
+function SkeletonComparativo() {
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-[110px] rounded-lg border border-border bg-card" />
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        <div className="h-5 w-56 rounded bg-card" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-16 rounded-lg border border-border bg-card" />
+        ))}
+      </div>
     </div>
   );
 }
@@ -242,8 +402,7 @@ export function KpiLoadingScreen({
         </div>
         {showActionsRow && (
           <div className="flex items-center gap-3 pt-4 pb-4">
-            <div className="h-8 w-64 rounded-[var(--radius)] bg-card" />
-            <div className="ml-auto h-8 w-8 rounded-md bg-card" />
+            <SkeletonActionsRow formato={formato} />
           </div>
         )}
 
@@ -252,16 +411,28 @@ export function KpiLoadingScreen({
           aria-hidden="true"
           className={`${showActionsRow ? "pt-4" : "pt-8"} opacity-40 blur-[2px]`}
         >
-          {formato === "tabela" ? (
+          {formato === "kpi-operadores" ? (
+            <SkeletonKpiOperadores />
+          ) : formato === "kpi-gestor" ? (
+            <SkeletonKpiGestor />
+          ) : formato === "kpi-detalhado-polo" ? (
+            <SkeletonKpiDetalhadoPolo />
+          ) : formato === "kpi-evolucao" ? (
+            <SkeletonKpiEvolucao />
+          ) : formato === "tabela" ? (
             <SkeletonTabela />
           ) : formato === "cards" ? (
             <SkeletonCards />
           ) : formato === "consolidado" ? (
             <SkeletonConsolidado />
+          ) : formato === "tempo-indisponibilidade" ? (
+            <SkeletonTempoIndisponibilidade />
           ) : formato === "tma-peso" ? (
             <SkeletonTmaPeso />
           ) : formato === "diario" ? (
             <SkeletonDiario />
+          ) : formato === "comparativo" ? (
+            <SkeletonComparativo />
           ) : (
             <SkeletonEquipe />
           )}

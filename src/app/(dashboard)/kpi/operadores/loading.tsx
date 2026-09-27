@@ -9,5 +9,5 @@ import "./kpi-operadores.css";
 import { KpiLoadingScreen } from "@/components/gestor/kpi-loading-screen";
 
 export default function LoadingKpiOperadores() {
-  return <KpiLoadingScreen dataPage="kpi-operadores" titulo="Operadores" formato="tabela" />;
+  return <KpiLoadingScreen dataPage="kpi-operadores" titulo="Operadores" formato="kpi-operadores" />;
 }

@@ -9,5 +9,5 @@ import "./kpi-gestor.css";
 import { KpiLoadingScreen } from "@/components/gestor/kpi-loading-screen";
 
 export default function LoadingKpiGestor() {
-  return <KpiLoadingScreen dataPage="kpi-gestor" titulo="Gestor" formato="cards" />;
+  return <KpiLoadingScreen dataPage="kpi-gestor" titulo="Gestor" formato="kpi-gestor" />;
 }
