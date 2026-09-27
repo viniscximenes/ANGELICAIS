@@ -475,6 +475,29 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
   cursor: not-allowed;
 }
 
+/* Ao cancelar o HoldButton, o preenchimento volta a zero durante
+ * --hb-release. Se a largura começar a fechar no mesmo instante, a crista
+ * ondulada recalcula a posição contra uma largura em movimento e parece se
+ * desprender da barra. Nesta rota, aguardamos o retorno terminar antes de
+ * recolher o botão; expansão e confirmação continuam inalteradas. Mesma
+ * solução já aplicada em /reports/tempo-indisponibilidade. */
+[data-page="reports-consolidado"] button[aria-label="Segure para limpar a base"][data-phase="idle"] {
+  transition-delay: var(--hb-release), 0ms, 0ms, 0ms !important;
+}
+
+/* ───────── Fundo dos cards de Visão Geral (Tx Retenção/Pedidos/Retidos/Churn) ─────────
+ * VisaoGeralCards.tsx é COMPARTILHADO com /operacao/comparativo-consolidado,
+ * então não editamos o componente — só aqui, via wrapper com
+ * data-visao-geral-cards (adicionado em retencao-detalhe-section.tsx,
+ * exclusivo desta rota). Mesma correção já aplicada em
+ * /reports/tempo-indisponibilidade (.tempo-indisp-resumo-card): no tema
+ * claro, os cards precisam se separar do fundo da página sem voltar ao
+ * branco do card padrão. Tema escuro mantém integralmente o bg-card/70.
+ */
+[data-theme="light"] [data-page="reports-consolidado"] [data-visao-geral-cards] .bg-card\/70 {
+  background-color: color-mix(in srgb, var(--background) 82%, var(--muted) 18%) !important;
+}
+
 /* ───────── Hover das linhas da EquipeTable (tema claro) ─────────
  * globals.css tem uma regra GLOBAL (fora do escopo permitido pra edição):
  *   [data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover
@@ -590,6 +613,21 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
 }
 
 [data-theme="light"] [data-page="reports-consolidado"] .upload-dropzone-root-reports-consolidado[data-dropzone-state="idle"]:hover {
+  border-color: var(--border) !important;
+}
+
+/* ───────── Placeholder do anexo na tela de loading (kpi-loading-screen.tsx) ─────────
+ * globals.css tem uma regra GLOBAL (fora do escopo permitido pra edição) que
+ * escurece qualquer .border-dashed no hover, no tema claro:
+ *   [data-theme="light"] .border-dashed:hover { border-color: var(--primary) !important; }
+ * Isso atinge também a caixa tracejada muda do esqueleto de loading (não tem
+ * classe própria, só utilities Tailwind), fazendo a borda "animar" ao passar
+ * o mouse ali mesmo estando tudo desabilitado. O dropzone real já tem a
+ * regra acima cancelando o mesmo efeito; aqui cancelamos de novo, restrita a
+ * esta rota, pra cobrir a caixa do loading também. Mesma correção já
+ * aplicada em /reports/tempo-indisponibilidade.
+ */
+[data-theme="light"] [data-page="reports-consolidado"] .border-dashed:hover {
   border-color: var(--border) !important;
 }
 
@@ -713,4 +751,20 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
  * var em alguns estados de hover — !important garante consistência). */
 .reports-consolidado-toast [data-close-button] {
   border-color: var(--normal-border) !important;
+}
+
+/* ───────── Cabeçalho de colunas do card "Retenção por Tema" (TabelaTemas) ─────────
+ * TabelaTemas.tsx é COMPARTILHADO com /operacao/comparativo-consolidado
+ * (comparativo-consolidado-section.tsx), então não editamos a classe do
+ * componente ali — só aqui, escopado a esta rota. Alinha o título das
+ * colunas ao padrão já usado em /reports/tempo-indisponibilidade
+ * (aderencia-analitico.tsx e afins): tracking mais suave (tracking-wide em
+ * vez de tracking-wider), tamanho igual ao ds-body normal (em vez do
+ * text-[11px] fixo) e cor mais discreta (muted-foreground a 70% em vez de
+ * 100%).
+ */
+[data-page="reports-consolidado"] .ds-body.tracking-wider.text-\[11px\] {
+  font-size: var(--text-body);
+  letter-spacing: 0.025em;
+  color: color-mix(in oklch, var(--muted-foreground) 70%, transparent);
 }

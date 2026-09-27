@@ -55,6 +55,20 @@ export function RetencaoDetalheSection({
   gestora = "Equipe",
   reportHoraInicial,
 }: RetencaoDetalheSectionProps) {
+  // Ao (re)carregar a página, o navegador tenta restaurar a posição de
+  // scroll anterior (ex.: estava no meio do trilho do Analítico) — some com
+  // o cabeçalho e deixa a página abrindo "no meio". Desligamos a restauração
+  // automática e forçamos o topo uma vez, só nesta rota.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
+    return () => {
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [emailsEquipe, setEmailsEquipe] = useState<string[]>(emailsEquipeIniciais);
@@ -317,7 +331,9 @@ export function RetencaoDetalheSection({
                 {/* Cada card mantém 100% do visual/estilo próprio (StyledCard,
                     borda, fundo, padding) — só empilhados verticalmente dentro
                     do mesmo slot do trilho, não um card único reestilizado. */}
-                <VisaoGeralCards data={data!.visaoGeral} meta={metaGlobal} />
+                <div data-visao-geral-cards>
+                  <VisaoGeralCards data={data!.visaoGeral} meta={metaGlobal} />
+                </div>
                 <GraficoEvolucao
                   dados={data!.evolucaoHora}
                   meta={metaGlobal}

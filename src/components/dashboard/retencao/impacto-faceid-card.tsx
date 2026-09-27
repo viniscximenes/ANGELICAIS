@@ -82,7 +82,7 @@ export function ImpactoFaceIdCard({ data, scrollInterno = false }: ImpactoFaceId
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="ds-body text-muted-foreground uppercase tracking-wider text-[11px] font-bold select-none border-b border-border/40 bg-muted/40">
+              <tr className="ds-body text-muted-foreground/70 uppercase tracking-wide font-bold select-none border-b border-border/40 bg-muted/40">
                 <th className="py-2.5 px-4 font-bold whitespace-nowrap">Operador</th>
                 <th className="py-2.5 px-4 font-bold text-center w-[150px] whitespace-nowrap">
                   Não Realizado

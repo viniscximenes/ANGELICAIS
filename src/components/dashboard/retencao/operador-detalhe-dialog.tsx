@@ -508,7 +508,7 @@ export function OperadorDetalheDialog({
                           (ds-body + font-bold uppercase tracking-wider
                           text-[11px]) — antes era ds-mono-sm, destoando do
                           resto da página. */}
-                      <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 text-[11px] font-bold tracking-wider uppercase">
+                      <tr className="ds-body text-muted-foreground/70 border-border/40 border-b bg-muted/40 font-bold tracking-wide uppercase">
                         <th className="px-4 py-2.5 font-semibold">Motivo</th>
                         <th className="px-4 py-2.5 text-center font-semibold">Retidos</th>
                         <th className="px-4 py-2.5 text-center font-semibold">Cancelados</th>

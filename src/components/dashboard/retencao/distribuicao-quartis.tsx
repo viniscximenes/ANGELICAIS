@@ -130,13 +130,13 @@ export function DistribuicaoQuartis({
         <div className={scrollInterno ? "min-h-0 flex-1 overflow-auto scrollbar-tema" : "overflow-x-auto"}>
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="ds-body text-muted-foreground uppercase tracking-wider text-[11px] font-bold select-none border-b border-border/40 bg-muted/40">
-                <th className="py-2.5 px-4">Operador</th>
-                <th className="py-2.5 px-4 text-center w-[90px]">Quartil</th>
-                <th className="py-2.5 px-4 text-center w-[90px]">Pedidos</th>
-                <th className="py-2.5 px-4 text-center w-[90px]">Retidos</th>
-                <th className="py-2.5 px-4 text-center w-[90px]">Cancelados</th>
-                <th className="py-2.5 px-4 text-center w-[120px]">Tx Retenção</th>
+              <tr className="ds-body text-muted-foreground/70 uppercase tracking-wide font-bold select-none border-b border-border/40 bg-muted/40">
+                <th className="py-2.5 px-4 whitespace-nowrap">Operador</th>
+                <th className="py-2.5 px-4 text-center w-[90px] whitespace-nowrap">Quartil</th>
+                <th className="py-2.5 px-4 text-center w-[90px] whitespace-nowrap">Pedidos</th>
+                <th className="py-2.5 px-4 text-center w-[90px] whitespace-nowrap">Retidos</th>
+                <th className="py-2.5 px-4 text-center w-[90px] whitespace-nowrap">Cancelados</th>
+                <th className="py-2.5 px-4 text-center w-[120px] whitespace-nowrap">Tx Retenção</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 
 import { UploadTempoLogadoDropzone } from "@/components/d-1/tempo-logado/upload-tempo-logado-dropzone";
@@ -88,6 +88,21 @@ export function TempoIndispSection({
   metaIndisponibilidadeInicial,
   ordemTabelaInicial,
 }: TempoIndispSectionProps) {
+  // Ao (re)carregar a página, o navegador tenta restaurar a posição de
+  // scroll anterior (ex.: estava no meio do trilho do Analítico) — some com
+  // o cabeçalho e deixa a página abrindo "no meio". Desligamos a restauração
+  // automática e forçamos o topo uma vez, só nesta rota (mesmo ajuste de
+  // /reports/consolidado).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
+    return () => {
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
+
   const [operadoresTL, setOperadoresTL] = useState(operadoresTempoLogadoIniciais);
   const [operadoresIndisp, setOperadoresIndisp] = useState(operadoresIndisponibilidadeIniciais);
   // Antes eram só props (do SSR de page.tsx), nunca atualizadas pelo
