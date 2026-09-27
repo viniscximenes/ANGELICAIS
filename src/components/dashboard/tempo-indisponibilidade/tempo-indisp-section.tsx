@@ -258,8 +258,15 @@ export function TempoIndispSection({
 
   return (
     <>
+      {/*
+        Overlay de refresh manual — mesmo ajuste de /reports/consolidado:
+        cobre só a área de CONTEÚDO (abaixo do header de 60px, à direita da
+        sidebar de 240px em telas lg+), não a página inteira. Cobrir tudo
+        escondia a sidebar durante o refresh, diferente de um F5 normal
+        (loading.tsx do Next só substitui {children} dentro de <main>).
+      */}
       {isRefreshing && (
-        <div className="fixed inset-0 z-[100]">
+        <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] lg:left-[240px]">
           <KpiLoadingScreen
             dataPage="reports-tempo-indisponibilidade"
             titulo="Tempo Logado & Indisponibilidade"
@@ -324,6 +331,7 @@ export function TempoIndispSection({
               variant="icon-danger"
               holdToConfirm
               toastClassName="reports-tempo-indisp-toast"
+              showSuccessToast={false}
             />
           )}
 

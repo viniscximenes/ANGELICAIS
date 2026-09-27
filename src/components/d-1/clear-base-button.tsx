@@ -55,6 +55,13 @@ interface Props {
    * essa prop e continuam com o visual padrão). Default: undefined.
    */
   toastClassName?: string;
+  /**
+   * Toast "Base limpa" ao concluir. Default true (comportamento de sempre,
+   * usado por TMA/Pausas). "/reports/consolidado" passa false: o overlay de
+   * refresh (KpiLoadingScreen) já comunica visualmente que a ação rodou, o
+   * toast era redundante/pedido pra sair só ali.
+   */
+  showSuccessToast?: boolean;
 }
 
 export function ClearBaseButton({
@@ -63,6 +70,7 @@ export function ClearBaseButton({
   variant = "default",
   holdToConfirm = false,
   toastClassName,
+  showSuccessToast = true,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -72,7 +80,9 @@ export function ClearBaseButton({
       try {
         const r = await action();
         if (r.success) {
-          toast.success("Base limpa", { className: toastClassName });
+          if (showSuccessToast) {
+            toast.success("Base limpa", { className: toastClassName });
+          }
           await onCleared?.();
           router.refresh();
         } else {

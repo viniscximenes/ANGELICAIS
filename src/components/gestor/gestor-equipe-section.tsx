@@ -435,13 +435,17 @@ export function GestorEquipeSection({
       {/*
         Overlay de refresh manual (ver handleBaseCleared/MIN_REFRESH_LOADING_MS
         acima) — reaproveita o MESMO esqueleto do Suspense fallback inicial
-        (KpiLoadingScreen formato="consolidado"), fixo por cima da página
-        inteira (z acima do header/sidebar do layout do dashboard), pra dar a
-        mesma sensação de "recarregando" que o F5 já dava antes, sem de fato
-        recarregar a página (preserva scroll, popovers fechados etc.).
+        (KpiLoadingScreen formato="consolidado"), fixo por cima só da área de
+        CONTEÚDO (abaixo do header de 60px, à direita da sidebar de 240px em
+        telas lg+) — pra dar a mesma sensação de "recarregando" que um F5
+        real dá (loading.tsx do Next só substitui {children} dentro de
+        <main>, header/sidebar do layout continuam visíveis), sem de fato
+        recarregar a página (preserva scroll, popovers fechados etc.). Cobrir
+        a página INTEIRA (inset-0) escondia a sidebar durante o refresh,
+        diferente de um F5 normal.
       */}
       {isRefreshing && (
-        <div className="fixed inset-0 z-[100]">
+        <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] lg:left-[240px]">
           <KpiLoadingScreen
             dataPage="reports-consolidado"
             titulo="Consolidado"
@@ -518,6 +522,7 @@ export function GestorEquipeSection({
               variant="icon-danger"
               holdToConfirm
               toastClassName="reports-consolidado-toast"
+              showSuccessToast={false}
             />
           )}
 
