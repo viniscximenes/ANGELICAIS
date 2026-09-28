@@ -1,170 +1,16 @@
-/* Zen Linen: paleta de tema/kpi-operadores.css e reports/consolidado.
-   Portais recebem o tema apenas enquanto esta rota estiver montada.
-   Nenhum token global ou componente compartilhado é alterado. */
-:is([data-page="reports-tma-peso"], .reports-tma-peso-dialog, body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) {
-  --background: #141414;
-  --foreground: #E8E3DA;
-  --card: #1C1C1C;
-  --card-foreground: #E8E3DA;
-  --popover: #1C1C1C;
-  --popover-foreground: #E8E3DA;
-  --primary: #D1CFC0;
-  --primary-foreground: #363636;
-  --secondary: #222222;
-  --secondary-foreground: #D1CFC0;
-  --muted: #2A2A2A;
-  --muted-foreground: #8E8A83;
-  --accent: #363636;
-  --accent-foreground: #D1CFC0;
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  --border: #2C2C2C;
-  --input: #2C2C2C;
-  --ring: #D1CFC0;
-
-  --chart-1: #F26A4B;
-  --chart-2: #D9CFC2;
-  --chart-3: #8E8A83;
-  --chart-4: #5C5A56;
-  --chart-5: #3B3B3B;
-
-  --success: #8DB596;
-  --warning: #D9A74A;
-  --danger: #F07A62;
-
-  --elevation-1-bg: #1C1C1C;
-  --elevation-1-border: #2C2C2C;
-
-  
-  --nav-menu-bg: var(--elevation-1-bg);
-
-  --kpi-shadow: 0px 6px 15px 0px rgb(0 0 0 / 0.3);
-
-  --radius: 0.5rem;
-  --letter-spacing: 0.01em;
-
-  
-  --seg-track: #1F1F1F;
-  --seg-track-border: #2C2C2C;
-  --seg-thumb: #F8F4EC;
-  --seg-thumb-border: #CFC8B8;
-  --seg-text: #8E8A83;
-  --seg-text-active: #1E1E1E;
-  --switch-off: #2C2C2C;
-  --switch-off-border: #3A3A3A;
-  --switch-on: #D1CFC0;
-  --switch-knob: #141414;
-  --switch-knob-off: #8E8A83;
-
-  /* Folhas do Folder (React Bits) no card de anexo — mesmos tons do
-     Consolidado (reports-consolidado.css). */
-  --upload-folder-paper-1: #4B4B48;
-  --upload-folder-paper-2: #73716C;
-  --upload-folder-paper-3: #A8A49C;
-}
-
-
-[data-theme="light"] :is([data-page="reports-tma-peso"], .reports-tma-peso-dialog, body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) {
-  --background: #E9E4D8;
-  --foreground: #1E1E1E;
-  --card: #F4EFE4;
-  --card-foreground: #1E1E1E;
-  --popover: #F4EFE4;
-  --popover-foreground: #1E1E1E;
-  --primary: #2E2E2E;
-  --primary-foreground: #E6E4D7;
-  --secondary: #D8D2C4;
-  --secondary-foreground: #2E2E2E;
-  --muted: #CFC8B8;
-  --muted-foreground: #5E5A52;
-  --accent: #E6E4D7;
-  --accent-foreground: #2E2E2E;
-  --destructive: #DC2626;
-  --destructive-foreground: #FFFFFF;
-  --border: #D2CBBB;
-  --input: #D2CBBB;
-  --ring: #2E2E2E;
-
-  --chart-1: #F26A4B;
-  --chart-2: #1E1E1E;
-  --chart-3: #5E5A52;
-  --chart-4: #A89F8F;
-  --chart-5: #CFC8B8;
-
-  --success: #3D6B47;
-  --warning: #93600F;
-  --danger: #B3321C;
-
-  --elevation-1-bg: #F4EFE4;
-  --elevation-1-border: #D2CBBB;
-
-  
-  --nav-menu-bg: color-mix(in srgb, var(--background) 92%, var(--foreground) 8%);
-
-  --kpi-shadow: 0px 4px 10px 0px rgb(0 0 0 / 0.1);
-
-  --seg-track: #DDD7CA;
-  --seg-track-border: #D2CBBB;
-  --seg-thumb: #3A3A3A;
-  --seg-thumb-border: color-mix(in srgb, #E8E3DA 14%, transparent);
-  --seg-text: #5E5A52;
-  --seg-text-active: #F1ECE3;
-  --switch-off: #CFC8B8;
-  --switch-off-border: #C2BAA8;
-  --switch-on: #2E2E2E;
-  --switch-knob: #F4EFE4;
-  --switch-knob-off: #F4EFE4;
-
-  /* Folhas do Folder (React Bits) no card de anexo — mesmos tons do
-     Consolidado (reports-consolidado.css). */
-  --upload-folder-paper-1: #817B70;
-  --upload-folder-paper-2: #A89F8F;
-  --upload-folder-paper-3: #CFC8B8;
-}
-
+/*
+ * Ajustes visuais específicos de /reports/tma-peso.
+ * As cores (tokens) vêm da paleta global em src/app/palettes/zen-linen.css —
+ * não redefina --background/--card/--primary/... aqui, senão a troca de
+ * paleta deixa de valer nesta página.
+ */
 
 :is([data-page="reports-tma-peso"], .reports-tma-peso-dialog, body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-danger: var(--danger);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-
-  
-  --font-sans: var(--font-zen-sans), "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
-
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   letter-spacing: var(--letter-spacing);
 }
-
 
 /* ───────── Barra de rolagem (fina, no tema da página) ─────────
  * Antes: 10px/quadrada, visual "de sistema" destoando do resto do site.
@@ -260,11 +106,6 @@ body:has([data-page="reports-tma-peso"])::-webkit-scrollbar-corner {
 [data-page="reports-tma-peso"] {
   --upload-idle-bg: color-mix(in srgb, var(--card) 55%, var(--muted) 45%);
   --muted-hover-bg: color-mix(in srgb, var(--card) 35%, var(--muted) 65%);
-  --glow-accent: color-mix(in srgb, var(--primary) 12%, transparent);
-  --elevation-3-bg: var(--card);
-  --elevation-3-border: var(--border);
-  --danger-bg: color-mix(in srgb, var(--danger) 12%, transparent);
-  --danger-border: color-mix(in srgb, var(--danger) 35%, transparent);
 }
 
 /* Navegação local: preserva os links e a interação do componente atual. */
@@ -308,9 +149,6 @@ body:has([data-page="reports-tma-peso"]) [data-sonner-toast] [data-description] 
    rota, como no Consolidado, para manter o tema mesmo quando o portal do
    Sonner estiver fora da árvore de data-page. */
 .reports-tma-peso-toast {
-  --normal-bg: #1C1C1C;
-  --normal-text: #E8E3DA;
-  --normal-border: #2C2C2C;
   background: var(--normal-bg) !important;
   color: var(--normal-text) !important;
   border: 1px solid var(--normal-border) !important;
@@ -325,11 +163,7 @@ body:has([data-page="reports-tma-peso"]) [data-sonner-toast] [data-description] 
 .reports-tma-peso-toast[data-type="error"] [data-icon] svg {
   color: #F07A62 !important;
 }
-[data-theme="light"] .reports-tma-peso-toast {
-  --normal-bg: #F4EFE4;
-  --normal-text: #1E1E1E;
-  --normal-border: #D2CBBB;
-}
+
 [data-theme="light"] .reports-tma-peso-toast [data-description] {
   color: #5E5A52 !important;
 }
@@ -425,7 +259,6 @@ body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] > svg {
     opacity: 1;
   }
 }
-
 
 [data-page="reports-tma-peso"] button[aria-pressed]:focus-visible {
   outline: 2px solid var(--ring);

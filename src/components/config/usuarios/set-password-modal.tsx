@@ -130,7 +130,7 @@ export function SetPasswordModal({ open, onClose, user }: Props) {
                   // Tema claro: fundo sólido + texto branco (o token
                   // --warning-bg é quase branco no claro, ilegível). Tema
                   // escuro mantém os tokens translúcidos originais.
-                  className="mb-4 flex items-start gap-2 rounded-lg border p-3 bg-amber-700 border-amber-800 dark:bg-[var(--warning-bg)] dark:border-[var(--warning-border)]"
+                  className="mb-4 flex items-start gap-2 rounded-lg border p-3 bg-[var(--warning)] border-[var(--warning)] dark:bg-[var(--warning-bg)] dark:border-[var(--warning-border)]"
                 >
                   <IconAlertTriangle
                     size={16}

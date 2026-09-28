@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Geist, Geist_Mono } from "next/font/google";
+// Paletas depois do globals.css. Hoje só Zen Linen (ver palettes/zen-linen.css).
+import "./palettes/zen-linen.css";
+import { Geist, Geist_Mono, Instrument_Sans } from "next/font/google";
 import Script from "next/script";
 import { Toaster } from "sonner";
 
@@ -10,11 +12,19 @@ import { ProgressBarProvider } from "@/components/dashboard/progress-provider";
 import { ThemeProvider } from "@/components/dashboard/theme-provider";
 import { LenisProvider } from "@/components/providers/lenis-provider";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { DEFAULT_PALETTE } from "@/lib/theme/palettes";
 import { FAVICON_EARLY_SCRIPT } from "@/lib/favicon/favicon-early-script";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
+// Fonte da paleta Zen Linen — referenciada por --font-sans em
+// palettes/zen-linen.css.
+const zenSans = Instrument_Sans({
+  subsets: ["latin", "latin-ext"],
+  weight: "variable",
+  variable: "--font-zen-sans",
+});
 
 export const metadata: Metadata = {
   title: "meu-projeto",
@@ -33,11 +43,13 @@ export default async function RootLayout({
     <html
       lang="pt-BR"
       data-theme={theme}
+      data-palette={DEFAULT_PALETTE}
       className={cn(
         theme === "dark" && "dark",
         "font-sans",
         geist.variable,
         geistMono.variable,
+        zenSans.variable,
       )}
     >
       <body>

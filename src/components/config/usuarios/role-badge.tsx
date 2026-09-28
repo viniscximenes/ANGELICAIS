@@ -6,20 +6,18 @@ interface Props {
 }
 
 export function RoleBadge({ role }: Props) {
-  // Fundo sólido + texto branco no tema claro, com croma reduzido (~metade
-  // da saturação do Tailwind bg-blue-700/bg-amber-700 puro). Mesmo nível de
-  // restrição de croma já usado nos tokens semânticos do sistema
-  // (--danger/--warning). Tema escuro intocado.
+  // Cores da paleta global: ADM no tom primário (grafite/linho), GESTOR no
+  // --warning (âmbar terroso). Claro = fundo sólido; escuro = translúcido.
   const config: Record<UserRole, { className: string; label: string }> = {
     ADM: {
       label: "ADM",
       className:
-        "bg-[oklch(0.42_0.10_260)] text-white border-[oklch(0.34_0.09_260)] dark:bg-blue-950/20 dark:text-blue-300 dark:border-blue-900/30",
+        "bg-primary text-primary-foreground border-primary dark:bg-primary/10 dark:text-primary dark:border-primary/25",
     },
     GESTOR: {
       label: "GESTOR",
       className:
-        "bg-[oklch(0.48_0.10_75)] text-white border-[oklch(0.38_0.09_75)] dark:bg-amber-950/25 dark:text-amber-300 dark:border-amber-900/30",
+        "bg-[var(--warning)] text-white border-[var(--warning)] dark:bg-[var(--warning-bg)] dark:text-[var(--warning)] dark:border-[var(--warning-border)]",
     },
   };
 

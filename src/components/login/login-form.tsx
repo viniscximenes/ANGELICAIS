@@ -153,7 +153,7 @@ export function LoginForm() {
                     autoComplete="username"
                     spellCheck={false}
                     placeholder="nome.sobrenome"
-                    className="h-10 pl-10 bg-black/10 border-white/5 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/30"
+                    className="h-10 pl-10 bg-black/10 border-white/5 focus-visible:ring-ring/30 focus-visible:border-ring/40"
                     value={username}
                     onChange={(e) => {
                       setUsername(e.target.value.toLowerCase());
@@ -197,7 +197,7 @@ export function LoginForm() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
-                    className="h-10 pr-10 pl-10 bg-black/10 border-white/5 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/30"
+                    className="h-10 pr-10 pl-10 bg-black/10 border-white/5 focus-visible:ring-ring/30 focus-visible:border-ring/40"
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
@@ -264,7 +264,7 @@ export function LoginForm() {
               <Button
                 type="submit"
                 size="lg"
-                className="h-11 w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-lg shadow-blue-600/10 active:scale-[0.99] transition-all duration-200"
+                className="h-11 w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-black/20 active:scale-[0.99] transition-all duration-200"
                 disabled={isDisabled}
               >
                 {loading ? (

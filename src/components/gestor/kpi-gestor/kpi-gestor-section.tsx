@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { IconLoader2, IconX } from "@tabler/icons-react";
+import { IconX } from "@tabler/icons-react";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { MetaGestorConfig } from "@/lib/kpi/gestor/avaliar-meta-gestor";
@@ -22,6 +22,7 @@ import { formatMesCapitalizado } from "@/app/(dashboard)/kpi/operadores/_compone
 import { DefasadosTooltipContent, KpiGestorCard, SemDadoTooltipContent } from "./kpi-gestor-card";
 import type { KpiGestorCardSerial } from "@/lib/kpi/gestor/build-kpi-gestor-cards";
 import { KpiGestorMetasPopover } from "./kpi-gestor-metas-popover";
+import { KpiGestorCardsSkeleton, KpiGestorLoadingScreen } from "./kpi-gestor-loading-screen";
 
 interface TooltipPos {
   top: number;
@@ -80,6 +81,15 @@ function SecaoTitulo({
   );
 }
 
+/** Piso do skeleton na troca de mês — mesmo valor de MIN_TABELA_LOADING_MS em
+ * kpi-equipe-section.tsx (/kpi/operadores). */
+const MIN_CARDS_LOADING_MS = 2000;
+
+/** Piso da tela de loading do refresh após salvar metas — mesma regra de
+ * MIN_REFRESH_LOADING_MS em gestor-equipe-section.tsx (/reports/consolidado)
+ * e do MIN_LOADING_MS de page.tsx: se já demorou mais, não espera nada extra. */
+const MIN_REFRESH_LOADING_MS = 3_000;
+
 interface KpiGestorSectionProps {
   /** Nome do gestor logado, já formatado (formatNomeProprio) — linha de contexto do cabeçalho. */
   nomeGestor: string;
@@ -91,7 +101,7 @@ interface KpiGestorSectionProps {
   metasIniciais: Record<string, MetaGestorConfig>;
 }
 
-// "Carregando X..." / "Nenhum dado encontrado para X." (fora do cabeçalho —
+// "Nenhum dado encontrado para X." (fora do cabeçalho —
 // mesmo texto/formato de antes, não tocado pela troca visual do cabeçalho).
 const MESES_PT = [
   "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
@@ -112,10 +122,64 @@ export function KpiGestorSection({
   metasIniciais,
 }: KpiGestorSectionProps) {
   const router = useRouter();
+
+  // Mesma guarda do Consolidado/Operadores contra a restauração assíncrona
+  // de scroll do navegador (F5 abrindo onde parou). O script do loading.tsx
+  // força o topo antes do primeiro paint; esta segunda camada protege os
+  // frames após a montagem, quando o browser ainda pode tentar devolver a
+  // posição salva. Para no primeiro gesto do usuário ou após 2s — nunca
+  // prende uma rolagem intencional. useLayoutEffect: a primeira correção
+  // roda antes do navegador pintar, sem flash.
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+
+    const UNLOCK_MS = 2000;
+    let active = true;
+    let rafId = 0;
+    let timeoutId = 0;
+
+    const stop = () => {
+      if (!active) return;
+      active = false;
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchstart", stop);
+      window.removeEventListener("keydown", stop);
+      window.clearTimeout(timeoutId);
+    };
+
+    const tick = () => {
+      if (!active) return;
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+      rafId = requestAnimationFrame(tick);
+    };
+
+    window.scrollTo(0, 0);
+    tick();
+
+    window.addEventListener("wheel", stop, { passive: true });
+    window.addEventListener("touchstart", stop, { passive: true });
+    window.addEventListener("keydown", stop);
+    timeoutId = window.setTimeout(stop, UNLOCK_MS);
+
+    return () => {
+      stop();
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
   const [mesSelecionado, setMesSelecionado] = useState<string>(dataAtual.mesRef);
   // Cache dos meses históricos já buscados nesta sessão.
   const [historicoCache, setHistoricoCache] = useState<Record<string, KpiGestorMesData>>({});
   const [carregandoMes, setCarregandoMes] = useState<string | null>(null);
+  const carregamentoMesIdRef = useRef(0);
+  // Mês cujos dados estão liberados pros cards. Durante toda troca de mês a
+  // área dos cards mostra o skeleton; mesExibido só muda quando o piso de 2s
+  // e a busca (se necessária) terminarem — mesmo padrão de dataExibida em
+  // kpi-equipe-section.tsx. Guardado como mesRef (não o objeto) pra continuar
+  // pegando os dados novos após router.refresh() (salvar metas).
+  const [mesExibido, setMesExibido] = useState<string>(dataAtual.mesRef);
 
   // Painel flutuante único de "fora da meta" — substitui um Popover por card.
   // Dois estados:
@@ -272,6 +336,17 @@ export function KpiGestorSection({
   useEffect(() => () => cancelHoverClose(), [cancelHoverClose]);
 
   const data: KpiGestorMesData | null =
+    mesExibido === dataAtual.mesRef
+      ? dataAtual
+      : mesExibido === dataPassado.mesRef
+        ? dataPassado
+        : mesExibido === dataRetrasado.mesRef
+          ? dataRetrasado
+          : (historicoCache[mesExibido] ?? null);
+
+  // Cabeçalho (mês · data de corte) acompanha o mês selecionado na hora,
+  // igual a /kpi/operadores — só os cards esperam o skeleton.
+  const dataSelecionado: KpiGestorMesData | null =
     mesSelecionado === dataAtual.mesRef
       ? dataAtual
       : mesSelecionado === dataPassado.mesRef
@@ -280,38 +355,99 @@ export function KpiGestorSection({
           ? dataRetrasado
           : (historicoCache[mesSelecionado] ?? null);
 
+  // Também fica true para meses já disponíveis: toda troca exibe o skeleton
+  // por pelo menos 2s, sem esconder ou alterar os controles acima dos cards.
+  const isLoadingAtual = carregandoMes === mesSelecionado;
+
   const handleMesChange = useCallback(
     (mesRef: string) => {
+      const carregamentoId = ++carregamentoMesIdRef.current;
       setMesSelecionado(mesRef);
+      setCarregandoMes(mesRef);
+      // Painel de detalhes aponta pra cards do mês anterior — fecha.
+      cancelHoverClose();
+      setPinnedKpi(null);
+      setHoveredKpi(null);
 
       const jaDisponivel =
         mesRef === dataAtual.mesRef ||
         mesRef === dataPassado.mesRef ||
         mesRef === dataRetrasado.mesRef ||
         mesRef in historicoCache;
-      if (jaDisponivel) return;
 
-      setCarregandoMes(mesRef);
-      void getKpiGestorMesHistoricoAction(mesRef).then((result) => {
-        setCarregandoMes((atual) => (atual === mesRef ? null : atual));
-        if (result.success) {
-          setHistoricoCache((prev) => ({ ...prev, [mesRef]: result.data }));
-        }
+      const tarefas: Promise<void>[] = [
+        new Promise<void>((resolve) => window.setTimeout(resolve, MIN_CARDS_LOADING_MS)),
+      ];
+
+      if (!jaDisponivel) {
+        tarefas.push(
+          getKpiGestorMesHistoricoAction(mesRef).then((result) => {
+            if (result.success) {
+              setHistoricoCache((prev) => ({ ...prev, [mesRef]: result.data }));
+            }
+          }),
+        );
+      }
+
+      void Promise.allSettled(tarefas).then(() => {
+        if (carregamentoMesIdRef.current !== carregamentoId) return;
+        setMesExibido(mesRef);
+        setCarregandoMes(null);
       });
     },
-    [dataAtual.mesRef, dataPassado.mesRef, dataRetrasado.mesRef, historicoCache],
+    [dataAtual.mesRef, dataPassado.mesRef, dataRetrasado.mesRef, historicoCache, cancelHoverClose],
   );
 
+  // ── Refresh após salvar metas (overlay de loading, piso de 3s) ──────────
+  // router.refresh() não passa pelo loading.tsx — mesmo tratamento do
+  // Consolidado (handleBaseCleared): overlay com a tela de loading por cima
+  // da área de conteúdo até o piso passar E os dados novos chegarem.
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshTarefasOk, setRefreshTarefasOk] = useState(false);
+  const [isRefreshPending, startRefreshTransition] = useTransition();
+
   function handleMetasSalvas() {
+    const mesAlvo = mesSelecionado;
+    const mesHistorico =
+      mesAlvo !== dataAtual.mesRef && mesAlvo !== dataPassado.mesRef && mesAlvo !== dataRetrasado.mesRef;
+
+    cancelHoverClose();
+    setPinnedKpi(null);
+    setHoveredKpi(null);
+    setRefreshTarefasOk(false);
+    setIsRefreshing(true);
     setHistoricoCache({});
-    router.refresh();
+    startRefreshTransition(() => router.refresh());
+
+    const tarefas: Promise<void>[] = [
+      new Promise<void>((resolve) => window.setTimeout(resolve, MIN_REFRESH_LOADING_MS)),
+    ];
+    // Mês histórico aberto: cache foi limpo (metas mudaram), então rebusca
+    // já dentro do mesmo loading, pra tela sair com os dados prontos.
+    if (mesHistorico) {
+      tarefas.push(
+        getKpiGestorMesHistoricoAction(mesAlvo).then((result) => {
+          if (result.success) {
+            setHistoricoCache((prev) => ({ ...prev, [mesAlvo]: result.data }));
+          }
+        }),
+      );
+    }
+    void Promise.allSettled(tarefas).then(() => setRefreshTarefasOk(true));
   }
+
+  useEffect(() => {
+    if (isRefreshing && refreshTarefasOk && !isRefreshPending) {
+      setIsRefreshing(false);
+      setRefreshTarefasOk(false);
+    }
+  }, [isRefreshing, refreshTarefasOk, isRefreshPending]);
 
   const principais = data?.cards.filter((c) => c.secao === "principais") ?? [];
   const complementares = data?.cards.filter((c) => c.secao === "complementares") ?? [];
   // Cor semântica de meta (verde/vermelho) só faz sentido no Mês Atual —
   // meses passados são histórico, não algo "fora da meta" agora.
-  const isMesAtual = mesSelecionado === dataAtual.mesRef;
+  const isMesAtual = mesExibido === dataAtual.mesRef;
 
   const activeDefasado = activeKpi ? data?.defasados[activeKpi] : undefined;
   const activeCard = activeKpi ? data?.cards.find((c) => c.configSlug === activeKpi) : undefined;
@@ -331,6 +467,15 @@ export function KpiGestorSection({
 
   return (
     <TooltipProvider delayDuration={200}>
+      {/* Overlay do refresh após salvar metas — mesma posição do overlay do
+          Consolidado: só a área de conteúdo (abaixo do header de 60px, à
+          direita da sidebar de 240px em lg+), igual a um F5. */}
+      {isRefreshing && (
+        <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] overflow-hidden bg-background lg:left-[240px]">
+          <KpiGestorLoadingScreen />
+        </div>
+      )}
+
       <div className="space-y-4">
         <div>
           {/* Cabeçalho — Linha 1: só título + subtítulo (mesma estrutura de
@@ -348,44 +493,45 @@ export function KpiGestorSection({
             <p className="font-sans text-muted-foreground pt-3 text-sm font-normal">
               {nomeGestor}
               <SubtituloSeparador />
-              {formatMesCapitalizado(data?.mesRef ?? mesSelecionado)}
-              {data?.dataCorte && (
+              {formatMesCapitalizado(dataSelecionado?.mesRef ?? mesSelecionado)}
+              {dataSelecionado?.dataCorte && (
                 <>
                   <SubtituloSeparador />
-                  {`Dados até ${formatDateBR(data.dataCorte).slice(0, 5)}`}
+                  {`Dados até ${formatDateBR(dataSelecionado.dataCorte).slice(0, 5)}`}
                 </>
               )}
             </p>
           </div>
 
-          {/* Linha 2: seletor de mês (esquerda) + Configurar Metas
-              (extremidade direita) — mesmo layout do seletor de mês +
-              ações de /kpi/operadores. */}
+          {/* Linha 2: Configurar Metas (esquerda) + seletor de mês
+              (extremidade direita) — mesma ordem de /kpi/operadores. */}
           <div className="flex flex-wrap items-center gap-3 pt-4 pb-4">
-            <MesSelector
-              meses={todosMeses}
-              mesSelecionado={mesSelecionado}
-              onChange={handleMesChange}
-              carregandoMes={carregandoMes}
-            />
-
-            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <KpiGestorMetasPopover metasIniciais={metasIniciais} onSaved={handleMetasSalvas} />
+            </div>
+
+            <div className="kpi-gestor-mes-selector ml-auto">
+              <MesSelector
+                meses={todosMeses}
+                mesSelecionado={mesSelecionado}
+                onChange={handleMesChange}
+                carregandoMes={carregandoMes}
+              />
             </div>
           </div>
         </div>
 
-        {carregandoMes === mesSelecionado ? (
-          <div className="flex flex-col items-center justify-center gap-2 p-12 text-center rounded-xl bg-card border border-border/60">
-            <IconLoader2 size={20} className="animate-spin text-muted-foreground" aria-hidden="true" />
-            <p className="text-xs font-medium text-muted-foreground">
-              Carregando {formatMesRef(mesSelecionado)}...
-            </p>
-          </div>
+        {isLoadingAtual ? (
+          // Toda troca de mês usa este skeleton por no mínimo 2s e até a
+          // busca necessária terminar — mesmo padrão de /kpi/operadores.
+          <KpiGestorCardsSkeleton
+            totalPrincipais={principais.length || undefined}
+            totalComplementares={complementares.length || undefined}
+          />
         ) : !data || !data.hasData ? (
           <div className="p-12 text-center rounded-xl bg-card border border-border/60">
             <p className="text-xs font-medium text-muted-foreground">
-              Nenhum dado encontrado para {formatMesRef(mesSelecionado)}.
+              Nenhum dado encontrado para {formatMesRef(mesExibido)}.
             </p>
           </div>
         ) : (
@@ -393,11 +539,10 @@ export function KpiGestorSection({
             <section className="space-y-3">
               <SecaoTitulo texto="Principais" count={principais.length} />
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {principais.map((card, i) => (
+                {principais.map((card) => (
                   <KpiGestorCard
                     key={card.configSlug}
                     card={card}
-                    delayIndex={i}
                     isHovered={activeKpi === card.configSlug}
                     isDimmed={activeKpi !== null && activeKpi !== card.configSlug}
                     isPinned={pinnedKpi === card.configSlug}
@@ -414,11 +559,10 @@ export function KpiGestorSection({
             <section className="space-y-3">
               <SecaoTitulo texto="Complementares" count={complementares.length} />
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {complementares.map((card, i) => (
+                {complementares.map((card) => (
                   <KpiGestorCard
                     key={card.configSlug}
                     card={card}
-                    delayIndex={i}
                     isHovered={activeKpi === card.configSlug}
                     isDimmed={activeKpi !== null && activeKpi !== card.configSlug}
                     isPinned={pinnedKpi === card.configSlug}
@@ -447,7 +591,8 @@ export function KpiGestorSection({
           card). Em hover: fecha sozinho, com o pequeno atraso, ao sair de
           vez do card E do painel.
         */}
-        {activeKpi &&
+        {!isLoadingAtual &&
+          activeKpi &&
           tooltipPos &&
           activeCard &&
           (activeCard.temDado ? activeDefasado?.temMeta : true) && (
@@ -457,7 +602,7 @@ export function KpiGestorSection({
               aria-label={pinnedKpi ? `Detalhes de ${activeCard.label}` : undefined}
               onMouseEnter={handlePanelEnter}
               onMouseLeave={handlePanelLeave}
-              className="fixed z-50 min-w-[320px] max-w-[400px] pointer-events-auto rounded-xl border border-border bg-popover p-5 text-popover-foreground shadow-xl"
+              className="kpi-gestor-painel fixed z-50 min-w-[320px] max-w-[400px] pointer-events-auto rounded-xl border border-border bg-popover p-5 text-popover-foreground shadow-xl"
               style={{
                 top: tooltipPos.top,
                 left: tooltipPos.left,

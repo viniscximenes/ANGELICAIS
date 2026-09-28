@@ -75,7 +75,7 @@ export function LoginFloatingBackground() {
   return (
     <div ref={containerRef} className="fixed inset-0 z-0 h-screen w-screen" aria-hidden="true">
       <FloatingLines
-        linesGradient={["#113211", "#2a3727", "#6a6a6a"]}
+        linesGradient={["#3B3B3B", "#5C5A56", "#A89F8F"]}
         animationSpeed={1.3}
         interactive
         bendRadius={8}

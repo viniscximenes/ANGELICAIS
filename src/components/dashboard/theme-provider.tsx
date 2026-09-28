@@ -4,21 +4,30 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
   useTransition,
   type ReactNode,
 } from "react";
 
+import {
+  DEFAULT_PALETTE,
+  isPaletteId,
+  type PaletteId,
+} from "@/lib/theme/palettes";
 import { updateThemePreferenceAction } from "@/lib/users/actions/update-theme-preference-action";
 import { cn } from "@/lib/utils";
 import { ThemeTransitionOverlay } from "./theme-transition-overlay";
 
-type Theme = "dark" | "light";
+export type Theme = "dark" | "light";
 
 interface ThemeContextValue {
   theme: Theme;
   toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
+  palette: PaletteId;
+  setPalette: (palette: PaletteId) => void;
   isPending: boolean;
   isTransitioning: boolean;
   overlayVisible: boolean;
@@ -35,6 +44,15 @@ interface Props {
 // Pequena folga de segurança depois do repaint (2x rAF), antes de revelar o
 // tema novo — cobre páginas com muitos gráficos/SVGs no conteúdo.
 const SETTLE_BUFFER_MS = 80;
+
+// Paleta ainda não tem coluna no perfil (só existe Zen Linen); fica no
+// navegador até existir uma segunda opção que justifique persistir no banco.
+const PALETTE_STORAGE_KEY = "palette-preference";
+
+function applyPaletteToDocument(palette: PaletteId) {
+  if (typeof document === "undefined") return;
+  document.documentElement.setAttribute("data-palette", palette);
+}
 
 function applyThemeToDocument(theme: Theme) {
   if (typeof document === "undefined") return;
@@ -54,7 +72,8 @@ function waitForNextPaint() {
 }
 
 export function ThemeProvider({ initialTheme, children }: Props) {
-  const [theme, setTheme] = useState<Theme>(initialTheme);
+  const [theme, setThemeState] = useState<Theme>(initialTheme);
+  const [palette, setPaletteState] = useState<PaletteId>(DEFAULT_PALETTE);
   const [pendingTheme, setPendingTheme] = useState<Theme>(initialTheme);
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [suppressTransitions, setSuppressTransitions] = useState(false);
@@ -88,11 +107,39 @@ export function ThemeProvider({ initialTheme, children }: Props) {
     });
   }, []);
 
-  const toggleTheme = useCallback(() => {
-    if (isTransitioning) return;
+  // O root layout re-renderiza sem remontar o provider (ex.: /login →
+  // redirect pós-login, onde o tema passa do default "dark" para a
+  // preferência do perfil). Sem isso o estado ficava preso no valor inicial
+  // enquanto o <html> já mostrava o tema do perfil.
+  const [syncedInitialTheme, setSyncedInitialTheme] = useState(initialTheme);
+  if (initialTheme !== syncedInitialTheme && !isTransitioning) {
+    setSyncedInitialTheme(initialTheme);
+    setThemeState(initialTheme);
+    setPendingTheme(initialTheme);
+  }
+
+  useEffect(() => {
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem(PALETTE_STORAGE_KEY);
+    } catch {}
+    const initial = isPaletteId(stored) ? stored : DEFAULT_PALETTE;
+    setPaletteState(initial);
+    applyPaletteToDocument(initial);
+  }, []);
+
+  const setPalette = useCallback((next: PaletteId) => {
+    setPaletteState(next);
+    applyPaletteToDocument(next);
+    try {
+      localStorage.setItem(PALETTE_STORAGE_KEY, next);
+    } catch {}
+  }, []);
+
+  const setTheme = useCallback((newTheme: Theme) => {
+    if (isTransitioning || newTheme === theme) return;
 
     const previous = theme;
-    const newTheme: Theme = previous === "dark" ? "light" : "dark";
 
     setPendingTheme(newTheme);
     setIsTransitioning(true);
@@ -112,13 +159,13 @@ export function ThemeProvider({ initialTheme, children }: Props) {
       // instantâneo, então não importa que ainda esteja "visível" — está
       // tudo coberto pelo overlay de qualquer forma.
       applyThemeToDocument(newTheme);
-      setTheme(newTheme);
+      setThemeState(newTheme);
 
       startTransition(async () => {
         const r = await updateThemePreferenceAction({ theme: newTheme });
         if (!r.success) {
           applyThemeToDocument(previous);
-          setTheme(previous);
+          setThemeState(previous);
           console.error("Falha ao salvar preferência de tema:", r.error);
         }
       });
@@ -137,11 +184,18 @@ export function ThemeProvider({ initialTheme, children }: Props) {
     })();
   }, [theme, isTransitioning, waitForOverlayEnter, waitForOverlayExit]);
 
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  }, [theme, setTheme]);
+
   return (
     <ThemeContext.Provider
       value={{
         theme,
         toggleTheme,
+        setTheme,
+        palette,
+        setPalette,
         isPending,
         isTransitioning,
         overlayVisible,

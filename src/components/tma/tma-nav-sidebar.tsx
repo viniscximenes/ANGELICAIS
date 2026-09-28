@@ -36,7 +36,7 @@ const TRILHO_CARD = {
   pesoDesigual: 5,
 } as const;
 
-const ICON_CLASS = "h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200";
+const ICON_CLASS = "h-5 w-5 shrink-0 text-[color:var(--muted-foreground)]";
 
 /**
  * Navegação lateral animada do trilho de /reports/tma — MESMO

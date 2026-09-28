@@ -1,7 +1,6 @@
 "use client";
 
-import { BlurFade } from "@/components/ui/blur-fade";
-import { NumberTicker } from "@/components/ui/number-ticker";
+import { StaticNumber } from "@/components/ui/static-number";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import type { TmaStatus } from "@/lib/tma/tma-status";
 
@@ -26,7 +25,7 @@ export function CardsResumoTma({ tmaMedioPonderado, tmaStatus, totalAtendidos }:
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end">
-      <BlurFade delay={0} inView className="sm:col-span-2">
+      <div className="sm:col-span-2">
         <div className="relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 p-6 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <div aria-hidden="true" className="absolute top-0 left-0 h-full w-[3px] bg-primary" />
           <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
@@ -36,23 +35,22 @@ export function CardsResumoTma({ tmaMedioPonderado, tmaStatus, totalAtendidos }:
             {formatKpiValue(tmaMedioPonderado, "time")}
           </p>
         </div>
-      </BlurFade>
+      </div>
 
-      <BlurFade delay={0.06} inView className="sm:col-span-3">
+      <div className="sm:col-span-3">
         <div className="flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 p-4 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             Atendidos
           </p>
           <p className="ds-display text-foreground flex items-baseline text-3xl font-semibold">
-            <NumberTicker
+            <StaticNumber
               value={totalAtendidos}
               decimalPlaces={0}
-              delay={0.1}
               className="text-foreground tracking-tight dark:text-foreground"
             />
           </p>
         </div>
-      </BlurFade>
+      </div>
     </div>
   );
 }

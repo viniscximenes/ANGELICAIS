@@ -386,7 +386,7 @@ export function RetencaoDetalheSection({
                     borda, fundo, padding) — só empilhados verticalmente dentro
                     do mesmo slot do trilho, não um card único reestilizado. */}
                 <div data-visao-geral-cards>
-                  <VisaoGeralCards data={data!.visaoGeral} meta={metaGlobal} />
+                  <VisaoGeralCards data={data!.visaoGeral} meta={metaGlobal} semAnimacao />
                 </div>
                 <GraficoEvolucao
                   dados={data!.evolucaoHora}

@@ -1,16 +1,11 @@
 "use client";
 
-import { motion } from "motion/react";
-
 import type { KpiGestorCardSerial } from "@/lib/kpi/gestor/build-kpi-gestor-cards";
 import type { DefasadoGestorInfo } from "@/lib/kpi/gestor/get-defasados-gestor-por-kpi";
 import { cn } from "@/lib/utils";
 
-const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
-
 interface KpiGestorCardProps {
   card: KpiGestorCardSerial;
-  delayIndex: number;
   isHovered: boolean;
   isDimmed: boolean;
   /** Painel flutuante deste card está fixo aberto (clique/Enter) — ver kpi-gestor-section.tsx. */
@@ -39,11 +34,9 @@ function getStatusColor(status: "success" | "danger" | null): string {
 
 function CardBody({
   card,
-  delayIndex,
   isMesAtual,
 }: {
   card: KpiGestorCardSerial;
-  delayIndex: number;
   isMesAtual: boolean;
 }) {
   // Fora do Mês Atual, a cor de status (verde/vermelho) some — os cards
@@ -54,15 +47,10 @@ function CardBody({
   const valueColor = status ? color : card.temDado ? "var(--foreground)" : "var(--muted-foreground)";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        delay: 0.15 + delayIndex * 0.04,
-        duration: 0.25,
-        ease: EASE_OUT_EXPO,
-      }}
-      className="relative overflow-hidden rounded-lg p-6 flex flex-col justify-between min-h-[140px] h-full bg-card/70 border border-border shadow-[var(--shadow-sm)] backdrop-blur-md"
+    // Sem animação de entrada (pedido explícito): loading → card já na tela,
+    // tanto no F5 quanto na troca de mês.
+    <div
+      className="kpi-gestor-card relative overflow-hidden rounded-lg p-6 flex flex-col justify-between min-h-[140px] h-full bg-card/70 border border-border shadow-[var(--shadow-sm)] backdrop-blur-md"
     >
       <div
         aria-hidden="true"
@@ -96,7 +84,7 @@ function CardBody({
           <p className="ds-small text-muted-foreground">meta: {card.metaCondicao}</p>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }
 
@@ -181,7 +169,6 @@ export function SemDadoTooltipContent({ card }: { card: KpiGestorCardSerial }) {
  */
 export function KpiGestorCard({
   card,
-  delayIndex,
   isHovered,
   isDimmed,
   isPinned,
@@ -198,8 +185,10 @@ export function KpiGestorCard({
       tabIndex={temPainel ? 0 : undefined}
       aria-haspopup={temPainel ? "dialog" : undefined}
       aria-expanded={temPainel ? isPinned : undefined}
-      onMouseEnter={(event) => onHover(card.configSlug, event)}
-      onMouseLeave={() => onLeave(card.configSlug)}
+      // Sem painel (sem lista de operadores): card estático no hover — não
+      // ativa o desfoque dos demais nem o leve aumento de escala.
+      onMouseEnter={temPainel ? (event) => onHover(card.configSlug, event) : undefined}
+      onMouseLeave={temPainel ? () => onLeave(card.configSlug) : undefined}
       onClick={temPainel ? (event) => onOpen(card.configSlug, event) : undefined}
       onKeyDown={
         temPainel
@@ -220,7 +209,7 @@ export function KpiGestorCard({
         isPinned && "relative z-10",
       )}
     >
-      <CardBody card={card} delayIndex={delayIndex} isMesAtual={isMesAtual} />
+      <CardBody card={card} isMesAtual={isMesAtual} />
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import type { UserRole } from "@/lib/auth/get-current-user";
 import type { SidebarSection, SidebarUser } from "./sidebar";
 import { SidebarNav } from "./sidebar";
-import { ThemeToggle } from "./theme-toggle";
+import { ThemeMenu } from "./theme-menu";
 
 const ROLE_LABEL: Record<UserRole, string> = {
   GESTOR: "GESTOR",
@@ -66,10 +66,7 @@ export function AppHeader({ user, sections }: AppHeaderProps) {
 
         {/* ── Direita: tema ──────────────────────────────────── */}
         <div className="flex shrink-0 items-center gap-3">
-          {/* ThemeToggle é full-width com label; aqui ele vira só ícone. */}
-          <div className="[&>button]:w-auto [&>button]:justify-center [&>button]:px-2 [&_span]:hidden">
-            <ThemeToggle />
-          </div>
+          <ThemeMenu />
         </div>
       </div>
 

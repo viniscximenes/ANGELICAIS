@@ -4,7 +4,6 @@ import { Instrument_Sans } from "next/font/google";
 
 import "./kpi-gestor.css";
 import { KpiGestorSection } from "@/components/gestor/kpi-gestor/kpi-gestor-section";
-import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
@@ -52,7 +51,21 @@ function getMesRetrasadoRef(): string {
   return `${retYear}-${String(retMonth).padStart(2, "0")}-01`;
 }
 
+// Piso mínimo da tela de loading (F5/entrada de rota) — mesma regra de
+// /reports/consolidado/page.tsx: a resolução deste Server Component é
+// atrasada até completar MIN_LOADING_MS, contados desde a entrada na função.
+// Se a busca real já demorou mais que isso, não espera nada.
+const MIN_LOADING_MS = 3_000;
+
+async function aguardarPisoMinimo(desde: number) {
+  const faltam = MIN_LOADING_MS - (Date.now() - desde);
+  if (faltam > 0) {
+    await new Promise((resolve) => setTimeout(resolve, faltam));
+  }
+}
+
 export default async function KpiGestorPage() {
+  const inicioCarregamento = Date.now();
   const user = await getCurrentUser();
 
   if (!user) redirect("/login");
@@ -106,8 +119,11 @@ export default async function KpiGestorPage() {
 
   const nomeGestor = formatNomeProprio(fullName);
 
+  await aguardarPisoMinimo(inicioCarregamento);
+
   return (
-    <PageTransition>
+    // Sem PageTransition (fade/slide de entrada): loading → cards já na tela.
+    <>
       <div
         data-page="kpi-gestor"
         className={`min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
@@ -130,6 +146,6 @@ export default async function KpiGestorPage() {
           />
         </div>
       </div>
-    </PageTransition>
+    </>
   );
 }

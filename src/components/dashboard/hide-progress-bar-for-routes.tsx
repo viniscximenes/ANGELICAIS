@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 /**
- * Esconde a barra azul do bprogress (topo da tela, cor fixa #3b82f6 — ver
- * progress-provider.tsx, NÃO alterado) em /kpi/operadores, /kpi/gestor,
+ * Esconde a barra do bprogress (topo da tela, cor var(--primary) da paleta —
+ * ver progress-provider.tsx) em /kpi/operadores, /kpi/gestor,
  * /kpi/detalhado-polo, /kpi/evolucao, /configuracoes/equipe,
  * /reports/consolidado e /reports/tempo-indisponibilidade: essas sete já têm
  * loading.tsx próprio (fundo borrado, tema Zen Linen), a barra genérica

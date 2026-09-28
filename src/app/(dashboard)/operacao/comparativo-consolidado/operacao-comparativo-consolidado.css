@@ -1,143 +1,11 @@
 /*
- * Tema Zen Linen — escopado a /operacao/comparativo-consolidado
- * Fonte: tema/hhgg (21st.dev @serafimcloud/zen-linen)
- * Cópia fiel do padrão já usado em /reports/consolidado (mesma paleta, mesmos
- * tokens derivados — só o seletor de escopo muda) porque esta página reusa
- * diretamente componentes do bloco Analítico de /reports/consolidado
- * (VisaoGeralCards, GraficoEvolucao, TabelaTemas — ver
- * comparativo-consolidado-section.tsx). Ver comentários completos em
- * kpi-operadores.css e reports-consolidado.css.
- *
- * Regras:
- * - TODA regra começa com [data-page="operacao-comparativo-consolidado"]. O
- *   import do CSS não isola nada; o seletor é que isola (o arquivo continua
- *   carregado após navegação client-side).
- * - Projeto: :root = dark (base) e [data-theme="light"] = claro.
- * - --color-* e --radius-* são sobrescritos junto por segurança (utilities
- *   Tailwind como bg-card leem --color-card).
- * - StyledCard/GraficoEvolucao/TabelaTemas/VisaoGeralCards NÃO foram
- *   alterados — eles já consomem var(--background)/var(--card)/
- *   var(--success)/... via CSS, então herdam automaticamente os tokens
- *   definidos aqui dentro do escopo [data-page], sem precisar editar esses
- *   componentes compartilhados.
+ * Ajustes visuais específicos de /operacao/comparativo-consolidado.
+ * As cores (tokens) vêm da paleta global em src/app/palettes/zen-linen.css —
+ * não redefina --background/--card/--primary/... aqui, senão a troca de
+ * paleta deixa de valer nesta página.
  */
 
-/* ───────── ESCURO (base do projeto) ← .dark do tema ───────── */
 [data-page="operacao-comparativo-consolidado"] {
-  --background: #141414;
-  --foreground: #E8E3DA;
-  --card: #1C1C1C;
-  --card-foreground: #E8E3DA;
-  --popover: #1C1C1C;
-  --popover-foreground: #E8E3DA;
-  --primary: #D1CFC0;
-  --primary-foreground: #363636;
-  --secondary: #222222;
-  --secondary-foreground: #D1CFC0;
-  --muted: #2A2A2A;
-  --muted-foreground: #8E8A83;
-  --accent: #363636;
-  --accent-foreground: #D1CFC0;
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  --border: #2C2C2C;
-  --input: #2C2C2C;
-  --ring: #D1CFC0;
-
-  --chart-1: #F26A4B;
-  --chart-2: #D9CFC2;
-  --chart-3: #8E8A83;
-  --chart-4: #5C5A56;
-  --chart-5: #3B3B3B;
-
-  --success: #8DB596;
-  --warning: #D9A74A;
-  --danger: #F07A62;
-
-  --elevation-1-bg: #1C1C1C;
-  --elevation-1-border: #2C2C2C;
-
-  --kpi-shadow: 0px 6px 15px 0px rgb(0 0 0 / 0.3);
-
-  --radius: 0.5rem;
-  --letter-spacing: 0.01em;
-}
-
-/* ───────── CLARO ← :root do tema ───────── */
-[data-theme="light"] [data-page="operacao-comparativo-consolidado"] {
-  --background: #E9E4D8;
-  --foreground: #1E1E1E;
-  --card: #F4EFE4;
-  --card-foreground: #1E1E1E;
-  --popover: #F4EFE4;
-  --popover-foreground: #1E1E1E;
-  --primary: #2E2E2E;
-  --primary-foreground: #E6E4D7;
-  --secondary: #D8D2C4;
-  --secondary-foreground: #2E2E2E;
-  --muted: #CFC8B8;
-  --muted-foreground: #5E5A52;
-  --accent: #E6E4D7;
-  --accent-foreground: #2E2E2E;
-  --destructive: #DC2626;
-  --destructive-foreground: #FFFFFF;
-  --border: #D2CBBB;
-  --input: #D2CBBB;
-  --ring: #2E2E2E;
-
-  --chart-1: #F26A4B;
-  --chart-2: #1E1E1E;
-  --chart-3: #5E5A52;
-  --chart-4: #A89F8F;
-  --chart-5: #CFC8B8;
-
-  --success: #3D6B47;
-  --warning: #93600F;
-  --danger: #B3321C;
-
-  --elevation-1-bg: #F4EFE4;
-  --elevation-1-border: #D2CBBB;
-
-  --kpi-shadow: 0px 4px 10px 0px rgb(0 0 0 / 0.1);
-}
-
-/* ───────── Ponte para as utilities do Tailwind (vale nos dois temas) ───────── */
-[data-page="operacao-comparativo-consolidado"] {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-danger: var(--danger);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-
-  /* Fonte única da rota — variável vem do next/font carregado só em page.tsx. */
-  --font-sans: var(--font-zen-sans), "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
-
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
@@ -168,9 +36,6 @@
  * atributo. Mesmo padrão de reports-consolidado.css.
  */
 .operacao-comparativo-consolidado-toast {
-  --normal-bg: #1C1C1C;
-  --normal-text: #E8E3DA;
-  --normal-border: #2C2C2C;
   background: var(--normal-bg) !important;
   color: var(--normal-text) !important;
   border: 1px solid var(--normal-border) !important;
@@ -197,9 +62,6 @@
 }
 
 [data-theme="light"] .operacao-comparativo-consolidado-toast {
-  --normal-bg: #F4EFE4;
-  --normal-text: #1E1E1E;
-  --normal-border: #D2CBBB;
   background: var(--normal-bg) !important;
   color: var(--normal-text) !important;
   border: 1px solid var(--normal-border) !important;

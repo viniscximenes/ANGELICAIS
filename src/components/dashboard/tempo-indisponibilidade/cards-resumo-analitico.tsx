@@ -1,7 +1,6 @@
 "use client";
 
-import { BlurFade } from "@/components/ui/blur-fade";
-import { NumberTicker } from "@/components/ui/number-ticker";
+import { StaticNumber } from "@/components/ui/static-number";
 import { META_TEMPO_LOGADO_SEGUNDOS } from "@/lib/d1-db/types";
 
 import type { OperadorAnaliticoTempoIndisp } from "./merge-tempo-indisp";
@@ -109,7 +108,7 @@ export function CardsResumoAnalitico({
     // abaixo, text-4xl, até xl:1280px, onde volta a text-5xl) — não é um
     // número solto, é o próximo degrau padrão da escala.
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-6 sm:items-end">
-      <BlurFade delay={0} inView className="sm:col-span-2">
+      <div className="sm:col-span-2">
         <div className="tempo-indisp-resumo-card relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 px-6 py-5 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <div
             aria-hidden="true"
@@ -123,9 +122,9 @@ export function CardsResumoAnalitico({
             {tempoLogadoMedioSegundos === null ? "—" : formatTempoSegundos(tempoLogadoMedioSegundos)}
           </p>
         </div>
-      </BlurFade>
+      </div>
 
-      <BlurFade delay={0.06} inView className="sm:col-span-2">
+      <div className="sm:col-span-2">
         <div className="tempo-indisp-resumo-card flex h-full flex-col justify-center gap-2 rounded-lg border border-border bg-card/70 px-6 py-5 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             Indisp. %
@@ -134,10 +133,9 @@ export function CardsResumoAnalitico({
             <p className={`ds-display tracking-tight text-4xl xl:text-5xl font-semibold ${indispClass}`}>—</p>
           ) : (
             <p className={`ds-display flex items-baseline tracking-tight text-4xl xl:text-5xl font-semibold ${indispClass}`}>
-              <NumberTicker
+              <StaticNumber
                 value={indispMedia}
                 decimalPlaces={1}
-                delay={0.1}
                 className={indispClass}
                 style={indispColorVar ? { color: indispColorVar } : undefined}
               />
@@ -145,9 +143,9 @@ export function CardsResumoAnalitico({
             </p>
           )}
         </div>
-      </BlurFade>
+      </div>
 
-      <BlurFade delay={0.12} inView className="sm:col-span-1">
+      <div className="sm:col-span-1">
         <div className="tempo-indisp-resumo-card flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             NR17 %
@@ -156,19 +154,18 @@ export function CardsResumoAnalitico({
             <p className="ds-display text-foreground text-3xl font-semibold">—</p>
           ) : (
             <p className="ds-display text-foreground flex items-baseline text-3xl font-semibold">
-              <NumberTicker
+              <StaticNumber
                 value={nr17Media}
                 decimalPlaces={1}
-                delay={0.18}
                 className="text-foreground tracking-tight dark:text-foreground"
               />
               <span>%</span>
             </p>
           )}
         </div>
-      </BlurFade>
+      </div>
 
-      <BlurFade delay={0.18} inView className="sm:col-span-1">
+      <div className="sm:col-span-1">
         <div className="tempo-indisp-resumo-card flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             Particular %
@@ -177,17 +174,16 @@ export function CardsResumoAnalitico({
             <p className="ds-display text-foreground text-3xl font-semibold">—</p>
           ) : (
             <p className="ds-display text-foreground flex items-baseline text-3xl font-semibold">
-              <NumberTicker
+              <StaticNumber
                 value={particularMedia}
                 decimalPlaces={1}
-                delay={0.24}
                 className="text-foreground tracking-tight dark:text-foreground"
               />
               <span>%</span>
             </p>
           )}
         </div>
-      </BlurFade>
+      </div>
     </div>
   );
 }

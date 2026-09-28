@@ -2,12 +2,25 @@
 
 import { BlurFade } from "@/components/ui/blur-fade";
 import { NumberTicker } from "@/components/ui/number-ticker";
+import { StaticNumber } from "@/components/ui/static-number";
 import type { VisaoGeralData } from "@/lib/retencao/get-visao-geral";
 
 interface VisaoGeralCardsProps {
   data: VisaoGeralData;
   /** Meta de 0 a 100 — usada pra colorir a Taxa de Retenção (verde/vermelho). */
   meta: number;
+  /**
+   * true: cards sem animação de entrada (sem BlurFade e sem contagem do
+   * NumberTicker) — já aparecem prontos ao sair do loading. Usado só por
+   * /reports/consolidado; /operacao/comparativo-consolidado mantém o
+   * padrão (false).
+   */
+  semAnimacao?: boolean;
+}
+
+/** Wrapper sem animação — mesma className do BlurFade, ignora delay/inView. */
+function SemAnimacao({ className, children }: { className?: string; children: React.ReactNode; delay?: number; inView?: boolean }) {
+  return <div className={className}>{children}</div>;
 }
 
 type StatSecundario = {
@@ -33,7 +46,9 @@ type StatSecundario = {
  * fixa do trilho horizontal — aumentar a altura aqui reabriria os ajustes
  * de dimensionamento já calibrados nas etapas anteriores.
  */
-export function VisaoGeralCards({ data, meta }: VisaoGeralCardsProps) {
+export function VisaoGeralCards({ data, meta, semAnimacao = false }: VisaoGeralCardsProps) {
+  const Entrada = semAnimacao ? SemAnimacao : BlurFade;
+  const Numero = semAnimacao ? StaticNumber : NumberTicker;
   const { total, retidos, cancelados, tx } = data;
 
   const metaFracao = meta / 100;
@@ -67,7 +82,7 @@ export function VisaoGeralCards({ data, meta }: VisaoGeralCardsProps) {
         em vez de embaixo.
       */}
       {/* Stat primário: Taxa de Retenção — maior, cor condicional por meta */}
-      <BlurFade delay={0} inView className="sm:col-span-2">
+      <Entrada delay={0} inView className="sm:col-span-2">
         <div className="relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 p-6 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <div
             aria-hidden="true"
@@ -81,7 +96,7 @@ export function VisaoGeralCards({ data, meta }: VisaoGeralCardsProps) {
             <p className={`ds-display text-5xl font-semibold ${txClassName}`}>—</p>
           ) : (
             <p className={`ds-display flex items-baseline text-5xl font-semibold ${txClassName}`}>
-              <NumberTicker
+              <Numero
                 value={tx! * 100}
                 decimalPlaces={1}
                 delay={0.1}
@@ -91,18 +106,18 @@ export function VisaoGeralCards({ data, meta }: VisaoGeralCardsProps) {
             </p>
           )}
         </div>
-      </BlurFade>
+      </Entrada>
 
       {/* Stats secundários: Pedidos / Retidos / Churn — menores, visual neutro */}
       <div className="grid grid-cols-3 gap-4 sm:col-span-3">
         {secundarios.map((item, idx) => (
-          <BlurFade key={item.id} delay={0.06 * (idx + 1)} inView>
+          <Entrada key={item.id} delay={0.06 * (idx + 1)} inView>
             <div className="flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 p-4 shadow-[var(--shadow-sm)] backdrop-blur-md">
               <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
                 {item.label}
               </p>
               <p className="ds-display text-foreground flex items-baseline text-3xl font-semibold">
-                <NumberTicker
+                <Numero
                   value={item.valor}
                   decimalPlaces={item.decimais}
                   delay={0.06 * (idx + 1) + 0.1}
@@ -110,7 +125,7 @@ export function VisaoGeralCards({ data, meta }: VisaoGeralCardsProps) {
                 />
               </p>
             </div>
-          </BlurFade>
+          </Entrada>
         ))}
       </div>
     </div>
