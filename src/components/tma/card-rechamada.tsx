@@ -1,10 +1,8 @@
 
-import { StyledCard } from "@/components/gestor/styled-card";
 import {
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
   TABELA_HEADER_CELL_ULTIMA_CLASS,
-  TABELA_HEADER_CLASS,
   TABELA_LINHA_CLASS,
   TABELA_NOME_CELL_CLASS,
   TABELA_VALOR_CELL_CLASS,
@@ -30,6 +28,10 @@ const MAX_HEIGHT_PX = 400;
 
 /** Fundo opaco do cabeçalho sticky (top) — mesma mistura de tokens já usada pro cabeçalho sticky (esquerda) de AnaliticoTmaTabela; sem isso, linhas rolando por baixo apareceriam através do bg-muted/40 (40% de opacidade) do cabeçalho. */
 const STICKY_HEADER_BG = "color-mix(in oklch, var(--muted) 40%, var(--card))";
+
+/** Cabeçalho — MESMA classe literal de PausasDetalhadasAnalitico/AderenciaAnalitico (tempo-indisponibilidade): ds-body, text-muted-foreground/70. */
+const HEADER_ROW_CLASS =
+  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground/70";
 
 /**
  * Célula de atendimento — nome + horário na MESMA linha ("email.local ·
@@ -80,7 +82,7 @@ export function CardRechamada({ clientesDistintos, clientesRecorrentes, percentu
         <p className="ds-small text-muted-foreground mt-1">Clientes que ligaram mais de uma vez hoje.</p>
       </div>
 
-      <StyledCard className="flex flex-col p-4 gap-4" withGradient corners="all">
+      <div className="flex flex-col gap-4">
         {percentual === null ? (
           <p className="ds-display text-4xl font-semibold text-foreground">—</p>
         ) : (
@@ -97,9 +99,9 @@ export function CardRechamada({ clientesDistintos, clientesRecorrentes, percentu
         {lista.length > 0 && (
           <div className="overflow-hidden border-y border-border/40">
             <div className="overflow-x-auto overflow-y-auto scrollbar-tema" style={{ maxHeight: MAX_HEIGHT_PX }}>
-              <div className="min-w-fit">
+              <div data-rechamada-tabela className="min-w-fit">
                 <div
-                  className={cn(TABELA_HEADER_CLASS, "font-sans text-muted-foreground text-[11px] sticky top-0 z-10")}
+                  className={cn(HEADER_ROW_CLASS, "sticky top-0 z-10")}
                   style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA, background: STICKY_HEADER_BG }}
                 >
                   <div className={TABELA_HEADER_CELL_CLASS}>1º Atendimento</div>
@@ -132,7 +134,7 @@ export function CardRechamada({ clientesDistintos, clientesRecorrentes, percentu
             </div>
           </div>
         )}
-      </StyledCard>
+      </div>
     </div>
   );
 }

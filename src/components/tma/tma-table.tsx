@@ -106,6 +106,7 @@ export function TmaTable({ linhas, atendimentosPorOperador, headerButton, thresh
             <div
               key={linha.operatorEmail}
               onClick={clicavel ? () => setOperadorAberto(linha) : undefined}
+              data-sem-dados={semDado ? "true" : undefined}
               className={cn(
                 TABELA_LINHA_HOVER_CLASS,
                 "border-l-2 border-l-transparent transition-[background-color,border-color,transform] duration-200 ease-out",

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 
 import { IconEye, IconEyeOff } from "@tabler/icons-react";
-import { StyledCard } from "@/components/gestor/styled-card";
+import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
+import { KpiLoadingScreen } from "@/components/gestor/kpi-loading-screen";
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
 import { clearTmaAction } from "@/lib/tma/actions/clear-tma-action";
 import { refreshTmaAction } from "@/lib/tma/actions/refresh-tma-action";
@@ -18,7 +19,6 @@ import { cn } from "@/lib/utils";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 import { ConfigTmaPopover } from "./config-tma-popover";
 import { CopyTmaButton } from "./copy-tma-button";
-import { TmaAjudaFive9Dialog } from "./tma-ajuda-five9-dialog";
 import { TmaTable, type TmaLinha } from "./tma-table";
 import { TmaUploadDropzone } from "./tma-upload-dropzone";
 
@@ -29,6 +29,13 @@ function formatCabecalhoReport(hora: string, nomeSupervisor: string | null): str
   return nome ? `${nome} fez um report às ${horaCurta}` : `Atualizado às ${horaCurta}`;
 }
 const POLL_INTERVAL_MS = 30_000;
+
+// Piso mínimo (ms) da tela de loading exibida durante o refresh MANUAL
+// ("Limpar base") — mesma lógica/duração do piso mínimo do carregamento
+// inicial (ver MIN_LOADING_MS em page.tsx) e do mesmo overlay em
+// /reports/consolidado (gestor-equipe-section.tsx). Só cobre o refetch
+// disparado PELO USUÁRIO — o polling silencioso de 30s continua sem overlay.
+const MIN_REFRESH_LOADING_MS = 3_000;
 
 // Mesma largura-base da tabela do Consolidado (gestor-equipe-section.tsx):
 // 760px de conteúdo + 26px de "chrome" do StyledCard por dentro (2 × padding
@@ -70,6 +77,8 @@ export function GestorTmaSection({
   const [ordemTabela, setOrdemTabela] = useState(ordemInicial);
   const [configPopoverOpen, setConfigPopoverOpen] = useState(false);
   const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
+  // Overlay de loading do refresh manual (ver MIN_REFRESH_LOADING_MS acima).
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   function handleToggleOlho() {
     const novoValor = !olhoAberto;
@@ -118,43 +127,83 @@ export function GestorTmaSection({
     };
   }, []);
 
+  // Handler específico do "Limpar Base" (não reaproveitado pelo polling) —
+  // mesmo padrão de handleBaseCleared em gestor-equipe-section.tsx: cobre o
+  // refetch com uma tela de loading por pelo menos MIN_REFRESH_LOADING_MS,
+  // mesmo que a busca real volte mais rápido.
+  async function handleBaseCleared() {
+    const inicio = Date.now();
+    setIsRefreshing(true);
+    try {
+      await refetchTma();
+    } finally {
+      const faltam = MIN_REFRESH_LOADING_MS - (Date.now() - inicio);
+      if (faltam > 0) {
+        await new Promise((resolve) => setTimeout(resolve, faltam));
+      }
+      setIsRefreshing(false);
+    }
+  }
+
   return (
+    <>
+      {/*
+        Overlay de refresh manual (ver handleBaseCleared/MIN_REFRESH_LOADING_MS
+        acima) — mesmo padrão de /reports/consolidado (gestor-equipe-section.tsx):
+        reaproveita o esqueleto do Suspense fallback inicial (KpiLoadingScreen
+        formato="tma-peso"), fixo por cima só da área de CONTEÚDO (abaixo do
+        header de 60px, à direita da sidebar de 240px em telas lg+).
+      */}
+      {isRefreshing && (
+        <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] lg:left-[240px]">
+          <KpiLoadingScreen
+            dataPage="reports-tma-peso"
+            titulo="TMA & Peso"
+            formato="tma-peso"
+            indicatorPosition="after-header"
+            spinnerVariant="dots"
+          />
+        </div>
+      )}
+
     <motion.section
       id="equipe-section"
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       className="tma-equipe"
     >
-      <div className="pt-4 mb-4">
+      <div className="pt-4">
         <h1 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">TMA & Peso</h1>
-      </div>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pb-2">
-        {formatCabecalhoReport(reportHora, reportNomeSupervisor) ? (
-          <p className="font-sans text-muted-foreground text-sm font-normal">
+
+        {formatCabecalhoReport(reportHora, reportNomeSupervisor) && (
+          <p className="font-sans text-muted-foreground pt-3 text-sm font-normal">
             {formatCabecalhoReport(reportHora, reportNomeSupervisor)}
           </p>
-        ) : <span aria-hidden="true" />}
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <ConfigTmaPopover
-            metaInicial={metaAtualMmSs}
-            ordemInicial={ordemTabela}
-            onSaved={(meta, ordem) => {
-              setMetaAtualMmSs(meta);
-              setOrdemTabela(ordem);
-              void refetchTma();
-            }}
-            onOpenChange={setConfigPopoverOpen}
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 pt-4 pb-2">
+        <ConfigTmaPopover
+          metaInicial={metaAtualMmSs}
+          ordemInicial={ordemTabela}
+          onSaved={(meta, ordem) => {
+            setMetaAtualMmSs(meta);
+            setOrdemTabela(ordem);
+            void refetchTma();
+          }}
+          onOpenChange={setConfigPopoverOpen}
+        />
+        {showUpload && (
+          <ClearBaseButton
+            action={clearTmaAction}
+            onCleared={handleBaseCleared}
+            variant="icon-danger"
+            holdToConfirm
+            toastClassName="reports-tma-peso-toast"
+            showSuccessToast={false}
           />
-          {showUpload && (
-            <ClearBaseButton
-              action={clearTmaAction}
-              onCleared={refetchTma}
-              variant="icon-danger"
-              toastClassName="reports-tma-peso-toast"
-            />
-          )}
-          <CopyTmaButton horaReport={reportHora} />
-        </div>
+        )}
+        <CopyTmaButton horaReport={reportHora} />
       </div>
 
       {/*
@@ -174,14 +223,14 @@ export function GestorTmaSection({
         }}
       >
         <div data-tma-png>
-          <StyledCard withGradient className="p-3">
+          <KpiFrame>
             <TmaTable
               key="gestor-tma-png"
               linhas={linhas}
               atendimentosPorOperador={atendimentosPorOperador}
               thresholdConfig={thresholdConfig}
             />
-          </StyledCard>
+          </KpiFrame>
         </div>
       </div>
 
@@ -200,7 +249,7 @@ export function GestorTmaSection({
           )}
           style={{ width: `${TABELA_LARGURA_PX}px`, maxWidth: "100%" }}
         >
-          <StyledCard withGradient className="h-full p-3">
+          <KpiFrame className="h-full">
             <TmaTable
               key="gestor-tma-visible"
               linhas={linhasParaTela}
@@ -221,23 +270,16 @@ export function GestorTmaSection({
                 )
               }
             />
-          </StyledCard>
+          </KpiFrame>
         </div>
 
         {showUpload && (
-          <div className="min-h-[180px] min-w-0 flex-1">
-            <StyledCard withGradient className="flex h-full flex-col p-3">
-              <span className="text-muted-foreground mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
-                Anexar Base
-                <TmaAjudaFive9Dialog />
-              </span>
-              <div className="min-h-0 flex-1">
-                <TmaUploadDropzone />
-              </div>
-            </StyledCard>
+          <div className="min-h-[180px] min-w-0 flex-1 self-stretch">
+            <TmaUploadDropzone />
           </div>
         )}
       </div>
     </motion.section>
+    </>
   );
 }

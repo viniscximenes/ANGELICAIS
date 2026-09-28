@@ -31,7 +31,28 @@ const zenSans = Instrument_Sans({
 
 export const revalidate = 300;
 
+// Loading "fake" de piso mínimo — mesma técnica de /reports/consolidado
+// (ver page.tsx daquela rota): o loading.tsx (Suspense fallback) foi
+// desenhado pra replicar a posição exata dos cards da página real, mas se
+// os dados voltarem rápido ele só pisca na tela por uma fração de segundo.
+// Não dá pra controlar isso no client (loading.tsx é só o fallback
+// declarativo do Suspense do Next) — o jeito é atrasar A PRÓPRIA resolução
+// deste Server Component até completar MIN_LOADING_MS, contados desde a
+// entrada na função. Se a busca real já demorou mais que isso,
+// `aguardarPisoMinimo` não espera nada (Math.max trava em 0) — só estica
+// quando sobrou tempo.
+const MIN_LOADING_MS = 3_000;
+
+async function aguardarPisoMinimo(desde: number) {
+  const faltam = MIN_LOADING_MS - (Date.now() - desde);
+  if (faltam > 0) {
+    await new Promise((resolve) => setTimeout(resolve, faltam));
+  }
+}
+
 export default async function ReportsTmaPage() {
+  const inicioCarregamento = Date.now();
+
   const user = await getCurrentUser();
 
   if (!user) {
@@ -71,6 +92,10 @@ export default async function ReportsTmaPage() {
   }));
 
   const showUpload = can(user.profile.role, "manage_d1_base");
+
+  // Piso mínimo de loading (ver comentário em MIN_LOADING_MS acima) —
+  // aplicado depois de TODAS as buscas em paralelo acima.
+  await aguardarPisoMinimo(inicioCarregamento);
 
   return (
     <div className={zenSans.variable}>

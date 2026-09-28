@@ -13,7 +13,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-import { StyledCard } from "@/components/gestor/styled-card";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import type { TmaHoraData } from "@/lib/tma/get-gestor-tma-evolucao-hora";
 import type { TmaThresholdConfig } from "@/lib/tma/tma-status";
@@ -80,9 +79,8 @@ export function EvolucaoTmaChart({ dados, thresholdConfig }: EvolucaoTmaChartPro
         </p>
       </div>
 
-      <StyledCard className="p-5" withGradient>
-        <div className="w-full h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full h-[280px]">
+        <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               {temGradiente && (
                 <defs>
@@ -239,7 +237,6 @@ export function EvolucaoTmaChart({ dados, thresholdConfig }: EvolucaoTmaChartPro
             </ComposedChart>
           </ResponsiveContainer>
         </div>
-      </StyledCard>
     </div>
   );
 }

@@ -180,9 +180,27 @@ function SkeletonNavSidebar() {
   );
 }
 
+// Script inline, síncrono — roda no PARSE do HTML deste fallback, antes de
+// qualquer hidratação React. A guarda em JS (useLayoutEffect, ver
+// RetencaoDetalheSection) só age DEPOIS que o bundle carrega e o componente
+// monta; nesse intervalo (streaming deste loading.tsx + piso mínimo de
+// MIN_LOADING_MS em page.tsx), o navegador já pode ter restaurado e PINTADO
+// a posição de scroll salva (ex.: fim da página) — daí um "pisca" possível:
+// um frame na posição antiga, só depois corrigido pra topo. Este script
+// fecha essa janela, desligando a restauração nativa e forçando o topo o
+// mais cedo possível (antes do primeiro paint do documento). Mesma correção
+// replicada em /reports/tma-peso e /reports/tempo-indisponibilidade.
+const DESLIGAR_SCROLL_RESTORATION_SCRIPT = `
+try {
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  window.scrollTo(0, 0);
+} catch (e) {}
+`;
+
 export default function LoadingReportsConsolidado() {
   return (
     <>
+      <script dangerouslySetInnerHTML={{ __html: DESLIGAR_SCROLL_RESTORATION_SCRIPT }} />
       <SkeletonNavSidebar />
 
       <div

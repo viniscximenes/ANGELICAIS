@@ -1,3 +1,8 @@
+"use client";
+
+import { useLayoutEffect } from "react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
 import { RetencaoHorizontalScroll } from "@/components/dashboard/retencao/retencao-horizontal-scroll";
 import { AguardandoDadosCard } from "@/components/gestor/aguardando-dados-card";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
@@ -71,12 +76,84 @@ export function AnaliticoTmaSection({
   operadores,
   nomeFantasia,
 }: AnaliticoTmaSectionProps) {
+  // Ao (re)carregar a página, o navegador tenta restaurar a posição de
+  // scroll anterior (ex.: estava no meio deste trilho) — some com o
+  // cabeçalho e deixa a página abrindo "no meio". Desligamos a restauração
+  // automática e forçamos o topo, só nesta rota (mesmo ajuste de
+  // /reports/consolidado — RetencaoDetalheSection — e /reports/tempo-
+  // indisponibilidade — TempoIndispSection). A guarda vive AQUI, no
+  // componente que efetivamente renderiza o RetencaoHorizontalScroll (não em
+  // GestorTmaSection, componente-irmão que monta ANTES deste e não tem o
+  // trilho): colocá-la lá chamava ScrollTrigger.update() fora de sincronia
+  // com o pin do trilho (ainda não registrado quando o efeito rodava),
+  // causando um "picar"/stutter na tela logo depois do loading.tsx sumir.
+  //
+  // Um scrollTo(0,0) único na montagem não bastava: o navegador pode tentar
+  // RESTAURAR a posição salva mais de uma vez enquanto o layout da página
+  // ainda está se ajustando (fontes, imagens, ScrollTrigger recalculando o
+  // pin) — comportamento nativo, assíncrono, sem um gancho JS pra saber
+  // exatamente quando ele vai tentar de novo.
+  //
+  // Corrigido com uma "guarda" por alguns frames: a cada
+  // requestAnimationFrame, se o scroll saiu de 0 sem o usuário ter mexido o
+  // mouse/toque/teclado, volta pro topo e chama ScrollTrigger.update()
+  // (recalcula só o PROGRESSO dos triggers contra o novo scroll — não usa
+  // .refresh(), que remede layout de TODOS os ScrollTriggers da página). A
+  // guarda se desliga sozinha no primeiro gesto real do usuário
+  // (wheel/touch/tecla) ou depois de UNLOCK_MS, o que vier primeiro — nunca
+  // prende um scroll manual do usuário. useLayoutEffect (não useEffect): a
+  // PRIMEIRA correção roda antes do navegador pintar o frame inicial, sem
+  // flash.
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+
+    const UNLOCK_MS = 2000;
+    let active = true;
+    let rafId = 0;
+
+    const stop = () => {
+      if (!active) return;
+      active = false;
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchstart", stop);
+      window.removeEventListener("keydown", stop);
+      window.clearTimeout(timeoutId);
+    };
+
+    const tick = () => {
+      if (!active) return;
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+        ScrollTrigger.update();
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+
+    window.scrollTo(0, 0);
+    tick();
+
+    window.addEventListener("wheel", stop, { passive: true });
+    window.addEventListener("touchstart", stop, { passive: true });
+    window.addEventListener("keydown", stop);
+    const timeoutId = window.setTimeout(stop, UNLOCK_MS);
+
+    return () => {
+      stop();
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
+
   const pesoDesigual = calcularPesoDesigual(operadores);
   const hasNoData = analitico.totalAtendidos === 0;
 
   const cabecalho = (
-    <header className="border-border border-b border-dashed pt-2 pb-4 mb-6">
-      <h2 className="ds-h2 font-bold">Analítico</h2>
+    <header className="pt-2 pb-4 mb-6">
+      <h2 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+        Analítico
+      </h2>
     </header>
   );
 
@@ -91,11 +168,13 @@ export function AnaliticoTmaSection({
 
   const slides = [
     <div key="cards-e-evolucao" className="flex flex-col gap-6">
-      <CardsResumoTma
-        tmaMedioPonderado={analitico.tmaMedioPonderado}
-        tmaStatus={analitico.tmaStatus}
-        totalAtendidos={analitico.totalAtendidos}
-      />
+      <div data-cards-resumo-tma>
+        <CardsResumoTma
+          tmaMedioPonderado={analitico.tmaMedioPonderado}
+          tmaStatus={analitico.tmaStatus}
+          totalAtendidos={analitico.totalAtendidos}
+        />
+      </div>
       <EvolucaoTmaChart dados={analitico.evolucaoPorHora} thresholdConfig={analitico.thresholdConfig} />
     </div>,
     <AnaliticoTmaTabela key="tabela-operador-bucket" roster={roster} porOperadorPorBucket={analitico.porOperadorPorBucket} />,

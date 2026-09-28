@@ -1,9 +1,7 @@
-import { StyledCard } from "@/components/gestor/styled-card";
 import {
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
   TABELA_HEADER_CELL_ULTIMA_CLASS,
-  TABELA_HEADER_CLASS,
   TABELA_LINHA_CLASS,
   TABELA_NOME_CELL_CLASS,
   TABELA_VALOR_CELL_CLASS,
@@ -39,6 +37,16 @@ const GRID_COLS = [
 
 /** Fundo opaco da coluna Operador (sticky) e do cabeçalho (sticky top) — mesma mistura de tokens de PausasDetalhadasAnalitico/CardRechamada. */
 const STICKY_HEADER_BG = "color-mix(in oklch, var(--muted) 40%, var(--card))";
+
+/**
+ * Cabeçalho — MESMA classe literal (fonte/tamanho/cor) de PausasDetalhadasAnalitico/
+ * AderenciaAnalitico (tempo-indisponibilidade): ds-body (não ds-mono-sm),
+ * text-muted-foreground/70 (não text-muted-foreground cheio) — fonte,
+ * tamanho e tom idênticos aos títulos de coluna das tabelas do Analítico de
+ * Tempo-Indisponibilidade, nos dois temas.
+ */
+const HEADER_ROW_CLASS =
+  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground/70";
 
 /**
  * Altura máxima antes do scroll vertical interno entrar em ação — REVERSÃO
@@ -81,12 +89,11 @@ export function AnaliticoTmaTabela({ roster, porOperadorPorBucket }: Props) {
         </p>
       </div>
 
-      <StyledCard className="p-0" withGradient>
-        <div className="overflow-hidden">
-          <div className="overflow-x-auto overflow-y-auto scrollbar-tema" style={{ maxHeight: MAX_HEIGHT_PX }}>
+      <div className="overflow-hidden">
+        <div className="overflow-x-auto overflow-y-auto scrollbar-tema" style={{ maxHeight: MAX_HEIGHT_PX }}>
             <div data-analitico-tma-tabela className="min-w-fit">
               <div
-                className={cn(TABELA_HEADER_CLASS, "font-sans text-muted-foreground text-[11px] sticky top-0 z-20")}
+                className={cn(HEADER_ROW_CLASS, "sticky top-0 z-20")}
                 style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA, background: STICKY_HEADER_BG }}
               >
                 <div
@@ -145,8 +152,7 @@ export function AnaliticoTmaTabela({ roster, porOperadorPorBucket }: Props) {
               })}
             </div>
           </div>
-        </div>
-      </StyledCard>
+      </div>
     </div>
   );
 }

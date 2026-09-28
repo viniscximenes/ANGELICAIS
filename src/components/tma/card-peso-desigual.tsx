@@ -1,5 +1,4 @@
 
-import { StyledCard } from "@/components/gestor/styled-card";
 import { resolverNomeExibicao, type NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import type { OperadorPesoDesigual } from "@/lib/tma/calcular-peso-desigual";
 
@@ -26,7 +25,7 @@ export function CardPesoDesigual({ operadores, nomeFantasia }: CardPesoDesigualP
         </p>
       </div>
 
-      <StyledCard className="p-4 space-y-3.5" withGradient corners="all">
+      <div className="space-y-3.5">
         {operadores.length === 0 ? (
           <p className="ds-small text-muted-foreground text-center py-4 italic">
             Nenhum operador com peso desigual hoje.
@@ -49,7 +48,7 @@ export function CardPesoDesigual({ operadores, nomeFantasia }: CardPesoDesigualP
             );
           })
         )}
-      </StyledCard>
+      </div>
     </div>
   );
 }

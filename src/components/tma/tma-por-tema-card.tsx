@@ -1,7 +1,6 @@
 "use client";
 
 
-import { StyledCard } from "@/components/gestor/styled-card";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import { SKILL_BUCKET_LABELS, SKILL_BUCKET_ORDER, type SkillBucket } from "@/lib/tma/skills-retencao";
 import { useSkillColors } from "./use-skill-colors";
@@ -51,7 +50,7 @@ export function TmaPorTemaCard({ tmaPorBucketEquipe }: TmaPorTemaCardProps) {
         </p>
       </div>
 
-      <StyledCard className="p-4 space-y-3.5" withGradient corners="all">
+      <div className="space-y-3.5">
         {SKILL_BUCKET_ORDER.map((bucket) => {
           const valor = tmaPorBucketEquipe[bucket];
           const largura = valor !== null && maiorValor > 0 ? Math.min(100, (valor / maiorValor) * 100) : 0;
@@ -86,7 +85,7 @@ export function TmaPorTemaCard({ tmaPorBucketEquipe }: TmaPorTemaCardProps) {
             </div>
           );
         })}
-      </StyledCard>
+      </div>
     </div>
   );
 }

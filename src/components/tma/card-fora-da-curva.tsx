@@ -1,10 +1,8 @@
 
-import { StyledCard } from "@/components/gestor/styled-card";
 import {
   TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
   TABELA_HEADER_CELL_ULTIMA_CLASS,
-  TABELA_HEADER_CLASS,
   TABELA_LINHA_CLASS,
   TABELA_NOME_CELL_CLASS,
   TABELA_VALOR_CELL_CLASS,
@@ -31,6 +29,10 @@ const MAX_HEIGHT_PX = 320;
 /** Fundo opaco do cabeçalho sticky (top) — mesma mistura de tokens já usada em CardRechamada/AnaliticoTmaTabela. */
 const STICKY_HEADER_BG = "color-mix(in oklch, var(--muted) 40%, var(--card))";
 
+/** Cabeçalho — MESMA classe literal de PausasDetalhadasAnalitico/AderenciaAnalitico (tempo-indisponibilidade): ds-body, text-muted-foreground/70. */
+const HEADER_ROW_CLASS =
+  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground/70";
+
 /**
  * Uma das duas tabelas do card (Curtas ou Longas) — MESMO padrão de
  * tabela-padrao.tsx já usado em CardRechamada/AnaliticoTmaTabela
@@ -51,9 +53,9 @@ function TabelaForaDaCurva({ titulo, itens }: { titulo: string; itens: ForaDaCur
 
       <div className="overflow-hidden border-y border-border/40">
         <div className="overflow-x-auto overflow-y-auto scrollbar-tema" style={{ maxHeight: MAX_HEIGHT_PX }}>
-          <div className="min-w-fit">
+          <div data-fora-da-curva-tabela className="min-w-fit">
             <div
-              className={cn(TABELA_HEADER_CLASS, "font-sans text-muted-foreground text-[11px] sticky top-0 z-10")}
+              className={cn(HEADER_ROW_CLASS, "sticky top-0 z-10")}
               style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA, background: STICKY_HEADER_BG }}
             >
               <div className={TABELA_HEADER_CELL_CLASS}>Operador</div>
@@ -108,7 +110,7 @@ export function CardForaDaCurva({ curtas, longas, curtasLista, longasLista }: Ca
         <p className="ds-small text-muted-foreground mt-1">Chamadas muito curtas (&lt;30s) ou muito longas (&gt;30min).</p>
       </div>
 
-      <StyledCard className="flex flex-col gap-4 p-4" withGradient corners="all">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-3">
           <div className="flex items-baseline justify-between">
             <span className="ds-small text-muted-foreground/80 text-xs font-semibold tracking-wider uppercase">
@@ -126,7 +128,7 @@ export function CardForaDaCurva({ curtas, longas, curtasLista, longasLista }: Ca
 
         <TabelaForaDaCurva titulo="Curtas" itens={curtasLista} />
         <TabelaForaDaCurva titulo="Longas" itens={longasLista} />
-      </StyledCard>
+      </div>
     </div>
   );
 }

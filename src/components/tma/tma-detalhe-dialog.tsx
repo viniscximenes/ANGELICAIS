@@ -17,7 +17,6 @@ import {
 } from "recharts";
 
 import { ExportPopupPngButton } from "@/components/dashboard/export-popup-png-button";
-import { StyledCard } from "@/components/gestor/styled-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import {
@@ -50,6 +49,22 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
       ? null
       : document.querySelector<HTMLElement>('[data-page="reports-tma-peso"]');
   const fontFamilyEscopo = temaTma ? getComputedStyle(temaTma).fontFamily : undefined;
+
+  // Fundo do modal (DialogContent + wrapper interno) — resolvido via
+  // resolverTokenCss (valor COMPUTADO no elemento REAL da página, não a
+  // string "var(--background)" crua): o Dialog do Radix é portado pra
+  // document.body, fora da árvore [data-page="reports-tma-peso"]. O CSS
+  // escopado (.reports-tma-peso-dialog, ver reports-tma-peso.css) cobre a
+  // maioria dos casos, mas depende de um seletor `:has()` bem específico
+  // pra alcançar o portal — se ele não casar (ex.: alguma mudança de DOM,
+  // ordem de carregamento do CSS), --background cai pro valor padrão do
+  // tema GLOBAL do site (claro/quase branco), deixando o modal com "dois
+  // fundos": borda no tom certo (border-border/80, resolvida à parte) e
+  // miolo branco. Resolver aqui, a partir do elemento REAL da página
+  // (sempre montado por baixo enquanto o modal está aberto), elimina essa
+  // dependência por completo — mesma técnica já usada abaixo pra
+  // corAbaixoMeta/corAcimaMeta.
+  const corFundoDialog = resolverTokenCss("--background", "#E9E4D8", temaTma);
 
   // 7 buckets (Hotline + Reversão Churn somadas), espelhando as colunas de
   // "queda por skill" da tabela principal — não as 8 skills cruas.
@@ -188,7 +203,10 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
       <DialogContent
         data-page="reports-tma-peso"
         className="reports-tma-peso-dialog max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-4xl bg-background border-border/80 p-6 shadow-2xl"
-        style={fontFamilyEscopo ? { fontFamily: fontFamilyEscopo } : undefined}
+        style={{
+          backgroundColor: corFundoDialog,
+          ...(fontFamilyEscopo && { fontFamily: fontFamilyEscopo }),
+        }}
       >
         {operador && (
           <>
@@ -207,8 +225,8 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
               assim a imagem sempre reflete o tema atual (claro/escuro), não
               um tema fixo.
             */}
-            <div ref={pngRef} data-tma-detalhe-png style={{ backgroundColor: "var(--background)" }}>
-              <DialogHeader className="border-b border-dashed border-border/60 pb-3 space-y-1.5">
+            <div ref={pngRef} data-tma-detalhe-png style={{ backgroundColor: corFundoDialog }}>
+              <DialogHeader className="pb-3 space-y-1.5">
                 <DialogTitle className="ds-h3 font-semibold tracking-tight text-xl">{emailLocal}</DialogTitle>
               </DialogHeader>
 
@@ -244,8 +262,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                 <h4 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                   TMA por Hora
                 </h4>
-                <StyledCard className="p-4" withGradient>
-                  <div className="w-full h-[220px]">
+                <div className="w-full h-[220px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={evolucaoPorHora} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         {temGradiente && (
@@ -392,12 +409,11 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
-                </StyledCard>
               </div>
 
               {/* ── Distribuição por tema (donut) + TMA por Tema (novo) ── */}
               <div className="grid grid-cols-1 gap-4 pt-4 sm:grid-cols-2">
-                <StyledCard className="p-4" withGradient>
+                <div>
                   {donutData.length > 0 ? (
                     <div className="flex flex-col gap-3">
                       <div className="h-56 w-full">
@@ -451,7 +467,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                       Nenhum atendimento registrado para este operador no dia.
                     </p>
                   )}
-                </StyledCard>
+                </div>
 
                 <TmaPorTemaOperadorMini tmaPorBucket={tmaPorBucket} cores={cores} />
               </div>
@@ -459,7 +475,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
               <div className="overflow-x-auto pt-4">
                 <table className="w-full border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-dashed border-border text-left text-muted-foreground">
+                    <tr className="border-b border-border text-left text-muted-foreground">
                       <th className="py-2 pr-4 font-normal">TMA</th>
                       <th className="py-2 pr-4 font-normal">Skill</th>
                       <th className="py-2 pr-4 font-normal">Telefone do cliente</th>

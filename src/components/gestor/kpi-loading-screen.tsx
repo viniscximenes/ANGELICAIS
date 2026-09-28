@@ -421,6 +421,16 @@ function SkeletonTempoIndispNavSidebar() {
   );
 }
 
+/**
+ * /reports/tma-peso (usado só pelo overlay de refresh manual — o
+ * carregamento inicial tem loading.tsx próprio, ver comentário lá): tabela e
+ * anexo lado a lado; abaixo, cards resumo (TMA + Atendidos) e o gráfico de
+ * Evolução do TMA.
+ *
+ * O gráfico, por outro lado, NÃO tem mais container próprio (StyledCard
+ * removido a pedido) — o esqueleto reflete isso: sem borda, só uma forma
+ * (`bg-card/60`) sugerindo a área do gráfico, do MESMO tamanho/posição.
+ */
 function SkeletonTmaPeso() {
   return (
     <div className="space-y-8">
@@ -431,16 +441,16 @@ function SkeletonTmaPeso() {
             <div key={i} className="h-11 border-t border-border/60 bg-background" />
           ))}
         </div>
-        <div className="min-h-[180px] rounded-lg border border-border bg-card" />
+        <div className="min-h-[180px] rounded-lg border border-dashed border-border bg-card/40" />
       </div>
 
       <div className="space-y-4">
         <div className="h-6 w-28 rounded bg-card" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="h-[110px] rounded-lg border border-border bg-card" />
-          <div className="h-[110px] rounded-lg border border-border bg-card" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end">
+          <div className="h-[128px] rounded-lg border border-border bg-card/70 sm:col-span-2" />
+          <div className="h-[92px] rounded-lg border border-border bg-card/70 sm:col-span-3" />
         </div>
-        <div className="h-[420px] rounded-lg border border-border bg-card lg:h-[600px]" />
+        <div className="h-[280px] rounded-lg bg-card/60" />
       </div>
     </div>
   );

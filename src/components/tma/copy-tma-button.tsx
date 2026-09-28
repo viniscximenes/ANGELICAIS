@@ -41,12 +41,12 @@ export function CopyTmaButton({ horaReport }: CopyTmaButtonProps) {
 
       await copyFormattedHtml(html);
 
+      // Toast de sucesso removido a pedido — o próprio botão já vira
+      // "Copiado" (ícone + texto, ver estado "done" abaixo) por 2s, feedback
+      // suficiente sem o popup extra. Mesmo ajuste já feito no Consolidado
+      // (copy-table-button.tsx).
       setState("done");
-      toast.success("Tabela copiada", {
-        description: "Cole no Teams, Slack ou email (Ctrl+V)",
-        duration: 2500,
-        className: "reports-tma-peso-toast",
-      });
+
       setTimeout(() => setState("idle"), 2000);
     } catch (err) {
       console.error("[copy-tma] erro:", err);

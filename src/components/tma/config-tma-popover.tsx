@@ -97,7 +97,6 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
         <PopoverTrigger asChild>
           <button
             type="button"
-            title="Configurar meta do TMA"
             aria-label="Configurar meta do TMA"
             className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 items-center justify-center gap-1.5 rounded-md border bg-transparent text-sm font-medium outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)] w-8 shrink-0"
           >
@@ -107,15 +106,17 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
 
         <PopoverContent
           align="end"
-          className="bg-popover text-popover-foreground border-border w-84 rounded-2xl border p-5 shadow-2xl space-y-4"
+          className="bg-popover text-popover-foreground border-border w-72 rounded-2xl border p-4 shadow-2xl space-y-4"
         >
-          <PopoverHeader className="border-border/50 space-y-0.5 border-b pb-2">
-            <PopoverTitle className="text-foreground text-sm font-semibold">
+          {/* Cabeçalho enxuto — só o título (subtítulo explicativo removido a
+              pedido: card menor, só com o que é útil). Fonte trocada pra
+              `ds-h3` — MESMA classe usada nos títulos de card do resto da
+              página (e no ConfigTabelaPopover do Consolidado), que fixa
+              font-family: var(--font-sans) explicitamente. */}
+          <PopoverHeader className="border-border/50 border-b pb-2">
+            <PopoverTitle className="ds-h3 font-semibold text-foreground">
               Configurações da Tabela
             </PopoverTitle>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Ajuste a meta do TMA e a ordenação da tabela.
-            </p>
           </PopoverHeader>
 
           <div className="space-y-1.5">
@@ -129,9 +130,12 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
               value={meta}
               onChange={(e) => setMeta(e.target.value)}
               disabled={isPending}
-              className="text-sm font-semibold"
+              // Sem o anel de foco padrão do Input (shared component) —
+              // mesmo ajuste do ConfigTabelaPopover do Consolidado:
+              // focus-visible:border-ring/ring-3 sobrescritos pra manter a
+              // borda neutra de sempre.
+              className="text-sm font-semibold focus-visible:border-input focus-visible:ring-0"
             />
-            <p className="text-[11px] text-muted-foreground">Define o corte vermelho/verde da tabela (menor é melhor)</p>
           </div>
 
           <div className="space-y-1.5">

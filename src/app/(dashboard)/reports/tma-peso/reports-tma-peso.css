@@ -1,7 +1,7 @@
 /* Zen Linen: paleta de tema/kpi-operadores.css e reports/consolidado.
    Portais recebem o tema apenas enquanto esta rota estiver montada.
    Nenhum token global ou componente compartilhado é alterado. */
-:is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) {
+:is([data-page="reports-tma-peso"], .reports-tma-peso-dialog, body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) {
   --background: #141414;
   --foreground: #E8E3DA;
   --card: #1C1C1C;
@@ -55,10 +55,16 @@
   --switch-on: #D1CFC0;
   --switch-knob: #141414;
   --switch-knob-off: #8E8A83;
+
+  /* Folhas do Folder (React Bits) no card de anexo — mesmos tons do
+     Consolidado (reports-consolidado.css). */
+  --upload-folder-paper-1: #4B4B48;
+  --upload-folder-paper-2: #73716C;
+  --upload-folder-paper-3: #A8A49C;
 }
 
 
-[data-theme="light"] :is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) {
+[data-theme="light"] :is([data-page="reports-tma-peso"], .reports-tma-peso-dialog, body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) {
   --background: #E9E4D8;
   --foreground: #1E1E1E;
   --card: #F4EFE4;
@@ -108,10 +114,16 @@
   --switch-on: #2E2E2E;
   --switch-knob: #F4EFE4;
   --switch-knob-off: #F4EFE4;
+
+  /* Folhas do Folder (React Bits) no card de anexo — mesmos tons do
+     Consolidado (reports-consolidado.css). */
+  --upload-folder-paper-1: #817B70;
+  --upload-folder-paper-2: #A89F8F;
+  --upload-folder-paper-3: #CFC8B8;
 }
 
 
-:is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) {
+:is([data-page="reports-tma-peso"], .reports-tma-peso-dialog, body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -154,9 +166,36 @@
 }
 
 
+/* ───────── Barra de rolagem (fina, no tema da página) ─────────
+ * Antes: 10px/quadrada, visual "de sistema" destoando do resto do site.
+ * Ajustada pro mesmo padrão discreto de `.scrollbar-tema` (globals.css) e do
+ * Consolidado (reports-consolidado.css): mais fina, trilho invisível, thumb
+ * translúcido com respiro (border "recortando" o thumb via
+ * background-clip).
+ *
+ * Duas partes:
+ * 1) O seletor `:is([data-page="reports-tma-peso"], ...)` — estiliza as
+ *    barras de CONTAINERS internos com overflow (tabelas, popovers,
+ *    dialogs), que são descendentes do próprio elemento com o atributo.
+ * 2) html/body :has([data-page="reports-tma-peso"]) — a barra VERTICAL da
+ *    PÁGINA em si é do <html>/<body>, que são ANCESTRAIS do elemento
+ *    marcado, não descendentes — a regra acima nunca alcança essa barra, por
+ *    isso ela continuava com a cor do tema global (dark/light padrão do
+ *    site) em vez do Zen Linen desta rota. `:has()` resolve isso sem
+ *    precisar tocar no layout compartilhado. Cores hardcoded (não dá pra
+ *    usar var(--border) aqui: a custom property só existe dentro do
+ *    elemento com o atributo, e html/body ficam FORA dele) — mesmos valores
+ *    de --border/--muted-foreground definidos no topo deste arquivo (dark/
+ *    light).
+ */
+:is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--border) transparent;
+}
+
 :is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 :is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) ::-webkit-scrollbar-track {
   background: transparent;
@@ -164,9 +203,59 @@
 :is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) ::-webkit-scrollbar-thumb {
   background-color: var(--border);
   border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 :is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) ::-webkit-scrollbar-thumb:hover {
   background-color: var(--muted-foreground);
+  background-clip: padding-box;
+}
+:is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+html:has([data-page="reports-tma-peso"]),
+body:has([data-page="reports-tma-peso"]) {
+  scrollbar-width: thin;
+  scrollbar-color: #2C2C2C transparent;
+}
+[data-theme="light"]:has([data-page="reports-tma-peso"]),
+[data-theme="light"] body:has([data-page="reports-tma-peso"]) {
+  scrollbar-color: #D2CBBB transparent;
+}
+
+html:has([data-page="reports-tma-peso"])::-webkit-scrollbar,
+body:has([data-page="reports-tma-peso"])::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html:has([data-page="reports-tma-peso"])::-webkit-scrollbar-track,
+body:has([data-page="reports-tma-peso"])::-webkit-scrollbar-track {
+  background: transparent;
+}
+html:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb,
+body:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb {
+  background-color: #2C2C2C;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+[data-theme="light"]:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb,
+[data-theme="light"] body:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb {
+  background-color: #D2CBBB;
+}
+html:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb:hover,
+body:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb:hover {
+  background-color: #8E8A83;
+  background-clip: padding-box;
+}
+[data-theme="light"]:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb:hover,
+[data-theme="light"] body:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb:hover {
+  background-color: #5E5A52;
+}
+html:has([data-page="reports-tma-peso"])::-webkit-scrollbar-corner,
+body:has([data-page="reports-tma-peso"])::-webkit-scrollbar-corner {
+  background: transparent;
 }
 [data-page="reports-tma-peso"] {
   --upload-idle-bg: color-mix(in srgb, var(--card) 55%, var(--muted) 45%);
@@ -263,100 +352,77 @@ body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] > svg {
   background-color: var(--foreground) !important;
   fill: var(--foreground) !important;
 }
-/* Mesmo ícone e estados de interação do upload do Consolidado. */
-.upload-dropzone-ring-reports-tma-peso {
-  background: color-mix(in oklch, var(--primary) 14%, transparent);
-  opacity: 0.55;
-  transform: scale(0.86);
-  animation: upload-dz-ring-idle-reports-tma-peso 3.2s ease-in-out infinite;
-}
-
-.upload-dropzone-glyph-reports-tma-peso {
-  color: var(--muted-foreground);
-  filter: drop-shadow(0 1px 2px color-mix(in oklch, var(--foreground) 18%, transparent));
-  transition: color 0.25s ease, transform 0.25s ease, filter 0.25s ease;
-  animation: upload-dz-float-idle-reports-tma-peso 3.6s ease-in-out infinite;
-}
-
-
-.upload-dropzone-root-reports-tma-peso:hover .upload-dropzone-glyph-reports-tma-peso {
-  color: var(--primary);
-  transform: scale(1.08);
-  filter: drop-shadow(0 3px 6px color-mix(in oklch, var(--primary) 30%, transparent));
-}
-.upload-dropzone-root-reports-tma-peso:hover .upload-dropzone-ring-reports-tma-peso {
-  opacity: 0.8;
-}
-
-
-.upload-dropzone-root-reports-tma-peso:focus-visible .upload-dropzone-glyph-reports-tma-peso {
-  color: var(--primary);
-  transform: scale(1.08);
-}
-
-
-.upload-dropzone-root-reports-tma-peso[data-dropzone-state="active"] .upload-dropzone-glyph-reports-tma-peso {
-  color: var(--primary);
-  animation: upload-dz-drop-invite-reports-tma-peso 0.9s ease-in-out infinite;
-  filter: drop-shadow(0 4px 10px color-mix(in oklch, var(--primary) 40%, transparent));
-}
-.upload-dropzone-root-reports-tma-peso[data-dropzone-state="active"] .upload-dropzone-ring-reports-tma-peso {
-  animation: upload-dz-ring-active-reports-tma-peso 1.1s ease-in-out infinite;
-}
-
-
-.upload-dropzone-root-reports-tma-peso[data-dropzone-state="reject"] .upload-dropzone-glyph-reports-tma-peso {
-  color: var(--danger);
-  animation: none;
-  transform: scale(1.02);
-}
-.upload-dropzone-root-reports-tma-peso[data-dropzone-state="reject"] .upload-dropzone-ring-reports-tma-peso {
-  background: color-mix(in oklch, var(--danger) 18%, transparent);
-  animation: none;
-  opacity: 0.7;
-}
-
-
-.upload-dropzone-root-reports-tma-peso[data-dropzone-state="processing"] .upload-dropzone-glyph-reports-tma-peso,
-.upload-dropzone-root-reports-tma-peso[data-dropzone-state="processing"] .upload-dropzone-ring-reports-tma-peso {
-  animation: none;
-}
-
-
+/* Ícone do card de anexo: Folder do React Bits (react-bits-folder.tsx),
+   mesmo componente do Consolidado — anima via prop `open`, sem depender de
+   classes/keyframes CSS daqui. */
 .upload-dropzone-touch-hint-reports-tma-peso {
   opacity: 0.85;
 }
 
-@keyframes upload-dz-float-idle-reports-tma-peso {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
+/* ───────── Spinner de loading (Uiverse.io by abrahamcalsin, "dot-spinner") ─────────
+ * https://uiverse.io/abrahamcalsin/serious-turkey-52 — mesmas regras de
+ * reports-consolidado.css, escopadas a esta rota. Usado no loading.tsx
+ * (Suspense inicial) e no overlay de refresh manual (handleBaseCleared em
+ * gestor-tma-section.tsx).
+ */
+[data-page="reports-tma-peso"] .dot-spinner {
+  --uib-size: 3rem;
+  --uib-speed: .9s;
+  --uib-color: var(--foreground);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: var(--uib-size);
+  width: var(--uib-size);
 }
 
-@keyframes upload-dz-ring-idle-reports-tma-peso {
-  0%, 100% { opacity: 0.45; transform: scale(0.86); }
-  50% { opacity: 0.65; transform: scale(0.94); }
+[data-page="reports-tma-peso"] .dot-spinner__dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  width: 100%;
 }
 
-@keyframes upload-dz-ring-active-reports-tma-peso {
-  0%, 100% { opacity: 0.55; transform: scale(0.95); }
-  50% { opacity: 0.95; transform: scale(1.15); }
+[data-page="reports-tma-peso"] .dot-spinner__dot::before {
+  content: '';
+  height: 20%;
+  width: 20%;
+  border-radius: 50%;
+  background-color: var(--uib-color);
+  transform: scale(0);
+  opacity: 0.5;
+  animation: reports-tma-peso-dot-pulse calc(var(--uib-speed) * 1.111) ease-in-out infinite;
+  box-shadow: 0 0 20px color-mix(in srgb, var(--foreground) 30%, transparent);
 }
 
-@keyframes upload-dz-drop-invite-reports-tma-peso {
-  0%, 100% { transform: translateY(0) scale(1.1); }
-  50% { transform: translateY(3px) scale(1.16); }
-}
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(2) { transform: rotate(45deg); }
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(2)::before { animation-delay: calc(var(--uib-speed) * -0.875); }
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(3) { transform: rotate(90deg); }
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(3)::before { animation-delay: calc(var(--uib-speed) * -0.75); }
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(4) { transform: rotate(135deg); }
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(4)::before { animation-delay: calc(var(--uib-speed) * -0.625); }
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(5) { transform: rotate(180deg); }
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(5)::before { animation-delay: calc(var(--uib-speed) * -0.5); }
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(6) { transform: rotate(225deg); }
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(6)::before { animation-delay: calc(var(--uib-speed) * -0.375); }
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(7) { transform: rotate(270deg); }
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(7)::before { animation-delay: calc(var(--uib-speed) * -0.25); }
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(8) { transform: rotate(315deg); }
+[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(8)::before { animation-delay: calc(var(--uib-speed) * -0.125); }
 
-
-@media (prefers-reduced-motion: reduce) {
-  .upload-dropzone-glyph-reports-tma-peso,
-  .upload-dropzone-ring-reports-tma-peso,
-  .upload-dropzone-root-reports-tma-peso[data-dropzone-state="active"] .upload-dropzone-glyph-reports-tma-peso,
-  .upload-dropzone-root-reports-tma-peso[data-dropzone-state="active"] .upload-dropzone-ring-reports-tma-peso {
-    animation: none !important;
+@keyframes reports-tma-peso-dot-pulse {
+  0%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
   }
-  .upload-dropzone-root-reports-tma-peso:hover .upload-dropzone-glyph-reports-tma-peso {
-    transform: none;
+  50% {
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
@@ -365,15 +431,206 @@ body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] > svg {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
-[data-theme="light"] [data-page="reports-tma-peso"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover {
-  background-color: var(--accent) !important;
+
+/* Ao cancelar o HoldButton, o preenchimento volta a zero durante
+ * --hb-release. Se a largura começar a fechar no mesmo instante, a crista
+ * ondulada recalcula a posição contra uma largura em movimento e parece se
+ * desprender da barra. Aguardamos o retorno terminar antes de recolher o
+ * botão; expansão e confirmação continuam inalteradas. Mesma solução já
+ * aplicada em /reports/consolidado e /reports/tempo-indisponibilidade. */
+[data-page="reports-tma-peso"] button[aria-label="Segure para limpar a base"][data-phase="idle"] {
+  transition-delay: var(--hb-release), 0ms, 0ms, 0ms !important;
+}
+/* ───────── Hover das linhas da TmaTable (tema claro) ─────────
+ * globals.css tem uma regra GLOBAL (fora do escopo permitido pra edição):
+ *   [data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover
+ *   { background-color: var(--muted-hover-bg) !important; }
+ * `--muted-hover-bg` (oklch(0.93 0.002 240), ~#ededf0) é resquício do tema
+ * antigo — cinza quase branco fora da paleta Zen Linen. Com !important, essa
+ * regra vence QUALQUER classe Tailwind, inclusive a borda esquerda colorida
+ * que distingue linha boa/ruim (hoverClass em tma-table.tsx), apagando essa
+ * distinção no hover. Mesma correção já aplicada em /reports/consolidado
+ * (equipe-table.tsx/reports-consolidado.css).
+ *
+ * Correção: seletor AINDA mais específico (mesmo padrão + o escopo
+ * [data-page] a mais) escrevendo por cima — só nesta rota. Tom do hover:
+ * --muted (bege mais escuro da paleta), não --accent (fica perto demais de
+ * --card no claro, lido como "esbranquiçado").
+ *
+ * Linhas "ruins" (TMA acima da meta) carregam sempre a classe Tailwind
+ * `hover:border-l-[var(--danger)]` (ver hoverClass em tma-table.tsx) —
+ * reaproveitada aqui como seletor pra dar a essas linhas um hover com leve
+ * tom de --danger por cima do bege, em vez do bege neutro das linhas boas.
+ *
+ * `:not([data-sem-dados="true"])` em TODAS as regras abaixo: operador sem
+ * nenhum atendimento no dia não é clicável e não deve reagir a hover NENHUM,
+ * nos dois temas — sem isso, essa regra (com !important) também vencia o
+ * `hover:bg-transparent` que a própria linha já usa pra ficar neutra.
+ */
+[data-theme="light"] [data-page="reports-tma-peso"] [data-equipe-table] > div:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
+  background-color: var(--muted) !important;
+}
+[data-theme="light"] [data-page="reports-tma-peso"] [data-equipe-table] > div.hover\:border-l-\[var\(--danger\)\]:not([data-sem-dados="true"]):hover {
+  background-color: color-mix(in srgb, var(--danger) 16%, var(--muted) 84%) !important;
+}
+
+/* ───────── Hover das linhas "ruins" (tema escuro) ─────────
+ * No escuro, linhas com TMA acima da meta já têm um fundo vermelho
+ * PERMANENTE (fundoLinhaRuim, inline style — sempre vence qualquer classe
+ * Tailwind de hover, incluindo o hover:bg-accent herdado da linha base).
+ * Resultado: passar o mouse não mudava NENHUMA cor nessas linhas, só a
+ * borda esquerda + o leve translateX (hoverClass) — diferente das linhas
+ * boas, que clareiam via hover:bg-accent normalmente. Regra abaixo dá o
+ * MESMO feedback de cor no hover, por cima do vermelho de repouso (mistura
+ * mais --danger, escurecendo/intensificando em vez de clarear). SEM
+ * `[data-theme="light"]` de propósito: a regra do claro (acima) é MAIS
+ * específica, então continua vencendo lá — esta só passa a valer no escuro.
+ */
+[data-page="reports-tma-peso"] [data-equipe-table] > div.hover\:border-l-\[var\(--danger\)\]:not([data-sem-dados="true"]):hover {
+  background-color: color-mix(in oklch, var(--danger) 14%, transparent) !important;
+}
+
+/* ───────── Hover das linhas "sem dados" (os dois temas) ─────────
+ * Operador sem nenhum atendimento no dia não é clicável e não deve reagir a
+ * hover NENHUM. As regras acima já excluem essas linhas (:not([data-sem-
+ * dados="true"])), mas isso só as deixa DE FORA da correção — no tema claro
+ * a regra global de globals.css (--muted-hover-bg, sem essa exclusão) ainda
+ * pintava essas linhas ao passar o mouse. Seletor de atributo
+ * ([data-sem-dados="true"]) é mais específico que a classe usada por essa
+ * regra global, então vence independente da ordem no stylesheet — força
+ * transparente nos dois temas.
+ */
+[data-page="reports-tma-peso"] [data-equipe-table] > div[data-sem-dados="true"]:hover {
+  background-color: transparent !important;
+}
+
+/* ───────── Fundo dos cards de Resumo (TMA/Atendidos) ─────────
+ * CardsResumoTma.tsx usa bg-card/70 — no tema claro isso fica quase
+ * idêntico ao --background da página ao redor (pouco contraste, "muito
+ * claro"). Mesma correção já aplicada em /reports/consolidado
+ * (VisaoGeralCards, via wrapper data-visao-geral-cards): não editamos o
+ * componente (é usado só nesta página, mas mantemos o mesmo padrão de
+ * escopar via wrapper) — data-cards-resumo-tma (adicionado em
+ * analitico-tma-section.tsx) escurece .bg-card/70 um tom abaixo do
+ * background da página, só no claro. Tema escuro mantém integralmente o
+ * bg-card/70 original (fora do seletor [data-theme="light"]).
+ */
+[data-theme="light"] [data-page="reports-tma-peso"] [data-cards-resumo-tma] .bg-card\/70 {
+  background-color: color-mix(in srgb, var(--background) 82%, var(--muted) 18%) !important;
+}
+
+/* ───────── Borda tracejada no hover (tema claro) ─────────
+ * globals.css tem uma regra GLOBAL (fora do escopo permitido pra edição) que
+ * escurece qualquer .border-dashed no hover, no tema claro:
+ *   [data-theme="light"] .border-dashed:hover { border-color: var(--primary) !important; }
+ * Com !important, essa regra vence até a cor definida via inline style —
+ * atinge tanto o dropzone REAL (TmaUploadDropzone, que já define a própria
+ * borderColor por estado, mas sem !important) quanto a caixa tracejada MUDA
+ * do esqueleto de loading (SkeletonPainelAnexo, sem classe própria, só
+ * utilities Tailwind) — fazendo a borda "animar"/escurecer ao passar o
+ * mouse ali mesmo estando tudo desabilitado (não é um dropzone real, só um
+ * placeholder). Duas regras abaixo cancelam o efeito nos dois casos,
+ * restritas a esta rota. Mesma correção já aplicada em /reports/consolidado
+ * e /reports/tempo-indisponibilidade.
+ */
+[data-theme="light"] [data-page="reports-tma-peso"] .upload-dropzone-root-reports-tma-peso[data-dropzone-state="idle"]:hover {
+  border-color: var(--border) !important;
+}
+[data-theme="light"] [data-page="reports-tma-peso"] .border-dashed:hover {
+  border-color: var(--border) !important;
+}
+
+/* ───────── "Título" superior da TmaTable (tema claro) ─────────
+ * Mesmo ajuste já feito no cabeçalho da EquipeTable do Consolidado (linha
+ * :first-child): a cor do texto do cabeçalho (Operador/TMA/Qtd. Ligações)
+ * fica mais bege/suave — em vez do --foreground quase preto (#1E1E1E) —
+ * igual ao tom já usado pra texto secundário no resto do site
+ * (--muted-foreground, #5E5A52). TmaTable não tem linha de totais (sem
+ * equivalente ao "EQUIPE" da EquipeTable), então só o cabeçalho recebe o
+ * ajuste. Tema escuro inalterado (fora do seletor [data-theme="light"]).
+ */
+[data-theme="light"] [data-page="reports-tma-peso"] [data-equipe-table] > div:first-child {
+  color: var(--muted-foreground) !important;
+}
+
+/* ───────── Tabelas do Analítico (tema claro) ─────────
+ * Mesmo tratamento já aplicado em /reports/tempo-indisponibilidade (as 3
+ * tabelas do Analítico da TMA — AnaliticoTmaTabela, CardRechamada,
+ * CardForaDaCurva — têm a mesma estrutura de grid com STICKY_HEADER_BG
+ * inline + coluna(s) do nome do operador sem fundo próprio no claro):
+ * cada bloco usava a MESMA fórmula de STICKY_HEADER_BG (color-mix com
+ * --muted 40%), mas sem nenhum reforço de contraste no claro ela ficava
+ * pálida demais contra o --card claro ao redor — e a(s) célula(s) com o
+ * nome do operador ficavam sem NENHUM fundo próprio (transparentes),
+ * misturando com o restante da linha. Normalizamos os três blocos pelos
+ * MESMOS tokens da paleta Zen Linen: cabeçalho em --muted opaco com texto
+ * muted-foreground (sobrescrevendo o STICKY_HEADER_BG/text-[11px] inline,
+ * que podia variar de intensidade visual entre os três), e a(s) célula(s)
+ * do operador num bege um pouco mais marcado, pra se separar visualmente
+ * do resto da linha — mesma proporção de color-mix usada em
+ * reports-tempo-indisp.css. Tema escuro inalterado (fora do seletor
+ * [data-theme="light"]).
+ */
+[data-theme="light"] [data-page="reports-tma-peso"] :is(
+  [data-analitico-tma-tabela],
+  [data-rechamada-tabela],
+  [data-fora-da-curva-tabela]
+) > div:first-child {
+  background-color: var(--muted) !important;
+  border-bottom: 2px solid var(--border) !important;
+  color: color-mix(in srgb, var(--muted-foreground) 70%, transparent) !important;
+}
+
+/* Célula(s) de cabeçalho do NOME do operador — MESMO destaque nos três
+ * blocos. Sem esta regra, a célula "Operador"/"1º Atendimento" ficava
+ * apoiada só no --muted opaco da linha (regra acima), enquanto na Tabela de
+ * TMA por Tema (única com coluna sticky) ela já herdava este fundo mais
+ * claro — como o texto usa uma cor translúcida (muted-foreground/70), o
+ * MESMO valor de cor parecia mais escuro/diferente contra o --muted cheio
+ * do que contra esta mistura mais clara. Normalizado nos três: AnaliticoTma
+ * Tabela e CardForaDaCurva têm uma só coluna de nome (1ª); CardRechamada
+ * tem duas (1º e 2º Atendimento, 1ª e última coluna do cabeçalho).
+ */
+[data-theme="light"] [data-page="reports-tma-peso"] :is(
+  [data-analitico-tma-tabela],
+  [data-fora-da-curva-tabela]
+) > div:first-child > div:first-child,
+[data-theme="light"] [data-page="reports-tma-peso"] [data-rechamada-tabela] > div:first-child > div:first-child,
+[data-theme="light"] [data-page="reports-tma-peso"] [data-rechamada-tabela] > div:first-child > div:last-child {
+  background-color: color-mix(in srgb, var(--card) 60%, var(--muted) 40%) !important;
+}
+
+/* Célula(s) do NOME do operador em cada linha — AnaliticoTmaTabela e
+   CardForaDaCurva têm uma só (1ª coluna); CardRechamada tem duas (1º e 2º
+   Atendimento, 1ª e última coluna da linha). */
+[data-theme="light"] [data-page="reports-tma-peso"] :is(
+  [data-analitico-tma-tabela],
+  [data-fora-da-curva-tabela]
+) > div:not(:first-child) > div:first-child,
+[data-theme="light"] [data-page="reports-tma-peso"] [data-rechamada-tabela] > div:not(:first-child) > div:first-child,
+[data-theme="light"] [data-page="reports-tma-peso"] [data-rechamada-tabela] > div:not(:first-child) > div:last-child {
+  background-color: color-mix(in srgb, var(--card) 68%, var(--muted) 32%) !important;
 }
 
 /* O Dialog do Radix é portado para document.body. O data-page aplicado no
-   próprio conteúdo torna o Zen Linen explícito e independente da árvore da
-   página que disparou o modal. */
+ * próprio conteúdo torna o Zen Linen explícito e independente da árvore da
+ * página que disparou o modal.
+ *
+ * Fallback no var() ("#E9E4D8"/"#141414" — os mesmos hex do tema desta
+ * rota): se o seletor `:has()` no topo do arquivo não alcançar o portal por
+ * algum motivo (ordem de carregamento do CSS, mudança futura de DOM), a
+ * custom property --background cai no fallback explícito em vez de ficar
+ * "guaranteed-invalid"/transparente (o que revelaria o branco do tema
+ * global do site por baixo do modal — só a borda, resolvida à parte,
+ * pareceria "no tema"). O style inline em TmaDetalheDialog (corFundoDialog,
+ * via resolverTokenCss) já cobre o mesmo caso de forma mais robusta — este
+ * fallback é só uma segunda camada.
+ */
+[data-theme="light"] .reports-tma-peso-dialog {
+  background-color: var(--background, #E9E4D8) !important;
+}
 .reports-tma-peso-dialog {
-  background-color: var(--background) !important;
+  background-color: var(--background, #141414) !important;
   color: var(--foreground) !important;
   border-color: var(--border) !important;
   font-family: var(--font-zen-sans), "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
@@ -409,10 +666,28 @@ body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] > svg {
 }
 
 /* Mesmo clareamento local do wrapper de export do Consolidado. Preserva a
-   paleta Zen Linen no claro, reduzindo o bege apenas na imagem gerada. */
+   paleta Zen Linen no claro, reduzindo o bege apenas na imagem gerada.
+ *
+ * BUG (mesma causa raiz já corrigida em reports-consolidado.css): as 3
+ * linhas abaixo redefiniam `--background`/`--card`/`--muted` referenciando
+ * `var(--background)`/`var(--card)`/`var(--muted)` — MAS como é a MESMA
+ * custom property sendo redefinida NO MESMO seletor, isso é uma referência
+ * CIRCULAR (o `var()` não enxerga o valor herdado do ancestral, aponta pra
+ * si mesma). Por spec, uma custom property circular vira
+ * "guaranteed-invalid" — `getComputedStyle(...).getPropertyValue
+ * ("--background")` retorna STRING VAZIA neste elemento específico.
+ * `resolverTokenCss` (capturar-como-png.ts), ao ler --background pra pintar
+ * o fundo/margem do PNG exportado, caía no fallback hardcoded da função
+ * (`#ffffff`) — daí a print sair branca/ruim só no tema claro (o escuro
+ * nunca teve essa regra). Corrigido usando os HEX literais do tema claro
+ * (--background/--card/--muted, definidos acima em [data-theme="light"]
+ * :is([data-page="reports-tma-peso"], ...)) em vez de var()
+ * auto-referenciado — mesmo resultado visual (10-15% de branco misturado),
+ * sem o ciclo.
+ */
 [data-theme="light"] [data-page="reports-tma-peso"] [data-tma-png],
 [data-theme="light"] [data-page="reports-tma-peso"] [data-tma-detalhe-png] {
-  --background: color-mix(in srgb, var(--background) 88%, white 12%);
-  --card: color-mix(in srgb, var(--card) 90%, white 10%);
-  --muted: color-mix(in srgb, var(--muted) 85%, white 15%);
+  --background: color-mix(in srgb, #E9E4D8 88%, white 12%);
+  --card: color-mix(in srgb, #F4EFE4 90%, white 10%);
+  --muted: color-mix(in srgb, #CFC8B8 85%, white 15%);
 }
