@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Popover as PopoverPrimitive, Tooltip as TooltipPrimitive } from "radix-ui";
+import { Popover as PopoverPrimitive } from "radix-ui";
 import { IconCheck, IconSettings } from "@tabler/icons-react";
 import { toast } from "sonner";
 
@@ -174,31 +174,15 @@ export function ConfigKpiOperadoresPopover({
         )}
 
       <PopoverPrimitive.Root open={open} onOpenChange={handleOpenChange}>
-        <TooltipPrimitive.Provider delayDuration={200}>
-          <TooltipPrimitive.Root>
-            <TooltipPrimitive.Trigger asChild>
-              <PopoverPrimitive.Trigger asChild>
-                <button
-                  type="button"
-                  aria-label="Configurar colunas"
-                  className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-transparent outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
-                >
-                  <IconSettings size={15} aria-hidden="true" />
-                </button>
-              </PopoverPrimitive.Trigger>
-            </TooltipPrimitive.Trigger>
-            <TooltipPrimitive.Portal>
-              <TooltipPrimitive.Content
-                data-page="kpi-operadores"
-                sideOffset={6}
-                className="font-sans z-50 rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background shadow-md"
-              >
-                Colunas
-                <TooltipPrimitive.Arrow className="fill-foreground" />
-              </TooltipPrimitive.Content>
-            </TooltipPrimitive.Portal>
-          </TooltipPrimitive.Root>
-        </TooltipPrimitive.Provider>
+        <PopoverPrimitive.Trigger asChild>
+          <button
+            type="button"
+            aria-label="Configurar colunas"
+            className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-transparent outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
+          >
+            <IconSettings size={15} aria-hidden="true" />
+          </button>
+        </PopoverPrimitive.Trigger>
 
         <PopoverPrimitive.Portal>
           <PopoverPrimitive.Content

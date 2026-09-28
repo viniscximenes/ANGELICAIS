@@ -26,7 +26,6 @@ import { getKpiColunasConfigLocal } from "./_lib/get-kpi-colunas-config-local";
 import { getKpiColunasRvConfig } from "./_lib/get-kpi-colunas-rv-config";
 import { extractKpisExtras, type KpiExtrasPorEmail } from "./_lib/extract-kpis-extras";
 import { KPI_COLUNAS_ORDER_LOCAL, LABELS_KPI_LOCAL } from "./_lib/kpi-colunas-local";
-import { PageEnter } from "./_components/page-enter";
 
 export const metadata: Metadata = {
   title: "KPI - Operadores",
@@ -51,6 +50,20 @@ const zenSans = Instrument_Sans({
 // Página personalizada por gestor — nunca cacheada entre usuários.
 export const dynamic = "force-dynamic";
 
+// Mesmo piso mínimo do carregamento inicial do Consolidado. O relógio começa
+// na entrada do Server Component: se as buscas terminarem antes de 3s, o
+// fallback permanece até completar o piso; se já demorarem 3s ou mais, não
+// existe espera adicional. Isso cobre entrada na rota, F5 e refresh do RSC,
+// sem participar da troca de mês feita no client.
+const MIN_LOADING_MS = 3_000;
+
+async function aguardarPisoMinimo(desde: number) {
+  const faltam = MIN_LOADING_MS - (Date.now() - desde);
+  if (faltam > 0) {
+    await new Promise((resolve) => setTimeout(resolve, faltam));
+  }
+}
+
 function getCurrentMesRef(): string {
   const { year, month } = getDatePartsInBR();
   return `${year}-${String(month).padStart(2, "0")}-01`;
@@ -71,6 +84,7 @@ function getMesRetrasadoRef(): string {
 }
 
 export default async function KpiOperadoresPage() {
+  const inicioCarregamento = Date.now();
   const user = await getCurrentUser();
 
   if (!user) redirect("/login");
@@ -178,38 +192,38 @@ export default async function KpiOperadoresPage() {
   // linhas com data_corte anterior ao data_corte atual".
   const kpiAnterior = filtrarKpiAnteriorPorDataCorte(kpiAnteriorBruto, dataAtual.dataCorte);
 
+  await aguardarPisoMinimo(inicioCarregamento);
+
   return (
-    <PageEnter>
-      <div
-        data-page="kpi-operadores"
-        className={`min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
-      >
-        <div className="mx-auto max-w-7xl">
-          {/*
-            Cabeçalho (título + linha de contexto + ações) é renderizado
-            inteiro dentro de KpiEquipeSection — não dá pra ficar aqui (Server
-            Component): as ações (RV/Copiar/Colunas) e a linha de contexto
-            (mês selecionado, dataCorte) dependem de estado client que só
-            existe lá dentro.
-          */}
-          <KpiEquipeSection
-            nomeGestor={formatNomeProprio(fullName)}
-            dataAtual={dataAtual}
-            dataPassado={dataPassado}
-            dataRetrasado={dataRetrasado}
-            mesesHistoricos={mesesHistoricos}
-            nomeFantasia={nomeFantasia}
-            olhoInicial={nomeFantasiaConfig.olhoOperacional}
-            colunasDisponiveis={colunasDisponiveis}
-            colunasVisiveisIniciais={kpiColunasVisiveis}
-            colunasRvIniciais={kpiColunasRv}
-            kpisExtrasPorMes={kpisExtrasPorMes}
-            showRvInicial={showRvOperadores}
-            kpiAnterior={kpiAnterior.porOperador}
-            kpiDefinitions={definitions}
-          />
-        </div>
+    <div
+      data-page="kpi-operadores"
+      className={`min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
+    >
+      <div className="mx-auto max-w-7xl">
+        {/*
+          Cabeçalho (título + linha de contexto + ações) é renderizado
+          inteiro dentro de KpiEquipeSection — não dá pra ficar aqui (Server
+          Component): as ações (RV/Copiar/Colunas) e a linha de contexto
+          (mês selecionado, dataCorte) dependem de estado client que só
+          existe lá dentro.
+        */}
+        <KpiEquipeSection
+          nomeGestor={formatNomeProprio(fullName)}
+          dataAtual={dataAtual}
+          dataPassado={dataPassado}
+          dataRetrasado={dataRetrasado}
+          mesesHistoricos={mesesHistoricos}
+          nomeFantasia={nomeFantasia}
+          olhoInicial={nomeFantasiaConfig.olhoOperacional}
+          colunasDisponiveis={colunasDisponiveis}
+          colunasVisiveisIniciais={kpiColunasVisiveis}
+          colunasRvIniciais={kpiColunasRv}
+          kpisExtrasPorMes={kpisExtrasPorMes}
+          showRvInicial={showRvOperadores}
+          kpiAnterior={kpiAnterior.porOperador}
+          kpiDefinitions={definitions}
+        />
       </div>
-    </PageEnter>
+    </div>
   );
 }

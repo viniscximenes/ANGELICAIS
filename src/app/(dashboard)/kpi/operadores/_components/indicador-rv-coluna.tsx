@@ -2,6 +2,10 @@
 
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 
+import {
+  TABELA_HEADER_CELL_CLASS,
+  TABELA_VALOR_CELL_CLASS,
+} from "@/components/gestor/tabela-padrao";
 import { cn } from "@/lib/utils";
 
 /**
@@ -43,13 +47,13 @@ export function IndicadorRvHeader({ titulo, sortSlug, sort, interativo, onSort, 
       onClick={interativo ? () => onSort?.(sortSlug) : undefined}
       onKeyDown={interativo ? handleKeyDown : undefined}
       className={cn(
-        "font-sans px-3 py-2.5 text-center text-[13px] font-semibold tracking-[0.04em] whitespace-nowrap uppercase select-none",
-        ativo ? "text-foreground" : "text-muted-foreground",
+        TABELA_HEADER_CELL_CLASS,
+        "kpi-operadores-rv-header group/th relative select-none",
         interativo &&
           "hover:text-foreground transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]",
       )}
     >
-      {titulo}
+      <span className="block overflow-hidden px-5 text-ellipsis">{titulo}</span>
       {interativo && sortIcon}
     </th>
   );
@@ -62,7 +66,7 @@ export interface IndicadorRvCellProps {
 export function IndicadorRvCell({ resultado }: IndicadorRvCellProps) {
   return (
     <td
-      className="font-sans px-3 py-2 text-center whitespace-nowrap"
+      className={cn(TABELA_VALOR_CELL_CLASS, "whitespace-nowrap")}
       style={{ ...resultado.style, fontVariantNumeric: "tabular-nums" }}
       title={resultado.title}
       aria-label={resultado.ariaLabel}

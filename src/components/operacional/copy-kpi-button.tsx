@@ -62,7 +62,7 @@ async function copyFormattedHtml(html: string, textoPlano: string): Promise<void
 interface CopyKpiButtonProps {
   /** Data de corte dos dados (mesRef não tem precisão de dia) — vira o subtítulo "atualizado até DD/MM/YYYY" E o sufixo "- dd/mm" do título. */
   dataCorte: string | null;
-  /** true = inclui o aviso de RV no conteúdo copiado (só com "Exibir RV" ligado, no mês atual — mesma condição de rvColunaAtiva). */
+  /** true = inclui o aviso de RV no conteúdo copiado (somente quando "Total (RV)" está efetivamente visível). */
   comAvisoRv: boolean;
   /**
    * Monta a instância offscreen (data-kpi-tabela-png), aguarda fontes +
@@ -118,12 +118,9 @@ export function CopyKpiButton({
 
       await copyFormattedHtml(html, textoPlano);
 
+      // Sem toast de sucesso: o próprio botão confirma a cópia por 2s,
+      // seguindo o mesmo padrão de /reports/consolidado.
       setState("done");
-      toast.success("Tabela copiada", {
-        description: "Cole no Teams, Slack ou email (Ctrl+V)",
-        duration: 2500,
-        className: "kpi-op-toast",
-      });
 
       setTimeout(() => setState("idle"), 2000);
     } catch (err) {
@@ -149,29 +146,19 @@ export function CopyKpiButton({
       )}
     >
       {state === "copying" && (
-        <span
-          key="copying"
-          className="animate-in fade-in inline-flex items-center gap-1.5 duration-150 motion-reduce:animate-none"
-        >
+        <span className="inline-flex items-center gap-1.5">
           <IconLoader2 size={14} className="animate-spin" aria-hidden="true" />
-          <span>Copiando…</span>
+          <span>Gerando...</span>
         </span>
       )}
       {state === "done" && (
-        <span
-          key="done"
-          className="animate-in fade-in inline-flex items-center gap-1.5 duration-150 motion-reduce:animate-none"
-          style={{ color: "var(--success)" }}
-        >
+        <span className="inline-flex items-center gap-1.5" style={{ color: "var(--success)" }}>
           <IconCheck size={14} aria-hidden="true" />
-          <span>Copiado</span>
+          <span>Copiado!</span>
         </span>
       )}
       {state === "idle" && (
-        <span
-          key="idle"
-          className="animate-in fade-in inline-flex items-center gap-1.5 duration-150 motion-reduce:animate-none"
-        >
+        <span className="inline-flex items-center gap-1.5">
           <IconCamera size={14} aria-hidden="true" />
           <span>Copiar imagem</span>
         </span>

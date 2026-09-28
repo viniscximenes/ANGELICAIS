@@ -5,7 +5,7 @@ export function escapeHtml(str: string): string {
 }
 
 const AVISO_TEXTO =
-  "RV estimado com a regra atual. Indisp e ABS ainda podem ser contestados no envio do RV real, então inelegibilidade aqui não é definitiva. Não inclui perdas por feedback, que só aparecem no RV do RH.";
+  "RV estimado com a regra atual. Indisp e ABS ainda podem ser contestados no envio do RV real, então inelegibilidade aqui não é definitiva. Não inclui perdas por feedback, que só aparecem no RV do fechamento.";
 
 /**
  * "<título> - dd/mm" (dd/mm = data_corte do mês exibido). Sem data_corte
@@ -35,7 +35,7 @@ export function buildKpiClipboardHtml(options: {
   subtitulo: string;
   pngDataUrl: string;
   altText: string;
-  /** true = inclui o aviso de RV (só com "Exibir RV" ligado, no mês atual). */
+  /** true = inclui o aviso de RV (somente com a coluna "Total (RV)" visível). */
   comAvisoRv: boolean;
 }): string {
   const { titulo, subtitulo, pngDataUrl, altText, comAvisoRv } = options;

@@ -1,7 +1,8 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   IconSelector,
   IconChevronUp,
@@ -13,6 +14,12 @@ import {
 import { toast } from "sonner";
 
 import { CopyKpiButton } from "@/components/operacional/copy-kpi-button";
+import {
+  corNomeOperador,
+  TABELA_HEADER_CELL_CLASS,
+  TABELA_NOME_CELL_CLASS,
+  TABELA_VALOR_CELL_CLASS,
+} from "@/components/gestor/tabela-padrao";
 import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
@@ -73,6 +80,8 @@ import type { KpiExtrasPorEmail } from "@/app/(dashboard)/kpi/operadores/_lib/ex
 
 type SortDir = "asc" | "desc";
 type SortState = { slug: string; dir: SortDir };
+
+const MIN_TABELA_LOADING_MS = 2000;
 
 // Peso do título "Operadores" (Instrument Sans agora — não mais serifa)
 // isolado aqui pra eu poder trocar rápido pra "font-medium" (500) se 600
@@ -343,15 +352,15 @@ function SortIcon({ slug, sort }: { slug: string; sort: SortState }) {
     return (
       <IconSelector
         size={14}
-        className="ml-1 inline-block align-middle opacity-0 transition-opacity group-hover/th:opacity-50 group-focus-visible/th:opacity-50"
+        className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 opacity-0 transition-opacity group-hover/th:opacity-50 group-focus-visible/th:opacity-50"
         aria-hidden="true"
       />
     );
   }
   return sort.dir === "asc" ? (
-    <IconChevronUp size={14} className="ml-1 inline-block text-primary align-middle" aria-hidden="true" />
+    <IconChevronUp size={14} className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-primary" aria-hidden="true" />
   ) : (
-    <IconChevronDown size={14} className="ml-1 inline-block text-primary align-middle" aria-hidden="true" />
+    <IconChevronDown size={14} className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-primary" aria-hidden="true" />
   );
 }
 
@@ -366,7 +375,7 @@ function MiniEvolucaoSvg({ direcao, corVar }: { direcao: EvolucaoTxRetencao["dir
 }
 
 /**
- * Selo de evolução — sobreposto na divisória entre "Retenção (Atual)" e
+ * Selo de evolução — sobreposto na divisória entre "Taxa Atual" e
  * "Retenção (dd/mm)". Posicionado a partir da célula do último
  * report (position: relative nela), centralizado na linha E na divisória
  * (left: 0 + translate -50%/-50%). aria-hidden — a célula do último report
@@ -522,9 +531,7 @@ function KpiOperadoresTabela({
     }
     return null;
   })();
-  const tituloRetencaoAnterior = dataCorteAnteriorFormatada
-    ? `Retenção (${dataCorteAnteriorFormatada})`
-    : "Retenção (Anterior)";
+  const tituloRetencaoAnterior = "Taxa Anterior";
   const tooltipRetencaoAnterior = dataCorteAnteriorFormatada
     ? `Resultado do report de ${dataCorteAnteriorFormatada}`
     : undefined;
@@ -555,27 +562,28 @@ function KpiOperadoresTabela({
             : undefined
         }
       >
-        <table className="w-full border-collapse text-sm" style={{ minWidth: 860 }}>
-          <thead>
+        <table className="kpi-operadores-table border-collapse text-sm" style={{ minWidth: 860 }}>
+          <thead className="kpi-operadores-table-head ds-body font-bold text-foreground tracking-wide uppercase">
             <tr style={{ borderBottom: "1px solid var(--border)" }}>
               <th
                 scope="col"
-                className="font-sans text-muted-foreground sticky left-0 bg-[var(--background)] px-3 py-2.5 text-center text-[13px] font-semibold tracking-[0.04em] whitespace-nowrap uppercase select-none"
+                className={cn(
+                  TABELA_HEADER_CELL_CLASS,
+                  "kpi-operadores-table-head-sticky sticky left-0 min-w-[190px] select-none",
+                )}
                 style={{ zIndex: "var(--z-kpi-sticky-th)", boxShadow: stickyOperadorShadow }}
               >
-                <div className="flex items-center justify-center gap-1.5">
-                  <span>Operador</span>
-                  {mostrarToggleOlho && (
-                    <button
-                      type="button"
-                      onClick={onToggleOlho}
-                      title={olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"}
-                      className="text-muted-foreground/60 hover:text-muted-foreground transition-colors inline-flex items-center cursor-pointer"
-                    >
-                      {olhoAberto ? <IconEye size={14} /> : <IconEyeOff size={14} />}
-                    </button>
-                  )}
-                </div>
+                Operador
+                {mostrarToggleOlho && (
+                  <button
+                    type="button"
+                    onClick={onToggleOlho}
+                    title={olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"}
+                    className="text-foreground/80 hover:text-foreground ml-1.5 inline-block cursor-pointer align-middle transition-colors"
+                  >
+                    {olhoAberto ? <IconEye size={14} /> : <IconEyeOff size={14} />}
+                  </button>
+                )}
               </th>
 
               {headers.map((h, idx) => {
@@ -652,8 +660,9 @@ function KpiOperadoresTabela({
                       onDragEnd={interativo ? onHeaderDragEnd : undefined}
                       title={interativo ? "Arraste para reordenar · clique para ordenar" : undefined}
                       className={cn(
-                        "group/th font-sans px-3 py-2.5 text-center text-[13px] font-semibold tracking-[0.04em] whitespace-nowrap uppercase select-none",
-                        ativo ? "text-foreground" : "text-muted-foreground",
+                        TABELA_HEADER_CELL_CLASS,
+                        "group/th relative select-none",
+                        ehTxAtual && "kpi-operadores-taxa-coluna",
                         interativo &&
                           "hover:text-foreground transition-colors cursor-grab active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]",
                         dragIndex === idx && "opacity-50",
@@ -664,7 +673,6 @@ function KpiOperadoresTabela({
                             ? "border-r-2 border-r-primary"
                             : "border-l-2 border-l-primary"),
                       )}
-                      style={ehTxAtual ? { paddingRight: SELO_RESERVA_PX } : undefined}
                       onClick={interativo ? () => onSort?.(h.slug) : undefined}
                       onKeyDown={
                         interativo
@@ -677,8 +685,10 @@ function KpiOperadoresTabela({
                           : undefined
                       }
                     >
-                      {/* "Retenção (Atual)" — mesmo slug/coluna de sempre, só renomeada na apresentação. */}
-                      {ehTxAtual ? formatHeaderLabel("Retenção (Atual)") : formatHeaderLabel(h.displayName)}
+                      {/* "Taxa Atual" — mesmo slug/coluna de sempre, só renomeada na apresentação. */}
+                      <span className="block overflow-hidden px-5 text-ellipsis">
+                        {ehTxAtual ? formatHeaderLabel("Taxa Atual") : formatHeaderLabel(h.displayName)}
+                      </span>
                       {interativo && <SortIcon slug={h.slug} sort={sort} />}
                     </th>
 
@@ -686,12 +696,12 @@ function KpiOperadoresTabela({
                       "Retenção (dd/mm)" (ou "Retenção (Anterior)" sem
                       nenhum dado ainda) — coluna sintética (não existe em
                       op.kpis/kpi_definitions), colada logo depois de onde
-                      "Retenção (Atual)" estiver (mesmo se o gestor arrastou
+                      "Taxa Atual" estiver (mesmo se o gestor arrastou
                       essa coluna pra outra posição). Some junto se
                       tx_retencao_bruta estiver oculta (nunca entra em
-                      `headers` nesse caso) ou fora do mês atual.
-                      paddingLeft reserva espaço pro selo não encostar no
-                      valor (ver SELO_RESERVA_PX) — o espelho do pr no "Atual".
+                      `headers` nesse caso) ou fora do mês atual. O selo de
+                      evolução fica nas células do corpo; o título permanece
+                      centralizado no centro real da coluna.
                     */}
                     {ehTxAtual && mostrarColunaUltimoReport && (
                       <th
@@ -711,14 +721,15 @@ function KpiOperadoresTabela({
                             : undefined
                         }
                         className={cn(
-                          "font-sans py-2.5 text-center text-[13px] font-semibold tracking-[0.04em] whitespace-nowrap uppercase select-none",
-                          ativoAnterior ? "text-foreground" : "text-muted-foreground",
+                          TABELA_HEADER_CELL_CLASS,
+                          "kpi-operadores-taxa-coluna kpi-operadores-taxa-anterior-coluna group/th relative select-none",
                           interativo &&
                             "hover:text-foreground transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]",
                         )}
-                        style={{ borderLeft: "1px solid var(--border)", paddingLeft: SELO_RESERVA_PX, paddingRight: "0.75rem" }}
                       >
-                        {formatHeaderLabel(tituloRetencaoAnterior)}
+                        <span className="block overflow-hidden px-5 text-ellipsis">
+                          {formatHeaderLabel(tituloRetencaoAnterior)}
+                        </span>
                         {interativo && <SortIcon slug={TX_RETENCAO_ANTERIOR_SLUG} sort={sort} />}
                       </th>
                     )}
@@ -798,31 +809,33 @@ function KpiOperadoresTabela({
             </tr>
           </thead>
           <tbody>
-            {operadores.map((op, i) => (
-              <tr
-                key={op.email}
-                className="group hover:bg-accent transition-colors duration-150 motion-reduce:transition-none"
-                style={{
-                  borderBottom:
-                    i < operadores.length - 1
-                      ? "1px solid color-mix(in srgb, var(--border) 60%, transparent)"
-                      : undefined,
-                }}
-              >
-                {/*
-                  Fundo OPACO (var(--background)) — necessário pra coluna fixa
-                  não deixar o selo de evolução (z-index mais baixo, ver
-                  --z-kpi-badge) "vazar" por trás dela ao rolar. group-hover
-                  repete o var(--accent) do hover da linha (a <td> tem
-                  background próprio, que cobriria o hover:bg-accent do <tr>
-                  se não repetido aqui) — também opaco, sem transparência.
-                */}
-                <td
-                  className="font-sans text-foreground sticky left-0 bg-[var(--background)] group-hover:bg-accent transition-colors duration-150 motion-reduce:transition-none px-3 py-2 text-center font-medium whitespace-nowrap"
-                  style={{ zIndex: "var(--z-kpi-sticky-td)", boxShadow: stickyOperadorShadow }}
-                >
-                  {op.nome}
-                </td>
+            {operadores.map((op) => {
+              const taxaAtual =
+                valoresCompletos
+                  ?.get(op.email.trim().toLowerCase())
+                  ?.get(TX_RETENCAO_ATUAL_SLUG) ??
+                op.kpis.find((kpi) => kpi.slug === TX_RETENCAO_ATUAL_SLUG);
+              const corNome = corNomeOperador({
+                semDado: !taxaAtual || taxaAtual.valor === null,
+                ruim: taxaAtual?.status === "danger",
+              });
+
+              return (
+                <tr key={op.email}>
+                  {/*
+                    Fundo OPACO (var(--background)) — necessário pra coluna fixa
+                    não deixar o selo de evolução (z-index mais baixo, ver
+                    --z-kpi-badge) "vazar" por trás dela ao rolar.
+                  */}
+                  <td
+                    className={cn(
+                      TABELA_NOME_CELL_CLASS,
+                      "sticky left-0 bg-[var(--background)] whitespace-nowrap",
+                    )}
+                    style={{ color: corNome, zIndex: "var(--z-kpi-sticky-td)", boxShadow: stickyOperadorShadow }}
+                  >
+                    {op.nome}
+                  </td>
                 {op.kpis.map((kpi) => {
                   const { style, srOnlyLabel } = celulaInfo(kpi);
                   const ehTxAtual = kpi.slug === TX_RETENCAO_ATUAL_SLUG;
@@ -874,7 +887,11 @@ function KpiOperadoresTabela({
                         <IndicadorRvCell resultado={celulaBonusRv(calculoRv ?? CALCULO_RV_VAZIO)} />
                       )}
                       <td
-                        className="font-sans px-3 py-2 text-center whitespace-nowrap"
+                        className={cn(
+                          TABELA_VALOR_CELL_CLASS,
+                          "whitespace-nowrap",
+                          ehTxAtual && "kpi-operadores-taxa-coluna",
+                        )}
                         style={{
                           ...(tempoRestanteInfo ? tempoRestanteInfo.style : style),
                           fontVariantNumeric: "tabular-nums",
@@ -912,9 +929,11 @@ function KpiOperadoresTabela({
                       */}
                       {ehTxAtual && mostrarColunaUltimoReport && (
                         <td
-                          className="font-sans text-muted-foreground relative py-2 text-center whitespace-nowrap"
+                          className={cn(
+                            TABELA_VALOR_CELL_CLASS,
+                            "kpi-operadores-taxa-coluna kpi-operadores-taxa-anterior-coluna text-muted-foreground relative whitespace-nowrap",
+                          )}
                           style={{
-                            borderLeft: "1px solid var(--border)",
                             fontVariantNumeric: "tabular-nums",
                             paddingLeft: SELO_RESERVA_PX,
                             paddingRight: "0.75rem",
@@ -982,7 +1001,7 @@ function KpiOperadoresTabela({
                       return (
                         <td
                           key={id}
-                          className="font-sans px-3 py-2 text-center whitespace-nowrap"
+                          className={cn(TABELA_VALOR_CELL_CLASS, "whitespace-nowrap")}
                           style={{ ...resultado.style, fontVariantNumeric: "tabular-nums" }}
                           title={resultado.title}
                           aria-label={resultado.ariaLabel}
@@ -1032,8 +1051,9 @@ function KpiOperadoresTabela({
                     // rv_ticket
                     return <IndicadorRvCell key={id} resultado={celulaTicketRv(calc, TICKET_INDICATOR_SLUG)} />;
                   })}
-              </tr>
-            ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -1081,6 +1101,55 @@ export function KpiEquipeSection({
   kpiAnterior,
   kpiDefinitions,
 }: KpiEquipeSectionProps) {
+  // Mesma guarda usada pelo Consolidado contra a restauração assíncrona de
+  // scroll do navegador. O script de loading força o topo antes do primeiro
+  // paint; esta segunda camada protege os frames após a montagem, quando o
+  // browser ainda pode tentar devolver a posição salva conforme o documento
+  // troca do fallback para a tabela real. A guarda para no primeiro gesto do
+  // usuário ou após 2s, portanto nunca prende uma rolagem intencional.
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+
+    const UNLOCK_MS = 2000;
+    let active = true;
+    let rafId = 0;
+    let timeoutId = 0;
+
+    const stop = () => {
+      if (!active) return;
+      active = false;
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchstart", stop);
+      window.removeEventListener("keydown", stop);
+      window.clearTimeout(timeoutId);
+    };
+
+    const tick = () => {
+      if (!active) return;
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+        ScrollTrigger.update();
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+
+    window.scrollTo(0, 0);
+    tick();
+
+    window.addEventListener("wheel", stop, { passive: true });
+    window.addEventListener("touchstart", stop, { passive: true });
+    window.addEventListener("keydown", stop);
+    timeoutId = window.setTimeout(stop, UNLOCK_MS);
+
+    return () => {
+      stop();
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
+
   const [mesSelecionado, setMesSelecionado] = useState<string>(dataAtual.mesRef);
   // Cache dos meses históricos já buscados (getKpiMesHistoricoAction) — evita
   // rebuscar ao alternar de volta pra um mês já visitado nesta sessão.
@@ -1090,6 +1159,7 @@ export function KpiEquipeSection({
   // — igual historicoCache, mas separado porque vem de outra action/query.
   const [historicoExtrasCache, setHistoricoExtrasCache] = useState<Record<string, KpiExtrasPorEmail>>({});
   const [carregandoMes, setCarregandoMes] = useState<string | null>(null);
+  const carregamentoMesIdRef = useRef(0);
   const [sort, setSort] = useState<SortState>({ slug: "tx_retencao_bruta", dir: "desc" });
   const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
   const [colunasVisiveis, setColunasVisiveis] = useState<string[]>(colunasVisiveisIniciais);
@@ -1116,24 +1186,14 @@ export function KpiEquipeSection({
           ? dataRetrasado
           : (historicoCache[mesSelecionado] ?? null);
 
-  // Última tabela com dados renderizada — mantida em tela (com opacity
-  // reduzida, ver isLoadingAtual) enquanto o mês selecionado ainda está
-  // carregando, pra NUNCA existir um estado vazio entre a troca de mês e a
-  // chegada dos dados novos. Só troca quando `data` (o mês agora
-  // selecionado) tiver conteúdo real — nunca é limpa durante o loading.
+  // Dados efetivamente liberados para a tabela. Durante toda troca de mês,
+  // a área da tabela mostra o skeleton; dataExibida só muda quando o piso de
+  // 2s e todas as buscas necessárias terminarem.
   const [dataExibida, setDataExibida] = useState<KpiEquipeSerial | null>(dataAtual);
-  useEffect(() => {
-    if (data) setDataExibida(data);
-  }, [data]);
 
-  // true só enquanto o mês SELECIONADO ainda está sendo buscado (não está
-  // em nenhum cache ainda) — mesma flag usada pelo MesSelector pro pulso de
-  // loading no item do seletor (não alterado aqui).
+  // Também fica true para meses já em cache: toda troca exibe o skeleton por
+  // pelo menos 2s, sem esconder ou alterar os controles acima da tabela.
   const isLoadingAtual = carregandoMes === mesSelecionado;
-  // Edge case: loading do mês selecionado sem NENHUMA tabela anterior pra
-  // manter em tela (não deveria acontecer no uso normal — dataAtual sempre
-  // vem preenchido do server — mas cobre o caso defensivamente).
-  const semTabelaAnterior = isLoadingAtual && !dataExibida;
 
   function handleToggleOlho() {
     const novoValor = !olhoAberto;
@@ -1153,20 +1213,19 @@ export function KpiEquipeSection({
   );
 
   const buscarRv = useCallback(
-    (mesRef: string) => {
+    async (mesRef: string): Promise<void> => {
       const scope = scopeParaMes(mesRef);
       if (!scope) return;
       if (mesRef in rvCache) return;
 
       setCarregandoRv(mesRef);
-      void getRvOperadoresAction(mesRef, scope).then((result) => {
-        setCarregandoRv((atual) => (atual === mesRef ? null : atual));
-        if (result.success) {
-          setRvCache((prev) => ({ ...prev, [mesRef]: result.data }));
-        } else {
-          toast.error(result.error, { className: "kpi-op-toast" });
-        }
-      });
+      const result = await getRvOperadoresAction(mesRef, scope);
+      setCarregandoRv((atual) => (atual === mesRef ? null : atual));
+      if (result.success) {
+        setRvCache((prev) => ({ ...prev, [mesRef]: result.data }));
+      } else {
+        toast.error(result.error, { className: "kpi-op-toast" });
+      }
     },
     [scopeParaMes, rvCache],
   );
@@ -1174,7 +1233,7 @@ export function KpiEquipeSection({
   function handleToggleRv() {
     const novoValor = !rvVisivel;
     setRvVisivel(novoValor);
-    if (novoValor) buscarRv(mesSelecionado);
+    if (novoValor) void buscarRv(mesSelecionado);
     void toggleShowRvOperadoresAction(novoValor);
   }
 
@@ -1182,52 +1241,68 @@ export function KpiEquipeSection({
   // atual assim que o componente monta — senão a coluna apareceria vazia
   // até alguma outra interação (trocar de mês) disparar a primeira busca.
   useEffect(() => {
-    if (rvVisivel) buscarRv(mesSelecionado);
+    if (rvVisivel) void buscarRv(mesSelecionado);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleMesChange = useCallback(
     (mesRef: string) => {
+      const carregamentoId = ++carregamentoMesIdRef.current;
       setMesSelecionado(mesRef);
+      setCarregandoMes(mesRef);
       setSort({ slug: "tx_retencao_bruta", dir: "desc" });
 
-      const jaDisponivel =
-        mesRef === dataAtual.mesRef ||
-        mesRef === dataPassado.mesRef ||
-        mesRef === dataRetrasado.mesRef ||
-        mesRef in historicoCache;
-      if (!jaDisponivel) {
-        setCarregandoMes(mesRef);
-        void getKpiMesHistoricoAction(mesRef).then((result) => {
-          setCarregandoMes((atual) => (atual === mesRef ? null : atual));
+      let dadosAlvo: KpiEquipeSerial | null =
+        mesRef === dataAtual.mesRef
+          ? dataAtual
+          : mesRef === dataPassado.mesRef
+            ? dataPassado
+            : mesRef === dataRetrasado.mesRef
+              ? dataRetrasado
+              : (historicoCache[mesRef] ?? null);
+
+      const tarefas: Promise<void>[] = [
+        new Promise<void>((resolve) => window.setTimeout(resolve, MIN_TABELA_LOADING_MS)),
+      ];
+
+      if (!dadosAlvo) {
+        tarefas.push(getKpiMesHistoricoAction(mesRef).then((result) => {
           if (result.success) {
+            dadosAlvo = result.data;
             setHistoricoCache((prev) => ({ ...prev, [mesRef]: result.data }));
           } else {
             toast.error(result.error, { className: "kpi-op-toast" });
           }
-        });
+        }));
       }
+
       // Extras (tempo_projetado/tempo_login/multiplicador) desse mês
       // histórico — busca separada (ver get-kpi-extras-mes-historico-action.ts),
-      // com seu próprio cache pra não rebuscar ao voltar pro mesmo mês. Falha
-      // aqui não bloqueia a tabela (só esses 4 KPIs ficam "–" nesse mês) —
-      // por isso sem toast de erro, só log.
+      // com seu próprio cache pra não rebuscar ao voltar pro mesmo mês. A
+      // conclusão da busca faz parte da barreira do skeleton; em falha, a
+      // tabela sai pronta com "–" nesses KPIs e o erro fica só no console.
       if (!(mesRef in historicoExtrasCache) && mesRef !== dataAtual.mesRef && mesRef !== dataPassado.mesRef && mesRef !== dataRetrasado.mesRef) {
-        void getKpiExtrasMesHistoricoAction(mesRef).then((result) => {
+        tarefas.push(getKpiExtrasMesHistoricoAction(mesRef).then((result) => {
           if (result.success) {
             setHistoricoExtrasCache((prev) => ({ ...prev, [mesRef]: result.data }));
           } else {
             console.error("[kpi-extras-historico] falha ao buscar:", result.error);
           }
-        });
+        }));
       }
 
-      if (rvVisivel) buscarRv(mesRef);
+      if (rvVisivel) tarefas.push(buscarRv(mesRef));
+
+      void Promise.allSettled(tarefas).then(() => {
+        if (carregamentoMesIdRef.current !== carregamentoId) return;
+        setDataExibida(dadosAlvo);
+        setCarregandoMes(null);
+      });
     },
     [
-      dataAtual.mesRef,
-      dataPassado.mesRef,
-      dataRetrasado.mesRef,
+      dataAtual,
+      dataPassado,
+      dataRetrasado,
       historicoCache,
       historicoExtrasCache,
       rvVisivel,
@@ -1352,11 +1427,9 @@ export function KpiEquipeSection({
   // mês atual (ver _lib/status-historico.ts). Mês atual não passa por aqui:
   // já vem com status calculado no servidor.
   //
-  // Parte de `dataExibida` (não de `data`/`mesSelecionado`) de propósito: a
-  // tabela pode estar mostrando o mês ANTERIOR ainda (com opacity reduzida)
-  // enquanto o mês recém-selecionado carrega (ver dataExibida acima) — a
-  // decisão de recolorir tem que refletir de qual mês os operadores
-  // exibidos REALMENTE são, não o mês alvo da seleção.
+  // Parte de `dataExibida` (não de `data`/`mesSelecionado`) porque ela só é
+  // atualizada quando a barreira do skeleton termina; assim, o primeiro
+  // frame sem skeleton já usa o mês correto e completamente preparado.
   const operadoresBase = useMemo(() => {
     const operadores = dataExibida?.operadores ?? [];
     const ehMesAtualDaTabelaExibida = dataExibida?.mesRef === dataAtual.mesRef;
@@ -1367,15 +1440,15 @@ export function KpiEquipeSection({
   const operadoresParaTela = useMemo(() => {
     // olhoAberto=true → revelar nomes reais (slug derivado do email)
     // olhoAberto=false → mostrar nome fantasia (já em op.nome, resolvido no server)
-    if (!nomeFantasia?.ativo || olhoAberto) return operadoresBase;
+    if (!nomeFantasia?.ativo || !olhoAberto) return operadoresBase;
     return operadoresBase.map((op) => ({
       ...op,
       nome: deriveNomeOperador(op.email),
     }));
   }, [operadoresBase, nomeFantasia, olhoAberto]);
 
-  // extras (tempo_projetado/tempo_login/multiplicador) do mês REALMENTE
-  // exibido (dataExibida, mesma lógica de operadoresBase acima) — os 3
+  // extras (tempo_projetado/tempo_login/multiplicador) do mês liberado para
+  // exibição (dataExibida, mesma lógica de operadoresBase acima) — os 3
   // meses recentes vêm prontos do server (kpisExtrasPorMes, ver page.tsx);
   // meses históricos distantes usam o cache buscado sob demanda em paralelo
   // com getKpiMesHistoricoAction (ver handleMesChange acima e
@@ -1620,22 +1693,15 @@ export function KpiEquipeSection({
         </div>
 
         {/*
-          Seletor de mês (esquerda) + ações RV/Copiar imagem (direita),
-          centralizados verticalmente entre si. Em telas estreitas, o grupo
-          de ações quebra pra linha de baixo (flex-wrap) e continua alinhado
-          à direita nela (ml-auto funciona por linha, mesmo com wrap).
+          Ações RV/Copiar imagem (esquerda) + seletor de mês (direita), todos
+          com 32px de altura, como no Consolidado. Em telas estreitas, o
+          seletor quebra pra linha de baixo e continua alinhado à direita nela
+          (ml-auto funciona por linha, mesmo com wrap).
         */}
-        <div className="flex flex-wrap items-center gap-3 pt-4 pb-4">
-          <MesSelector
-            meses={todosMeses}
-            mesSelecionado={mesSelecionado}
-            onChange={handleMesChange}
-            carregandoMes={carregandoMes}
-          />
-
+        <div className="flex flex-wrap items-center gap-3 pt-4 pb-2">
           {data && data.operadores.length > 0 && (
             // Ordem pedida: [⚙ Colunas] [Copiar imagem] [Exibir RV].
-            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <ConfigKpiOperadoresPopover
                 colunasDisponiveis={colunasDisponiveis}
                 colunasVisiveis={colunasVisiveis}
@@ -1649,7 +1715,7 @@ export function KpiEquipeSection({
 
               <CopyKpiButton
                 dataCorte={data.dataCorte}
-                comAvisoRv={rvColunaAtiva}
+                comAvisoRv={rvColunaAtiva && colunasRvVisiveis.includes("rv_total")}
                 onCapturar={capturarTabelaPng}
               />
 
@@ -1691,18 +1757,33 @@ export function KpiEquipeSection({
               </AnimatePresence>
             </div>
           )}
+
+          <div className="kpi-operadores-mes-selector ml-auto">
+            <MesSelector
+              meses={todosMeses}
+              mesSelecionado={mesSelecionado}
+              onChange={handleMesChange}
+              carregandoMes={carregandoMes}
+            />
+          </div>
         </div>
 
         {/*
           Seção da tabela — sem linha divisória (removida antes; o
-          espaçamento entre o seletor de mês e as cantoneiras da tabela vem
-          só do gap vertical: pb-4 da linha acima + pt-4 daqui = 32px).
+          espaçamento entre os controles e as cantoneiras replica o
+          Consolidado: pb-2 da linha acima + pt-2 daqui = 16px.
         */}
-        <div className="pt-4 relative">
-          {semTabelaAnterior ? (
-            // Edge case: loading do mês selecionado sem nenhuma tabela
-            // anterior pra manter em tela — skeleton com as mesmas colunas.
-            <KpiTabelaSkeleton headers={headers} />
+        <div className="pt-2 relative">
+          {isLoadingAtual ? (
+            // Toda troca de mês usa este skeleton por no mínimo 2s e até
+            // todas as buscas necessárias terminarem.
+            <KpiTabelaSkeleton
+              totalColunasDados={
+                headers.length +
+                (mostrarColunaUltimoReport ? 1 : 0) +
+                (rvColunaAtiva ? colunasRvVisiveis.length : 0)
+              }
+            />
           ) : !dataExibida || dataExibida.operadores.length === 0 ? (
             // Vazio/erro/"sem importação do mês" — moldura local (cantoneiras
             // do KpiFrame), sem StyledCard (sem shadow-zinc-950/5 nesta rota).
@@ -1717,21 +1798,7 @@ export function KpiEquipeSection({
                   a equipe abaixo é a mesma do último mês com dados.
                 </p>
               )}
-              {/*
-                Troca de mês sem flash: enquanto o mês SELECIONADO ainda está
-                carregando (isLoadingAtual), a tabela do mês anterior
-                continua renderizada aqui, só com opacity reduzida e
-                pointer-events desligado — nunca some/esvazia. Quando os
-                dados novos chegam, a troca é direta (sem animação de
-                saída): dataExibida já reflete o novo mês e a opacity volta
-                a 1 no mesmo re-render.
-              */}
-              <div
-                className={cn(
-                  "transition-opacity duration-150 ease-out",
-                  isLoadingAtual ? "pointer-events-none opacity-50" : "opacity-100",
-                )}
-              >
+              <div>
                 <KpiOperadoresTabela
                   operadores={sortedOps}
                   headers={headers}
