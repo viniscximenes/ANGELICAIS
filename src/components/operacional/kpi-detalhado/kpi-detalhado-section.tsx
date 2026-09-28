@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "motion/react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   IconChevronDown,
   IconChevronUp,
@@ -117,6 +116,7 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
   const [filtroAberto, setFiltroAberto] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const theadRef = useRef<HTMLTableSectionElement | null>(null);
   // "Último clique foi dentro do container da tabela?" — decide se as setas
   // rolam a tabela ou a página.
   const cliqueDentroRef = useRef(false);
@@ -124,6 +124,55 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
   const gestorFiltroNome = gestorFiltro
     ? (gestores.find((g) => g.id === gestorFiltro)?.nome ?? null)
     : null;
+
+  // ── Sempre abrir no topo (cabeçalho) ao recarregar — réplica da correção
+  // de /reports/consolidado (RetencaoDetalheSection). O navegador restaura
+  // a posição de scroll anterior, e tenta de novo a cada vez que a altura
+  // do documento cresce o bastante pra alcançá-la; um scrollTo(0,0) único
+  // não cobre isso. Complementa o script inline do loading.tsx (que age
+  // antes do primeiro paint): restauração nativa desligada + "guarda" por
+  // requestAnimationFrame que volta pro topo se o scroll sair de 0 sem
+  // gesto do usuário. Desliga no primeiro wheel/toque/tecla ou após
+  // UNLOCK_MS — nunca prende uma rolagem manual. useLayoutEffect: a
+  // primeira correção roda antes do navegador pintar, sem flash.
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+
+    const UNLOCK_MS = 2000;
+    let active = true;
+    let rafId = 0;
+
+    const stop = () => {
+      if (!active) return;
+      active = false;
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchstart", stop);
+      window.removeEventListener("keydown", stop);
+      window.clearTimeout(timeoutId);
+    };
+
+    const tick = () => {
+      if (!active) return;
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+      rafId = requestAnimationFrame(tick);
+    };
+
+    window.scrollTo(0, 0);
+    tick();
+
+    window.addEventListener("wheel", stop, { passive: true });
+    window.addEventListener("touchstart", stop, { passive: true });
+    window.addEventListener("keydown", stop);
+    const timeoutId = window.setTimeout(stop, UNLOCK_MS);
+
+    return () => {
+      stop();
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
 
   // ── Setas do teclado: rolam SÓ a tabela quando o foco está nela, SÓ a
   // página quando não está. Nunca as duas. Não interfere em inputs.
@@ -199,16 +248,82 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
     });
   }, [linhasFiltradas, sort, colunas]);
 
+  // ── Cabeçalho congelado: a rolagem vertical é da PÁGINA, mas o card é
+  // overflow-x-auto (contêiner de rolagem), então `sticky top` nos <th> só
+  // prenderia dentro do card — nunca na janela. Em vez disso, o <thead> é
+  // deslocado (translateY) pra ficar sempre logo abaixo do AppHeader fixo
+  // (60px), limitado ao fim da tabela. Sem alterar layout nem a rolagem.
+  //
+  // Caminho principal: animação CSS ligada à rolagem da página
+  // (animation-timeline: scroll(root), em kpi-detalhado-polo.css) — roda no
+  // compositor junto com a rolagem, sem o "sobe e desce" de 1 quadro de
+  // atraso que um listener de scroll causa. Aqui só se medem, fora da
+  // rolagem, o trecho [início, fim] do scroll em que o thead acompanha e o
+  // deslocamento máximo, passados como variáveis CSS.
+  // Fallback (navegador sem scroll-driven animations): transform via
+  // listener de scroll, como antes.
+  useEffect(() => {
+    const ALTURA_APP_HEADER = 60;
+    const suportaTimeline =
+      typeof CSS !== "undefined" && CSS.supports("animation-timeline: scroll()");
+    let frame = 0;
+
+    // Topo da tabela no documento via offsetTop (ignora transforms, como a
+    // animação de entrada da seção), estável durante a rolagem.
+    function topoNoDocumento(el: HTMLElement) {
+      let y = 0;
+      let atual: HTMLElement | null = el;
+      while (atual) {
+        y += atual.offsetTop;
+        atual = atual.offsetParent as HTMLElement | null;
+      }
+      return y;
+    }
+
+    function medir() {
+      frame = 0;
+      const thead = theadRef.current;
+      const table = thead?.parentElement;
+      if (!thead || !table) return;
+      const limite = Math.max(0, table.offsetHeight - thead.offsetHeight);
+
+      if (suportaTimeline) {
+        const inicio = Math.max(0, topoNoDocumento(table) - ALTURA_APP_HEADER);
+        thead.style.setProperty("--kpi-det-inicio", `${inicio}px`);
+        thead.style.setProperty("--kpi-det-fim", `${inicio + limite}px`);
+        thead.style.setProperty("--kpi-det-limite", `${limite}px`);
+        return;
+      }
+
+      const topoTabela = table.getBoundingClientRect().top;
+      const desloc = Math.min(Math.max(0, ALTURA_APP_HEADER - topoTabela), limite);
+      thead.style.transform = desloc > 0 ? `translateY(${desloc}px)` : "";
+    }
+
+    function agendar() {
+      if (!frame) frame = requestAnimationFrame(medir);
+    }
+
+    medir();
+    const ro = new ResizeObserver(agendar);
+    ro.observe(document.body);
+    window.addEventListener("resize", agendar);
+    if (!suportaTimeline) window.addEventListener("scroll", agendar, { passive: true });
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      ro.disconnect();
+      window.removeEventListener("resize", agendar);
+      window.removeEventListener("scroll", agendar);
+    };
+  }, [linhasOrdenadas]);
+
   const minWidth =
     COL_OPERADOR_W + COL_GESTOR_W + COL_STATUS_W + colunas.length * 116;
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.05, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="min-w-0 space-y-4"
-    >
+    // <section> comum, sem animação de entrada (mesmo padrão de
+    // /kpi/operadores): loading.tsx → conteúdo já na tela, troca direta.
+    <section className="min-w-0">
       {/*
         Cabeçalho — mesma estrutura de /kpi/operadores e /kpi/gestor
         (kpi-equipe-section.tsx / kpi-gestor-section.tsx): h1 + linha de
@@ -243,7 +358,7 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 pt-4 pb-4">
+        <div className="flex flex-wrap items-center gap-3 pt-4 pb-2">
           <div className="relative">
             <IconSearch
               size={15}
@@ -262,7 +377,7 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
         </div>
       </div>
 
-      <div className="pt-4 relative min-w-0">
+      <div className="pt-2 relative min-w-0">
         {linhas.length === 0 ? (
           <StyledCard withGradient className="p-8 text-center">
             <p className="font-sans text-muted-foreground text-sm">
@@ -298,7 +413,7 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
                 className="w-full border-collapse text-sm"
                 style={{ minWidth }}
               >
-                <thead>
+                <thead ref={theadRef}>
                   <tr style={{ borderBottom: "1px solid var(--border)" }}>
                     <th
                       scope="col"
@@ -512,6 +627,6 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
           </KpiFrame>
         )}
       </div>
-    </motion.section>
+    </section>
   );
 }

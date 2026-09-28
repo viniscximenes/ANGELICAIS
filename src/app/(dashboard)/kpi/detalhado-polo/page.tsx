@@ -5,7 +5,6 @@ import { Instrument_Sans } from "next/font/google";
 
 import "./kpi-detalhado-polo.css";
 import { KpiDetalhadoSection } from "@/components/operacional/kpi-detalhado/kpi-detalhado-section";
-import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { getKpiDetalhado } from "@/lib/kpi/detalhado/get-kpi-detalhado";
@@ -28,7 +27,22 @@ const zenSans = Instrument_Sans({
 // Snapshot de todas as equipes, embaralhado a cada request — nunca cacheado.
 export const dynamic = "force-dynamic";
 
+// Loading "fake" de piso mínimo — mesma regra de /reports/consolidado e
+// /kpi/operadores: o loading.tsx (Suspense fallback, entrada de rota/F5/
+// refresh) fica no mínimo MIN_LOADING_MS na tela, contados desde a entrada
+// nesta função. Se a busca real já passou disso, não espera nada.
+const MIN_LOADING_MS = 3_000;
+
+async function aguardarPisoMinimo(desde: number) {
+  const faltam = MIN_LOADING_MS - (Date.now() - desde);
+  if (faltam > 0) {
+    await new Promise((resolve) => setTimeout(resolve, faltam));
+  }
+}
+
 export default async function KpiDetalhadoPolo() {
+  const inicioCarregamento = Date.now();
+
   const user = await getCurrentUser();
 
   if (!user) redirect("/login");
@@ -42,8 +56,14 @@ export default async function KpiDetalhadoPolo() {
 
   const dados = await getKpiDetalhado();
 
+  await aguardarPisoMinimo(inicioCarregamento);
+
+  // Sem <PageTransition> (mesmo motivo de /reports/consolidado e
+  // /kpi/operadores): o fade a partir de opacity:0 só anima após a
+  // hidratação, deixando a tela vazia entre o loading.tsx sumir e os dados
+  // aparecerem. Quem cobre a espera é o loading.tsx — a troca é direta.
   return (
-    <PageTransition>
+    <>
       <div
         data-page="kpi-detalhado-polo"
         className={`min-h-screen overflow-x-clip px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
@@ -108,6 +128,6 @@ export default async function KpiDetalhadoPolo() {
           <KpiDetalhadoSection dados={dados} />
         </div>
       </div>
-    </PageTransition>
+    </>
   );
 }

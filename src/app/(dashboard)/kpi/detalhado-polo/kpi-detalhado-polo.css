@@ -11,3 +11,364 @@
   font-family: var(--font-sans);
   letter-spacing: var(--letter-spacing);
 }
+
+/* Títulos das colunas da tabela — mesmo padrão de /kpi/operadores
+ * (.kpi-operadores-table-head + ds-body font-bold tracking-wide uppercase +
+ * TABELA_HEADER_CELL_CLASS px-2 py-2.5). Fundo aplicado em cada <th> com a
+ * mistura opaca equivalente a bg-muted/40 sobre o fundo da página, para as
+ * colunas fixas (Operador/Gestor) não deixarem as outras vazarem por baixo
+ * na rolagem horizontal. Cor única herdada do thead, como em operadores. */
+[data-page="kpi-detalhado-polo"] table > thead {
+  background-color: color-mix(in srgb, var(--muted) 40%, transparent);
+  color: var(--foreground);
+}
+
+[data-page="kpi-detalhado-polo"] table > thead th {
+  background-color: color-mix(in srgb, var(--muted) 40%, var(--background) 60%);
+  color: inherit !important;
+  padding: 0.625rem 0.5rem;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 700;
+  line-height: var(--leading-normal);
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+/* Coluna Gestor: o <th> inteiro é o gatilho do filtro (botão interno), então
+ * o espaçamento fica no botão e o <th> não soma padding. */
+[data-page="kpi-detalhado-polo"] table > thead th:has(> button) {
+  padding: 0;
+}
+
+[data-page="kpi-detalhado-polo"] table > thead th > button {
+  padding: 0.625rem 0.5rem;
+}
+
+/* Tema claro: bege sólido do tema e texto secundário, como em operadores. */
+[data-theme="light"] [data-page="kpi-detalhado-polo"] table > thead {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+
+[data-theme="light"] [data-page="kpi-detalhado-polo"] table > thead th {
+  background-color: var(--muted);
+}
+
+/* ───────── Cabeçalho congelado (rolagem vertical da PÁGINA) ─────────
+ * A rolagem vertical continua sendo só a da página (card sem altura
+ * própria). O <thead> é deslocado via transform pelo componente
+ * (kpi-detalhado-section.tsx) pra ficar colado logo abaixo do AppHeader.
+ * O transform cria um contexto de empilhamento no thead: z-index 25 o põe
+ * acima das células fixas do corpo (z-10) e abaixo do AppHeader (z-30).
+ * Dentro dele, th comuns (20) ficam abaixo dos th fixos Operador/Gestor
+ * (z-30, já no componente) na rolagem horizontal. */
+[data-page="kpi-detalhado-polo"] table > thead {
+  position: relative;
+  z-index: 25;
+}
+
+/* Deslocamento ligado à rolagem da página, executado pelo compositor (sem
+ * atraso/tremido). Entre --kpi-det-inicio e --kpi-det-fim (px de rolagem,
+ * medidos no componente), o thead desce 1:1 com a rolagem — ou seja, fica
+ * parado logo abaixo do AppHeader; antes fica no lugar, depois para no fim
+ * da tabela. Sem suporte, o componente usa o fallback em JS. */
+@supports (animation-timeline: scroll()) {
+  [data-page="kpi-detalhado-polo"] table > thead {
+    animation: kpi-det-thead-congelado linear both;
+    animation-timeline: scroll(root block);
+    animation-range: var(--kpi-det-inicio, 0px) var(--kpi-det-fim, 0px);
+  }
+}
+
+@keyframes kpi-det-thead-congelado {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(var(--kpi-det-limite, 0px));
+  }
+}
+
+[data-page="kpi-detalhado-polo"] table > thead th:not(.sticky) {
+  position: relative;
+  z-index: 20;
+}
+
+/* Com border-collapse, as bordas pertencem à tabela e NÃO acompanham o
+ * cabeçalho deslocado (sumiriam ao rolar). Linha inferior e divisórias do
+ * cabeçalho viram box-shadow inset no próprio <th>, mesmo visual: 1px
+ * embaixo no escuro, 2px no claro; divisória vertical 50%. */
+[data-page="kpi-detalhado-polo"] table > thead > tr {
+  border-bottom: 0 !important;
+}
+
+/* Altura: em operadores a linha inferior é BORDA real (soma 1px no escuro,
+ * 2px no claro à altura de py-2.5 + 1 linha ds-body). Aqui ela é sombra
+ * interna, então a altura da célula inclui explicitamente essa espessura
+ * — o card do título fica com a mesma altura de /kpi/operadores. */
+[data-page="kpi-detalhado-polo"] table > thead th {
+  --kpi-det-th-borda: 1px;
+  --kpi-det-th-bottom: inset 0 calc(-1 * var(--kpi-det-th-borda)) 0 var(--border);
+  box-shadow: var(--kpi-det-th-bottom);
+  height: calc(1.25rem + var(--text-body) * 1.5 + var(--kpi-det-th-borda));
+}
+
+[data-page="kpi-detalhado-polo"] table > thead th:not(:last-child) {
+  box-shadow:
+    inset -1px 0 0 color-mix(in srgb, var(--border) 50%, transparent),
+    var(--kpi-det-th-bottom);
+}
+
+[data-theme="light"] [data-page="kpi-detalhado-polo"] table > thead th {
+  --kpi-det-th-borda: 2px;
+}
+
+/* ───────── Corpo da tabela — mesmo padrão de /kpi/operadores ─────────
+ * Contêiner sem borda/arredondado próprio (operadores usa só o KpiFrame). */
+[data-page="kpi-detalhado-polo"] .overflow-x-auto:has(> table) {
+  border: 0;
+  border-radius: 0;
+}
+
+/* Sem linhas horizontais nem hover de linha: operadores não tem nenhum dos
+ * dois. !important vence o borderBottom inline de cada <tr>. */
+[data-page="kpi-detalhado-polo"] table > tbody > tr,
+[data-page="kpi-detalhado-polo"] table > tbody > tr:hover {
+  border-bottom: 0 !important;
+  background-color: transparent !important;
+}
+
+/* Colunas fixas (Operador/Gestor) sempre com o fundo opaco da página,
+ * inclusive no hover — igual à coluna fixa de operadores. */
+[data-page="kpi-detalhado-polo"] table > tbody td.sticky {
+  background-color: var(--background) !important;
+}
+
+/* Divisórias verticais do corpo: 30%; última sem borda (as do cabeçalho,
+ * 50%, estão no box-shadow do bloco "Cabeçalho congelado"). */
+[data-page="kpi-detalhado-polo"] table > tbody td:not(:last-child) {
+  border-right: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
+}
+
+/* Fontes: colunas Operador, Gestor e Status = TABELA_NOME_CELL_CLASS
+ * (ds-body font-medium); colunas de KPI = TABELA_VALOR_CELL_CLASS
+ * (ds-mono-sm). */
+[data-page="kpi-detalhado-polo"] table > tbody td:first-child:not([colspan]),
+[data-page="kpi-detalhado-polo"] table > tbody td:nth-child(2),
+[data-page="kpi-detalhado-polo"] table > tbody td:nth-child(3) {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 500;
+  line-height: var(--leading-normal);
+  color: var(--foreground);
+  padding: 0.5rem 0.75rem;
+}
+
+[data-page="kpi-detalhado-polo"] table > tbody td:nth-child(n + 4) {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  font-weight: 400;
+  padding: 0.5rem 0.75rem;
+}
+
+/* ───────── Campo "Buscar operador" ─────────
+ * Mesmas cores do botão "Copiar imagem" de /kpi/operadores
+ * (copy-kpi-button.tsx): fundo transparente, borda var(--border) e
+ * hover:bg-muted/40 — em vez do trilho do SegmentedControl (--seg-track). */
+[data-page="kpi-detalhado-polo"] input[aria-label="Buscar operador"] {
+  background-color: transparent;
+  border-color: var(--border);
+}
+
+[data-page="kpi-detalhado-polo"] input[aria-label="Buscar operador"]:hover {
+  background-color: color-mix(in srgb, var(--muted) 40%, transparent);
+}
+
+/* ───────── Card do filtro de gestores (popover do título "Gestor") ─────────
+ * Mesmo padrão da lista de opções do ConfigTabelaPopover de
+ * /reports/consolidado ("Ordenação dos Operadores"): card bg-popover com
+ * borda, rounded-lg, p-1 e shadow-2xl; itens rounded-md px-3 py-2 text-xs
+ * font-medium; selecionado em bg-primary/text-primary-foreground
+ * font-semibold shadow-sm; demais text-foreground com hover:bg-accent.
+ * O PopoverContent é portal (fora da página), mas recebe
+ * data-page="kpi-detalhado-polo" no componente — escopo garantido. */
+[data-slot="popover-content"][data-page="kpi-detalhado-polo"] {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letter-spacing);
+}
+
+[data-slot="popover-content"][data-page="kpi-detalhado-polo"] button {
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background-color 150ms, color 150ms;
+}
+
+[data-slot="popover-content"][data-page="kpi-detalhado-polo"] button:not(.text-primary):hover {
+  background-color: var(--accent);
+}
+
+[data-slot="popover-content"][data-page="kpi-detalhado-polo"] button.text-primary {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+/* Gestor e Status: texto na cor padrão das células (sem tom secundário).
+ * As colunas de KPI mantêm a cor vinda do inline (verde/vermelho). */
+[data-page="kpi-detalhado-polo"] table > tbody td:nth-child(2),
+[data-page="kpi-detalhado-polo"] table > tbody td:nth-child(3) {
+  color: var(--foreground);
+}
+
+/* Spinner do loading inicial/refresh — mesmas dimensões, cor e animação do
+ * Consolidado e de /kpi/operadores (loading.tsx desta rota). */
+[data-page="kpi-detalhado-polo"] .dot-spinner {
+  --uib-size: 3rem;
+  --uib-speed: .9s;
+  --uib-color: var(--foreground);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: var(--uib-size);
+  width: var(--uib-size);
+}
+
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  width: 100%;
+}
+
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot::before {
+  content: '';
+  height: 20%;
+  width: 20%;
+  border-radius: 50%;
+  background-color: var(--uib-color);
+  transform: scale(0);
+  opacity: 0.5;
+  animation: kpi-detalhado-dot-pulse calc(var(--uib-speed) * 1.111) ease-in-out infinite;
+  box-shadow: 0 0 20px color-mix(in srgb, var(--foreground) 30%, transparent);
+}
+
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(2) { transform: rotate(45deg); }
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(2)::before { animation-delay: calc(var(--uib-speed) * -0.875); }
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(3) { transform: rotate(90deg); }
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(3)::before { animation-delay: calc(var(--uib-speed) * -0.75); }
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(4) { transform: rotate(135deg); }
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(4)::before { animation-delay: calc(var(--uib-speed) * -0.625); }
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(5) { transform: rotate(180deg); }
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(5)::before { animation-delay: calc(var(--uib-speed) * -0.5); }
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(6) { transform: rotate(225deg); }
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(6)::before { animation-delay: calc(var(--uib-speed) * -0.375); }
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(7) { transform: rotate(270deg); }
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(7)::before { animation-delay: calc(var(--uib-speed) * -0.25); }
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(8) { transform: rotate(315deg); }
+[data-page="kpi-detalhado-polo"] .dot-spinner__dot:nth-child(8)::before { animation-delay: calc(var(--uib-speed) * -0.125); }
+
+@keyframes kpi-detalhado-dot-pulse {
+  0%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ───────── Barra de rolagem — réplica literal do Consolidado ─────────
+ * (reports-consolidado.css, mesmo bloco de /kpi/operadores). A primeira
+ * parte cobre os contêineres internos desta página (rolagem horizontal da
+ * tabela, lista do filtro de gestores); html/body cobrem a rolagem vertical
+ * da própria página, que fica fora do escopo do elemento [data-page] — por
+ * isso via :has() e cores literais (mesmos valores de --border/
+ * --muted-foreground do tema Zen Linen escuro/claro). */
+[data-page="kpi-detalhado-polo"] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+[data-page="kpi-detalhado-polo"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-page="kpi-detalhado-polo"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-page="kpi-detalhado-polo"] ::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+[data-page="kpi-detalhado-polo"] ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+  background-clip: padding-box;
+}
+[data-page="kpi-detalhado-polo"] ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+html:has([data-page="kpi-detalhado-polo"]),
+body:has([data-page="kpi-detalhado-polo"]) {
+  scrollbar-width: thin;
+  scrollbar-color: #2C2C2C transparent;
+}
+[data-theme="light"]:has([data-page="kpi-detalhado-polo"]),
+[data-theme="light"] body:has([data-page="kpi-detalhado-polo"]) {
+  scrollbar-color: #D2CBBB transparent;
+}
+
+html:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar,
+body:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar-track,
+body:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar-track {
+  background: transparent;
+}
+html:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar-thumb,
+body:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar-thumb {
+  background-color: #2C2C2C;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+[data-theme="light"]:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar-thumb,
+[data-theme="light"] body:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar-thumb {
+  background-color: #D2CBBB;
+}
+html:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar-thumb:hover,
+body:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar-thumb:hover {
+  background-color: #8E8A83;
+  background-clip: padding-box;
+}
+[data-theme="light"]:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar-thumb:hover,
+[data-theme="light"] body:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar-thumb:hover {
+  background-color: #5E5A52;
+}
+html:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar-corner,
+body:has([data-page="kpi-detalhado-polo"])::-webkit-scrollbar-corner {
+  background: transparent;
+}
