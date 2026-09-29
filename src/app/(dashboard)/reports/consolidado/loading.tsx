@@ -29,7 +29,6 @@
 import { Instrument_Sans } from "next/font/google";
 
 import "./reports-consolidado.css";
-import { DotSpinner } from "@/components/gestor/dot-spinner";
 import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
 
 // MESMA fonte/variável de page.tsx (zenSans) — precisa ser importada aqui de
@@ -203,9 +202,11 @@ export default function LoadingReportsConsolidado() {
       <script dangerouslySetInnerHTML={{ __html: DESLIGAR_SCROLL_RESTORATION_SCRIPT }} />
       <SkeletonNavSidebar />
 
+      {/* consolidado-skeleton: tom dos blocos (reports-consolidado.css) —
+          bg-card sozinho é branco puro na Vercel clara e os blocos sumiam. */}
       <div
         data-page="reports-consolidado"
-        className={`relative min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
+        className={`consolidado-skeleton relative min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
       >
         <div
           aria-hidden="true"
@@ -246,17 +247,10 @@ export default function LoadingReportsConsolidado() {
           </div>
         </div>
 
-        {/* Indicador de carregamento — nítido, centralizado sobre a área da
-            tabela, sem sobrepor o cabeçalho/botões acima dele. Ícone
-            substituído a pedido (dot-spinner, Uiverse.io by abrahamcalsin —
-            ver dot-spinner.tsx); sem texto visível, só o spinner. */}
-        <div
-          role="status"
-          aria-live="polite"
-          className="pointer-events-none absolute inset-x-0 top-[33%] flex flex-col items-center gap-3 -translate-y-1/2"
-        >
-          <DotSpinner />
-          <span className="sr-only">Carregando Consolidado, aguarde.</span>
+        {/* Sem indicador girando (removido a pedido): o carregamento é só o
+            skeleton. Fica apenas o aviso para leitor de tela. */}
+        <div role="status" aria-live="polite" className="sr-only">
+          Carregando Consolidado, aguarde.
         </div>
       </div>
     </>

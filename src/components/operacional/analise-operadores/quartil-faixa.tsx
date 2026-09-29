@@ -11,41 +11,35 @@ export type QuartilNivel = 1 | 2 | 3 | 4;
  * operadores da empresa. Só a posição do operador — nunca nomes/valores de
  * terceiros.
  *
- * Duas cores, os MESMOS tokens `--success`/`--danger` já usados na linha e
- * na área do gráfico (não uma paleta nova): Q1/Q2 = verde, Q3/Q4 = vermelho
- * — sóbrias (`color-mix` translúcido, mesma fórmula do resto do projeto),
- * com uma variação de intensidade dentro de cada cor pra diferenciar o par
- * (Q1 mais claro que Q2, Q3 mais claro que Q4 — coerente com "Q1 melhor,
- * Q4 pior": quanto pior, mais forte o tom). Peso e borda são o MESMO para
- * as 4 células — só a cor muda; antes Q3/Q4 destoavam com borda/negrito
- * próprios.
+ * Monocromático (sem verde/vermelho), a pedido: gradiente de intensidade
+ * sobre `--muted` — o mesmo bege do fundo das faixas de título
+ * (.kpi-evolucao-titulo-head em kpi-evolucao.css). Q1 (melhor) = tom cheio,
+ * Q4 (pior) = tom mais apagado. Texto sempre `--foreground`. Peso e borda
+ * são o MESMO para as 4 células — só a cor muda.
  */
 export const ESTILO_POR_NIVEL: Record<
   QuartilNivel,
   { bg: string; fg: string; bd: string }
 > = {
-  // Q1/Q2 invertidos a pedido: Q1 (melhor) fica com o tom de verde mais
-  // claro (menor opacidade de bg/borda), Q2 com o outro tom, um pouco mais
-  // presente — antes estava com a intensidade trocada entre os dois.
   1: {
-    bg: "color-mix(in srgb, var(--success) 10%, transparent)",
-    fg: "var(--success)",
-    bd: "color-mix(in srgb, var(--success) 28%, transparent)",
+    bg: "var(--muted)",
+    fg: "var(--foreground)",
+    bd: "var(--border)",
   },
   2: {
-    bg: "color-mix(in srgb, var(--success) 20%, transparent)",
-    fg: "var(--success)",
-    bd: "color-mix(in srgb, var(--success) 42%, transparent)",
+    bg: "color-mix(in srgb, var(--muted) 70%, transparent)",
+    fg: "var(--foreground)",
+    bd: "color-mix(in srgb, var(--border) 85%, transparent)",
   },
   3: {
-    bg: "color-mix(in srgb, var(--danger) 10%, transparent)",
-    fg: "var(--danger)",
-    bd: "color-mix(in srgb, var(--danger) 28%, transparent)",
+    bg: "color-mix(in srgb, var(--muted) 45%, transparent)",
+    fg: "var(--foreground)",
+    bd: "color-mix(in srgb, var(--border) 70%, transparent)",
   },
   4: {
-    bg: "color-mix(in srgb, var(--danger) 20%, transparent)",
-    fg: "var(--danger)",
-    bd: "color-mix(in srgb, var(--danger) 42%, transparent)",
+    bg: "color-mix(in srgb, var(--muted) 22%, transparent)",
+    fg: "var(--foreground)",
+    bd: "color-mix(in srgb, var(--border) 55%, transparent)",
   },
 };
 

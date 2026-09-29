@@ -129,7 +129,12 @@ export function ConfigTabelaPopover({
         <PopoverContent
           data-page="reports-consolidado"
           align="end"
-          className="bg-popover text-popover-foreground border-border w-72 rounded-2xl border p-4 shadow-2xl"
+          // Sem auto-foco ao abrir: o Radix foca (e seleciona) o primeiro
+          // campo — o valor da meta aparecia já selecionado.
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          // gap-0 + pt-3: remove o gap-2.5 padrão do PopoverContent (somado
+          // ao pt do bloco de campos) e o respiro extra acima do título.
+          className="bg-popover text-popover-foreground border-border w-72 gap-0 rounded-2xl border p-4 pt-3 shadow-2xl"
         >
           {/* Cabeçalho enxuto — só o título (subtítulo explicativo removido a
               pedido: card menor, só com o que é útil). Fonte trocada de
@@ -138,19 +143,18 @@ export function ConfigTabelaPopover({
               do resto da página (ex.: "Retenção por Tema"), que fixa
               font-family: var(--font-sans) explicitamente. */}
           <PopoverHeader className="border-border/50 border-b pb-2">
-            <PopoverTitle className="ds-h3 font-semibold text-foreground">
+            <PopoverTitle className="ds-h3 font-semibold text-foreground uppercase">
               Configurações da Tabela
             </PopoverTitle>
           </PopoverHeader>
 
-          <div className="space-y-4 pt-4">
+          <div className="space-y-4 pt-3">
             <div className="space-y-1.5">
               <Label
                 htmlFor="config-meta-tx"
-                className="text-foreground text-xs font-medium flex items-center justify-between"
+                className="text-foreground text-xs font-medium"
               >
-                <span>Meta TX Retenção</span>
-                <span className="text-muted-foreground text-[10px]">Padrão: 65.0%</span>
+                Meta Taxa Retenção - Padrão 65%
               </Label>
               <div className="relative flex items-center">
                 <Input
@@ -177,7 +181,7 @@ export function ConfigTabelaPopover({
                 htmlFor="config-ordem"
                 className="text-foreground text-xs font-medium"
               >
-                Ordenação dos Operadores
+                Ordenação Dos Operadores
               </Label>
               <div className="relative">
                 <button
@@ -185,7 +189,7 @@ export function ConfigTabelaPopover({
                   id="config-ordem"
                   disabled={isPending}
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="border-border bg-transparent text-foreground hover:bg-accent w-full flex items-center justify-between rounded-lg border px-3.5 py-2.5 text-xs font-medium transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus:outline-none cursor-pointer"
+                  className="border-border bg-transparent text-foreground w-full flex items-center justify-between rounded-lg border px-3.5 py-2.5 text-xs font-medium transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus:outline-none cursor-pointer"
                 >
                   <span>{selectedOption?.label ?? "Selecione..."}</span>
                   <IconChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", dropdownOpen && "rotate-180")} />

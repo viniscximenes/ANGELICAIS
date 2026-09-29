@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-// Paletas depois do globals.css. Hoje só Zen Linen (ver palettes/zen-linen.css).
-import "./palettes/zen-linen.css";
+// Paletas depois do globals.css (ver src/app/palettes/).
+import "./palettes/vercel.css";
+import "./palettes/claude-amber.css";
 import { Geist, Geist_Mono, Instrument_Sans } from "next/font/google";
 import Script from "next/script";
 import { Toaster } from "sonner";
@@ -18,8 +19,8 @@ import { cn } from "@/lib/utils";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
-// Fonte da paleta Zen Linen — referenciada por --font-sans em
-// palettes/zen-linen.css.
+// Fonte padrão das paletas (Vercel e Claude Amber) — referenciada por
+// --font-sans em palettes/vercel.css e palettes/claude-amber.css.
 const zenSans = Instrument_Sans({
   subsets: ["latin", "latin-ext"],
   weight: "variable",

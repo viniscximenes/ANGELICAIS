@@ -21,7 +21,7 @@ export type ContratoFiltradoItem = {
   status: "RETIDO" | "CANCELADO" | "ABORTADO";
   motivo: string;
   codAir: string;
-  linhaFormatada: string; // ex: "igor.souza - RETIDO - Mud. Endereço - 503351"
+  linhaFormatada: string; // ex: "503351 - igor.souza - RETIDO - Mud. Endereço Inviabilidade"
 };
 
 type LinhaCrua = {
@@ -169,7 +169,10 @@ export async function getContratosFiltrados(filtros: FiltroContratos): Promise<C
     const usuarioLogin = r.usuario_login || "";
     const nomeSobrenome = formatNomeDotSobrenome(usuarioLogin);
     const codAirStr = r.cod_air.trim();
-    const linhaFormatada = `${nomeSobrenome} - ${statusStr} - ${motivoStr} - ${codAirStr}`;
+    // Ordem: Contrato - Operador - Status - Motivo exato (o `motivo` cru da
+    // linha, ex. "Problemas Faturamento" — mesmo quando o filtro foi pelo
+    // grupo "Mot. Financeiro").
+    const linhaFormatada = `${codAirStr} - ${nomeSobrenome} - ${statusStr} - ${motivoStr}`;
 
     resultado.push({
       usuarioLogin,

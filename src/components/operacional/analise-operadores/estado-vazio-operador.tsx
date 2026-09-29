@@ -1,8 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { IconUserSearch } from "@tabler/icons-react";
-
 import { MESES_JANELA, type Periodo } from "@/lib/kpi/analise-operadores/periodo";
 import type { KpisPreview } from "@/lib/kpi/analise-operadores/serial-types";
 
@@ -28,48 +25,21 @@ import {
 interface Props {
   kpisPreview: KpisPreview;
   periodo: Periodo;
-  /**
-   * O popover de seleção de operador inteiro (trigger + busca + lista) já
-   * montado pelo pai (analise-operadores-section.tsx). Só existe aqui
-   * quando NÃO há operador selecionado — uma vez selecionado, o controle
-   * de troca vive no cabeçalho da página, nunca os dois ao mesmo tempo.
-   */
-  seletorOperador: ReactNode;
 }
 
-export function EstadoVazioOperador({
-  kpisPreview,
-  periodo,
-  seletorOperador,
-}: Props) {
+export function EstadoVazioOperador({ kpisPreview, periodo }: Props) {
   const nMeses = MESES_JANELA[periodo];
 
   return (
     <div className="space-y-8">
       {/*
-        Única parte NÃO decorativa desta seção — é o que o leitor de tela
-        efetivamente anuncia. O resto (cards fantasma abaixo) é
-        aria-hidden: não é dado real, não deveria ser lido como se fosse.
+        Seleção de operador agora é o botão à direita do cabeçalho
+        (analise-operadores-section.tsx) — só o aviso para leitor de tela
+        fica aqui; os cards fantasma abaixo são aria-hidden.
       */}
-      <div className="border-border/60 bg-muted/20 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-dashed px-5 py-4">
-        <div className="flex items-center gap-3">
-          <IconUserSearch
-            size={20}
-            className="text-muted-foreground shrink-0"
-            aria-hidden="true"
-          />
-          <div>
-            <p className="text-foreground text-sm font-semibold">
-              Selecione um operador para ver o histórico completo
-            </p>
-            <p className="text-muted-foreground mt-0.5 text-xs">
-              A prévia abaixo mostra a estrutura do relatório — os números
-              somem assim que você escolhe alguém da equipe.
-            </p>
-          </div>
-        </div>
-        {seletorOperador}
-      </div>
+      <p className="sr-only">
+        Selecione um operador para ver o histórico completo.
+      </p>
 
       <div aria-hidden="true" className="space-y-8">
         <GhostIdentificacaoBloco />

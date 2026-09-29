@@ -18,4 +18,4 @@ export type UserProfile = {
   updatedAt: string | null;
 };
 
-export const ALL_ROLES_FOR_CREATION: UserRole[] = ["ADM", "GESTOR"];
+export const ALL_ROLES_FOR_CREATION: UserRole[] = ["ADM", "GESTOR", "COORDENADOR"];

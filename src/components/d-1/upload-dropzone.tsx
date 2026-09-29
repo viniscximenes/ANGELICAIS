@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
 import { IconLoader2 } from "@tabler/icons-react";
 import Papa from "papaparse";
 import { useDropzone } from "react-dropzone";
@@ -31,9 +31,41 @@ interface UploadDropzoneProps {
    * seguem idênticos.
    */
   compact?: boolean;
+  /**
+   * "vertical": mesmo card de anexo de /reports/tempo-indisponibilidade
+   * (largura cheia, abaixo do cabeçalho, 140px de altura) — usado em
+   * /c/reports/consolidado. Default "card" mantém o visual de sempre.
+   */
+  variante?: "card" | "vertical";
+  /**
+   * Clique/teclado abre o seletor de arquivos já na pasta Downloads e só com
+   * .csv (sem a opção "Todos os arquivos"), via File System Access API
+   * (showOpenFilePicker — Chrome/Edge). Navegadores sem a API seguem com o
+   * seletor padrão de sempre. Arrastar e soltar não muda. Default false —
+   * só /reports/consolidado (GestorEquipeSection) ativa.
+   */
+  abrirEmDownloads?: boolean;
 }
 
-export function UploadDropzone({ compact = false }: UploadDropzoneProps = {}) {
+// Tipagem mínima da File System Access API (não está no lib.dom do TS).
+type ShowOpenFilePicker = (options: {
+  startIn?: "downloads";
+  types?: { description: string; accept: Record<string, string[]> }[];
+  excludeAcceptAllOption?: boolean;
+  multiple?: boolean;
+}) => Promise<{ getFile: () => Promise<File> }[]>;
+
+export function UploadDropzone({
+  compact = false,
+  variante = "card",
+  abrirEmDownloads = false,
+}: UploadDropzoneProps = {}) {
+  const vertical = variante === "vertical";
+  // Detectado só no client (evita divergência de hidratação com o SSR).
+  const [pickerNativo, setPickerNativo] = useState(false);
+  useEffect(() => {
+    setPickerNativo(abrirEmDownloads && "showOpenFilePicker" in window);
+  }, [abrirEmDownloads]);
   const [step, setStep] = useState<UploadStep>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [rowsWritten, setRowsWritten] = useState<number>(0);
@@ -180,7 +212,7 @@ export function UploadDropzone({ compact = false }: UploadDropzoneProps = {}) {
     [handleFile],
   );
 
-  const { getRootProps, getInputProps, isDragActive, isDragReject } =
+  const { getRootProps, getInputProps, isDragActive, isDragReject, open } =
     useDropzone({
       onDrop,
       accept: {
@@ -189,9 +221,36 @@ export function UploadDropzone({ compact = false }: UploadDropzoneProps = {}) {
       },
       multiple: false,
       disabled: step !== null && step !== "done",
+      // Com o seletor nativo ativo, clique/teclado são tratados abaixo
+      // (abrirSeletorDownloads); o drag & drop continua com o dropzone.
+      noClick: pickerNativo,
+      noKeyboard: pickerNativo,
     });
 
   const isProcessing = step !== null && step !== "done";
+
+  const abrirSeletorDownloads = useCallback(async () => {
+    const showOpenFilePicker = (window as unknown as { showOpenFilePicker: ShowOpenFilePicker })
+      .showOpenFilePicker;
+    try {
+      const [handle] = await showOpenFilePicker({
+        startIn: "downloads",
+        types: [{ description: "Arquivo CSV", accept: { "text/csv": [".csv"] } }],
+        excludeAcceptAllOption: true,
+        multiple: false,
+      });
+      const file = await handle.getFile();
+      // Mesmo critério do `accept` do dropzone: arquivo fora de .csv é
+      // ignorado em silêncio, como no fluxo padrão.
+      if (!file.name.toLowerCase().endsWith(".csv")) return;
+      handleFile(file);
+    } catch (err) {
+      // Usuário fechou/cancelou o seletor — nada a fazer.
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      // Qualquer outra falha da API: volta pro seletor padrão.
+      open();
+    }
+  }, [handleFile, open]);
   // Favicon animado ("carregando") durante upload/substituição/exclusão da
   // base Consolidado — step volta pra null em todo caminho de erro (ver
   // handleStaleActionError/catch abaixo), então isProcessing já cobre erro
@@ -201,6 +260,16 @@ export function UploadDropzone({ compact = false }: UploadDropzoneProps = {}) {
   const rootProps = getRootProps({
     onMouseEnter: () => setIsHovering(true),
     onMouseLeave: () => setIsHovering(false),
+    ...(pickerNativo && {
+      onClick: () => {
+        if (!isProcessing) void abrirSeletorDownloads();
+      },
+      onKeyDown: (e: KeyboardEvent<HTMLElement>) => {
+        if (isProcessing || (e.key !== "Enter" && e.key !== " ")) return;
+        e.preventDefault();
+        void abrirSeletorDownloads();
+      },
+    }),
   });
   const accessibleName =
     "Anexar base CSV. Arraste um arquivo ou clique para selecionar. Apenas arquivos .csv, limite de 10.000 linhas.";
@@ -246,11 +315,11 @@ export function UploadDropzone({ compact = false }: UploadDropzoneProps = {}) {
                 boxShadow: isDragActive
                   ? "0 0 40px var(--glow-accent)"
                   : "var(--shadow-sm, none)",
-                padding: compact ? "0.875rem 1.25rem" : "2.5rem 1.5rem",
+                padding: compact ? "0.875rem 1.25rem" : vertical ? "1rem 1.25rem" : "2.5rem 1.5rem",
                 opacity: isProcessing ? 0.5 : 1,
                 pointerEvents: isProcessing ? "none" : "auto",
                 cursor: isProcessing ? "not-allowed" : "pointer",
-                minHeight: compact ? "auto" : "100%",
+                minHeight: compact ? "auto" : vertical ? "140px" : "100%",
         }}
       >
         <input {...getInputProps()} />

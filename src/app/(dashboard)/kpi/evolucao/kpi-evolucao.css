@@ -1,6 +1,6 @@
 /*
  * Ajustes visuais específicos de /kpi/evolucao.
- * As cores (tokens) vêm da paleta global em src/app/palettes/zen-linen.css —
+ * As cores (tokens) vêm da paleta global em src/app/palettes/ (paleta ativa) —
  * não redefina --background/--card/--primary/... aqui, senão a troca de
  * paleta deixa de valer nesta página.
  */
@@ -10,6 +10,46 @@
   color: var(--foreground);
   font-family: var(--font-sans);
   letter-spacing: var(--letter-spacing);
+}
+
+/* Seletor de período — mesmo ajuste do seletor de meses de /kpi/operadores
+ * (kpi-operadores.css): o SegmentedControl padrão mede 42px; aqui o trilho
+ * inteiro fica com 32px (mesma altura do botão de operador e do switch ao
+ * lado) e os itens usam os 26px internos restantes. */
+[data-page="kpi-evolucao"] .kpi-evolucao-periodo-selector [role="radiogroup"] {
+  height: 32px;
+  padding: 2px;
+}
+
+[data-page="kpi-evolucao"] .kpi-evolucao-periodo-selector [role="radio"] {
+  height: 26px;
+}
+
+/* Faixa de título ("Relatório de performance histórica" e o título de cada
+ * card de KPI) — réplica do cabeçalho da tabela de /kpi/operadores
+ * (.kpi-operadores-table-head em kpi-operadores.css + borda 1px do <tr>):
+ * no escuro, bg-muted/40 com texto foreground; no claro, bege sólido do
+ * tema, texto secundário e borda inferior de 2px. A fonte vem das classes
+ * do próprio thead (ds-body font-bold tracking-wide uppercase), aplicadas
+ * no JSX. */
+[data-page="kpi-evolucao"] .kpi-evolucao-titulo-head {
+  background-color: color-mix(in srgb, var(--muted) 40%, transparent);
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
+}
+
+[data-theme="light"] [data-page="kpi-evolucao"] .kpi-evolucao-titulo-head {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+  border-bottom: 2px solid var(--border);
+}
+
+/* Engrenagem da meta (MetaTxRetencaoPopover) dentro da faixa de título —
+ * no claro, --border (#D2CBBB) é quase o mesmo tom do fundo da faixa
+ * (--muted, #CFC8B8) e a borda sumia. Borda mais escura só no claro;
+ * escuro inalterado. */
+[data-theme="light"] [data-page="kpi-evolucao"] .kpi-evolucao-meta-trigger {
+  border-color: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
 }
 
 /*

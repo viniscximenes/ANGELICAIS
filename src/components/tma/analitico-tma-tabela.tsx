@@ -46,7 +46,7 @@ const STICKY_HEADER_BG = "color-mix(in oklch, var(--muted) 40%, var(--card))";
  * Tempo-Indisponibilidade, nos dois temas.
  */
 const HEADER_ROW_CLASS =
-  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground/70";
+  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground";
 
 /**
  * Altura máxima antes do scroll vertical interno entrar em ação — REVERSÃO

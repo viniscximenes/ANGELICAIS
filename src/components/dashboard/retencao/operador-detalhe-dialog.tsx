@@ -50,32 +50,13 @@ function formatEixoLabel(label: string): string {
   return label;
 }
 
-// Cores dos chips de quartil: MESMOS tokens/tons de
-// quartil-faixa.tsx (ESTILO_POR_NIVEL, /kpi/evolucao — lido por referência,
-// não importado, pra não acoplar rotas diferentes) — Q1/Q2 verde (Q1 mais
-// claro), Q3/Q4 vermelho (Q3 mais claro), via color-mix sobre
-// --success/--danger.
-const ESTILO_QUARTIL: Record<"Q1" | "Q2" | "Q3" | "Q4", { bg: string; fg: string; bd: string }> = {
-  Q1: {
-    bg: "color-mix(in srgb, var(--success) 10%, transparent)",
-    fg: "var(--success)",
-    bd: "color-mix(in srgb, var(--success) 28%, transparent)",
-  },
-  Q2: {
-    bg: "color-mix(in srgb, var(--success) 20%, transparent)",
-    fg: "var(--success)",
-    bd: "color-mix(in srgb, var(--success) 42%, transparent)",
-  },
-  Q3: {
-    bg: "color-mix(in srgb, var(--danger) 10%, transparent)",
-    fg: "var(--danger)",
-    bd: "color-mix(in srgb, var(--danger) 28%, transparent)",
-  },
-  Q4: {
-    bg: "color-mix(in srgb, var(--danger) 20%, transparent)",
-    fg: "var(--danger)",
-    bd: "color-mix(in srgb, var(--danger) 42%, transparent)",
-  },
+// Chips de quartil NEUTROS (sem verde/vermelho — o próprio "Q1".."Q4" já
+// diz a posição): fundo cinza do tema (--muted), borda --border e o quartil
+// em --foreground (preto no claro, branco no escuro). Mesmo estilo pros 4.
+const ESTILO_CHIP_QUARTIL = {
+  bg: "color-mix(in oklab, var(--muted) 60%, transparent)",
+  fg: "var(--foreground)",
+  bd: "var(--border)",
 };
 
 function ChipQuartil({
@@ -89,7 +70,7 @@ function ChipQuartil({
   rank: number | null;
   totalOperadores: number;
 }) {
-  const estilo = ESTILO_QUARTIL[quartil];
+  const estilo = ESTILO_CHIP_QUARTIL;
   return (
     <div
       className="ds-small inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-muted-foreground"
@@ -250,6 +231,7 @@ export function OperadorDetalheDialog({
           className="absolute top-2 right-10"
           corDeFundoDoAlvo
           toastClassName="reports-consolidado-toast"
+          showSuccessToast={false}
         />
 
         {/*
@@ -319,7 +301,10 @@ export function OperadorDetalheDialog({
             <h3 className="ds-h3 font-semibold text-foreground">
               Evolução por Hora
             </h3>
-            <div className="w-full h-[220px]">
+            {/* grafico-evolucao-chart: mesma regra dos gráficos "Evolução da
+                equipe" (reports-consolidado.css) — sem a borda de foco que
+                "marcava" o gráfico ao clicar nele. */}
+            <div className="grafico-evolucao-chart w-full h-[220px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={chartData}
@@ -502,13 +487,16 @@ export function OperadorDetalheDialog({
                 </p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-left text-sm">
+                  {/* data-tabela-operador-temas: cabeçalho no visual da
+                      tabela principal (reports-consolidado.css, junto com as
+                      demais tabelas do Analítico). */}
+                  <table data-tabela-operador-temas className="w-full border-collapse text-left text-sm">
                     <thead>
                       {/* Mesma tipografia de cabeçalho de tabela-temas.tsx
                           (ds-body + font-bold uppercase tracking-wider
                           text-[11px]) — antes era ds-mono-sm, destoando do
                           resto da página. */}
-                      <tr className="ds-body text-muted-foreground/70 border-border/40 border-b bg-muted/40 font-bold tracking-wide uppercase">
+                      <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 font-bold tracking-wide uppercase">
                         <th className="px-4 py-2.5 font-semibold">Motivo</th>
                         <th className="px-4 py-2.5 text-center font-semibold">Retidos</th>
                         <th className="px-4 py-2.5 text-center font-semibold">Cancelados</th>
@@ -528,7 +516,8 @@ export function OperadorDetalheDialog({
                         return (
                           <tr
                             key={m.motivo}
-                            className="border-border/20 hover:bg-accent border-b transition-colors last:border-0"
+                            // Sem hover: a linha não tem ação ao clicar.
+                            className="border-border/20 border-b last:border-0"
                           >
                             <td className="text-foreground ds-body max-w-[220px] truncate px-4 py-2.5 text-xs font-medium">
                               {m.motivo}

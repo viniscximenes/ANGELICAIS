@@ -13,6 +13,7 @@ import { ThemeMenu } from "./theme-menu";
 const ROLE_LABEL: Record<UserRole, string> = {
   GESTOR: "GESTOR",
   ADM: "ADMINISTRADOR",
+  COORDENADOR: "COORDENADOR",
 };
 
 interface AppHeaderProps {

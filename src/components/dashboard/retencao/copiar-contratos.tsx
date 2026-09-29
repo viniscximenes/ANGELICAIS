@@ -2,13 +2,14 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { IconCopy, IconCheck, IconFilter, IconChevronDown, IconTrash, IconLoader2 } from "@tabler/icons-react";
+import { IconCopy, IconCheck, IconFilter, IconChevronDown, IconTrash, IconLoader2, IconSearch } from "@tabler/icons-react";
 import { fetchContratosFiltradosAction } from "@/lib/retencao/actions";
 import type { TemaData } from "@/lib/retencao/get-por-tema";
 import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
 import type { ContratoFiltradoItem } from "@/lib/retencao/get-contratos-filtrados";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
 import { toast } from "sonner";
+import { Segmentado } from "./segmentado";
 
 interface CopiarContratosProps {
   emailsEquipe: string[];
@@ -25,6 +26,8 @@ interface CopiarContratosProps {
 
 interface CustomSelectProps {
   label: string;
+  /** Largura do campo (classe Tailwind) — default ocupa a coluna inteira. */
+  className?: string;
   value: string;
   onChange: (val: string) => void;
   options: { value: string; label: string }[];
@@ -32,7 +35,15 @@ interface CustomSelectProps {
   searchable?: boolean;
 }
 
-function CustomSelect({ label, value, onChange, options, placeholder, searchable = false }: CustomSelectProps) {
+function CustomSelect({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+  searchable = false,
+  className,
+}: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [menuRect, setMenuRect] = useState<{ top: number; left: number; width: number } | null>(
@@ -90,12 +101,15 @@ function CustomSelect({ label, value, onChange, options, placeholder, searchable
   }, [options, searchable, searchQuery]);
 
   return (
-    <div className="space-y-1 relative w-full" ref={triggerRef}>
-      <label className="text-[11px] font-medium text-muted-foreground uppercase block tracking-wider">{label}</label>
+    <div className={`relative space-y-1.5 ${className ?? "w-full"}`} ref={triggerRef}>
+      {/* Rótulo e campo no padrão do seletor "Ordenação Dos Operadores"
+          (config-tabela-popover.tsx): rótulo text-xs medium sem caixa alta,
+          campo com borda fina, sem hover e 32px de altura. */}
+      <label className="text-foreground block text-xs font-medium">{label}</label>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full text-left text-xs bg-muted/20 border border-border/60 hover:border-border rounded-lg px-3 py-2.5 text-foreground flex justify-between items-center transition-all shadow-sm outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 focus:border-border cursor-pointer select-none"
+        className="border-border text-foreground flex h-8 w-full cursor-pointer items-center justify-between rounded-lg border bg-transparent px-3 text-left text-xs font-medium outline-none select-none"
         style={{ outline: "none", boxShadow: "none" }}
       >
         <span className="truncate">{selectedOption ? selectedOption.label : placeholder || "Selecione..."}</span>
@@ -113,51 +127,60 @@ function CustomSelect({ label, value, onChange, options, placeholder, searchable
       */}
       {isOpen && menuRect &&
         createPortal(
+          // Mesmo desenho da lista do seletor "Ordenação Dos Operadores"
+          // (config-tabela-popover.tsx): caixa com respiro interno (p-1),
+          // opções arredondadas e a selecionada em bg-primary com ✓. A busca
+          // fica fixa no topo; só a lista de opções rola.
           <div
             ref={menuRef}
             data-page="reports-consolidado"
-            className="fixed z-[100] bg-popover border border-border rounded-lg shadow-xl max-h-56 overflow-y-auto scrollbar-tema py-1"
+            className="bg-popover text-popover-foreground border-border fixed z-[100] flex max-h-64 flex-col overflow-hidden rounded-lg border shadow-2xl"
             style={{ top: menuRect.top, left: menuRect.left, width: menuRect.width }}
           >
             {searchable && (
-              <div className="p-1.5 sticky top-0 bg-popover border-b border-border/40 z-10">
+              <div className="border-border/50 flex shrink-0 items-center gap-2 border-b px-3">
+                <IconSearch size={14} className="text-muted-foreground shrink-0" aria-hidden="true" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Buscar operador..."
-                  className="w-full text-xs bg-muted/30 border border-border/60 rounded-md px-2.5 py-1.5 text-foreground outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 focus:border-border/80"
+                  className="copiar-contratos-busca text-foreground placeholder:text-muted-foreground h-9 w-full bg-transparent text-xs outline-none"
                   style={{ outline: "none", boxShadow: "none" }}
                   autoFocus
                 />
               </div>
             )}
 
-            {filteredOptions.length === 0 ? (
-              <div className="px-3 py-2 text-xs text-muted-foreground italic text-center">
-                Nenhum operador encontrado
-              </div>
-            ) : (
-              filteredOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 text-xs transition-colors block truncate cursor-pointer ${
-                    opt.value === value
-                      ? "bg-primary text-primary-foreground font-semibold"
-                      : opt.value === ""
-                      ? "text-muted-foreground hover:text-foreground font-medium italic border-b border-border/20 mb-1"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))
-            )}
+            <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain p-1 scrollbar-tema">
+              {filteredOptions.length === 0 ? (
+                <div className="text-muted-foreground px-3 py-2 text-center text-xs italic">
+                  Nenhum operador encontrado
+                </div>
+              ) : (
+                filteredOptions.map((opt) => {
+                  const selecionado = opt.value === value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        onChange(opt.value);
+                        setIsOpen(false);
+                      }}
+                      className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-xs font-medium transition-colors ${
+                        selecionado
+                          ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                          : "text-foreground hover:bg-accent"
+                      }`}
+                    >
+                      <span className="truncate">{opt.label}</span>
+                      {selecionado && <IconCheck size={14} className="shrink-0" aria-hidden="true" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>,
           document.body,
         )}
@@ -207,17 +230,15 @@ export function CopiarContratos({
 
     list.sort((a, b) => a.label.localeCompare(b.label));
 
-    if (selectedOperador !== "") {
-      return [{ value: "", label: "✕ Limpar seleção (Todos da equipe)" }, ...list];
-    }
-
+    // Sempre "Todos da equipe" — com a opção selecionada marcada por ✓,
+    // o rótulo "✕ Limpar seleção" deixou de ser necessário.
     return [{ value: "", label: "Todos da equipe" }, ...list];
-  }, [emailsEquipe, operadoresIndividual, selectedOperador]);
+  }, [emailsEquipe, operadoresIndividual]);
 
-  const statusOptions = [
-    { value: "todos", label: "Todos" },
-    { value: "retido", label: "Retidos" },
-    { value: "cancelado", label: "Cancelados" },
+  const statusOptions: { valor: "todos" | "retido" | "cancelado"; rotulo: string }[] = [
+    { valor: "todos", rotulo: "Todos" },
+    { valor: "retido", rotulo: "Retidos" },
+    { valor: "cancelado", rotulo: "Cancelados" },
   ];
 
   const motivosOptions = useMemo(() => {
@@ -254,11 +275,9 @@ export function CopiarContratos({
           toast.info("Nenhum atendimento encontrado para a equipe com estes filtros.", {
             className: "reports-consolidado-toast",
           });
-        } else {
-          toast.success(`${result.data.length} registro(s) da equipe localizado(s)!`, {
-            className: "reports-consolidado-toast",
-          });
         }
+        // Sem toast de sucesso: a contagem ("N contratos localizados") já
+        // aparece acima da tabela.
       } else {
         toast.error(result.error || "Erro ao buscar registros da equipe.", {
           className: "reports-consolidado-toast",
@@ -277,10 +296,8 @@ export function CopiarContratos({
     const textToCopy = contratos.map((c) => c.linhaFormatada).join("\n");
     try {
       await navigator.clipboard.writeText(textToCopy);
+      // Sem toast de sucesso: o próprio botão já confirma ("Copiado!").
       setCopied(true);
-      toast.success("Registros copiados para a área de transferência!", {
-        className: "reports-consolidado-toast",
-      });
       setTimeout(() => setCopied(false), 2500);
     } catch (err) {
       console.error(err);
@@ -292,8 +309,8 @@ export function CopiarContratos({
     setSelectedOperador("");
     setStatus("todos");
     setSelectedMotivo("");
+    // Sem toast: a lista some e os filtros voltam ao padrão na hora.
     setContratos([]);
-    toast.info("Filtros limpos!", { className: "reports-consolidado-toast" });
   };
 
   return (
@@ -301,10 +318,11 @@ export function CopiarContratos({
       {/* ── Título e descrição fora do card ─────────────────────────── */}
       <div className={scrollInterno ? "shrink-0" : undefined}>
         <h3 className="ds-h3 font-semibold text-foreground">
-          Copiar Contratos da Equipe
+          Copiar contratos do AIR
         </h3>
         <p className="ds-small text-muted-foreground mt-1">
-          Filtre e copie a lista formatada de contratos da equipe.
+          Filtre os atendimentos da equipe por operador, status e motivo e copie a lista de
+          contratos do AIR, uma linha por contrato, pronta para colar.
         </p>
       </div>
 
@@ -317,55 +335,67 @@ export function CopiarContratos({
       <div
         className={scrollInterno ? "max-h-full overflow-y-auto scrollbar-tema space-y-5" : "space-y-5"}
       >
-        {/* Filtros em Grade Única Responsiva */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-          {/* Filtro: Operador da Equipe */}
-          <CustomSelect
-            label="Operador da Equipe"
-            value={selectedOperador}
-            onChange={setSelectedOperador}
-            options={operadoresOptions}
-            searchable={true}
-          />
+        {/* Filtros numa linha (quebra em telas estreitas), todos com 32px
+            de altura e alinhados pela base: Operador / Motivo na extremidade
+            esquerda, Status / Filtrar Contratos na extremidade direita. */}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-wrap items-end gap-4">
+            <CustomSelect
+              label="Operador"
+              value={selectedOperador}
+              onChange={setSelectedOperador}
+              options={operadoresOptions}
+              searchable={true}
+              className="w-full sm:w-56"
+            />
 
-          {/* Filtro: Status */}
-          <CustomSelect
-            label="Status"
-            value={status}
-            onChange={(val) => setStatus(val as "todos" | "retido" | "cancelado")}
-            options={statusOptions}
-          />
+            <CustomSelect
+              label="Motivo"
+              value={selectedMotivo}
+              onChange={setSelectedMotivo}
+              options={motivosOptions}
+              className="w-full sm:w-48"
+            />
+          </div>
 
-          {/* Filtro: Motivo Principal */}
-          <CustomSelect
-            label="Motivo Principal"
-            value={selectedMotivo}
-            onChange={setSelectedMotivo}
-            options={motivosOptions}
-          />
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="space-y-1.5">
+              <span className="text-foreground block text-xs font-medium">Status</span>
+              <Segmentado
+                ariaLabel="Status do contrato"
+                grupo="copiar-contratos-status"
+                opcoes={statusOptions}
+                valor={status}
+                onChange={setStatus}
+              />
+            </div>
 
-          {/* Botão de Ação */}
-          <button
-            onClick={handleGerar}
-            disabled={loading}
-            className="py-2.5 px-5 rounded-lg text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 shrink-0 shadow-sm h-[38px] w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
-          >
-            {loading ? (
-              <IconLoader2 size={15} className="animate-spin" />
-            ) : (
-              <IconFilter size={15} />
-            )}
-            {loading ? "Buscando..." : "Filtrar Contratos"}
-          </button>
+            {/* Mesmo visual do "Salvar Alterações" dos cards de configuração. */}
+            <button
+              onClick={handleGerar}
+              disabled={loading}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
+            >
+              {loading ? <IconLoader2 size={14} className="animate-spin" /> : <IconFilter size={14} />}
+              {loading ? "Buscando..." : "Filtrar Contratos"}
+            </button>
+          </div>
         </div>
 
         {/* Exibição dos Contratos Gerados no Formato: nome.sobrenome - status - motivo - contrato */}
         {contratos.length > 0 && (
-          <div className="space-y-3 border-t border-border/40 pt-4">
+          // Largura toda: contagem à esquerda, Limpar Filtro / Copiar Todos
+          // na extremidade direita (acima da coluna MOTIVO).
+          <div className="space-y-3">
             <div className="flex justify-between items-center flex-wrap gap-2">
-              <span className="ds-body font-medium text-foreground">
-                <span className="font-semibold">{contratos.length}</span> contrato{contratos.length > 1 ? "s" : ""} localizado{contratos.length > 1 ? "s" : ""}
-              </span>
+              <div>
+                <p className="text-foreground text-sm">
+                  <span className="font-semibold">{contratos.length}</span> contrato{contratos.length > 1 ? "s" : ""} localizado{contratos.length > 1 ? "s" : ""}
+                </p>
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  Copiado no formato: Contrato - Operador - Status - Motivo
+                </p>
+              </div>
 
               <div className="flex items-center gap-2">
                 <button
@@ -379,16 +409,16 @@ export function CopiarContratos({
                 <button
                   onClick={handleCopy}
                   disabled={contratos.length === 0}
-                  className="text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground flex h-8 cursor-pointer items-center gap-2 rounded-lg px-4 text-xs font-semibold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
                 >
                   {copied ? (
                     <>
-                      <IconCheck size={16} />
+                      <IconCheck size={14} />
                       Copiado!
                     </>
                   ) : (
                     <>
-                      <IconCopy size={16} />
+                      <IconCopy size={14} />
                       Copiar Todos
                     </>
                   )}
@@ -396,8 +426,46 @@ export function CopiarContratos({
               </div>
             </div>
 
-            <div className="bg-muted/20 border border-border/60 rounded-lg p-4 ds-mono-sm text-foreground leading-relaxed whitespace-pre-wrap select-text shadow-inner max-h-72 overflow-y-auto scrollbar-tema">
-              {contratos.map((c) => c.linhaFormatada).join("\n")}
+            {/* Tabela no padrão das demais do Analítico (cabeçalho igual ao
+                da tabela principal via data-tabela-contratos em
+                reports-consolidado.css), na MESMA ordem da linha copiada:
+                Contrato - Operador - Status - Motivo. */}
+            {/* Tabela na largura toda, então a barra de rolagem fica colada
+                na borda direita da tabela. */}
+            <div className="max-h-72 overflow-auto scrollbar-tema">
+              {/* Largura toda: CONTRATO na extremidade esquerda e OPERADOR /
+                  STATUS / MOTIVO juntos na extremidade direita — a coluna
+                  vazia do meio (sem largura fixa) absorve a sobra. Títulos e
+                  dados centralizados em cada coluna; status sem cor. */}
+              <table data-tabela-contratos className="w-full border-collapse text-center">
+                {/* bg-background: o fundo do cabeçalho no escuro é
+                    translúcido — fixo no topo, as linhas apareceriam por trás. */}
+                <thead className="bg-background sticky top-0 z-10">
+                  <tr className="select-none">
+                    <th className="w-[130px] py-2.5 px-4 text-center whitespace-nowrap">Contrato</th>
+                    <th aria-hidden="true" />
+                    <th className="w-[190px] py-2.5 px-4 text-center whitespace-nowrap">Operador</th>
+                    <th className="w-[120px] py-2.5 px-4 text-center whitespace-nowrap">Status</th>
+                    <th className="w-[260px] py-2.5 px-4 text-center whitespace-nowrap">Motivo</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-border/30 divide-y select-text">
+                  {contratos.map((c) => (
+                    <tr key={`${c.usuarioLogin}-${c.codAir}`} className="align-middle">
+                      <td
+                        className="text-foreground py-2.5 px-4 text-xs font-medium"
+                        style={{ fontVariantNumeric: "tabular-nums" }}
+                      >
+                        {c.codAir}
+                      </td>
+                      <td aria-hidden="true" />
+                      <td className="text-foreground py-2.5 px-4 text-xs">{c.nomeSobrenome}</td>
+                      <td className="text-foreground py-2.5 px-4 text-xs font-medium">{c.status}</td>
+                      <td className="text-muted-foreground py-2.5 px-4 text-xs whitespace-nowrap">{c.motivo}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

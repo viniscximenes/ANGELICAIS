@@ -37,6 +37,12 @@ interface ExportPopupPngButtonProps {
    * essa prop e continuam com o visual padrão). Default: undefined.
    */
   toastClassName?: string;
+  /**
+   * Toast "Imagem baixada" ao concluir. Default true (comportamento de
+   * sempre, TMA/Tempo Indisponibilidade). /reports/consolidado passa false:
+   * o próprio botão já confirma (ícone ✓ por 2s). Erros continuam com toast.
+   */
+  showSuccessToast?: boolean;
 }
 
 /**
@@ -51,6 +57,7 @@ export function ExportPopupPngButton({
   className,
   corDeFundoDoAlvo = false,
   toastClassName,
+  showSuccessToast = true,
 }: ExportPopupPngButtonProps) {
   const [state, setState] = useState<"idle" | "gerando" | "feito">("idle");
 
@@ -74,7 +81,9 @@ export function ExportPopupPngButton({
       document.body.removeChild(link);
 
       setState("feito");
-      toast.success("Imagem baixada", { className: toastClassName });
+      if (showSuccessToast) {
+        toast.success("Imagem baixada", { className: toastClassName });
+      }
       setTimeout(() => setState("idle"), 2000);
     } catch (err) {
       console.error("[export-popup-png] erro:", err);

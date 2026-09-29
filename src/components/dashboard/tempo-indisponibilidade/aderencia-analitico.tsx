@@ -102,7 +102,7 @@ const STICKY_HEADER_BG = "color-mix(in oklch, var(--muted) 40%, var(--card))";
  * que também não usam fonte monoespaçada no cabeçalho.
  */
 const HEADER_ROW_CLASS =
-  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground/70";
+  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground";
 
 const GRID_COLS = [
   `minmax(${PISO_OPERADOR_PX}px, 1.6fr)`,

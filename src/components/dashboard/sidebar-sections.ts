@@ -5,6 +5,15 @@ import type { SidebarSection } from "./sidebar";
 
 const ALL_SECTIONS: SidebarSection[] = [
   {
+    id: "coordenador-reports",
+    label: "Reports",
+    iconName: "chart",
+    basePath: "/c/reports",
+    permission: "view_coordenador_panel",
+    onlyRoles: ["COORDENADOR"],
+    items: [{ label: "Consolidado", href: "/c/reports/consolidado" }],
+  },
+  {
     id: "gestor",
     label: "Reports",
     iconName: "chart",

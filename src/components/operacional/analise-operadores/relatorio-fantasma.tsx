@@ -31,10 +31,10 @@ export function GhostKpiCard({
   mensagem: string;
 }) {
   return (
-    <div className="space-y-3">
-      <div className="flex items-end justify-between gap-4">
+    <KpiFrame>
+      <div className="kpi-evolucao-titulo-head flex items-end justify-between gap-4 px-4 py-2.5">
         <div>
-          <h3 className="ds-h3 text-foreground/70 font-semibold">{nome}</h3>
+          <h3 className="ds-body font-bold tracking-wide uppercase">{nome}</h3>
           <p className="ds-small text-muted-foreground/70 mt-0.5 text-xs">
             Meta: ?
           </p>
@@ -49,7 +49,7 @@ export function GhostKpiCard({
         </div>
       </div>
 
-      <StyledCard className="p-5" withGradient>
+      <div className="px-2 pt-5 pb-2">
         <div className="relative h-[240px] w-full overflow-hidden rounded-[var(--radius)]">
           <svg
             viewBox="0 0 400 120"
@@ -102,8 +102,8 @@ export function GhostKpiCard({
             ))}
           </div>
         </div>
-      </StyledCard>
-    </div>
+      </div>
+    </KpiFrame>
   );
 }
 
@@ -144,11 +144,11 @@ export function GhostIdentificacaoBloco() {
     "Gerado em",
   ];
   return (
-    <KpiFrame className="p-5">
-      <p className="font-sans text-muted-foreground/70 text-xs font-semibold tracking-wider uppercase">
+    <KpiFrame>
+      <p className="kpi-evolucao-titulo-head ds-body px-3 py-2.5 font-bold tracking-wide uppercase">
         Relatório de performance histórica
       </p>
-      <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
+      <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-2 px-3 pb-2 sm:grid-cols-2">
         {linhas.map((label) => (
           <div
             key={label}

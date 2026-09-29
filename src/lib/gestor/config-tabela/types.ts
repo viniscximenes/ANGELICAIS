@@ -12,12 +12,12 @@ export type OrdemTabela = (typeof ORDEM_TABELA_VALUES)[number];
 
 export const ORDEM_TABELA_OPTIONS: { value: OrdemTabela; label: string }[] = [
   { value: "padrao", label: "Padrão" },
-  { value: "tx_desc", label: "Maior taxa primeiro" },
-  { value: "tx_asc", label: "Menor taxa primeiro" },
-  { value: "retidos_desc", label: "Mais retidos primeiro" },
-  { value: "retidos_asc", label: "Menos retidos primeiro" },
-  { value: "cancelados_desc", label: "Mais cancelados primeiro" },
-  { value: "pedidos_desc", label: "Mais pedidos primeiro" },
+  { value: "tx_desc", label: "Maior Taxa Primeiro" },
+  { value: "tx_asc", label: "Menor Taxa Primeiro" },
+  { value: "retidos_desc", label: "Mais Retidos Primeiro" },
+  { value: "retidos_asc", label: "Menos Retidos Primeiro" },
+  { value: "cancelados_desc", label: "Mais Cancelados Primeiro" },
+  { value: "pedidos_desc", label: "Mais Pedidos Primeiro" },
 ];
 
 export function isOrdemTabela(value: string): value is OrdemTabela {

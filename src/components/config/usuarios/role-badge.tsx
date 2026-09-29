@@ -19,6 +19,11 @@ export function RoleBadge({ role }: Props) {
       className:
         "bg-[var(--warning)] text-white border-[var(--warning)] dark:bg-[var(--warning-bg)] dark:text-[var(--warning)] dark:border-[var(--warning-border)]",
     },
+    COORDENADOR: {
+      label: "COORDENADOR",
+      className:
+        "bg-[var(--success)] text-white border-[var(--success)] dark:bg-[var(--success-bg)] dark:text-[var(--success)] dark:border-[var(--success-border)]",
+    },
   };
 
   const { className, label } = config[role];

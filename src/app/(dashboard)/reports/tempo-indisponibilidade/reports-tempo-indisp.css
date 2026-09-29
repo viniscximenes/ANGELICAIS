@@ -1,6 +1,6 @@
 /*
  * Ajustes visuais específicos de /reports/tempo-indisponibilidade.
- * As cores (tokens) vêm da paleta global em src/app/palettes/zen-linen.css —
+ * As cores (tokens) vêm da paleta global em src/app/palettes/ (paleta ativa) —
  * não redefina --background/--card/--primary/... aqui, senão a troca de
  * paleta deixa de valer nesta página.
  */
@@ -320,7 +320,7 @@ body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-corne
 ) > div:first-child {
   background-color: var(--muted) !important;
   border-bottom: 2px solid var(--border) !important;
-  color: color-mix(in srgb, var(--muted-foreground) 70%, transparent) !important;
+  color: var(--muted-foreground) !important;
 }
 
 [data-theme="light"] [data-page="reports-tempo-indisponibilidade"] :is(

@@ -106,7 +106,13 @@ export function ConfigMetasPopover({
         <PopoverContent
           data-page="reports-consolidado"
           align="end"
-          className="bg-popover text-popover-foreground border-border w-72 rounded-2xl border p-4 shadow-2xl"
+          // Mesmas regras do "Configurações da Tabela": sem auto-foco ao abrir
+          // (o Radix focava e SELECIONAVA o valor da Meta Geral) e sem o
+          // gap-2.5 padrão do PopoverContent / respiro extra acima do título.
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          // z-[60]: a seção do gráfico sobe pra z-50 (acima do blur) enquanto
+          // o popover está aberto — com o mesmo z-50 ela cobria o card.
+          className="bg-popover text-popover-foreground border-border z-[60] w-72 gap-0 rounded-2xl border p-4 pt-3 shadow-2xl"
         >
           {/* Cabeçalho enxuto — só o título (subtítulo explicativo removido a
               pedido: card menor, só com o que é útil). Fonte trocada de
@@ -115,12 +121,12 @@ export function ConfigMetasPopover({
               "Retenção por Tema"), que fixa font-family: var(--font-sans)
               explicitamente, em vez de depender de herança. */}
           <PopoverHeader className="border-border/50 border-b pb-2">
-            <PopoverTitle className="ds-h3 font-semibold text-foreground">
+            <PopoverTitle className="ds-h3 font-semibold text-foreground uppercase">
               Configurações de Metas
             </PopoverTitle>
           </PopoverHeader>
 
-          <div className="space-y-4 pt-2">
+          <div className="space-y-4 pt-3">
             {/* Meta global — rótulo "(Polo)"/"Equipe" removido a pedido (é a
                 meta da equipe, redundante dizer isso aqui). */}
             <div className="space-y-1.5">
@@ -128,7 +134,7 @@ export function ConfigMetasPopover({
                 htmlFor="config-meta-global"
                 className="text-foreground text-xs font-medium"
               >
-                Meta Global
+                Meta Geral
               </Label>
               <div className="relative flex items-center">
                 <Input
@@ -160,7 +166,9 @@ export function ConfigMetasPopover({
                 {TEMAS.map((tema) => (
                   <div
                     key={tema}
-                    className="hover:bg-muted/40 grid grid-cols-[1fr_84px] items-center gap-2 rounded-md px-1 py-1 transition-colors"
+                    // Sem hover na linha (mesma regra do seletor de ordenação
+                    // do "Configurações da Tabela").
+                    className="grid grid-cols-[1fr_84px] items-center gap-2 rounded-md px-1 py-1"
                   >
                     <Label
                       htmlFor={`meta-${tema}`}
@@ -196,7 +204,7 @@ export function ConfigMetasPopover({
               className="bg-primary hover:bg-primary/90 text-primary-foreground mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-semibold shadow-sm transition-colors"
             >
               <IconCheck size={14} aria-hidden="true" />
-              <span>Salvar Metas</span>
+              <span>Salvar Alterações</span>
             </Button>
           </div>
         </PopoverContent>

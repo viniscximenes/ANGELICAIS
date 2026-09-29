@@ -31,7 +31,7 @@ const STICKY_HEADER_BG = "color-mix(in oklch, var(--muted) 40%, var(--card))";
 
 /** Cabeçalho — MESMA classe literal de PausasDetalhadasAnalitico/AderenciaAnalitico (tempo-indisponibilidade): ds-body, text-muted-foreground/70. */
 const HEADER_ROW_CLASS =
-  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground/70";
+  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground";
 
 /**
  * Uma das duas tabelas do card (Curtas ou Longas) — MESMO padrão de

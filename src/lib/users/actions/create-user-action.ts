@@ -62,8 +62,8 @@ export async function createUserAction(
   if (!input.password || input.password.length < 8) {
     return { success: false, error: "Senha deve ter pelo menos 8 caracteres" };
   }
-  if (!["ADM", "GESTOR"].includes(input.role)) {
-    return { success: false, error: "Role inválida (apenas ADM ou GESTOR são permitidos)" };
+  if (!["ADM", "GESTOR", "COORDENADOR"].includes(input.role)) {
+    return { success: false, error: "Role inválida (apenas ADM, GESTOR ou COORDENADOR são permitidos)" };
   }
 
   const username = input.username.trim().toLowerCase();

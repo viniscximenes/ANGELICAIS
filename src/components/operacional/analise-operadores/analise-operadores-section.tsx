@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import {
-  IconLoader2,
   IconSearch,
   IconSelector,
 } from "@tabler/icons-react";
@@ -63,6 +62,10 @@ interface Props {
 // kpi-detalhado-section.tsx (/kpi/detalhado-polo). Não é exportada de lá
 // (função/consts locais daqueles arquivos, que não podem mudar).
 const TITULO_WEIGHT_CLASS = "font-semibold";
+
+// Duração mínima do skeleton ao trocar período/"incluir mês atual" — mesmo
+// valor de MIN_TABELA_LOADING_MS em kpi-equipe-section.tsx (/kpi/operadores).
+const MIN_SKELETON_MS = 2000;
 
 /**
  * Switch local — Radix Switch usado diretamente com os tokens
@@ -237,11 +240,10 @@ export function AnaliseOperadoresSection({
   const [erro, setErro] = useState<string | null>(null);
   const [geradoEm, setGeradoEm] = useState<string>("");
   const [isPending, startTransition] = useTransition();
-  // true SÓ enquanto a busca em andamento é de um operador NOVO (1ª seleção
-  // ou troca) — ver efeito abaixo. Troca de período/"incluir mês atual" com
-  // o MESMO operador continua usando só `isPending` (spinner pequeno no
-  // cabeçalho, relatório atual permanece na tela) — comportamento
-  // inalterado, não é o que esta tarefa pediu pra mudar.
+  // true enquanto o skeleton (RelatorioCarregando) deve substituir o
+  // relatório: troca de operador, de período ou do "incluir mês atual" —
+  // ver efeito abaixo. Só o refetch após salvar a meta de retenção fica de
+  // fora (usa apenas `isPending`, relatório atual permanece na tela).
   const [carregandoOperador, setCarregandoOperador] = useState(false);
 
   const [popoverAberto, setPopoverAberto] = useState(false);
@@ -261,12 +263,16 @@ export function AnaliseOperadoresSection({
   // troca de período/toggle no mesmo operador (mantém o relatório atual,
   // só o spinner pequeno).
   const ultimoOperatorEmailRef = useRef<string | null>(null);
+  // metaVersion da ÚLTIMA busca — refetch disparado só por salvar a meta de
+  // retenção NÃO mostra skeleton (relatório atual permanece na tela).
+  const ultimaMetaVersionRef = useRef(metaVersion);
 
   useEffect(() => {
     const requestId = ++requestIdRef.current;
 
     if (!operatorEmail) {
       ultimoOperatorEmailRef.current = null;
+      ultimaMetaVersionRef.current = metaVersion;
       setData(null);
       setErro(null);
       setCarregandoOperador(false);
@@ -274,15 +280,27 @@ export function AnaliseOperadoresSection({
     }
 
     const trocouDeOperador = ultimoOperatorEmailRef.current !== operatorEmail;
+    const soMeta =
+      !trocouDeOperador && ultimaMetaVersionRef.current !== metaVersion;
     ultimoOperatorEmailRef.current = operatorEmail;
-    if (trocouDeOperador) setCarregandoOperador(true);
+    ultimaMetaVersionRef.current = metaVersion;
+
+    // Troca de operador, de período (3/6/12) ou do "incluir mês atual":
+    // skeleton da página (RelatorioCarregando). Nas duas últimas, mínimo de
+    // 2s — mesmo padrão da troca de mês de /kpi/operadores
+    // (MIN_TABELA_LOADING_MS em kpi-equipe-section.tsx).
+    if (!soMeta) setCarregandoOperador(true);
+    const minimoMs = !soMeta && !trocouDeOperador ? MIN_SKELETON_MS : 0;
 
     startTransition(async () => {
-      const res = await getAnaliseOperadorAction({
-        operatorEmail,
-        periodo,
-        incluirMesAtual,
-      });
+      const [res] = await Promise.all([
+        getAnaliseOperadorAction({
+          operatorEmail,
+          periodo,
+          incluirMesAtual,
+        }),
+        new Promise<void>((resolve) => window.setTimeout(resolve, minimoMs)),
+      ]);
 
       // Resultado de uma busca já superada por uma mais recente — descarta
       // (o request mais novo, em andamento ou já resolvido, é quem decide
@@ -327,7 +345,9 @@ export function AnaliseOperadoresSection({
   }));
 
   return (
-    <div className="space-y-6">
+    // space-y-2 + pb-2 da linha de controles = 16px até as cantoneiras,
+    // mesmo respiro controles→tabela de /kpi/operadores (pb-2 + pt-2).
+    <div className="space-y-2">
       {/*
         Cabeçalho — mesma estrutura de /kpi/operadores, /kpi/gestor e
         /kpi/detalhado-polo (kpi-equipe-section.tsx / kpi-gestor-section.tsx /
@@ -358,54 +378,32 @@ export function AnaliseOperadoresSection({
         </div>
 
         {/*
-          Linha de controles — mesma posição/altura (h-8) do MesSelector nas
-          outras rotas. O seletor de operador só aparece aqui, como um
-          "chip" (nome + ícone), QUANDO já existe operador selecionado — é
-          o mesmo SeletorOperadorPopover do botão "Selecionar operador" do
-          estado vazio (nunca os dois montados juntos: um exige
-          operatorEmail null, o outro exige não-null), então nunca duplica.
-          Fora isso, o cabeçalho segue com período (SegmentedControl
-          genérico REAPROVEITADO de /kpi/operadores, mesmo padrão do
-          MesSelector) e o switch "incluir mês atual", igual ao padrão de
-          /kpi/operadores. Spinner de carregamento na extremidade direita,
-          mesmo slot de ação das outras rotas.
+          Linha de controles — mesmo layout de /kpi/operadores: à esquerda
+          (slot das ações), o botão de seleção de operador (único seletor da
+          página, com ou sem operador selecionado) + o switch "incluir mês
+          atual"; à direita (slot do MesSelector), o período
+          (SegmentedControl reaproveitado de lá). Todos com 32px de altura.
         */}
-        <div className="flex flex-wrap items-center gap-3 pt-4 pb-4">
-          {operatorEmail && (
+        <div className="flex flex-wrap items-center gap-3 pt-4 pb-2">
+          {/* Esquerda: operador + switch "incluir mês atual". */}
+          <div className="flex flex-wrap items-center gap-3">
             <SeletorOperadorPopover
               trigger={
                 <button
                   type="button"
-                  aria-label={`Operador selecionado: ${nomeSelecionado}. Clique para trocar.`}
-                  className="font-sans text-foreground hover:bg-muted/40 inline-flex h-8 min-w-[200px] items-center justify-between gap-2 rounded-[var(--radius)] border border-[var(--seg-track-border)] bg-[var(--seg-track)] px-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
+                  aria-label={
+                    operatorEmail
+                      ? `Operador selecionado: ${nomeSelecionado}. Clique para trocar.`
+                      : "Selecionar operador"
+                  }
+                  className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 max-w-[260px] min-w-[140px] cursor-pointer items-center justify-center gap-1.5 rounded-md border bg-transparent px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
                 >
-                  {/*
-                    items-baseline (não items-center): o rótulo (11px) e o
-                    nome (14px) têm alturas de linha bem diferentes —
-                    centralizar pela CAIXA (items-center) deixa os dois
-                    "flutuando" em alturas distintas, sem parecer a mesma
-                    linha de base. Tamanho/tracking do rótulo alinhados ao
-                    padrão já usado nos labels de IdentificacaoBloco
-                    (text-[11px] tracking-wide uppercase text-muted-
-                    foreground), não um tamanho à parte. min-w-0 no grupo:
-                    sem ele, o `truncate` do nome não tem efeito nenhum
-                    dentro de um flex item (que por padrão não encolhe
-                    abaixo do conteúdo) — nome longo empurraria o botão em
-                    vez de truncar.
-                  */}
-                  <span className="flex min-w-0 items-baseline gap-1.5">
-                    <span className="text-muted-foreground text-[11px] tracking-wide uppercase">
-                      Operador
-                    </span>
-                    <span className="text-foreground truncate text-sm font-medium">
-                      {nomeSelecionado}
-                    </span>
+                  {/* Mesma estrutura do "Copiar imagem" de /kpi/operadores:
+                      ícone 14px + texto, gap-1.5, centralizado. */}
+                  <IconSelector size={14} className="shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 truncate">
+                    {operatorEmail ? nomeSelecionado : "Selecionar operador"}
                   </span>
-                  <IconSelector
-                    size={16}
-                    className="text-muted-foreground shrink-0"
-                    aria-hidden="true"
-                  />
                 </button>
               }
               aberto={popoverAberto}
@@ -416,34 +414,32 @@ export function AnaliseOperadoresSection({
               onBuscaChange={setBusca}
               onSelecionar={selecionarOperador}
             />
-          )}
 
-          <SegmentedControl
-            items={periodoItems}
-            value={periodo}
-            onChange={(v) => setPeriodo(v as Periodo)}
-            ariaLabel="Período"
-            layoutId="evolucao-periodo-indicador"
-          />
+            <label className="font-sans text-muted-foreground inline-flex h-8 cursor-pointer items-center gap-2 text-sm font-medium select-none">
+              <span>Incluir mês atual</span>
+              <EvolucaoSwitch
+                checked={incluirMesAtual}
+                onCheckedChange={setIncluirMesAtual}
+                ariaLabel="Incluir mês atual (ainda não fechado)"
+              />
+            </label>
+          </div>
 
-          <label className="flex h-8 cursor-pointer items-center gap-2 text-xs">
-            <EvolucaoSwitch
-              checked={incluirMesAtual}
-              onCheckedChange={setIncluirMesAtual}
-              ariaLabel="Incluir mês atual (ainda não fechado)"
-            />
-            <span className="text-muted-foreground">
-              Incluir mês atual (ainda não fechado)
-            </span>
-          </label>
-
-          {isPending && (
-            <IconLoader2
-              size={16}
-              className="text-muted-foreground ml-auto animate-spin"
-              aria-hidden="true"
-            />
-          )}
+          {/*
+            Direita: período. Com wrap, quebra pra
+            linha de baixo e segue alinhado à direita (ml-auto por linha).
+          */}
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <div className="kpi-evolucao-periodo-selector">
+              <SegmentedControl
+                items={periodoItems}
+                value={periodo}
+                onChange={(v) => setPeriodo(v as Periodo)}
+                ariaLabel="Período"
+                layoutId="evolucao-periodo-indicador"
+              />
+            </div>
+          </div>
         </div>
 
         {!carregandoOperador && data && !incluirMesAtual && data.mesAtualTinhaDado && (
@@ -485,30 +481,7 @@ export function AnaliseOperadoresSection({
         — removido.
       */}
       {mesMaisRecenteDisponivel && !carregandoOperador && !operatorEmail && (
-        <EstadoVazioOperador
-          kpisPreview={kpisPreview}
-          periodo={periodo}
-          seletorOperador={
-            <SeletorOperadorPopover
-              trigger={
-                <button
-                  type="button"
-                  className="font-sans border-border bg-background text-foreground hover:bg-muted/60 inline-flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border px-4 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
-                >
-                  <IconSelector size={15} aria-hidden="true" />
-                  Selecionar operador
-                </button>
-              }
-              aberto={popoverAberto}
-              onOpenChange={setPopoverAberto}
-              operadores={operadores}
-              operatorEmail={operatorEmail}
-              busca={busca}
-              onBuscaChange={setBusca}
-              onSelecionar={selecionarOperador}
-            />
-          }
-        />
+        <EstadoVazioOperador kpisPreview={kpisPreview} periodo={periodo} />
       )}
 
       {!carregandoOperador && erro && operatorEmail && (

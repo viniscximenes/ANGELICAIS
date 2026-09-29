@@ -84,8 +84,13 @@ export function VisaoGeralCards({ data, meta, semAnimacao = false }: VisaoGeralC
       {/* Stat primário: Taxa de Retenção — maior, cor condicional por meta */}
       <Entrada delay={0} inView className="sm:col-span-2">
         <div className="relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 p-6 shadow-[var(--shadow-sm)] backdrop-blur-md">
+          {/* data-status-meta: gancho sem efeito visual próprio — só
+              /reports/consolidado colore a barra por ele (verde/vermelho
+              conforme a meta, em reports-consolidado.css); as demais rotas
+              seguem com var(--primary). */}
           <div
             aria-hidden="true"
+            data-status-meta={!temDadoTx ? "sem-dado" : abaixoDaMeta ? "abaixo" : "dentro"}
             className="absolute top-0 left-0 h-full w-[3px]"
             style={{ background: "var(--primary)" }}
           />

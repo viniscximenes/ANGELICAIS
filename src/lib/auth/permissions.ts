@@ -4,6 +4,7 @@ export type Permission =
   | "manage_base" // bases de KPI (/bases/kpi, snapshots) — ADM
   | "manage_d1_base" // base do D-1 (upload/clear consolidado e tempo logado)
   | "view_gestor_panel"
+  | "view_coordenador_panel" // visão do polo inteiro (/c/*) — COORDENADOR
   | "manage_system";
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
@@ -16,6 +17,10 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ADM: ["manage_base", "manage_system"],
   // GESTOR: vê o painel da própria equipe e sobe a base do D-1.
   GESTOR: ["view_gestor_panel", "manage_d1_base"],
+  // COORDENADOR: visão do polo (taxa geral, manhã/tarde, supervisores e
+  // operadores de baixo rendimento) e sobe a mesma base do D-1 do
+  // Consolidado. Só navega em /c/* — ver middleware.
+  COORDENADOR: ["view_coordenador_panel", "manage_d1_base"],
 };
 
 /**

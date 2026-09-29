@@ -1,7 +1,6 @@
 "use client";
 
-import { BlurFade } from "@/components/ui/blur-fade";
-import { NumberTicker } from "@/components/ui/number-ticker";
+import { StaticNumber } from "@/components/ui/static-number";
 import type { ImpactoFaceIdData } from "@/lib/retencao/get-impacto-faceid";
 
 interface ImpactoFaceIdCardProps {
@@ -27,45 +26,54 @@ export function ImpactoFaceIdCard({ data, scrollInterno = false }: ImpactoFaceId
     <div className={scrollInterno ? "flex h-full flex-col gap-6" : "flex flex-col gap-6"}>
       <div className={scrollInterno ? "shrink-0" : undefined}>
         <h3 className="ds-h3 font-semibold text-foreground">
-          Impacto do Face ID no Resultado
+          Impacto do face ID no resultado
         </h3>
         <p className="ds-small text-muted-foreground mt-1">
-          Tentativas de Face ID não concluídas.
+          Tentativas de face ID não concluídas.
         </p>
       </div>
 
-      <div className={scrollInterno ? "shrink-0 grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end" : "grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end"}>
-        <BlurFade delay={0} inView className="sm:col-span-2">
-          <div className="flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 p-6 shadow-[var(--shadow-sm)] backdrop-blur-md">
+      {/*
+        Mesmo visual dos cards da visão geral (Taxa de Retenção / Pedidos /
+        Retidos / Churn, VisaoGeralCards com semAnimacao): mesmas caixas,
+        mesmo fundo (data-visao-geral-cards puxa o tom do tema claro em
+        reports-consolidado.css) e sem animação de entrada — o número já
+        aparece pronto (StaticNumber), sem contar a partir de 0.
+      */}
+      <div
+        data-visao-geral-cards
+        className={scrollInterno ? "shrink-0 grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end" : "grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end"}
+      >
+        <div className="sm:col-span-2">
+          <div className="relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 p-6 shadow-[var(--shadow-sm)] backdrop-blur-md">
             <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
               Tentativas de Face ID sem Sucesso
             </p>
             <p className="ds-display flex items-baseline text-5xl font-semibold text-foreground">
-              <NumberTicker value={total} decimalPlaces={0} delay={0.1} className="text-foreground" />
+              <StaticNumber value={total} decimalPlaces={0} className="text-foreground tracking-tight dark:text-foreground" />
             </p>
           </div>
-        </BlurFade>
+        </div>
 
         <div className="grid grid-cols-2 gap-4 sm:col-span-3">
           {[
             { id: "reprovado", label: "Reprovado", valor: reprovado },
             { id: "nao-realizado", label: "Não Realizado no Prazo", valor: naoRealizado },
-          ].map((item, idx) => (
-            <BlurFade key={item.id} delay={0.06 * (idx + 1)} inView>
+          ].map((item) => (
+            <div key={item.id}>
               <div className="flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 p-4 shadow-[var(--shadow-sm)] backdrop-blur-md">
                 <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
                   {item.label}
                 </p>
                 <p className="ds-display text-foreground flex items-baseline text-3xl font-semibold">
-                  <NumberTicker
+                  <StaticNumber
                     value={item.valor}
                     decimalPlaces={0}
-                    delay={0.06 * (idx + 1) + 0.1}
                     className="text-foreground tracking-tight dark:text-foreground"
                   />
                 </p>
               </div>
-            </BlurFade>
+            </div>
           ))}
         </div>
       </div>
@@ -80,9 +88,11 @@ export function ImpactoFaceIdCard({ data, scrollInterno = false }: ImpactoFaceId
         className={scrollInterno ? "min-h-0 flex-1 overflow-y-auto scrollbar-tema" : "overflow-hidden scrollbar-tema"}
       >
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          {/* data-tabela-faceid: cabeçalho no visual da tabela principal
+              (reports-consolidado.css, junto com as demais tabelas). */}
+          <table data-tabela-faceid className="w-full text-left border-collapse">
             <thead>
-              <tr className="ds-body text-muted-foreground/70 uppercase tracking-wide font-bold select-none border-b border-border/40 bg-muted/40">
+              <tr className="ds-body text-muted-foreground uppercase tracking-wide font-bold select-none border-b border-border/40 bg-muted/40">
                 <th className="py-2.5 px-4 font-bold whitespace-nowrap">Operador</th>
                 <th className="py-2.5 px-4 font-bold text-center w-[150px] whitespace-nowrap">
                   Não Realizado
@@ -101,7 +111,8 @@ export function ImpactoFaceIdCard({ data, scrollInterno = false }: ImpactoFaceId
                 </tr>
               ) : (
                 porOperador.map((op) => (
-                  <tr key={op.nomeSobrenome} className="hover:bg-accent transition-colors">
+                  // Sem hover: a linha não é clicável.
+                  <tr key={op.nomeSobrenome}>
                     <td className="py-3 px-4 ds-body text-xs font-semibold text-foreground whitespace-nowrap">
                       {op.nomeSobrenome}
                     </td>

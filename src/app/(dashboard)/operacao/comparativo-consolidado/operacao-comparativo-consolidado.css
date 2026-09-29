@@ -1,6 +1,6 @@
 /*
  * Ajustes visuais específicos de /operacao/comparativo-consolidado.
- * As cores (tokens) vêm da paleta global em src/app/palettes/zen-linen.css —
+ * As cores (tokens) vêm da paleta global em src/app/palettes/ (paleta ativa) —
  * não redefina --background/--card/--primary/... aqui, senão a troca de
  * paleta deixa de valer nesta página.
  */

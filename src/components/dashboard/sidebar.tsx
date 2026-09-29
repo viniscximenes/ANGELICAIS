@@ -14,6 +14,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 
 import { BlurFade } from "@/components/ui/blur-fade";
+import { LineSidebar, type LineSidebarItem } from "@/components/ui/line-sidebar";
 import {
   Tooltip,
   TooltipContent,
@@ -40,6 +41,26 @@ const SUBITENS_CONTEXTUAIS: Record<string, { label: string; href: string }[]> = 
     { label: "Analítico", href: "/reports/tempo-indisponibilidade/analitico" },
   ],
 };
+
+/**
+ * Itens do TreeNav de uma seção: os itens fixos + os sub-itens contextuais
+ * (só enquanto a rota deles está aberta) logo abaixo do pai — o LineSidebar
+ * é uma lista plana, então o 3º nível entra como mais uma linha.
+ */
+function itensDaSecao(section: SidebarSection, pathname: string): LineSidebarItem[] {
+  return section.items.flatMap((item) => [
+    item,
+    ...(SUBITENS_CONTEXTUAIS[item.href] ?? []).filter((sub) =>
+      pathname.startsWith(sub.href),
+    ),
+  ]);
+}
+
+/** Item ativo: igualdade exata com o pathname (mesma regra de antes). */
+function indiceAtivo(itens: LineSidebarItem[], pathname: string): number | null {
+  const idx = itens.findIndex((i) => i.href === pathname);
+  return idx >= 0 ? idx : null;
+}
 
 export type SidebarSection = {
   id: string;
@@ -107,6 +128,7 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
           const Icon = ICONS[section.iconName];
           const isActiveSection = pathname.startsWith(section.basePath);
           const firstHref = section.items[0]?.href ?? section.basePath;
+          const itens = itensDaSecao(section, pathname);
 
           return (
             <BlurFade key={section.id} delay={0.05 * index} inView>
@@ -149,83 +171,35 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                     transition={{ duration: 0.25, ease: EASE_OUT_EXPO }}
                     style={{ overflow: "hidden" }}
                   >
-                    <div className="mt-0.5 space-y-0.5">
-                      {section.items.map((item) => {
-                        const isActiveItem = pathname === item.href;
-                        const subsContextuais = (
-                          SUBITENS_CONTEXTUAIS[item.href] ?? []
-                        ).filter((sub) => pathname.startsWith(sub.href));
-
-                        return (
-                          <div key={item.href}>
-                            <Link
-                              href={item.href}
-                              onClick={onNavigate}
-                              aria-current={isActiveItem ? "page" : undefined}
-                              className={`hover:bg-muted/50 hover:text-foreground relative flex items-center rounded-md py-1.5 pr-3 pl-9 transition-colors duration-150 ${
-                                isActiveItem
-                                  ? "text-foreground"
-                                  : "text-muted-foreground"
-                              }`}
-                            >
-                              {isActiveItem && (
-                                <span
-                                  aria-hidden="true"
-                                  className="bg-primary absolute top-1/2 left-[24px] h-4 w-[3px] -translate-y-1/2 rounded-full"
-                                />
-                              )}
-                              <span className="ds-small">{item.label}</span>
-                            </Link>
-
-                            <AnimatePresence initial={false}>
-                              {subsContextuais.length > 0 && (
-                                <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: "auto" }}
-                                  exit={{ opacity: 0, height: 0 }}
-                                  transition={{
-                                    duration: 0.25,
-                                    ease: EASE_OUT_EXPO,
-                                  }}
-                                  style={{ overflow: "hidden" }}
-                                >
-                                  <div className="mt-0.5 space-y-0.5">
-                                    {subsContextuais.map((sub) => {
-                                      const isActiveSub = pathname === sub.href;
-                                      return (
-                                        <Link
-                                          key={sub.href}
-                                          href={sub.href}
-                                          onClick={onNavigate}
-                                          aria-current={
-                                            isActiveSub ? "page" : undefined
-                                          }
-                                          className={`hover:bg-muted/50 hover:text-foreground relative flex items-center rounded-md py-1.5 pr-3 pl-14 transition-colors duration-150 ${
-                                            isActiveSub
-                                              ? "text-foreground"
-                                              : "text-muted-foreground"
-                                          }`}
-                                        >
-                                          {isActiveSub && (
-                                            <span
-                                              aria-hidden="true"
-                                              className="bg-primary absolute top-1/2 left-[44px] h-4 w-[3px] -translate-y-1/2 rounded-full"
-                                            />
-                                          )}
-                                          <span className="ds-small">
-                                            {sub.label}
-                                          </span>
-                                        </Link>
-                                      );
-                                    })}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {/*
+                      Sub-itens como LineSidebar (React Bits): marcadores em
+                      linha + ticks, rótulo desliza/escurece por proximidade
+                      do cursor e fica destacado no item ativo. Medidas
+                      reduzidas pra caber nos 240px da sidebar; cores pelos
+                      tokens da paleta (claro/escuro).
+                    */}
+                    <LineSidebar
+                      className="line-sidebar--compact ml-1"
+                      items={itens}
+                      activeIndex={indiceAtivo(itens, pathname)}
+                      linkComponent={Link}
+                      onItemClick={onNavigate ? () => onNavigate() : undefined}
+                      accentColor="var(--foreground)"
+                      textColor="var(--muted-foreground)"
+                      markerColor="color-mix(in srgb, var(--muted-foreground) 45%, transparent)"
+                      showIndex
+                      showMarker
+                      proximityRadius={40}
+                      maxShift={8}
+                      falloff="smooth"
+                      markerLength={18}
+                      markerGap={10}
+                      tickScale={0.5}
+                      scaleTick
+                      itemGap={10}
+                      fontSize={0.8125}
+                      smoothing={100}
+                    />
                   </motion.div>
                 )}
               </AnimatePresence>

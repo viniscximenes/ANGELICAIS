@@ -19,6 +19,10 @@ interface TabelaTemasProps {
    * comportamento de altura livre de sempre).
    */
   scrollInterno?: boolean;
+  /** Título do card. Default = texto de sempre (comparativo). */
+  titulo?: string;
+  /** Subtítulo do card. Default = texto de sempre (comparativo). */
+  descricao?: string;
 }
 
 export function TabelaTemas({
@@ -26,6 +30,8 @@ export function TabelaTemas({
   metaGlobal,
   themeMetas,
   scrollInterno = false,
+  titulo = "Retenção por Tema",
+  descricao = "Clique num motivo para ver os submotivos.",
 }: TabelaTemasProps) {
   const [expandedMotivos, setExpandedMotivos] = useState<Record<string, boolean>>({});
 
@@ -57,10 +63,10 @@ export function TabelaTemas({
     <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
       <div className={scrollInterno ? "shrink-0" : undefined}>
         <h3 className="ds-h3 font-semibold text-foreground">
-          Retenção por Tema
+          {titulo}
         </h3>
         <p className="ds-small text-muted-foreground mt-1">
-          Clique num motivo para ver os submotivos.
+          {descricao}
         </p>
       </div>
 
@@ -78,7 +84,9 @@ export function TabelaTemas({
         className={scrollInterno ? "max-h-full overflow-y-auto scrollbar-tema" : "overflow-hidden"}
       >
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          {/* data-tabela-temas: gancho pro CSS de página (ex.: cabeçalho
+              no visual da tabela principal em reports-consolidado.css). */}
+          <table data-tabela-temas className="w-full text-left border-collapse">
             <thead>
               {/*
                 Tipografia igual ao cabeçalho da tabela principal (EquipeTable/
@@ -161,13 +169,22 @@ export function TabelaTemas({
                         (font-semibold text-foreground, acima). */}
                     {isExpanded && tema.submotivos.map((sub) => {
                       const subTxFormatted = sub.tx !== null ? `${(sub.tx * 100).toFixed(1)}%` : "—";
+                      // Mesmo critério de cor da taxa (getTxColor): meta do
+                      // tema, ou a global. Só vira atributo — a cor da
+                      // bolinha é aplicada pelo CSS da página que quiser.
+                      const metaSub = Number(themeMetas?.[tema.motivo] ?? metaGlobal) / 100;
+                      const statusSub =
+                        sub.tx === null ? "sem-dado" : sub.tx < metaSub ? "abaixo" : "dentro";
 
                       return (
-                        <tr key={sub.submotivo} className="bg-black/5 hover:bg-accent border-b border-border/10 transition-colors align-middle">
+                        <tr key={sub.submotivo} data-submotivo className="bg-black/5 hover:bg-accent border-b border-border/10 transition-colors align-middle">
                           <td className="py-2.5 px-4 align-middle"></td>
                           <td className="py-2.5 px-4 pl-10 align-middle ds-body text-muted-foreground text-sm">
                             <div className="flex items-center gap-2">
-                              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
+                              <span
+                                data-status-meta={statusSub}
+                                className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 shrink-0"
+                              />
                               <span>{sub.submotivo}</span>
                             </div>
                           </td>

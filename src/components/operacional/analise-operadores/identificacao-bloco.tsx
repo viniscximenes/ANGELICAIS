@@ -36,11 +36,15 @@ export function IdentificacaoBloco({ meta }: { meta: IdentificacaoMeta }) {
     // editado). Só padding + cantoneiras: sem a borda/fundo/sombra extra que
     // StyledCard soma por baixo (o Card do shadcn com border+shadow+
     // gradiente), que a tabela de referência não tem.
-    <KpiFrame className="p-5">
-      <p className="font-sans text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+    // p-3 (padrão do KpiFrame): faixa de título a 12px das cantoneiras, mesma
+    // distância do cabeçalho da tabela de /kpi/operadores.
+    <KpiFrame>
+      {/* Faixa com o visual do cabeçalho da tabela de /kpi/operadores
+          (.kpi-evolucao-titulo-head em kpi-evolucao.css). */}
+      <p className="kpi-evolucao-titulo-head ds-body px-3 py-2.5 font-bold tracking-wide uppercase">
         Relatório de performance histórica
       </p>
-      <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
+      <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-2 px-3 pb-2 sm:grid-cols-2">
         {linhas.map((l) => (
           <div
             key={l.label}

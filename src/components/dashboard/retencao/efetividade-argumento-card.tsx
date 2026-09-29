@@ -34,10 +34,11 @@ export function EfetividadeArgumentoCard({
     <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
       <div className={scrollInterno ? "shrink-0" : undefined}>
         <h3 className="ds-h3 font-semibold text-foreground">
-          Efetividade por Argumento
+          Taxa por cada perfilação
         </h3>
         <p className="ds-small text-muted-foreground mt-1">
-          Contratos retidos por técnica de negociação.
+          Contratos retidos em cada perfilação usada na negociação e quanto cada uma representa
+          do total de retidos.
         </p>
       </div>
 
@@ -45,9 +46,11 @@ export function EfetividadeArgumentoCard({
         className={scrollInterno ? "max-h-full overflow-y-auto scrollbar-tema" : "overflow-hidden"}
       >
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          {/* data-tabela-perfilacao: cabeçalho no visual da tabela principal
+              (reports-consolidado.css, junto com as demais tabelas). */}
+          <table data-tabela-perfilacao className="w-full text-left border-collapse">
             <thead>
-              <tr className="ds-body text-muted-foreground/70 uppercase tracking-wide font-bold select-none border-b border-border/40 bg-muted/40">
+              <tr className="ds-body text-muted-foreground uppercase tracking-wide font-bold select-none border-b border-border/40 bg-muted/40">
                 <th className="py-2.5 px-4 whitespace-nowrap">Técnica</th>
                 <th className="py-2.5 px-4 text-center w-[110px] whitespace-nowrap">
                   Retidos
@@ -66,7 +69,8 @@ export function EfetividadeArgumentoCard({
                 </tr>
               ) : (
                 argumentos.map((item) => (
-                  <tr key={item.categoria} className="hover:bg-accent transition-colors">
+                  // Sem hover: a linha não é clicável.
+                  <tr key={item.categoria}>
                     <td className="py-3 px-4 align-middle ds-body text-xs font-semibold text-foreground whitespace-nowrap">
                       {formatCategoria(item.categoria)}
                     </td>

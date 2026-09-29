@@ -1,10 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
-import { IconLoader2 } from "@tabler/icons-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { fetchDashboardRetencaoAction } from "@/lib/retencao/actions";
+import { fetchDashboardRetencaoAction, fetchEvolucaoAcumuladaAction } from "@/lib/retencao/actions";
+import type { FaixaAcumuladaData } from "@/lib/retencao/get-evolucao-acumulada";
+import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
+import { LabeledSwitch } from "@/components/gestor/labeled-switch";
+import { GraficoEvolucaoAcumulada } from "./grafico-evolucao-acumulada";
 import { onBaseAtualizada } from "@/lib/retencao/base-cleared-event";
 import { StyledCard } from "@/components/gestor/styled-card";
 import type { VisaoGeralData } from "@/lib/retencao/get-visao-geral";
@@ -28,6 +31,86 @@ import { ImpactoFaceIdCard } from "./impacto-faceid-card";
 import { EfetividadeArgumentoCard } from "./efetividade-argumento-card";
 import { ConfigMetasPopover } from "./config-metas-popover";
 import { RetencaoHorizontalScroll } from "./retencao-horizontal-scroll";
+
+/** Duração mínima do skeleton ao ligar/desligar o toggle "Acumulada". */
+const TROCA_VISAO_MS = 3_000;
+
+/** Alturas (%) das barras do skeleton — fixas pra não mudar a cada render. */
+const SKELETON_BARRAS = [18, 42, 55, 70, 78, 64, 72, 50, 58, 74, 80, 46, 28, 12];
+
+/**
+ * Tom dos blocos do skeleton: o mesmo cinza das barras do gráfico
+ * (--muted-foreground a 14%). bg-card não serve aqui — na Vercel clara é
+ * branco puro sobre fundo quase branco, os blocos sumiam.
+ */
+const SKELETON_BLOCO = "bg-[color-mix(in_oklab,var(--muted-foreground)_14%,transparent)]";
+
+/**
+ * Skeleton do bloco "Evolução da equipe" (título, descrição, legenda e
+ * gráfico) durante a troca por hora ↔ acumulada. Blocos no formato do
+ * conteúdo real + pulso suave; mesmas alturas do bloco real pra não pular o layout. Os controles
+ * (toggle + engrenagem) continuam reais e clicáveis.
+ */
+function EvolucaoSkeleton({ acoes }: { acoes: ReactNode }) {
+  return (
+    <div className="space-y-3" aria-busy="true" aria-label="Carregando gráfico">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1 animate-pulse space-y-2 motion-reduce:animate-none">
+          <div className={`${SKELETON_BLOCO} h-6 w-44 rounded-md`} />
+          <div className={`${SKELETON_BLOCO} h-4 w-full max-w-[520px] rounded-md`} />
+        </div>
+        <div className="shrink-0">{acoes}</div>
+      </div>
+      <div className="flex animate-pulse flex-wrap gap-x-5 gap-y-1.5 motion-reduce:animate-none">
+        {[112, 76, 150, 190].map((w) => (
+          <div key={w} className={`${SKELETON_BLOCO} h-3.5 rounded`} style={{ width: w }} />
+        ))}
+      </div>
+      <div className="flex h-[320px] animate-pulse items-end gap-2 px-8 pb-6 motion-reduce:animate-none">
+        {SKELETON_BARRAS.map((h, i) => (
+          <div key={i} className={`${SKELETON_BLOCO} flex-1 rounded-t-[4px]`} style={{ height: `${h}%` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Skeleton do carregamento inicial do Analítico (F5 / primeira vez que a
+ * seção entra na tela): cards da visão geral (Taxa de Retenção grande +
+ * Pedidos/Retidos/Churn) com o mesmo grid e caixas do VisaoGeralCards, e o
+ * EvolucaoSkeleton embaixo — no lugar dos controles do gráfico (ainda sem
+ * dados), blocos no formato do toggle e da engrenagem.
+ */
+function AnaliticoSkeleton() {
+  const caixa = "rounded-lg border border-border bg-card/70 shadow-[var(--shadow-sm)]";
+  return (
+    <div className="flex flex-col gap-6" aria-busy="true" aria-label="Carregando dados analíticos">
+      <div className="grid animate-pulse grid-cols-1 gap-4 motion-reduce:animate-none sm:grid-cols-5 sm:items-end">
+        <div className={`${caixa} flex flex-col gap-3 p-6 sm:col-span-2`}>
+          <div className={`${SKELETON_BLOCO} h-3.5 w-36 rounded`} />
+          <div className={`${SKELETON_BLOCO} h-12 w-40 rounded-md`} />
+        </div>
+        <div className="grid grid-cols-3 gap-4 sm:col-span-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className={`${caixa} flex flex-col gap-3 p-4`}>
+              <div className={`${SKELETON_BLOCO} h-3.5 w-16 rounded`} />
+              <div className={`${SKELETON_BLOCO} h-8 w-14 rounded-md`} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <EvolucaoSkeleton
+        acoes={
+          <div className="flex animate-pulse items-center gap-3 motion-reduce:animate-none">
+            <div className={`${SKELETON_BLOCO} h-[18px] w-24 rounded-full`} />
+            <div className={`${SKELETON_BLOCO} h-8 w-8 rounded-md`} />
+          </div>
+        }
+      />
+    </div>
+  );
+}
 
 interface RetencaoDetalheSectionProps {
   emailsEquipeIniciais: string[];
@@ -147,6 +230,26 @@ export function RetencaoDetalheSection({
   // Espelha o open/close do ConfigMetasPopover só pra elevar o gráfico acima
   // do overlay de blur (z-40) enquanto o popover está aberto.
   const [configMetasOpen, setConfigMetasOpen] = useState(false);
+
+  // Toggle "Acumulada" do gráfico "Evolução da equipe": troca a visão por
+  // hora pela taxa acumulada em faixas de 30 min. Os dados vêm de uma busca
+  // própria (fetchEvolucaoAcumuladaAction), feita só quando o toggle está
+  // ligado — refeita sempre que os dados da seção recarregam (base nova ou
+  // "Limpar Base"), pra não mostrar acumulado de uma base antiga.
+  const [acumuladaAtiva, setAcumuladaAtiva] = useState(false);
+  // Skeleton de TROCA_VISAO_MS a cada liga/desliga do toggle (regra fixa,
+  // mesmo que os dados já estejam prontos). Religar/desligar no meio
+  // reinicia a contagem.
+  const [trocandoVisao, setTrocandoVisao] = useState(false);
+  const trocaTimerRef = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(trocaTimerRef.current), []);
+  function handleToggleAcumulada(ativa: boolean) {
+    setAcumuladaAtiva(ativa);
+    setTrocandoVisao(true);
+    window.clearTimeout(trocaTimerRef.current);
+    trocaTimerRef.current = window.setTimeout(() => setTrocandoVisao(false), TROCA_VISAO_MS);
+  }
+  const [acumulada, setAcumulada] = useState<FaixaAcumuladaData[] | null>(null);
 
   const [metaGlobal, setMetaGlobal] = useState<number>(65);
   const [themeMetas, setThemeMetas] = useState<Record<string, number>>({
@@ -277,7 +380,47 @@ export function RetencaoDetalheSection({
     };
   }, [load]);
 
+  useEffect(() => {
+    if (!acumuladaAtiva || !data) return;
+    let ativo = true;
+    setAcumulada(null);
+    fetchEvolucaoAcumuladaAction()
+      .then((result) => {
+        if (!ativo) return;
+        if (result.success) {
+          setAcumulada(result.data);
+        } else {
+          toast.error(result.error, { className: "reports-consolidado-toast" });
+          setAcumuladaAtiva(false);
+        }
+      })
+      .catch((err) => {
+        if (!ativo || handleStaleActionError(err)) return;
+        toast.error("Erro inesperado ao carregar a evolução acumulada.", {
+          className: "reports-consolidado-toast",
+        });
+        setAcumuladaAtiva(false);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [acumuladaAtiva, data]);
+
   const hasNoData = !data || data.visaoGeral.total === 0;
+
+  // Controles à direita do título do gráfico: toggle da visão acumulada ao
+  // lado da engrenagem de metas (mesmo LabeledSwitch do "Exibir RV").
+  const acoesEvolucao = (
+    <div className="flex items-center gap-3">
+      <LabeledSwitch label="Acumulada" checked={acumuladaAtiva} onCheckedChange={handleToggleAcumulada} />
+      <ConfigMetasPopover
+        metaGlobal={metaGlobal}
+        themeMetas={themeMetas}
+        onSave={handleSaveMetas}
+        onOpenChange={setConfigMetasOpen}
+      />
+    </div>
+  );
 
   // Extraído pra prop: no estado "pronto" (trilho horizontal), este
   // cabeçalho vai DENTRO da área pinada do ScrollTrigger (ver
@@ -314,10 +457,10 @@ export function RetencaoDetalheSection({
       {(loading || error || hasNoData) && cabecalho}
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-          <IconLoader2 size={36} className="animate-spin text-primary" />
-          <p className="ds-small text-muted-foreground">Carregando dados analíticos...</p>
-        </div>
+        // Skeleton no formato do primeiro bloco do trilho (cards da visão
+        // geral + "Evolução da equipe"), mesmo visual da troca do toggle
+        // "Acumulada" — em vez do spinner + "Carregando dados analíticos...".
+        <AnaliticoSkeleton />
       ) : error ? (
         <div className="elevation-1 bg-card border border-border/60 rounded-xl p-8 text-center min-h-[250px] flex flex-col items-center justify-center">
           <p className="ds-body text-danger font-medium">{error}</p>
@@ -380,7 +523,10 @@ export function RetencaoDetalheSection({
             slides={[
               <div
                 key="visao-geral-evolucao"
-                className={`flex flex-col gap-6 ${configMetasOpen ? "relative z-50" : ""}`}
+                // bg-background junto com o z-50: sem fundo próprio, o gráfico
+                // (acima do overlay) mostrava o blur por trás — mesma correção
+                // da tabela com o "Configurações da Tabela" aberto.
+                className={`flex flex-col gap-6 ${configMetasOpen ? "relative z-50 bg-background" : ""}`}
               >
                 {/* Cada card mantém 100% do visual/estilo próprio (StyledCard,
                     borda, fundo, padding) — só empilhados verticalmente dentro
@@ -388,20 +534,32 @@ export function RetencaoDetalheSection({
                 <div data-visao-geral-cards>
                   <VisaoGeralCards data={data!.visaoGeral} meta={metaGlobal} semAnimacao />
                 </div>
-                <GraficoEvolucao
-                  dados={data!.evolucaoHora}
-                  meta={metaGlobal}
-                  acoes={
-                    <ConfigMetasPopover
-                      metaGlobal={metaGlobal}
-                      themeMetas={themeMetas}
-                      onSave={handleSaveMetas}
-                      onOpenChange={setConfigMetasOpen}
-                    />
-                  }
-                />
+                {trocandoVisao || (acumuladaAtiva && !acumulada) ? (
+                  // Skeleton da troca por hora ↔ acumulada: fica no mínimo
+                  // TROCA_VISAO_MS e, na acumulada, até a busca terminar.
+                  <EvolucaoSkeleton acoes={acoesEvolucao} />
+                ) : acumuladaAtiva && acumulada ? (
+                  <GraficoEvolucaoAcumulada
+                    dados={acumulada}
+                    meta={metaGlobal}
+                    titulo="Evolução da equipe"
+                    descricao="Taxa de retenção acumulada ao longo do dia, a cada 30 minutos. Cada ponto soma todos os pedidos desde o início do dia até o fim da faixa."
+                    acoes={acoesEvolucao}
+                  />
+                ) : (
+                  <GraficoEvolucao
+                    dados={data!.evolucaoHora}
+                    meta={metaGlobal}
+                    titulo="Evolução da equipe"
+                    descricao="Taxa de retenção e volume de atendimentos ao longo do dia. Cada hora representa o intervalo completo (ex.: 09h = 09:00 às 09:59)."
+                    visualDetalhado
+                    acoes={acoesEvolucao}
+                  />
+                )}
               </div>,
               <TabelaTemas
+                titulo="Taxa de retenção por tema"
+                descricao="Clique num motivo para ver os submotivos e a taxa de cada tópico."
                 key="temas"
                 scrollInterno
                 temas={data!.porTema}

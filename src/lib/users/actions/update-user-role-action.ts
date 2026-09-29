@@ -5,10 +5,11 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { UserRole } from "@/lib/auth/get-current-user";
 
 type UpdateRoleInput = {
   id: string;
-  newRole: "ADM" | "GESTOR";
+  newRole: UserRole;
 };
 
 type UpdateRoleResult =
@@ -31,10 +32,10 @@ export async function updateUserRoleAction(
     };
   }
 
-  if (!["ADM", "GESTOR"].includes(input.newRole)) {
+  if (!["ADM", "GESTOR", "COORDENADOR"].includes(input.newRole)) {
     return {
       success: false,
-      error: "Role inválida (apenas ADM ou GESTOR são permitidos)",
+      error: "Role inválida (apenas ADM, GESTOR ou COORDENADOR são permitidos)",
     };
   }
 

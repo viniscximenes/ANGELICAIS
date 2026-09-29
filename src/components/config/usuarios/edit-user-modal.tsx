@@ -35,6 +35,7 @@ function extractLocal(email: string): string {
 const ROLE_LABEL: Record<UserProfile["role"], string> = {
   ADM: "Administrador",
   GESTOR: "Gestor",
+  COORDENADOR: "Coordenador",
 };
 
 /** Campo travado (nome/email da gestora) — visual de "informação", não de input. */
@@ -316,7 +317,7 @@ export function EditUserModal({ open, onClose, user }: Props) {
                     Role
                   </label>
                   <div className="flex gap-2">
-                    {(["ADM", "GESTOR"] as const).map((option) => (
+                    {(["ADM", "GESTOR", "COORDENADOR"] as const).map((option) => (
                       <button
                         key={option}
                         type="button"

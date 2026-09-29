@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
-export type UserRole = "ADM" | "GESTOR";
+export type UserRole = "ADM" | "GESTOR" | "COORDENADOR";
 
 type UserProfile = {
   id: string;

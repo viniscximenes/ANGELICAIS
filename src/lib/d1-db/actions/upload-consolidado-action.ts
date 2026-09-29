@@ -275,6 +275,7 @@ export async function uploadConsolidadoAction(
   }
 
   revalidatePath("/reports/consolidado");
+  revalidatePath("/c/reports/consolidado");
 
   return {
     success: true,

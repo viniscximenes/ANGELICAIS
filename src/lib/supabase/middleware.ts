@@ -15,6 +15,11 @@ const ADMIN_DEFAULT_PATH = "/configuracoes/usuarios";
 // checar na própria página) é bloqueada por padrão aqui.
 const ADMIN_ALLOWED_PREFIXES = ["/bases", "/configuracoes"];
 
+// COORDENADOR só navega dentro de /c (visão do polo). Qualquer outra rota
+// volta pra landing dele.
+const COORDENADOR_PREFIX = "/c";
+const COORDENADOR_DEFAULT_PATH = "/c/reports/consolidado";
+
 // Rotas que nunca precisam da checagem de role — ou porque são públicas
 // (login), ou porque já são os próprios prefixos administrativos acima.
 const SKIP_ROLE_CHECK_PREFIXES = ["/login", ...ADMIN_ALLOWED_PREFIXES];
@@ -75,9 +80,17 @@ export async function updateSession(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    if (profile?.role === "ADM") {
+    const destino =
+      profile?.role === "ADM"
+        ? ADMIN_DEFAULT_PATH
+        : profile?.role === "COORDENADOR" &&
+            !pathMatchesPrefix(pathname, COORDENADOR_PREFIX)
+          ? COORDENADOR_DEFAULT_PATH
+          : null;
+
+    if (destino) {
       const url = request.nextUrl.clone();
-      url.pathname = ADMIN_DEFAULT_PATH;
+      url.pathname = destino;
       url.search = "";
 
       const redirectResponse = NextResponse.redirect(url);

@@ -55,7 +55,7 @@ export const ESTOURO_PAUSA_MIN_WIDTH_PX = PISO_OPERADOR_PX + COLUNAS.length * DA
 
 /** Cabeçalho — mesmo estilo sans (não mono) de EquipeTable/TempoIndispTabela, ver aderencia-analitico.tsx. */
 const HEADER_ROW_CLASS =
-  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground/70";
+  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground";
 
 interface Props {
   operadores: OperadorAnaliticoTempoIndisp[];

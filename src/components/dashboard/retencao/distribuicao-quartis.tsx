@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Segmentado } from "./segmentado";
 import type { OperadorQuartilItem } from "@/lib/retencao/get-quartil-operadores";
 
 interface DistribuicaoQuartisProps {
@@ -62,75 +63,33 @@ export function DistribuicaoQuartis({
       <div
         className={scrollInterno ? "flex max-h-full flex-col gap-4" : "space-y-4"}
       >
-        <div className={`flex flex-col xl:flex-row justify-between xl:items-center gap-4 border-b border-border/40 pb-4 ${scrollInterno ? "shrink-0" : ""}`}>
-          <div className="flex flex-wrap items-center gap-3">
-            {/*
-              Toggles no mesmo padrão visual confirmado em /kpi/operadores
-              (SegmentedControl): trilho `--seg-track`/`--seg-track-border` +
-              indicador `--seg-thumb` no item ativo (escuro no tema claro,
-              claro no tema escuro) + `focus-visible:ring-[--ring]` em vez de
-              borda branca de foco. Tokens já definidos em
-              reports-consolidado.css. Reaproveitado como classes puras (não
-              o componente inteiro, que é específico de /kpi/operadores).
-            */}
-            <div
-              role="radiogroup"
-              aria-label="Escopo do quartil"
-              className="flex items-center gap-1 rounded-[var(--radius)] border border-[var(--seg-track-border)] bg-[var(--seg-track)] p-1"
-            >
-              {(["equipe", "polo"] as const).map((mode) => {
-                const isActive = toggleMode === mode;
-                return (
-                  <button
-                    key={mode}
-                    type="button"
-                    role="radio"
-                    aria-checked={isActive}
-                    onClick={() => setToggleMode(mode)}
-                    className={`h-8 rounded-[calc(var(--radius)-2px)] px-3 text-xs font-bold capitalize outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)] ${
-                      isActive
-                        ? "bg-[var(--seg-thumb)] text-[var(--seg-text-active)] border border-[var(--seg-thumb-border)]"
-                        : "text-[var(--seg-text)] hover:text-foreground"
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div
-              role="radiogroup"
-              aria-label="Quartil selecionado"
-              className="flex items-center gap-1 rounded-[var(--radius)] border border-[var(--seg-track-border)] bg-[var(--seg-track)] p-1"
-            >
-              {([1, 2, 3, 4] as const).map((q) => {
-                const isActive = selectedQuartil === q;
-                return (
-                  <button
-                    key={q}
-                    type="button"
-                    role="radio"
-                    aria-checked={isActive}
-                    onClick={() => setSelectedQuartil(q)}
-                    className={`h-8 rounded-[calc(var(--radius)-2px)] px-3 text-xs font-bold outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)] ${
-                      isActive
-                        ? "bg-[var(--seg-thumb)] text-[var(--seg-text-active)] border border-[var(--seg-thumb-border)]"
-                        : "text-[var(--seg-text)] hover:text-foreground"
-                    }`}
-                  >
-                    Q{q}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        {/* Sem linha divisória abaixo dos toggles (removida a pedido). */}
+        <div className={`flex flex-wrap items-center gap-3 ${scrollInterno ? "shrink-0" : ""}`}>
+          <Segmentado
+            ariaLabel="Escopo do quartil"
+            grupo="quartil-escopo"
+            opcoes={[
+              { valor: "equipe", rotulo: "Equipe" },
+              { valor: "polo", rotulo: "Polo" },
+            ]}
+            valor={toggleMode}
+            onChange={setToggleMode}
+          />
+          <Segmentado
+            ariaLabel="Quartil selecionado"
+            grupo="quartil-q"
+            opcoes={([1, 2, 3, 4] as const).map((q) => ({ valor: q, rotulo: `Q${q}` }))}
+            valor={selectedQuartil}
+            onChange={setSelectedQuartil}
+          />
         </div>
 
         <div className={scrollInterno ? "min-h-0 flex-1 overflow-auto scrollbar-tema" : "overflow-x-auto"}>
-          <table className="w-full text-left border-collapse">
+          {/* data-tabela-quartis: cabeçalho no visual da tabela principal
+              (reports-consolidado.css, junto com data-tabela-temas). */}
+          <table data-tabela-quartis className="w-full text-left border-collapse">
             <thead>
-              <tr className="ds-body text-muted-foreground/70 uppercase tracking-wide font-bold select-none border-b border-border/40 bg-muted/40">
+              <tr className="ds-body text-muted-foreground uppercase tracking-wide font-bold select-none border-b border-border/40 bg-muted/40">
                 <th className="py-2.5 px-4 whitespace-nowrap">Operador</th>
                 <th className="py-2.5 px-4 text-center w-[90px] whitespace-nowrap">Quartil</th>
                 <th className="py-2.5 px-4 text-center w-[90px] whitespace-nowrap">Pedidos</th>
@@ -158,7 +117,7 @@ export function DistribuicaoQuartis({
                   const txColor = abaixo ? "text-danger font-medium" : "text-success font-medium";
 
                   return (
-                    <tr key={op.login} className="hover:bg-accent transition-colors">
+                    <tr key={op.login}>
                       <td className="py-2.5 px-4 ds-body text-xs font-semibold text-foreground truncate max-w-[180px]">
                         {displayName}
                       </td>

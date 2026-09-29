@@ -445,7 +445,10 @@ export function GestorEquipeSection({
         diferente de um F5 normal.
       */}
       {isRefreshing && (
-        <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] lg:left-[240px]">
+        // consolidado-skeleton: mesmo tom de blocos do loading.tsx
+        // (reports-consolidado.css) — KpiLoadingScreen é compartilhado, então
+        // o ajuste entra pela classe deste wrapper, só aqui.
+        <div className="consolidado-skeleton fixed inset-x-0 top-[60px] bottom-0 z-[100] lg:left-[240px]">
           <KpiLoadingScreen
             dataPage="reports-consolidado"
             titulo="Consolidado"
@@ -592,7 +595,12 @@ export function GestorEquipeSection({
           <div
             className={cn(
               "shrink-0 relative transition-[z-index] duration-0",
-              configPopoverOpen && "z-[45]",
+              // bg-background junto com o z-[45]: KpiFrame não tem fundo
+              // próprio (só cantoneiras) e as linhas da EquipeTable são
+              // transparentes — sem isso, acima do overlay só o cabeçalho
+              // (fundo sólido) ficava nítido e as linhas mostravam o blur
+              // por trás delas.
+              configPopoverOpen && "z-[45] bg-background",
             )}
             style={{
               // Largura-base da EquipeTable (760/920px, BASE_COLUMN_WIDTHS_PX
@@ -650,7 +658,7 @@ export function GestorEquipeSection({
 
           {showUpload && (
             <div className="min-h-[180px] min-w-0 flex-1 self-stretch">
-              <UploadDropzone />
+              <UploadDropzone abrirEmDownloads />
             </div>
           )}
         </div>

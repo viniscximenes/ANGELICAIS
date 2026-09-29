@@ -1,0 +1,217 @@
+/*
+ * Paleta Claude Amber — tons de papel/areia com acento âmbar/terracota
+ * (#c96442), fonte Instrument Sans (mesma da Vercel), raio 1rem.
+ *
+ * Mesmo esquema da Vercel (ver vercel.css): escopo por
+ * <html data-palette="claude-amber">; base = escuro, [data-theme="light"] =
+ * claro (o tema de origem usa :root = claro e .dark = escuro — invertido
+ * aqui). Os tokens próprios do projeto que o tema de origem não define
+ * (status, seletor segmentado, switch, toasts, elevação, hover) foram
+ * derivados das cores dele.
+ *
+ * Ajustes em relação ao tema de origem:
+ * - --sidebar-border do escuro: #ebebeb (linha quase branca em volta da
+ *   navegação) trocado pelo --border do próprio tema (#3e3e38).
+ * - Fonte: Instrument Sans (padrão do projeto) no lugar da Outfit do tema
+ *   de origem.
+ * - --font-mono/--font-serif e os tokens --shadow-* não são redefinidos
+ *   (o projeto já carrega Geist Mono via next/font e não usa --shadow-*).
+ */
+
+/* ───────── ESCURO (base do projeto) ← .dark do tema ───────── */
+:root[data-palette="claude-amber"] {
+  --background: #262624;
+  --foreground: #F1F1EF;
+  --card: #2C2C2B;
+  --card-foreground: #FAF9F5;
+  --popover: #30302E;
+  --popover-foreground: #E5E5E2;
+  --primary: #D97757;
+  --primary-foreground: #141413;
+  --secondary: #FAF9F5;
+  --secondary-foreground: #30302E;
+  --muted: #1B1B19;
+  --muted-foreground: #B7B5A9;
+  --accent: #1A1915;
+  --accent-foreground: #F5F4EE;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #3E3E38;
+  --input: #52514A;
+  --ring: #D97757;
+
+  --chart-1: #B05730;
+  --chart-2: #9C87F5;
+  --chart-3: #1A1915;
+  --chart-4: #2F2B48;
+  --chart-5: #B4552D;
+
+  --sidebar: #1F1E1D;
+  --sidebar-foreground: #C3C0B6;
+  --sidebar-primary: #343434;
+  --sidebar-primary-foreground: #FBFBFB;
+  --sidebar-accent: #0F0F0E;
+  --sidebar-accent-foreground: #C3C0B6;
+  --sidebar-border: #3E3E38;
+  --sidebar-ring: #B5B5B5;
+
+  /* Status (derivados — legíveis sobre #2C2C2B) */
+  --success: #8DB596;
+  --warning: #D9A74A;
+  --danger: #F07A62;
+  --success-bg: color-mix(in srgb, var(--success) 12%, transparent);
+  --success-border: color-mix(in srgb, var(--success) 30%, transparent);
+  --warning-bg: color-mix(in srgb, var(--warning) 12%, transparent);
+  --warning-border: color-mix(in srgb, var(--warning) 30%, transparent);
+  --danger-bg: color-mix(in srgb, var(--danger) 12%, transparent);
+  --danger-border: color-mix(in srgb, var(--danger) 35%, transparent);
+
+  /* Elevação */
+  --elevation-1-bg: #2C2C2B;
+  --elevation-1-border: #3E3E38;
+  --elevation-2-bg: var(--card);
+  --elevation-2-border: var(--border);
+  --elevation-3-bg: var(--card);
+  --elevation-3-border: var(--border);
+  --glow-accent: color-mix(in srgb, var(--primary) 12%, transparent);
+  --glow-accent-strong: color-mix(in srgb, var(--primary) 24%, transparent);
+
+  /* Hover genéricos */
+  --card-hover-bg: color-mix(in srgb, var(--card) 70%, var(--muted) 30%);
+  --muted-hover-bg: color-mix(in srgb, var(--card) 35%, var(--muted) 65%);
+  --border-hover: color-mix(in srgb, var(--border) 70%, var(--foreground) 30%);
+  --row-border: color-mix(in srgb, var(--border) 50%, transparent);
+
+  --nav-menu-bg: var(--elevation-1-bg);
+
+  --kpi-shadow: 0px 6px 15px 0px rgb(0 0 0 / 0.3);
+
+  /* Seletor segmentado / switch */
+  --seg-track: #1F1E1D;
+  --seg-track-border: #3E3E38;
+  --seg-thumb: #D97757;
+  --seg-thumb-border: #D97757;
+  --seg-text: #B7B5A9;
+  --seg-text-active: #141413;
+  --switch-off: #3E3E38;
+  --switch-off-border: #52514A;
+  --switch-on: #D97757;
+  --switch-knob: #FAF9F5;
+  --switch-knob-off: #B7B5A9;
+
+  /* Folhas do Folder (React Bits) */
+  --upload-folder-paper-1: #4A4944;
+  --upload-folder-paper-2: #75736B;
+  --upload-folder-paper-3: #B7B5A9;
+
+  /* Toasts (sonner) */
+  --normal-bg: #30302E;
+  --normal-border: #3E3E38;
+  --normal-text: #F1F1EF;
+
+  --radius: 1rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --letter-spacing: 0em;
+
+  /* Instrument Sans — mesma fonte da Zen Linen, carregada no root layout
+     (variável --font-zen-sans). */
+  --font-sans: var(--font-zen-sans), "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ───────── CLARO ← :root do tema ───────── */
+:root[data-palette="claude-amber"][data-theme="light"] {
+  --background: #FAF9F5;
+  --foreground: #3D3929;
+  --card: #F5F4EF;
+  --card-foreground: #141413;
+  --popover: #FFFFFF;
+  --popover-foreground: #28261B;
+  --primary: #C96442;
+  --primary-foreground: #FFFFFF;
+  --secondary: #E9E6DC;
+  --secondary-foreground: #535146;
+  --muted: #EDE9DE;
+  --muted-foreground: #6E6D68;
+  --accent: #E9E6DC;
+  --accent-foreground: #28261B;
+  --destructive: #141413;
+  --destructive-foreground: #FFFFFF;
+  --border: #DAD9D4;
+  --input: #B4B2A7;
+  --ring: #C96442;
+
+  --chart-1: #B05730;
+  --chart-2: #9C87F5;
+  --chart-3: #DED8C4;
+  --chart-4: #DBD3F0;
+  --chart-5: #B4552D;
+
+  --sidebar: #F5F4EE;
+  --sidebar-foreground: #3D3D3A;
+  --sidebar-primary: #C96442;
+  --sidebar-primary-foreground: #FBFBFB;
+  --sidebar-accent: #E9E6DC;
+  --sidebar-accent-foreground: #343434;
+  --sidebar-border: #EBEBEB;
+  --sidebar-ring: #B5B5B5;
+
+  /* Status (derivados — escuros o bastante p/ texto sobre #F5F4EF) */
+  --success: #3D6B47;
+  --warning: #93600F;
+  --danger: #B3321C;
+
+  --elevation-1-bg: #F5F4EF;
+  --elevation-1-border: #DAD9D4;
+
+  --card-hover-bg: color-mix(in srgb, var(--card) 80%, var(--muted) 20%);
+  --muted-hover-bg: color-mix(in srgb, var(--card) 55%, var(--muted) 45%);
+  --row-border: var(--border);
+
+  --nav-menu-bg: color-mix(in srgb, var(--background) 92%, var(--foreground) 8%);
+
+  --kpi-shadow: 0px 4px 10px 0px rgb(0 0 0 / 0.1);
+
+  --seg-track: #EDE9DE;
+  --seg-track-border: #DAD9D4;
+  --seg-thumb: #C96442;
+  --seg-thumb-border: #C96442;
+  --seg-text: #6E6D68;
+  --seg-text-active: #FFFFFF;
+  --switch-off: #DAD9D4;
+  --switch-off-border: #B4B2A7;
+  --switch-on: #C96442;
+  --switch-knob: #FFFFFF;
+  --switch-knob-off: #FFFFFF;
+
+  --upload-folder-paper-1: #9A988F;
+  --upload-folder-paper-2: #B4B2A7;
+  --upload-folder-paper-3: #DAD9D4;
+
+  --normal-bg: #FFFFFF;
+  --normal-border: #DAD9D4;
+  --normal-text: #3D3929;
+}
+
+:root[data-palette="claude-amber"] body {
+  font-family: var(--font-sans);
+  letter-spacing: var(--letter-spacing);
+}
+
+/* Hover/active de botões sólidos no claro: escurece a própria cor da
+   paleta (mesmo ajuste da Zen Linen — os valores legados de globals.css
+   eram um azul-petróleo fixo). */
+:root[data-palette="claude-amber"][data-theme="light"] .bg-primary:hover {
+  background-color: color-mix(in srgb, var(--primary) 88%, black) !important;
+}
+:root[data-palette="claude-amber"][data-theme="light"] .bg-primary:active {
+  background-color: color-mix(in srgb, var(--primary) 78%, black) !important;
+}
+:root[data-palette="claude-amber"][data-theme="light"] .bg-destructive:hover {
+  background-color: color-mix(in srgb, var(--destructive) 88%, black) !important;
+}
+:root[data-palette="claude-amber"][data-theme="light"] .bg-destructive:active {
+  background-color: color-mix(in srgb, var(--destructive) 78%, black) !important;
+}

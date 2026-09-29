@@ -73,19 +73,19 @@ export function ConsolidadoNavSidebar() {
 
   const links = [
     {
-      label: "Equipe",
+      label: "Tabela operadores",
       href: "#equipe-section",
       icon: <IconUsersGroup className={ICON_CLASS} />,
       onClick: scrollToEquipe,
     },
     {
-      label: "Visão Geral",
+      label: "Evolução da equipe",
       href: "#trilho-card-0",
       icon: <IconChartLine className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.visaoGeral),
     },
     {
-      label: "Retenção por Tema",
+      label: "Taxa de retenção por tema",
       href: "#trilho-card-1",
       icon: <IconTags className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.temas),
@@ -97,13 +97,13 @@ export function ConsolidadoNavSidebar() {
       onClick: () => requestScrollToCard(TRILHO_CARD.quartis),
     },
     {
-      label: "Desempenho por Segmento",
+      label: "Desempenho por marca e unidade",
       href: "#trilho-card-3",
       icon: <IconChartPie className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.segmentos),
     },
     {
-      label: "Copiar Contratos",
+      label: "Copiar contratos do AIR",
       href: "#trilho-card-4",
       icon: <IconCopy className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.contratos),
@@ -115,7 +115,7 @@ export function ConsolidadoNavSidebar() {
       onClick: () => requestScrollToCard(TRILHO_CARD.impactoFaceId),
     },
     {
-      label: "Efetividade por Argumento",
+      label: "Taxa por cada perfilação",
       href: "#trilho-card-6",
       icon: <IconTargetArrow className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.efetividadeArgumento),

@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { StyledCard } from "@/components/gestor/styled-card";
+import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
 import {
   ChartContainer,
   ChartTooltip,
@@ -33,18 +33,13 @@ function classeTextoStatus(status: StatusKpi): string {
   return "text-foreground";
 }
 
-function statusDaMedia(
-  media: number | null,
-  metaLinha: number | null,
-  direction: KpiSerie["direction"],
-): StatusKpi {
-  if (media === null || metaLinha === null) return "neutral";
-  if (direction === "higher_better") return media >= metaLinha ? "success" : "danger";
-  if (direction === "lower_better") return media <= metaLinha ? "success" : "danger";
-  return "neutral";
-}
-
 type PontoXY = PontoSerie & { x: number };
+
+// Limites verticais (px, dentro do SVG) da área de plotagem — altura do
+// gráfico (240) menos margin.top (16) e a altura padrão do XAxis (30).
+// Usados pelo degradê das áreas (gradientUnits="userSpaceOnUse").
+const PLOT_TOP = 16;
+const PLOT_BOTTOM = 240 - 30;
 
 export function KpiPrincipalCard({
   serie,
@@ -74,7 +69,6 @@ export function KpiPrincipalCard({
     valoresPlot.length > 0
       ? valoresPlot.reduce((a, b) => a + b, 0) / valoresPlot.length
       : null;
-  const statusMedia = statusDaMedia(media, metaLinha, direction);
 
   // ── Domínio dinâmico do eixo Y ────────────────────────────────────
   let yDomain: [number, number] | [string, string] = ["auto", "auto"];
@@ -172,6 +166,21 @@ export function KpiPrincipalCard({
     }
   }
 
+  // Áreas: sub-segmentos CONSECUTIVOS da mesma cor fundidos num só <Area>
+  // (a linha continua usando `segmentos`). Antes era um <Area> por trecho
+  // entre meses — cada borda entre dois trechos da mesma cor aparecia como
+  // uma emenda vertical. Agora só existe junção onde a cor realmente muda
+  // (no cruzamento com a meta).
+  const areas: SubSeg[] = [];
+  for (const seg of segmentos) {
+    const ultima = areas[areas.length - 1];
+    if (ultima && ultima.cor === seg.cor) {
+      ultima.pts.push(...seg.pts.slice(1));
+    } else {
+      areas.push({ pts: [...seg.pts], cor: seg.cor });
+    }
+  }
+
   // Config do ChartContainer (shadcn/ui, ver components/ui/chart.tsx) —
   // não há uma paleta fixa por série aqui (a cor de cada trecho da linha/
   // área é calculada ponto a ponto contra a meta, acima), então o config só
@@ -198,11 +207,17 @@ export function KpiPrincipalCard({
   );
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-end justify-between gap-4">
+    // p-3: faixa de título DENTRO do card, a 12px das cantoneiras — mesma
+    // distância do cabeçalho da tabela de /kpi/operadores (KpiFrame p-3).
+    // KpiFrame (só as cantoneiras, sem a borda/fundo do StyledCard) — mesma
+    // moldura da tabela de /kpi/operadores e do bloco de identificação.
+    <KpiFrame>
+      {/* Faixa de título com o visual do cabeçalho da tabela de
+          /kpi/operadores (.kpi-evolucao-titulo-head em kpi-evolucao.css). */}
+      <div className="kpi-evolucao-titulo-head flex items-end justify-between gap-4 px-4 py-2.5">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="ds-h3 text-foreground font-semibold">{displayName}</h3>
+            <h3 className="ds-body font-bold tracking-wide uppercase">{displayName}</h3>
             {acoes}
           </div>
           <p className="ds-small text-muted-foreground mt-0.5 text-xs">
@@ -213,11 +228,9 @@ export function KpiPrincipalCard({
         </div>
         {media !== null && (
           <div className="text-right">
-            <p
-              className={`ds-display text-2xl font-semibold tabular-nums ${classeTextoStatus(
-                statusMedia,
-              )}`}
-            >
+            {/* Sem cor própria: herda a cor da faixa, igual ao título do KPI
+                (claro e escuro — ver .kpi-evolucao-titulo-head). */}
+            <p className="ds-display text-2xl font-semibold tabular-nums">
               {formatKpiValue(media, valueType)}
             </p>
             <p className="text-muted-foreground text-[10px] tracking-wider uppercase">
@@ -227,7 +240,8 @@ export function KpiPrincipalCard({
         )}
       </div>
 
-      <StyledCard className="p-5" withGradient>
+      {/* px-2 + p-3 do card = mesmos 20px laterais de antes em volta do gráfico. */}
+      <div className="px-2 pt-5 pb-2">
         <div className="h-[240px] w-full">
           <ChartContainer config={chartConfig} className="aspect-auto h-full w-full">
             <ComposedChart
@@ -235,23 +249,27 @@ export function KpiPrincipalCard({
               margin={{ top: 16, right: 14, left: -4, bottom: 0 }}
             >
               {/*
-                Um gradiente por SUB-SEGMENTO (mesmo array `segmentos` usado
-                pela linha, abaixo) — a área muda de cor exatamente no mesmo
-                ponto em que a linha cruza a meta, subida ou descida, com
-                quantos cruzamentos houver.
+                Um gradiente por ÁREA (trechos contínuos da mesma cor — ver
+                `areas` acima). gradientUnits="userSpaceOnUse" com y fixo do
+                topo ao pé da área de plotagem: o degradê tem a MESMA escala
+                vertical em todas as áreas (antes era relativo à caixa de cada
+                trecho, então trechos em alturas diferentes não "casavam" na
+                junção).
               */}
               <defs>
-                {segmentos.map((seg, i) => (
+                {areas.map((seg, i) => (
                   <linearGradient
                     key={`${areaId}-${i}`}
                     id={`${areaId}-${i}`}
+                    gradientUnits="userSpaceOnUse"
                     x1="0"
-                    y1="0"
+                    y1={PLOT_TOP}
                     x2="0"
-                    y2="1"
+                    y2={PLOT_BOTTOM}
                   >
-                    <stop offset="0" stopColor={seg.cor} stopOpacity={0.22} />
-                    <stop offset="1" stopColor={seg.cor} stopOpacity={0} />
+                    {/* Área mais marcada (antes 0.22 → 0) a pedido. */}
+                    <stop offset="0" stopColor={seg.cor} stopOpacity={0.45} />
+                    <stop offset="1" stopColor={seg.cor} stopOpacity={0.06} />
                   </linearGradient>
                 ))}
               </defs>
@@ -351,7 +369,7 @@ export function KpiPrincipalCard({
               {/* Área visível: um <Area> por sub-segmento, MESMA cor do
                   <Line> equivalente abaixo — muda de verde pra vermelho (ou
                   vice-versa) exatamente no ponto de cruzamento com a meta. */}
-              {segmentos.map((seg, i) => (
+              {areas.map((seg, i) => (
                 <Area
                   key={`area-seg-${i}`}
                   data={seg.pts}
@@ -476,7 +494,7 @@ export function KpiPrincipalCard({
             <QuartilFaixa pontos={pontos} />
           </div>
         )}
-      </StyledCard>
-    </div>
+      </div>
+    </KpiFrame>
   );
 }
