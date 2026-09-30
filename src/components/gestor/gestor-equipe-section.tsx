@@ -447,7 +447,11 @@ export function GestorEquipeSection({
       {isRefreshing && (
         // overflow-hidden: o esqueleto (min-h-screen) passa da área visível —
         // corta em vez de abrir rolagem dentro do overlay.
-        <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] overflow-hidden lg:left-[240px]">
+        // mb-0: este overlay é filho do `space-y-10` de page.tsx, que dá
+        // margin-bottom: 40px aos filhos — num elemento fixed com top/bottom,
+        // essa margem encurtava o overlay e os últimos 40px da tela mostravam
+        // a tabela real por baixo do skeleton.
+        <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] !mb-0 overflow-hidden lg:left-[240px]">
           <ConsolidadoSkeleton />
         </div>
       )}

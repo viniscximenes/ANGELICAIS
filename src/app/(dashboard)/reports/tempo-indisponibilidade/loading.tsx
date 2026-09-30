@@ -183,6 +183,20 @@ export default function LoadingReportsTempoIndisponibilidade() {
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: DESLIGAR_SCROLL_RESTORATION_SCRIPT }} />
+      <TempoIndispSkeleton />
+    </>
+  );
+}
+
+/**
+ * Esqueleto do F5 (sem o script de scroll) — exportado pra ser reaproveitado
+ * TAMBÉM no overlay de refresh manual do "Limpar base" (TempoIndispSection),
+ * que antes usava o KpiLoadingScreen antigo — mesmo ajuste do Consolidado
+ * (ConsolidadoSkeleton). As duas telas de carregamento ficam idênticas.
+ */
+export function TempoIndispSkeleton() {
+  return (
+    <>
       <SkeletonNavSidebar />
 
       {/* tempo-indisp-skeleton: tom dos blocos (reports-tempo-indisp.css) —

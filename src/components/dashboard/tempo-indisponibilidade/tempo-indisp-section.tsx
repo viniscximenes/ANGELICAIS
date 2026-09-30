@@ -7,7 +7,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { UploadTempoLogadoDropzone } from "@/components/d-1/tempo-logado/upload-tempo-logado-dropzone";
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
 import { AguardandoDadosCard } from "@/components/gestor/aguardando-dados-card";
-import { KpiLoadingScreen } from "@/components/gestor/kpi-loading-screen";
+import { TempoIndispSkeleton } from "@/app/(dashboard)/reports/tempo-indisponibilidade/loading";
 import { SignatureFooter } from "@/components/gestor/signature-footer";
 import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
 import type { PausaProgramadaDb } from "@/lib/bases/pausas-programadas/types";
@@ -307,19 +307,17 @@ export function TempoIndispSection({
         sidebar de 240px em telas lg+), não a página inteira. Cobrir tudo
         escondia a sidebar durante o refresh, diferente de um F5 normal
         (loading.tsx do Next só substitui {children} dentro de <main>).
+        Esqueleto = o MESMO do F5 (TempoIndispSkeleton, de loading.tsx), no
+        lugar do KpiLoadingScreen antigo — mesmo ajuste do Consolidado.
       */}
       {isRefreshing && (
-        // tempo-indisp-skeleton: mesmo tom de blocos do loading.tsx
-        // (reports-tempo-indisp.css) — KpiLoadingScreen é compartilhado, então
-        // o ajuste entra pela classe deste wrapper, só aqui.
-        <div className="tempo-indisp-skeleton fixed inset-x-0 top-[60px] bottom-0 z-[100] lg:left-[240px]">
-          <KpiLoadingScreen
-            dataPage="reports-tempo-indisponibilidade"
-            titulo="Tempo Logado & Indisponibilidade"
-            formato="tempo-indisponibilidade"
-            indicatorPosition="after-header"
-            spinnerVariant="dots"
-          />
+        // overflow-hidden: o esqueleto (min-h-screen) passa da área visível —
+        // corta em vez de abrir rolagem dentro do overlay.
+        // !mb-0: mesma proteção do overlay do Consolidado — se este elemento
+        // cair dentro de um `space-y-*`, a margem inferior encurtaria o
+        // overlay fixed e deixaria uma faixa da página real à mostra.
+        <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] !mb-0 overflow-hidden lg:left-[240px]">
+          <TempoIndispSkeleton />
         </div>
       )}
 
