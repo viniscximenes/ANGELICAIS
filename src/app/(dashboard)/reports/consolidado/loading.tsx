@@ -200,6 +200,20 @@ export default function LoadingReportsConsolidado() {
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: DESLIGAR_SCROLL_RESTORATION_SCRIPT }} />
+      <ConsolidadoSkeleton />
+    </>
+  );
+}
+
+/**
+ * Esqueleto do F5 (sem o script de scroll) — exportado pra ser reaproveitado
+ * TAMBÉM no overlay de refresh manual do "Limpar base" (GestorEquipeSection),
+ * que antes usava o KpiLoadingScreen antigo: as duas telas de carregamento
+ * ficam idênticas.
+ */
+export function ConsolidadoSkeleton() {
+  return (
+    <>
       <SkeletonNavSidebar />
 
       {/* consolidado-skeleton: tom dos blocos (reports-consolidado.css) —

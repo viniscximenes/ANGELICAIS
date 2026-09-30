@@ -34,7 +34,7 @@ import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individ
 import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
 import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog";
 import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
-import { KpiLoadingScreen } from "@/components/gestor/kpi-loading-screen";
+import { ConsolidadoSkeleton } from "@/app/(dashboard)/reports/consolidado/loading";
 
 // Texto da 2ª linha do cabeçalho ("{nome} fez um report às {hora}") — mesma
 // checagem de "hora ausente/zerada" de formatReportLabel (@/lib/gestor/
@@ -435,7 +435,7 @@ export function GestorEquipeSection({
       {/*
         Overlay de refresh manual (ver handleBaseCleared/MIN_REFRESH_LOADING_MS
         acima) — reaproveita o MESMO esqueleto do Suspense fallback inicial
-        (KpiLoadingScreen formato="consolidado"), fixo por cima só da área de
+        (ConsolidadoSkeleton, de loading.tsx — o do F5), fixo por cima só da área de
         CONTEÚDO (abaixo do header de 60px, à direita da sidebar de 240px em
         telas lg+) — pra dar a mesma sensação de "recarregando" que um F5
         real dá (loading.tsx do Next só substitui {children} dentro de
@@ -445,17 +445,10 @@ export function GestorEquipeSection({
         diferente de um F5 normal.
       */}
       {isRefreshing && (
-        // consolidado-skeleton: mesmo tom de blocos do loading.tsx
-        // (reports-consolidado.css) — KpiLoadingScreen é compartilhado, então
-        // o ajuste entra pela classe deste wrapper, só aqui.
-        <div className="consolidado-skeleton fixed inset-x-0 top-[60px] bottom-0 z-[100] lg:left-[240px]">
-          <KpiLoadingScreen
-            dataPage="reports-consolidado"
-            titulo="Consolidado"
-            formato="consolidado"
-            indicatorPosition="after-header"
-            spinnerVariant="dots"
-          />
+        // overflow-hidden: o esqueleto (min-h-screen) passa da área visível —
+        // corta em vez de abrir rolagem dentro do overlay.
+        <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] overflow-hidden lg:left-[240px]">
+          <ConsolidadoSkeleton />
         </div>
       )}
 
