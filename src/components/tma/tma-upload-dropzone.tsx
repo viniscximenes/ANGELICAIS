@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
 import { IconLoader2 } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
@@ -17,7 +17,25 @@ interface TmaUploadDropzoneProps {
   compact?: boolean;
 }
 
+// Tipagem mínima da File System Access API (não está no lib.dom do TS) —
+// mesma do UploadDropzone do Consolidado.
+type ShowOpenFilePicker = (options: {
+  startIn?: "downloads";
+  types?: { description: string; accept: Record<string, string[]> }[];
+  excludeAcceptAllOption?: boolean;
+  multiple?: boolean;
+}) => Promise<{ getFile: () => Promise<File> }[]>;
+
 export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = {}) {
+  // Clique/teclado abre o seletor de arquivos já na pasta Downloads e só com
+  // .csv (sem "Todos os arquivos"), via showOpenFilePicker (Chrome/Edge) —
+  // mesmo comportamento do anexo do Consolidado. Navegadores sem a API
+  // seguem com o seletor padrão. Arrastar e soltar não muda. Detectado só no
+  // client (evita divergência de hidratação com o SSR).
+  const [pickerNativo, setPickerNativo] = useState(false);
+  useEffect(() => {
+    setPickerNativo("showOpenFilePicker" in window);
+  }, []);
   const [step, setStep] = useState<TmaUploadStep>(null);
   const [resumoFinal, setResumoFinal] = useState<string | null>(null);
   const [isHovering, setIsHovering] = useState(false);
@@ -90,7 +108,7 @@ export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = 
     [handleFile],
   );
 
-  const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, isDragReject, open } = useDropzone({
     onDrop,
     accept: {
       "text/csv": [".csv"],
@@ -98,12 +116,49 @@ export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = 
     },
     multiple: false,
     disabled: isProcessing,
+    // Com o seletor nativo ativo, clique/teclado são tratados abaixo
+    // (abrirSeletorDownloads); o drag & drop continua com o dropzone.
+    noClick: pickerNativo,
+    noKeyboard: pickerNativo,
   });
+
+  const abrirSeletorDownloads = useCallback(async () => {
+    const showOpenFilePicker = (window as unknown as { showOpenFilePicker: ShowOpenFilePicker })
+      .showOpenFilePicker;
+    try {
+      const [handle] = await showOpenFilePicker({
+        startIn: "downloads",
+        types: [{ description: "Arquivo CSV", accept: { "text/csv": [".csv"] } }],
+        excludeAcceptAllOption: true,
+        multiple: false,
+      });
+      const file = await handle.getFile();
+      // Mesmo critério do `accept` do dropzone: arquivo fora de .csv é
+      // ignorado em silêncio, como no fluxo padrão.
+      if (!file.name.toLowerCase().endsWith(".csv")) return;
+      handleFile(file);
+    } catch (err) {
+      // Usuário fechou/cancelou o seletor — nada a fazer.
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      // Qualquer outra falha da API: volta pro seletor padrão.
+      open();
+    }
+  }, [handleFile, open]);
 
   const dropzoneState = isProcessing ? "processing" : isDragReject ? "reject" : isDragActive ? "active" : "idle";
   const rootProps = getRootProps({
     onMouseEnter: () => setIsHovering(true),
     onMouseLeave: () => setIsHovering(false),
+    ...(pickerNativo && {
+      onClick: () => {
+        if (!isProcessing) void abrirSeletorDownloads();
+      },
+      onKeyDown: (e: KeyboardEvent<HTMLElement>) => {
+        if (isProcessing || (e.key !== "Enter" && e.key !== " ")) return;
+        e.preventDefault();
+        void abrirSeletorDownloads();
+      },
+    }),
   });
   const accessibleName =
     "Anexar base CSV. Arraste um arquivo ou clique para selecionar. Apenas arquivos .csv, limite de 50.000 linhas.";
@@ -120,7 +175,7 @@ export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = 
         data-dropzone-state={dropzoneState}
         className="upload-dropzone-root-reports-tma-peso relative flex h-full flex-col cursor-pointer items-center justify-center rounded-xl border border-dashed outline-none transition-all duration-300 hover:border-primary focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
         style={{
-          background: isDragActive ? "color-mix(in oklch, var(--primary) 8%, var(--muted))" : isHovering ? "var(--muted-hover-bg, var(--card))" : "var(--upload-idle-bg, var(--card))",
+          background: isDragActive ? "color-mix(in oklch, var(--primary) 8%, var(--muted))" : isHovering ? "var(--dropzone-hover-bg, var(--card))" : "var(--dropzone-idle-bg, var(--card))",
           borderColor: isDragReject ? "var(--danger)" : isDragActive ? "var(--primary)" : "var(--border)",
           borderWidth: isDragActive ? "2px" : "1px",
           boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "var(--shadow-sm, none)",

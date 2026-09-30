@@ -12,7 +12,6 @@ import {
   TABELA_LINHA_CLASS,
   TABELA_NOME_CELL_CLASS,
   TABELA_VALOR_CELL_CLASS,
-  ValorSemantico,
   ValorSemDado,
 } from "@/components/gestor/tabela-padrao";
 import { cn } from "@/lib/utils";
@@ -134,9 +133,17 @@ export function TmaTable({ linhas, atendimentosPorOperador, headerButton, thresh
                   {semDado ? (
                     <ValorSemDado />
                   ) : (
-                    <ValorSemantico ruim={ruim}>
+                    // Sem bolinha — mesmo visual da Tx Retenção da
+                    // EquipeTable (Consolidado): só o texto colorido.
+                    <span
+                      style={{
+                        color: ruim ? "var(--danger)" : "var(--success)",
+                        fontWeight: 600,
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
                       {formatKpiValue(linha.tmaSegundos, "time")}
-                    </ValorSemantico>
+                    </span>
                   )}
                 </span>
               </div>

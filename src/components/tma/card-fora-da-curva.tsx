@@ -42,15 +42,35 @@ const HEADER_ROW_CLASS =
  * ITENS (decisão travada), mas agora rolam por dentro em vez de esticar o
  * card/slide indefinidamente.
  */
-function TabelaForaDaCurva({ titulo, itens }: { titulo: string; itens: ForaDaCurvaItem[] }) {
-  if (itens.length === 0) return null;
-
+function TabelaForaDaCurva({
+  titulo,
+  total,
+  itens,
+}: {
+  titulo: string;
+  total: number;
+  itens: ForaDaCurvaItem[];
+}) {
   return (
-    <div className="space-y-1.5">
-      <p className="ds-small text-muted-foreground/80 text-[11px] font-semibold tracking-wider uppercase">
-        {titulo}
-      </p>
+    <div className="space-y-2">
+      {/* Rótulo + contagem na mesma linha, logo acima da própria tabela —
+          substitui o bloco de contagens solto (rótulo à esquerda, número
+          distante à direita) que ficava desconectado das listas. */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-semibold tracking-wide text-foreground uppercase">{titulo}</span>
+        <span
+          className="inline-flex min-w-6 items-center justify-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-foreground"
+          style={{ fontVariantNumeric: "tabular-nums" }}
+        >
+          {total}
+        </span>
+      </div>
 
+      {itens.length === 0 ? (
+        <p className="ds-small text-muted-foreground border-y border-border/40 py-4 text-center">
+          Nenhuma chamada nesta faixa.
+        </p>
+      ) : (
       <div className="overflow-hidden border-y border-border/40">
         <div className="overflow-x-auto overflow-y-auto scrollbar-tema" style={{ maxHeight: MAX_HEIGHT_PX }}>
           <div data-fora-da-curva-tabela className="min-w-fit">
@@ -86,6 +106,7 @@ function TabelaForaDaCurva({ titulo, itens }: { titulo: string; itens: ForaDaCur
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
@@ -105,29 +126,14 @@ export function CardForaDaCurva({ curtas, longas, curtasLista, longasLista }: Ca
     <div className="space-y-3">
       <div>
         <h3 className="ds-h3 font-semibold text-foreground">
-          Fora da Curva
+          Fora da curva
         </h3>
         <p className="ds-small text-muted-foreground mt-1">Chamadas muito curtas (&lt;30s) ou muito longas (&gt;30min).</p>
       </div>
 
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-baseline justify-between">
-            <span className="ds-small text-muted-foreground/80 text-xs font-semibold tracking-wider uppercase">
-              Curtas (&lt;30s)
-            </span>
-            <span className="ds-display text-2xl font-semibold text-foreground tabular-nums">{curtas}</span>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="ds-small text-muted-foreground/80 text-xs font-semibold tracking-wider uppercase">
-              Longas (&gt;30min)
-            </span>
-            <span className="ds-display text-2xl font-semibold text-foreground tabular-nums">{longas}</span>
-          </div>
-        </div>
-
-        <TabelaForaDaCurva titulo="Curtas" itens={curtasLista} />
-        <TabelaForaDaCurva titulo="Longas" itens={longasLista} />
+      <div className="flex flex-col gap-6">
+        <TabelaForaDaCurva titulo="Curtas (<30s)" total={curtas} itens={curtasLista} />
+        <TabelaForaDaCurva titulo="Longas (>30min)" total={longas} itens={longasLista} />
       </div>
     </div>
   );

@@ -4,9 +4,28 @@ import { useState } from "react";
 import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
-import { buildClipboardReportHtml } from "@/lib/gestor/build-clipboard-report-html";
 import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 import { copyFormattedHtml, escapeHtml } from "@/lib/utils/copy-formatted-html";
+
+/**
+ * HTML colado — MESMA estrutura do formatReportHtml do Consolidado
+ * (copy-table-button.tsx): título <h2><b> → "report às" <div><i> → imagem.
+ * Cor do texto FIXA (#1E1E1E) repetida no nó que carrega o texto: o HTML é
+ * colado fora do site (Teams/Slack/email), sempre em fundo claro — sem cor
+ * própria, o texto herdava a cor do tema do dashboard (escuro → branco) e
+ * saía ilegível. Montado aqui (não em buildClipboardReportHtml, compartilhado
+ * com outras rotas) pra não mexer nas demais.
+ */
+function formatReportHtml(hora: string, pngDataUrl: string): string {
+  const TITULO_COR = "color: #1E1E1E;";
+  const parts: string[] = [
+    `<h2 style="font-size: 16px; margin: 0; ${TITULO_COR}"><b style="${TITULO_COR}">TMA</b></h2>`,
+    `<div style="margin-top: 4px; ${TITULO_COR}"><i style="${TITULO_COR}">report às ${escapeHtml(hora)}</i></div>`,
+    `<br>`,
+    `<div style="margin-top: 8px;"><img src="${pngDataUrl}" style="display: block; max-width: 1000px; width: 100%;" alt="Tabela TMA"></div>`,
+  ];
+  return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1E1E1E;">${parts.join("")}</div>`;
+}
 
 interface CopyTmaButtonProps {
   horaReport: string;
@@ -30,14 +49,7 @@ export function CopyTmaButton({ horaReport }: CopyTmaButtonProps) {
         horaReport && horaReport !== "—"
           ? horaReport.match(/^(\d{1,2}:\d{2})/)?.[1] ?? horaReport
           : "—";
-      const textoReport = `report às ${escapeHtml(hora)}`;
-
-      const html = buildClipboardReportHtml({
-        titulo: "TMA",
-        subtitulo: textoReport,
-        pngDataUrl,
-        altText: "Tabela TMA",
-      });
+      const html = formatReportHtml(hora, pngDataUrl);
 
       await copyFormattedHtml(html);
 

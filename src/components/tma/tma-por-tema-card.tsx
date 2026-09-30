@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import { SKILL_BUCKET_LABELS, SKILL_BUCKET_ORDER, type SkillBucket } from "@/lib/tma/skills-retencao";
@@ -39,46 +40,69 @@ export function TmaPorTemaCard({ tmaPorBucketEquipe }: TmaPorTemaCardProps) {
   );
   const maiorValor = valores.length > 0 ? Math.max(...valores) : 0;
 
+  // Barras crescem a partir de 0 ao montar (escalonadas por linha) — mesma
+  // sensação de entrada suave das demais seções da página.
+  const [montado, setMontado] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMontado(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   return (
     <div className="space-y-3">
       <div>
         <h3 className="ds-h3 font-semibold text-foreground">
-          TMA por Tema (Gestor)
+          TMA por tema - Supervisor
         </h3>
         <p className="ds-small text-muted-foreground mt-1">
-          TMA médio da equipe em cada categoria de atendimento, na base atual.
+          Detalhamento do TMA médio de cada tema do consolidado da equipe.
         </p>
       </div>
 
-      <div className="space-y-3.5">
-        {SKILL_BUCKET_ORDER.map((bucket) => {
+      {/* Linhas separadas só por border/30 (sem hover — card de consulta),
+          mesmo ritmo das tabelas do Analítico. */}
+      <div data-tma-por-tema-lista className="divide-y divide-border/30">
+        {SKILL_BUCKET_ORDER.map((bucket, idx) => {
           const valor = tmaPorBucketEquipe[bucket];
           const largura = valor !== null && maiorValor > 0 ? Math.min(100, (valor / maiorValor) * 100) : 0;
           const cor = cores[bucket];
 
           return (
-            <div key={bucket} className="space-y-1.5 border-b border-border/20 pb-3 last:border-0 last:pb-0 hover:bg-accent transition-colors rounded-md px-1 -mx-1">
-              <div className="flex flex-wrap justify-between items-baseline gap-x-2 gap-y-1 text-xs">
-                <span className="font-semibold text-foreground tracking-tight">
-                  {SKILL_BUCKET_LABELS[bucket]}
+            <div key={bucket} className="space-y-2 py-3 first:pt-1 last:pb-1">
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-2 w-2 shrink-0 rounded-full"
+                    style={{ background: valor !== null ? cor : "var(--muted-foreground)" }}
+                  />
+                  <span className="truncate text-xs font-semibold text-foreground">
+                    {SKILL_BUCKET_LABELS[bucket]}
+                  </span>
                 </span>
                 <span
-                  className="font-mono font-semibold text-xs"
-                  style={{ color: valor !== null ? cor : undefined }}
+                  className="shrink-0 text-xs font-semibold"
+                  style={{
+                    color: valor !== null ? cor : "var(--muted-foreground)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
                 >
-                  {valor !== null ? (
-                    formatKpiValue(valor, "time")
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
+                  {valor !== null ? formatKpiValue(valor, "time") : "—"}
                 </span>
               </div>
 
-              <div className="h-1.5 w-full bg-muted/40 rounded-full overflow-hidden">
+              <div
+                data-tma-por-tema-trilho
+                className="h-2 w-full overflow-hidden rounded-full"
+              >
                 {valor !== null && (
                   <div
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{ width: `${largura}%`, background: cor }}
+                    className="h-full rounded-full transition-[width] duration-700 ease-out"
+                    style={{
+                      width: montado ? `${largura}%` : "0%",
+                      transitionDelay: `${idx * 60}ms`,
+                      background: `linear-gradient(90deg, color-mix(in oklch, ${cor} 55%, transparent), ${cor})`,
+                    }}
                   />
                 )}
               </div>

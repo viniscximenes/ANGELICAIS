@@ -5,7 +5,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import { RetencaoHorizontalScroll } from "@/components/dashboard/retencao/retencao-horizontal-scroll";
 import { AguardandoDadosCard } from "@/components/gestor/aguardando-dados-card";
-import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
+import { SignatureFooter } from "@/components/gestor/signature-footer";
 import { calcularPesoDesigual } from "@/lib/tma/calcular-peso-desigual";
 import type { OperadorTma } from "@/lib/tma/get-gestor-tma";
 import type { GestorTmaAnaliticoResult } from "@/lib/tma/get-gestor-tma-analitico";
@@ -22,7 +22,6 @@ interface AnaliticoTmaSectionProps {
   analitico: GestorTmaAnaliticoResult;
   /** Operadores já carregados por getGestorTma (d1_tma) — fonte do card Peso Desigual (qtd_* por bucket), sem query nova. */
   operadores: OperadorTma[];
-  nomeFantasia: NomeFantasiaSerial;
 }
 
 /**
@@ -74,7 +73,6 @@ export function AnaliticoTmaSection({
   roster,
   analitico,
   operadores,
-  nomeFantasia,
 }: AnaliticoTmaSectionProps) {
   // Ao (re)carregar a página, o navegador tenta restaurar a posição de
   // scroll anterior (ex.: estava no meio deste trilho) — some com o
@@ -162,6 +160,9 @@ export function AnaliticoTmaSection({
       <section aria-label="Analítico do TMA">
         {cabecalho}
         <AguardandoDadosCard descricao="Ainda não há atendimentos de TMA reportados hoje pra sua equipe." />
+        <div className="mt-10">
+          <SignatureFooter />
+        </div>
       </section>
     );
   }
@@ -193,13 +194,28 @@ export function AnaliticoTmaSection({
       curtasLista={analitico.foraDaCurva.curtasLista}
       longasLista={analitico.foraDaCurva.longasLista}
     />,
-    <CardPesoDesigual key="peso-desigual" operadores={pesoDesigual} nomeFantasia={nomeFantasia} />,
+    // Assinatura DENTRO do último slide, só no desktop (lg:block): aparece
+    // logo abaixo do último card e desliza junto com ele — mesmo ajuste de
+    // /reports/consolidado e /reports/tempo-indisponibilidade. Mobile
+    // (slides empilhados) usa a do fim da seção.
+    <div key="peso-desigual" className="flex flex-col">
+      <CardPesoDesigual operadores={pesoDesigual} />
+      <div className="mt-10 hidden lg:block">
+        <SignatureFooter />
+      </div>
+    </div>,
   ];
 
   return (
     <section aria-label="Analítico do TMA">
       <div className="space-y-6">
         <RetencaoHorizontalScroll header={cabecalho} slides={slides} dynamicHeight />
+      </div>
+
+      {/* Assinatura no fim da seção — no desktop ela já aparece dentro do
+          último slide do trilho (acima), então aqui fica só no mobile. */}
+      <div className="mt-10 lg:hidden">
+        <SignatureFooter />
       </div>
     </section>
   );

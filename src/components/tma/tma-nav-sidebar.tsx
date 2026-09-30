@@ -68,25 +68,25 @@ export function TmaNavSidebar() {
 
   const links = [
     {
-      label: "Equipe",
+      label: "Tabela operadores",
       href: "#equipe-section",
       icon: <IconUsersGroup className={ICON_CLASS} />,
       onClick: scrollToEquipe,
     },
     {
-      label: "Visão Geral",
+      label: "Evolução da equipe",
       href: "#trilho-card-0",
       icon: <IconChartLine className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.visaoGeral),
     },
     {
-      label: "TMA por Tema",
+      label: "TMA por tema - Operador",
       href: "#trilho-card-1",
       icon: <IconTable className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.tmaPorTemaTabela),
     },
     {
-      label: "TMA por Tema (Gestor)",
+      label: "TMA por tema - Supervisor",
       href: "#trilho-card-2",
       icon: <IconChartBar className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.tmaPorTemaGestor),
@@ -98,13 +98,13 @@ export function TmaNavSidebar() {
       onClick: () => requestScrollToCard(TRILHO_CARD.rechamada),
     },
     {
-      label: "Fora da Curva",
+      label: "Fora da curva",
       href: "#trilho-card-4",
       icon: <IconArrowsMaximize className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.foraDaCurva),
     },
     {
-      label: "Peso Desigual",
+      label: "Peso desigual",
       href: "#trilho-card-5",
       icon: <IconScale className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.pesoDesigual),

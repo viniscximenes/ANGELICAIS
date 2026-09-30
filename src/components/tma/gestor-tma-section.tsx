@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 
 import { IconEye, IconEyeOff } from "@tabler/icons-react";
 import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
-import { KpiLoadingScreen } from "@/components/gestor/kpi-loading-screen";
+import { TmaPesoSkeleton } from "@/app/(dashboard)/reports/tma-peso/loading";
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
 import { clearTmaAction } from "@/lib/tma/actions/clear-tma-action";
 import { refreshTmaAction } from "@/lib/tma/actions/refresh-tma-action";
@@ -155,14 +155,15 @@ export function GestorTmaSection({
         header de 60px, à direita da sidebar de 240px em telas lg+).
       */}
       {isRefreshing && (
-        <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] lg:left-[240px]">
-          <KpiLoadingScreen
-            dataPage="reports-tma-peso"
-            titulo="TMA & Peso"
-            formato="tma-peso"
-            indicatorPosition="after-header"
-            spinnerVariant="dots"
-          />
+        // Esqueleto = o MESMO do F5 (TmaPesoSkeleton, de loading.tsx), no
+        // lugar do KpiLoadingScreen antigo — mesmo ajuste do Consolidado.
+        // overflow-hidden: o esqueleto (min-h-screen) passa da área visível —
+        // corta em vez de abrir rolagem dentro do overlay.
+        // !mb-0: este overlay é filho do `space-y-10` de page.tsx — a margem
+        // inferior encurtaria o overlay fixed e deixaria uma faixa da
+        // página real à mostra (mesma proteção do Consolidado).
+        <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] !mb-0 overflow-hidden lg:left-[240px]">
+          <TmaPesoSkeleton />
         </div>
       )}
 

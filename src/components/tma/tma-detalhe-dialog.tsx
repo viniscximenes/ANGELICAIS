@@ -7,8 +7,6 @@ import {
   Cell,
   ComposedChart,
   Line,
-  Pie,
-  PieChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -17,6 +15,7 @@ import {
 } from "recharts";
 
 import { ExportPopupPngButton } from "@/components/dashboard/export-popup-png-button";
+import { formatFaixaHora } from "@/components/dashboard/retencao/grafico-evolucao";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import {
@@ -27,11 +26,40 @@ import {
 } from "@/lib/tma/skills-retencao";
 import type { AtendimentoTma } from "@/lib/tma/get-gestor-tma-atendimentos";
 import { calcularEvolucaoTmaPorHora, type TmaHoraData } from "@/lib/tma/get-gestor-tma-evolucao-hora";
-import type { TmaThresholdConfig } from "@/lib/tma/tma-status";
+import { statusTmaDe, type TmaStatus, type TmaThresholdConfig } from "@/lib/tma/tma-status-pure";
 import { resolverTokenCss } from "@/lib/utils/resolver-token-css";
-import { useSkillColors } from "./use-skill-colors";
-import { TmaPorTemaOperadorMini } from "./tma-por-tema-operador-mini";
 import type { TmaLinha } from "./tma-table";
+
+// Rótulos das pontas do eixo — mesmo texto do modal do Consolidado
+// (operador-detalhe-dialog.tsx): sem os símbolos `<`/`≥`.
+function formatEixoLabel(label: string): string {
+  if (label === "< 08") return "Até 08h";
+  if (label === "≥ 20") return "Após 20h";
+  return label;
+}
+
+/** Distância da meta em texto — "01:23 acima da meta" / "00:40 abaixo da meta" (mesma ideia do tooltip do Consolidado, em MM:SS). */
+function formatDistanciaMetaTma(tmaSegundos: number, metaSegundos: number): string {
+  const diff = tmaSegundos - metaSegundos;
+  if (Math.abs(diff) < 1) return "na meta";
+  return `${formatKpiValue(Math.abs(diff), "time")} ${diff < 0 ? "abaixo" : "acima"} da meta`;
+}
+
+function classeStatus(status: TmaStatus): string {
+  if (status === "danger") return "text-danger";
+  if (status === "success") return "text-success";
+  return "text-foreground";
+}
+
+/** Título de bloco + linha até a borda — mesmo padrão do modal do Consolidado. */
+function TituloBloco({ children }: { children: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <h3 className="ds-h3 shrink-0 font-semibold text-foreground">{children}</h3>
+      <div aria-hidden="true" className="bg-border h-px flex-1" />
+    </div>
+  );
+}
 
 interface TmaDetalheDialogProps {
   operador: TmaLinha | null;
@@ -42,7 +70,6 @@ interface TmaDetalheDialogProps {
 }
 
 export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOpenChange }: TmaDetalheDialogProps) {
-  const cores = useSkillColors();
   const pngRef = useRef<HTMLDivElement>(null);
   const temaTma =
     typeof document === "undefined"
@@ -77,24 +104,22 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
     somaPorBucket.set(bucket, (somaPorBucket.get(bucket) ?? 0) + at.duracaoSegundos);
   }
   const total = atendimentos.length;
-  const donutData = SKILL_BUCKET_ORDER.filter((b) => (qtdPorBucket.get(b) ?? 0) > 0).map((bucket) => ({
-    bucket,
-    label: SKILL_BUCKET_LABELS[bucket],
-    qtd: qtdPorBucket.get(bucket) ?? 0,
-    pct: total > 0 ? ((qtdPorBucket.get(bucket) ?? 0) / total) * 100 : 0,
-  }));
 
-  // TMA médio POR BUCKET deste operador — métrica NOVA (não existe
-  // precedente no Consolidado, ver investigação da rodada anterior), pro
-  // card TmaPorTemaOperadorMini ao lado do donut. Bucket sem nenhum
-  // atendimento do operador: null (renderizado como "—" pelo componente).
-  const tmaPorBucket = Object.fromEntries(
-    SKILL_BUCKET_ORDER.map((bucket) => {
-      const soma = somaPorBucket.get(bucket);
-      const qtd = qtdPorBucket.get(bucket);
-      return [bucket, soma !== undefined && qtd ? soma / qtd : null];
-    }),
-  ) as Record<SkillBucket, number | null>;
+  // Tabela "TMA por tema" (substitui o gráfico de rosquinha + a lista de
+  // barras): só os temas com atendimento, com quantidade, participação no
+  // total e TMA médio do operador naquele tema — mesmas informações de antes.
+  const linhasPorTema = SKILL_BUCKET_ORDER.filter((b) => (qtdPorBucket.get(b) ?? 0) > 0).map((bucket) => {
+    const qtd = qtdPorBucket.get(bucket) ?? 0;
+    const tma = qtd > 0 ? (somaPorBucket.get(bucket) ?? 0) / qtd : null;
+    return {
+      bucket,
+      label: SKILL_BUCKET_LABELS[bucket],
+      qtd,
+      pct: total > 0 ? (qtd / total) * 100 : 0,
+      tma,
+      status: statusTmaDe(tma, thresholdConfig),
+    };
+  });
 
   // "TMA por Hora" deste operador — reaproveita calcularEvolucaoTmaPorHora
   // (get-gestor-tma-evolucao-hora.ts, MESMA função do gráfico "Evolução do
@@ -213,7 +238,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
             <ExportPopupPngButton
               contentRef={pngRef}
               filename={`tma_${emailLocal}.png`}
-              className="absolute top-2 right-10"
+              className="tma-detalhe-export-btn absolute top-2 right-10"
               corDeFundoDoAlvo
               toastClassName="reports-tma-peso-toast"
             />
@@ -227,42 +252,36 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
             */}
             <div ref={pngRef} data-tma-detalhe-png style={{ backgroundColor: corFundoDialog }}>
               <DialogHeader className="pb-3 space-y-1.5">
-                <DialogTitle className="ds-h3 font-semibold tracking-tight text-xl">{emailLocal}</DialogTitle>
+                <DialogTitle className="ds-h3 text-foreground font-semibold tracking-tight text-xl">{emailLocal}</DialogTitle>
               </DialogHeader>
 
+              <div className="space-y-6 pt-2">
               {/*
-                Cards do topo — MESMO padrão visual do Consolidado
-                (StyledCard + withGradient + corners), mas só 2 cards
-                (TMA/Atendimentos, os únicos que fazem sentido pra TMA — sem
-                os 4 de retenção do Consolidado) — por isso corners
-                "left"/"right" direto, sem o "none" do meio que só existe
-                quando há 4 cards.
+                Resumo — MESMO padrão do modal do Consolidado: sem container
+                (sem borda/fundo), rótulo em negrito e valor em negrito; o
+                TMA na cor do status (verde dentro da meta, vermelho fora).
               */}
-              <div className="grid grid-cols-2 gap-3 pt-4">
-                <div className="flex flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-3.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
-                  <p className="ds-small text-muted-foreground/80 mb-1 text-xs font-semibold tracking-wider uppercase">
-                    TMA
-                  </p>
-                  <p className="ds-display text-2xl font-semibold tabular-nums text-foreground">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="flex flex-col justify-center gap-1 px-4 py-3.5">
+                  <p className="ds-small text-muted-foreground mb-1 font-bold tracking-wider uppercase">TMA</p>
+                  <p className={`ds-display text-2xl font-bold tabular-nums ${classeStatus(operador.status)}`}>
                     {formatKpiValue(operador.tmaSegundos, "time")}
                   </p>
                 </div>
-                <div className="flex flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-3.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
-                  <p className="ds-small text-muted-foreground/80 mb-1 text-xs font-semibold tracking-wider uppercase">
-                    Atendimentos
-                  </p>
-                  <p className="ds-display text-2xl font-semibold tabular-nums text-foreground">
+                <div className="flex flex-col justify-center gap-1 px-4 py-3.5">
+                  <p className="ds-small text-muted-foreground mb-1 font-bold tracking-wider uppercase">Atendimentos</p>
+                  <p className="ds-display text-2xl font-bold tabular-nums text-foreground">
                     {operador.qtdAtendimentos}
                   </p>
                 </div>
               </div>
 
-              {/* ── TMA por Hora ───────────────────────────────────── */}
-              <div className="space-y-2 pt-4">
-                <h4 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-                  TMA por Hora
-                </h4>
-                <div className="w-full h-[220px]">
+              {/* ── Evolução por hora ──────────────────────────────── */}
+              <div className="space-y-2">
+                <TituloBloco>Evolução por hora</TituloBloco>
+                {/* grafico-evolucao-chart: sem a borda de foco ao clicar no
+                    gráfico (reports-tma-peso.css), igual ao Consolidado. */}
+                <div className="grafico-evolucao-chart w-full h-[220px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={evolucaoPorHora} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         {temGradiente && (
@@ -279,6 +298,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
 
                         <XAxis
                           dataKey="label"
+                          tickFormatter={formatEixoLabel}
                           tickLine={false}
                           axisLine={false}
                           tick={{ fill: "var(--muted-foreground)", fontSize: 10 }}
@@ -304,20 +324,29 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                           content={({ active, payload }) => {
                             if (!active || !payload || !payload.length) return null;
                             const info = payload[0].payload as TmaHoraData;
+                            // Mesmo visual do tooltip do modal do Consolidado:
+                            // faixa da hora em cinza no topo, só o TMA em
+                            // destaque (com a distância da meta) e o resto em
+                            // texto normal. Hora sem atendimento não mostra.
+                            if (info.total === 0 || info.tmaMedioSegundos === null) return null;
+                            const cor = classeStatus(info.status);
                             return (
-                              <div className="bg-popover border border-border/80 rounded-lg p-3 shadow-md space-y-1.5 font-sans">
-                                <p className="text-[11px] font-semibold text-foreground uppercase tracking-wider">
-                                  Hora: {info.label}
+                              <div className="bg-popover border border-border/80 w-64 rounded-lg p-3 shadow-md font-sans">
+                                <p className="text-muted-foreground text-[11px] tracking-wider uppercase">
+                                  {formatFaixaHora(info.label)}
                                 </p>
-                                <div className="h-px bg-border/60 my-1" />
-                                <p className="text-xs text-muted-foreground">
-                                  TMA:{" "}
-                                  <strong className={info.status === "danger" ? "text-danger" : "text-success"}>
+                                <p className="mt-1 flex items-baseline gap-2 text-sm">
+                                  <span className={`font-semibold ${cor}`}>
                                     {formatKpiValue(info.tmaMedioSegundos, "time")}
-                                  </strong>
+                                  </span>
+                                  {threshold !== null && (
+                                    <span className={`text-xs ${cor}`}>
+                                      {formatDistanciaMetaTma(info.tmaMedioSegundos, threshold)}
+                                    </span>
+                                  )}
                                 </p>
-                                <p className="text-xs text-muted-foreground">
-                                  Atendimentos: <strong className="text-foreground">{info.total}</strong>
+                                <p className="text-muted-foreground mt-0.5 text-xs">
+                                  {info.total} {info.total === 1 ? "atendimento" : "atendimentos"}
                                 </p>
                               </div>
                             );
@@ -411,90 +440,90 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                   </div>
               </div>
 
-              {/* ── Distribuição por tema (donut) + TMA por Tema (novo) ── */}
-              <div className="grid grid-cols-1 gap-4 pt-4 sm:grid-cols-2">
-                <div>
-                  {donutData.length > 0 ? (
-                    <div className="flex flex-col gap-3">
-                      <div className="h-56 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={donutData}
-                              dataKey="qtd"
-                              nameKey="label"
-                              innerRadius="55%"
-                              outerRadius="80%"
-                              paddingAngle={2}
-                              isAnimationActive
-                            >
-                              {donutData.map((entry) => (
-                                <Cell
-                                  key={entry.bucket}
-                                  fill={cores[entry.bucket]}
-                                  stroke={cores.surface}
-                                  strokeWidth={2}
-                                />
-                              ))}
-                            </Pie>
-                            <Tooltip
-                              contentStyle={{
-                                background: "var(--popover)",
-                                border: "1px solid var(--border)",
-                                fontSize: 12,
-                              }}
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        {donutData.map((entry) => (
-                          <div key={entry.bucket} className="flex items-center gap-2 text-sm">
-                            <span
-                              aria-hidden="true"
-                              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
-                              style={{ background: cores[entry.bucket] }}
-                            />
-                            <span className="truncate">{entry.label}</span>
-                            <span className="ds-mono-sm font-semibold">{entry.pct.toFixed(1)}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
+              {/* ── TMA por tema (substitui o gráfico de rosquinha) ─── */}
+              <div className="space-y-2">
+                <TituloBloco>TMA por tema</TituloBloco>
+                <div className="overflow-hidden">
+                  {linhasPorTema.length === 0 ? (
                     <p className="ds-small text-muted-foreground p-6 text-center text-xs">
                       Nenhum atendimento registrado para este operador no dia.
                     </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      {/* data-tabela-operador-tma: cabeçalho no visual da
+                          tabela do modal do Consolidado (reports-tma-peso.css). */}
+                      <table data-tabela-operador-tma className="w-full border-collapse text-left text-sm">
+                        <thead>
+                          <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 font-bold tracking-wide uppercase">
+                            <th className="px-4 py-2.5 font-semibold">Tema</th>
+                            <th className="px-4 py-2.5 text-center font-semibold">Atendimentos</th>
+                            <th className="px-4 py-2.5 text-center font-semibold">% do total</th>
+                            <th className="px-4 py-2.5 text-center font-semibold">TMA</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {linhasPorTema.map((linha) => (
+                            // Sem hover: a linha não tem ação ao clicar.
+                            <tr key={linha.bucket} className="border-border/20 border-b last:border-0">
+                              <td className="text-foreground ds-body max-w-[220px] truncate px-4 py-2.5 text-xs font-medium">
+                                {linha.label}
+                              </td>
+                              <td className="text-muted-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
+                                {linha.qtd}
+                              </td>
+                              <td className="text-muted-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
+                                {linha.pct.toFixed(1)}%
+                              </td>
+                              <td className={`ds-mono-sm px-4 py-2.5 text-center text-xs font-semibold tabular-nums ${classeStatus(linha.status)}`}>
+                                {formatKpiValue(linha.tma, "time")}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
-
-                <TmaPorTemaOperadorMini tmaPorBucket={tmaPorBucket} cores={cores} />
               </div>
 
-              <div className="overflow-x-auto pt-4">
-                <table className="w-full border-collapse text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-muted-foreground">
-                      <th className="py-2 pr-4 font-normal">TMA</th>
-                      <th className="py-2 pr-4 font-normal">Skill</th>
-                      <th className="py-2 pr-4 font-normal">Telefone do cliente</th>
-                      <th className="py-2 pr-4 font-normal">Hora do atendimento</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {atendimentos.map((at, i) => (
-                      <tr key={i} className="border-b border-border/60">
-                        <td className="py-2 pr-4 ds-mono-sm">
-                          {formatKpiValue(at.duracaoSegundos, "time")}
-                        </td>
-                        <td className="py-2 pr-4">{at.skill ?? "—"}</td>
-                        <td className="py-2 pr-4 ds-mono-sm">{at.telefoneCliente ?? "—"}</td>
-                        <td className="py-2 pr-4 ds-mono-sm">{at.hora ?? "—"}</td>
+              {/* ── Atendimentos ───────────────────────────────────── */}
+              <div className="space-y-2">
+                <TituloBloco>Atendimentos</TituloBloco>
+                <div className="overflow-x-auto">
+                  <table data-tabela-operador-tma className="w-full border-collapse text-left text-sm">
+                    <thead>
+                      <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 font-bold tracking-wide uppercase">
+                        <th className="px-4 py-2.5 text-center font-semibold">TMA</th>
+                        <th className="px-4 py-2.5 font-semibold">Skill</th>
+                        <th className="px-4 py-2.5 text-center font-semibold">Cliente</th>
+                        <th className="px-4 py-2.5 text-center font-semibold">Horário</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {atendimentos.map((at, i) => (
+                        <tr key={i} className="border-border/20 border-b last:border-0">
+                          <td
+                            className={`ds-mono-sm px-4 py-2.5 text-center text-xs font-semibold tabular-nums ${classeStatus(
+                              statusTmaDe(at.duracaoSegundos, thresholdConfig),
+                            )}`}
+                          >
+                            {formatKpiValue(at.duracaoSegundos, "time")}
+                          </td>
+                          <td className="text-foreground ds-body max-w-[280px] truncate px-4 py-2.5 text-xs font-medium">
+                            {at.skill ?? "—"}
+                          </td>
+                          <td className="text-muted-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
+                            {at.telefoneCliente ?? "—"}
+                          </td>
+                          <td className="text-muted-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
+                            {at.hora ?? "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
               </div>
             </div>
           </>

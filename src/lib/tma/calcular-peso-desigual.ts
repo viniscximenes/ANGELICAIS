@@ -12,7 +12,7 @@ export type OperadorPesoDesigual = {
 export const PISO_MINIMO_ATENDIMENTOS_PESO_DESIGUAL = 5;
 
 /** Limiar de concentração num único tema pra entrar na lista. */
-const LIMIAR_PCT_PESO_DESIGUAL = 0.8;
+const LIMIAR_PCT_PESO_DESIGUAL = 0.6;
 
 const CAMPO_POR_BUCKET: { bucket: SkillBucket; campo: keyof OperadorTma }[] = [
   { bucket: "outros", campo: "qtdOutros" },
@@ -27,7 +27,7 @@ const CAMPO_POR_BUCKET: { bucket: SkillBucket; campo: keyof OperadorTma }[] = [
 /**
  * Operadores concentrando a maior parte dos atendimentos do dia num único
  * tema — usa os campos qtd_* já carregados por getGestorTma (d1_tma), sem
- * query nova. Critério: maior bucket ÷ qtdAtendimentos >= 80%, só pra quem
+ * query nova. Critério: maior bucket ÷ qtdAtendimentos >= 60%, só pra quem
  * tem pelo menos PISO_MINIMO_ATENDIMENTOS_PESO_DESIGUAL atendimentos no dia.
  * Ordenado do mais concentrado pro menos.
  */

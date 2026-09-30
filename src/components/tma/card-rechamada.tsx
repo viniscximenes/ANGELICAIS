@@ -79,7 +79,9 @@ export function CardRechamada({ clientesDistintos, clientesRecorrentes, percentu
         <h3 className="ds-h3 font-semibold text-foreground">
           Rechamada
         </h3>
-        <p className="ds-small text-muted-foreground mt-1">Clientes que ligaram mais de uma vez hoje.</p>
+        <p className="ds-small text-muted-foreground mt-1">
+          Detalhamento dos clientes que ligaram mais de uma vez no dia, com o operador e o horário do 1º e do 2º atendimento.
+        </p>
       </div>
 
       <div className="flex flex-col gap-4">

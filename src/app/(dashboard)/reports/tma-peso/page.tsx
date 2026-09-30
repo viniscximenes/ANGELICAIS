@@ -14,7 +14,6 @@ import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
-import { SignatureFooter } from "@/components/gestor/signature-footer";
 import { getGestorTma } from "@/lib/tma/get-gestor-tma";
 import { getGestorTmaAnalitico } from "@/lib/tma/get-gestor-tma-analitico";
 import { getGestorTmaAtendimentos } from "@/lib/tma/get-gestor-tma-atendimentos";
@@ -121,10 +120,9 @@ export default async function ReportsTmaPage() {
                 roster={roster}
                 analitico={analitico}
                 operadores={operadores}
-                nomeFantasia={nomeFantasia}
               />
-
-              <SignatureFooter />
+              {/* SignatureFooter agora é renderizada dentro de AnaliticoTmaSection
+                  (no desktop, logo abaixo do último card do trilho). */}
             </div>
           </div>
         </div>

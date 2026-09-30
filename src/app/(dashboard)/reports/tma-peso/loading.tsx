@@ -24,7 +24,6 @@
 import { Instrument_Sans } from "next/font/google";
 
 import "./reports-tma-peso.css";
-import { DotSpinner } from "@/components/gestor/dot-spinner";
 import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
 
 // MESMA fonte/variável de page.tsx (zenSans) — precisa ser importada aqui de
@@ -182,11 +181,30 @@ export default function LoadingReportsTmaPeso() {
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: DESLIGAR_SCROLL_RESTORATION_SCRIPT }} />
+      <TmaPesoSkeleton />
+    </>
+  );
+}
+
+/**
+ * Esqueleto do F5 (sem o script de scroll) — exportado pra ser reaproveitado
+ * TAMBÉM no overlay de refresh manual do "Limpar base" (GestorTmaSection),
+ * que antes usava o KpiLoadingScreen antigo — mesmo ajuste do Consolidado
+ * (ConsolidadoSkeleton). As duas telas de carregamento ficam idênticas. O
+ * anexo de base recarrega a página (window.location.reload), então também
+ * cai neste mesmo esqueleto, via loading.tsx.
+ */
+export function TmaPesoSkeleton() {
+  return (
+    <>
       <SkeletonNavSidebar />
 
+      {/* tma-peso-skeleton: tom dos blocos (reports-tma-peso.css) — mesmo
+          do Consolidado; bg-card sozinho é branco puro na Vercel clara e os
+          blocos sumiam. */}
       <div
         data-page="reports-tma-peso"
-        className={`relative min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
+        className={`tma-peso-skeleton relative min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
       >
         <div
           aria-hidden="true"
@@ -225,16 +243,10 @@ export default function LoadingReportsTmaPeso() {
           </div>
         </div>
 
-        {/* Indicador de carregamento — nítido, centralizado sobre a área da
-            tabela, sem sobrepor o cabeçalho/botões acima dele. Mesmo
-            dot-spinner do Consolidado, sem texto visível. */}
-        <div
-          role="status"
-          aria-live="polite"
-          className="pointer-events-none absolute inset-x-0 top-[33%] flex flex-col items-center gap-3 -translate-y-1/2"
-        >
-          <DotSpinner />
-          <span className="sr-only">Carregando TMA &amp; Peso, aguarde.</span>
+        {/* Sem indicador girando (igual ao Consolidado): o carregamento é só
+            o skeleton. Fica apenas o aviso para leitor de tela. */}
+        <div role="status" aria-live="polite" className="sr-only">
+          Carregando TMA &amp; Peso, aguarde.
         </div>
       </div>
     </>
