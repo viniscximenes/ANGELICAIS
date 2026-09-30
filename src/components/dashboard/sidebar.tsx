@@ -37,8 +37,8 @@ const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
  * só existe no client.
  */
 const SUBITENS_CONTEXTUAIS: Record<string, { label: string; href: string }[]> = {
-  "/reports/tempo-indisponibilidade": [
-    { label: "Analítico", href: "/reports/tempo-indisponibilidade/analitico" },
+  "/s/reports/tempo-indisponibilidade": [
+    { label: "Analítico", href: "/s/reports/tempo-indisponibilidade/analitico" },
   ],
 };
 

@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 // Fonte do tema Zen Linen — carregada só nesta rota, mesmo padrão de
-// /reports/consolidado, /kpi/operadores etc: next/font/google gera uma
+// /s/reports/consolidado, /kpi/operadores etc: next/font/google gera uma
 // variável escopada ao módulo que a importa, referenciada só dentro de
 // [data-page="reports-tempo-indisponibilidade"] em reports-tempo-indisp.css,
 // então não afeta nenhuma outra página.
@@ -34,7 +34,7 @@ const zenSans = Instrument_Sans({
 
 export const revalidate = 300;
 
-// Mesmo piso mínimo de /reports/consolidado: o fallback de loading permanece
+// Mesmo piso mínimo de /s/reports/consolidado: o fallback de loading permanece
 // por pelo menos 3s contando desde a entrada na página. Se as buscas já
 // consumirem esse tempo, não há espera adicional.
 const MIN_LOADING_MS = 3_000;
@@ -132,7 +132,7 @@ export default async function ReportsTempoIndisponibilidadePage() {
         componente/mecanismo do ConsolidadoNavSidebar (ambos delegam a
         FloatingNavSidebar), só com a lista de itens trocada. position:
         fixed, fica fora do fluxo do container centralizado abaixo — mesma
-        posição de ConsolidadoNavSidebar em /reports/consolidado.
+        posição de ConsolidadoNavSidebar em /s/reports/consolidado.
       */}
       <TempoIndispNavSidebar />
 
@@ -145,7 +145,7 @@ export default async function ReportsTempoIndisponibilidadePage() {
             Cabeçalho (título "Tempo Logado & Indisponibilidade" + linha
             "{supervisor} fez um report às {hora}" + controles) é renderizado
             DENTRO de TempoIndispSection, não aqui — mesmo motivo do
-            GestorEquipeSection em /reports/consolidado: o texto do report e
+            GestorEquipeSection em /s/reports/consolidado: o texto do report e
             os controles (engrenagem, limpar base) dependem de estado client
             atualizado por refetch() após ações do gestor, então só podem
             viver num Client Component. Ver o topo de TempoIndispSection.

@@ -311,7 +311,7 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
       // Container PRÓPRIO sem border/rounded/elevation-1 (TABELA_CONTAINER_CLASS,
       // usado pelas outras tabelas do mesmo padrão — Tempo Logado/
       // Indisponibilidade/TMA — continua intocado em tabela-padrao.tsx). Este
-      // componente (EquipeTable) só é consumido por /reports/consolidado,
+      // componente (EquipeTable) só é consumido por /s/reports/consolidado,
       // dentro do KpiFrame da rota, que fornece padding e cantoneiras sem
       // criar um container com fundo/borda/raio — usar
       // TABELA_CONTAINER_CLASS aqui recriaria esse container. `data-equipe-table`

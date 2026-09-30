@@ -58,7 +58,7 @@ export async function saveConfigTabelaTempoIndispAction(
     return { success: false, error: "Erro ao salvar configuração." };
   }
 
-  revalidatePath("/reports/tempo-indisponibilidade");
+  revalidatePath("/s/reports/tempo-indisponibilidade");
 
   return { success: true };
 }

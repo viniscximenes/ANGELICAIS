@@ -1,10 +1,10 @@
-// Suspense fallback do Next.js pra /reports/tma-peso — mostrado
+// Suspense fallback do Next.js pra /s/reports/tma-peso — mostrado
 // automaticamente enquanto o Server Component de page.tsx (async, aguarda
 // getGestorTma + outras 4 chamadas em paralelo, mais o piso mínimo de
 // MIN_LOADING_MS — ver page.tsx) ainda não resolveu.
 //
 // Reescrito pra ESPELHAR EXATAMENTE o layout real (mesma técnica de
-// /reports/consolidado/loading.tsx, lido por referência) — não o formato
+// /s/reports/consolidado/loading.tsx, lido por referência) — não o formato
 // genérico compartilhado (antigo KpiLoadingScreen formato="tma-peso"): mesmo
 // wrapper (`data-page`, `max-w-7xl`, paddings), mesmas classes literais de
 // título/subtítulo/linha de botões (copiadas de gestor-tma-section.tsx),
@@ -24,7 +24,7 @@
 import { Instrument_Sans } from "next/font/google";
 
 import "./reports-tma-peso.css";
-import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 
 // MESMA fonte/variável de page.tsx (zenSans) — precisa ser importada aqui de
 // novo (loading.tsx é o fallback, monta ANTES de page.tsx resolver), senão o

@@ -20,7 +20,7 @@ export default async function ConfigUsuariosPage() {
   // acumular a skill de admin (is_admin_skill). Sem checagem exclusiva de
   // role antes, pra não barrar o caso multi-role.
   if (!can(user.profile.role, "manage_system", user.profile.isAdminSkill)) {
-    redirect("/reports/consolidado");
+    redirect("/s/reports/consolidado");
   }
 
   const userName = formatNomeProprio(user.profile.fullName);

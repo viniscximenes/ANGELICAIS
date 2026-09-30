@@ -13,7 +13,7 @@ interface TabelaSegmentosProps {
    * altura definida) e SÓ a tabela rola internamente — título e o toggle
    * Marca/Unidade ficam fixos fora do scroll. Mesmo padrão de
    * TabelaTemas/DistribuicaoQuartis, usado dentro do trilho horizontal de
-   * /reports/consolidado (retencao-horizontal-scroll.tsx).
+   * /s/reports/consolidado (retencao-horizontal-scroll.tsx).
    */
   scrollInterno?: boolean;
 }

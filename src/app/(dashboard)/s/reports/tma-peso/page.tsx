@@ -30,7 +30,7 @@ const zenSans = Instrument_Sans({
 
 export const revalidate = 300;
 
-// Loading "fake" de piso mínimo — mesma técnica de /reports/consolidado
+// Loading "fake" de piso mínimo — mesma técnica de /s/reports/consolidado
 // (ver page.tsx daquela rota): o loading.tsx (Suspense fallback) foi
 // desenhado pra replicar a posição exata dos cards da página real, mas se
 // os dados voltarem rápido ele só pisca na tela por uma fração de segundo.

@@ -14,7 +14,7 @@ interface TabelaOperadoresComparativoProps {
 
 /**
  * Tabela de operadores de um gestor no comparativo — mesmas colunas de
- * /reports/consolidado (Operador, Retidos, Cancelados, Pedidos, Tx Retenção).
+ * /s/reports/consolidado (Operador, Retidos, Cancelados, Pedidos, Tx Retenção).
  *
  * Usa o identificador REAL do operador (`login`, o email canônico do roster),
  * nunca operador_nome_fantasia — o comparativo entre pares mostra o operador

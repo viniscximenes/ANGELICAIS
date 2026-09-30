@@ -27,7 +27,7 @@ export default async function BasesKpiPage() {
   // acumular a skill de admin (is_admin_skill). Sem checagem exclusiva de
   // role antes, pra não barrar o caso multi-role.
   if (!can(user.profile.role, "manage_base", user.profile.isAdminSkill)) {
-    redirect("/reports/consolidado");
+    redirect("/s/reports/consolidado");
   }
 
   const userName = formatNomeProprio(user.profile.fullName);

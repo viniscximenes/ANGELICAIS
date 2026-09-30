@@ -43,7 +43,7 @@ export async function saveConfigTabelaTmaAction(ordemTabela: OrdemTabelaTma): Pr
     return { success: false, error: "Erro ao salvar configuração." };
   }
 
-  revalidatePath("/reports/tma-peso");
+  revalidatePath("/s/reports/tma-peso");
 
   return { success: true };
 }

@@ -29,7 +29,7 @@ export async function clearConsolidadoAction(): Promise<ClearConsolidadoResult> 
     const { error } = await admin.from("d1_consolidado").delete().eq("data_ref", dataRef);
     if (error) throw new Error(error.message);
 
-    // Limpa a base do bloco Analítico (mesma página /reports/consolidado),
+    // Limpa a base do bloco Analítico (mesma página /s/reports/consolidado),
     // alimentada pelo MESMO upload do consolidado (uploadConsolidadoAction
     // grava nas duas). Sem isso, a EquipeTable ficaria vazia e o bloco
     // analítico seguiria mostrando os dados antigos.
@@ -52,7 +52,7 @@ export async function clearConsolidadoAction(): Promise<ClearConsolidadoResult> 
       );
     }
 
-    revalidatePath("/reports/consolidado");
+    revalidatePath("/s/reports/consolidado");
     return { success: true };
   } catch (err) {
     console.error("[clear-consolidado] erro:", err);

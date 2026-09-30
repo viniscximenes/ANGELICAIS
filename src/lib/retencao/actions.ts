@@ -157,7 +157,7 @@ type OperadorDetalheResult =
 
 /**
  * Detalhamento de UM operador (retencao_atendimentos), buscado sob demanda a
- * partir da EquipeTable (d1_consolidado, topo de /reports/consolidado) —
+ * partir da EquipeTable (d1_consolidado, topo de /s/reports/consolidado) —
  * fonte principal/"viva" da página. Diferente de `fetchDashboardRetencaoAction`
  * (que carrega TODOS os operadores de uma vez para o trilho analítico), esta
  * action busca só o operador clicado, mantendo a EquipeTable desacoplada do
@@ -208,7 +208,7 @@ export async function fetchOperadorDetalheAction(login: string): Promise<Operado
 
 /**
  * Evolução acumulada da taxa em faixas de 30 min (toggle "Acumulada" do
- * gráfico "Evolução da equipe" em /reports/consolidado). Buscada SÓ quando o
+ * gráfico "Evolução da equipe" em /s/reports/consolidado). Buscada SÓ quando o
  * toggle é ligado — fora do fetchDashboardRetencaoAction pra não somar uma
  * consulta a mais em todo carregamento da página.
  */

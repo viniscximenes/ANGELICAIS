@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 
 import { IconEye, IconEyeOff } from "@tabler/icons-react";
-import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
-import { TmaPesoSkeleton } from "@/app/(dashboard)/reports/tma-peso/loading";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
+import { TmaPesoSkeleton } from "@/app/(dashboard)/s/reports/tma-peso/loading";
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
 import { clearTmaAction } from "@/lib/tma/actions/clear-tma-action";
 import { refreshTmaAction } from "@/lib/tma/actions/refresh-tma-action";
@@ -33,7 +33,7 @@ const POLL_INTERVAL_MS = 30_000;
 // Piso mínimo (ms) da tela de loading exibida durante o refresh MANUAL
 // ("Limpar base") — mesma lógica/duração do piso mínimo do carregamento
 // inicial (ver MIN_LOADING_MS em page.tsx) e do mesmo overlay em
-// /reports/consolidado (gestor-equipe-section.tsx). Só cobre o refetch
+// /s/reports/consolidado (gestor-equipe-section.tsx). Só cobre o refetch
 // disparado PELO USUÁRIO — o polling silencioso de 30s continua sem overlay.
 const MIN_REFRESH_LOADING_MS = 3_000;
 
@@ -149,7 +149,7 @@ export function GestorTmaSection({
     <>
       {/*
         Overlay de refresh manual (ver handleBaseCleared/MIN_REFRESH_LOADING_MS
-        acima) — mesmo padrão de /reports/consolidado (gestor-equipe-section.tsx):
+        acima) — mesmo padrão de /s/reports/consolidado (gestor-equipe-section.tsx):
         reaproveita o esqueleto do Suspense fallback inicial (KpiLoadingScreen
         formato="tma-peso"), fixo por cima só da área de CONTEÚDO (abaixo do
         header de 60px, à direita da sidebar de 240px em telas lg+).

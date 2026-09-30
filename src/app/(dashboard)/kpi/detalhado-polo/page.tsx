@@ -27,7 +27,7 @@ const zenSans = Instrument_Sans({
 // Snapshot de todas as equipes, embaralhado a cada request — nunca cacheado.
 export const dynamic = "force-dynamic";
 
-// Loading "fake" de piso mínimo — mesma regra de /reports/consolidado e
+// Loading "fake" de piso mínimo — mesma regra de /s/reports/consolidado e
 // /kpi/operadores: o loading.tsx (Suspense fallback, entrada de rota/F5/
 // refresh) fica no mínimo MIN_LOADING_MS na tela, contados desde a entrada
 // nesta função. Se a busca real já passou disso, não espera nada.
@@ -58,7 +58,7 @@ export default async function KpiDetalhadoPolo() {
 
   await aguardarPisoMinimo(inicioCarregamento);
 
-  // Sem <PageTransition> (mesmo motivo de /reports/consolidado e
+  // Sem <PageTransition> (mesmo motivo de /s/reports/consolidado e
   // /kpi/operadores): o fade a partir de opacity:0 só anima após a
   // hidratação, deixando a tela vazia entre o loading.tsx sumir e os dados
   // aparecerem. Quem cobre a espera é o loading.tsx — a troca é direta.

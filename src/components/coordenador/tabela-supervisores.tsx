@@ -22,7 +22,7 @@ const NOME_CELL =
 const ULTIMA = "!border-r-0";
 
 /**
- * Mesmo cabeçalho da EquipeTable de /reports/consolidado (classe local de lá:
+ * Mesmo cabeçalho da EquipeTable de /s/reports/consolidado (classe local de lá:
  * ds-body + font-bold + text-foreground + uppercase), células com
  * TABELA_HEADER_CELL_CLASS (whitespace-nowrap, sem quebra de linha).
  */
@@ -315,7 +315,7 @@ export function TabelaSupervisores({
         })}
 
         {/* Linha POLO — mesmo padrão da linha EQUIPE da EquipeTable
-            (/reports/consolidado). Taxa calculada com os totais
+            (/s/reports/consolidado). Taxa calculada com os totais
             (retidos ÷ (retidos + cancelados)), nunca média das taxas. */}
         {supervisores.length > 0 &&
           (() => {

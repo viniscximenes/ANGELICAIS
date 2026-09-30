@@ -7,9 +7,9 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { UploadTempoLogadoDropzone } from "@/components/d-1/tempo-logado/upload-tempo-logado-dropzone";
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
 import { AguardandoDadosCard } from "@/components/gestor/aguardando-dados-card";
-import { TempoIndispSkeleton } from "@/app/(dashboard)/reports/tempo-indisponibilidade/loading";
+import { TempoIndispSkeleton } from "@/app/(dashboard)/s/reports/tempo-indisponibilidade/loading";
 import { SignatureFooter } from "@/components/gestor/signature-footer";
-import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 import type { PausaProgramadaDb } from "@/lib/bases/pausas-programadas/types";
 import {
   buildForecastPorOperador,
@@ -41,7 +41,7 @@ import { TempoIndispTabela } from "./tempo-indisp-tabela";
 
 // Texto da 2ª linha do cabeçalho ("{nome} fez um report às {hora}") — MESMA
 // lógica/formato de formatCabecalhoReport em gestor-equipe-section.tsx
-// (/reports/consolidado), duplicada aqui (não extraída pra um util
+// (/s/reports/consolidado), duplicada aqui (não extraída pra um util
 // compartilhado) só pra não mexer no arquivo do consolidado. Diferente de
 // formatReportLabel (@/lib/gestor/format-report-label), que ainda é usada
 // pelas outras 2 tabelas do painel do gestor (TMA) com o texto mais longo
@@ -94,7 +94,7 @@ export function TempoIndispSection({
   // scroll anterior (ex.: estava no meio do trilho do Analítico) — some com
   // o cabeçalho e deixa a página abrindo "no meio". Desligamos a restauração
   // automática e forçamos o topo, só nesta rota (mesmo ajuste de
-  // /reports/consolidado).
+  // /s/reports/consolidado).
   //
   // Um scrollTo(0,0) único na montagem não bastava: o navegador pode tentar
   // RESTAURAR a posição salva mais de uma vez enquanto o layout da página
@@ -302,7 +302,7 @@ export function TempoIndispSection({
   return (
     <>
       {/*
-        Overlay de refresh manual — mesmo ajuste de /reports/consolidado:
+        Overlay de refresh manual — mesmo ajuste de /s/reports/consolidado:
         cobre só a área de CONTEÚDO (abaixo do header de 60px, à direita da
         sidebar de 240px em telas lg+), não a página inteira. Cobrir tudo
         escondia a sidebar durante o refresh, diferente de um F5 normal
@@ -387,7 +387,7 @@ export function TempoIndispSection({
 
       {/*
         initial={false}: mesmo motivo de GestorEquipeSection
-        (gestor-equipe-section.tsx, /reports/consolidado) — esta seção já vem
+        (gestor-equipe-section.tsx, /s/reports/consolidado) — esta seção já vem
         pronta via SSR (props, sem fetch client próprio). Animar de
         opacity:0/y:12 com delay fazia a tabela "subir" na tela DEPOIS do
         loading.tsx sumir (motion renderiza o estado `initial` no SSR; só

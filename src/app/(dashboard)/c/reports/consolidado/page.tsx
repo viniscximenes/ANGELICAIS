@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Instrument_Sans } from "next/font/google";
 
-// Mesmo CSS escopado de /reports/consolidado (data-page="reports-consolidado")
+// Mesmo CSS escopado de /s/reports/consolidado (data-page="reports-consolidado")
 // — a visão do coordenador segue o padrão visual do Consolidado do gestor.
-import "../../../reports/consolidado/reports-consolidado.css";
+import "../../../s/reports/consolidado/reports-consolidado.css";
 import { CoordenadorConsolidadoView } from "@/components/coordenador/coordenador-consolidado";
 import { SignatureFooter } from "@/components/gestor/signature-footer";
 import { getCurrentUser } from "@/lib/auth/get-current-user";

@@ -490,7 +490,7 @@ export function TabelaTaxaPorHora({
             ))}
           </colgroup>
           <thead>
-            {/* Mesmo visual do cabeçalho da EquipeTable (/reports/consolidado). */}
+            {/* Mesmo visual do cabeçalho da EquipeTable (/s/reports/consolidado). */}
             <tr className="ds-body bg-muted/40 text-foreground font-bold tracking-wide uppercase">
               <th className="px-2 py-2.5 text-center align-middle whitespace-nowrap">
                 Supervisor

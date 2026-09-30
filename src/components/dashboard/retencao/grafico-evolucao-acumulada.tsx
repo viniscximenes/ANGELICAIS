@@ -16,7 +16,7 @@ import {
 import type { FaixaAcumuladaData } from "@/lib/retencao/get-evolucao-acumulada";
 
 /**
- * Visão ACUMULADA do gráfico "Evolução da equipe" (/reports/consolidado,
+ * Visão ACUMULADA do gráfico "Evolução da equipe" (/s/reports/consolidado,
  * toggle "Acumulada" ao lado da engrenagem). Mesmo padrão visual do
  * GraficoEvolucao com `visualDetalhado` (legenda, barras neutras, meta
  * tracejada, eixo da taxa ajustado, ponto vazado em amostra pequena, linha

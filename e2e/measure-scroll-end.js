@@ -3,7 +3,7 @@
 // altura do pin-spacer e da section, em passos pequenos do topo ao fim.
 //
 // Uso: node e2e/measure-scroll-end.js <path> <lastCardId> <outFile>
-//   path: "/reports/tempo-indisponibilidade" ou "/reports/consolidado"
+//   path: "/s/reports/tempo-indisponibilidade" ou "/s/reports/consolidado"
 //   lastCardId: id do wrapper do último slide, ex. "trilho-card-3"
 //     (RetencaoHorizontalScroll sempre gera #trilho-card-N).
 const { chromium } = require("playwright");

@@ -51,6 +51,6 @@ export async function saveTmaMetaAction(metaMmSs: string | null): Promise<SaveTm
     return { success: false, error: "Erro ao salvar configuração." };
   }
 
-  revalidatePath("/reports/tma-peso");
+  revalidatePath("/s/reports/tma-peso");
   return { success: true };
 }

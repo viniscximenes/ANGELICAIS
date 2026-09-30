@@ -4,7 +4,7 @@
  * quanto pelo KpiGestorSection (skeleton da troca de mês e overlay do
  * refresh após salvar metas). Só markup + CSS, sem estado.
  *
- * Mesma abordagem do loading.tsx de /reports/consolidado: espelha o layout
+ * Mesma abordagem do loading.tsx de /s/reports/consolidado: espelha o layout
  * real (mesmo wrapper, paddings, cabeçalho, linha de ações e grid dos cards)
  * pra nada "pular" quando o conteúdo de verdade entra.
  */

@@ -1,5 +1,5 @@
 /**
- * Assinatura discreta no rodapé de /reports/consolidado — reaproveita a
+ * Assinatura discreta no rodapé de /s/reports/consolidado — reaproveita a
  * linguagem visual das cantoneiras do StyledCard (ver CardDecorator em
  * styled-card.tsx), só com 2 vértices (superior-esquerdo e inferior-direito)
  * em vez dos 4, pra marcar "moldura" sem parecer mais um card de dado.

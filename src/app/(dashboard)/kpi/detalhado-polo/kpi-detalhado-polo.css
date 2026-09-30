@@ -187,7 +187,7 @@
 
 /* ───────── Card do filtro de gestores (popover do título "Gestor") ─────────
  * Mesmo padrão da lista de opções do ConfigTabelaPopover de
- * /reports/consolidado ("Ordenação dos Operadores"): card bg-popover com
+ * /s/reports/consolidado ("Ordenação dos Operadores"): card bg-popover com
  * borda, rounded-lg, p-1 e shadow-2xl; itens rounded-md px-3 py-2 text-xs
  * font-medium; selecionado em bg-primary/text-primary-foreground
  * font-semibold shadow-sm; demais text-foreground com hover:bg-accent.

@@ -15,7 +15,7 @@ const THEMES = ["dark", "light"];
       const page = await browser.newPage();
       await page.setViewportSize({ width: vw, height: 900 });
       await login(page);
-      await page.goto(`${BASE_URL}/reports/tempo-indisponibilidade`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE_URL}/s/reports/tempo-indisponibilidade`, { waitUntil: "networkidle" });
       if (theme === "light") {
         await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
       }

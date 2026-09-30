@@ -25,7 +25,7 @@ interface GraficoEvolucaoProps {
   /** Subtítulo abaixo do título. Default = texto de sempre (comparativo). */
   descricao?: string;
   /**
-   * Leitura aprimorada (só /reports/consolidado ativa; default false mantém o
+   * Leitura aprimorada (só /s/reports/consolidado ativa; default false mantém o
    * gráfico de sempre em /operacao/comparativo-consolidado):
    * - barras de pedidos neutras (a cor verde/vermelha fica só na linha);
    * - legenda acima do gráfico (inclui o que é o eixo da direita);

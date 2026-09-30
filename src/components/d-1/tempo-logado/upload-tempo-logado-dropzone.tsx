@@ -25,7 +25,7 @@ interface UploadTempoLogadoDropzoneProps {
    * .csv (sem a opção "Todos os arquivos"), via File System Access API
    * (showOpenFilePicker — Chrome/Edge). Navegadores sem a API seguem com o
    * seletor padrão de sempre. Arrastar e soltar não muda. MESMO mecanismo
-   * de UploadDropzone (/reports/consolidado, prop de mesmo nome).
+   * de UploadDropzone (/s/reports/consolidado, prop de mesmo nome).
    */
   abrirEmDownloads?: boolean;
 }
@@ -225,7 +225,7 @@ export function UploadTempoLogadoDropzone({
   }
 
   // Ícone único animado, sem texto permanente — mesmo padrão de
-  // UploadDropzone (/reports/consolidado, 22ª rodada): a informação
+  // UploadDropzone (/s/reports/consolidado, 22ª rodada): a informação
   // continua acessível via aria-label completo (leitor de tela).
   // Mensagens de erro reais continuam em texto visível (.status-danger).
   const accessibleName =

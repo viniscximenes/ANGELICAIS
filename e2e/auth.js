@@ -36,7 +36,7 @@ async function login(page) {
   await page.fill("#username", USERNAME);
   await page.fill("#password", PASSWORD);
   await page.click('button[type="submit"]');
-  // loginAction faz redirect() server-side pra /reports/consolidado (GESTOR) —
+  // loginAction faz redirect() server-side pra /s/reports/consolidado (GESTOR) —
   // espera a navegação completar.
   await page.waitForURL(/\/reports\//, { timeout: 15000 });
 }

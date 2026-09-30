@@ -12,7 +12,7 @@ import { requestScrollToCard } from "@/lib/retencao/scroll-to-card-event";
 import { FloatingNavSidebar } from "@/components/ui/floating-nav-sidebar";
 
 /**
- * Índices dos cards no trilho horizontal de /reports/tempo-indisponibilidade
+ * Índices dos cards no trilho horizontal de /s/reports/tempo-indisponibilidade
  * — precisam bater com a ordem real do array `slides` em
  * tempo-indisp-section.tsx: 0 = 4 cards de resumo + Tabela de Pausas
  * Detalhadas (JUNTOS, um único slide), 1 = Aderência, 2 = Pausas
@@ -33,7 +33,7 @@ const TRILHO_CARD = {
 const ICON_CLASS = "h-5 w-5 shrink-0 text-[color:var(--muted-foreground)]";
 
 /**
- * Navegação lateral animada do trilho de /reports/tempo-indisponibilidade —
+ * Navegação lateral animada do trilho de /s/reports/tempo-indisponibilidade —
  * MESMO componente/mecanismo de ConsolidadoNavSidebar (ambos delegam a
  * FloatingNavSidebar), só com a lista de itens/ícones trocada.
  *

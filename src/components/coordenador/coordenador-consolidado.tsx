@@ -193,7 +193,7 @@ export function CoordenadorConsolidadoView({
   return (
     <div className="space-y-12">
       {/* Cabeçalho + controles + anexo — mesma estrutura de
-          /reports/tempo-indisponibilidade (título, linha de controles com a
+          /s/reports/tempo-indisponibilidade (título, linha de controles com a
           engrenagem, card de anexo em largura cheia logo abaixo). */}
       <div className="space-y-2">
         <div>
@@ -212,7 +212,7 @@ export function CoordenadorConsolidadoView({
               metaFinanceiroInicial={metaFinanceiro}
               onOpenChange={setConfigAberta}
             />
-            {/* Mesmo botão e ordem do /reports/consolidado: segurar para
+            {/* Mesmo botão e ordem do /s/reports/consolidado: segurar para
                 confirmar. Limpa a base do dia do polo inteiro (é a mesma base
                 de todas as equipes). */}
             <ClearBaseButton
@@ -278,7 +278,7 @@ export function CoordenadorConsolidadoView({
 
           {/*
             Trilho horizontal — MESMO componente e MESMAS regras do
-            /reports/consolidado (RetencaoHorizontalScroll: pin abaixo do
+            /s/reports/consolidado (RetencaoHorizontalScroll: pin abaixo do
             header, scroll vertical vira deslocamento lateral, um card por
             vez com snap no mais próximo, folga no fim, só em telas >= lg;
             abaixo disso os slides ficam empilhados). Começa depois do gráfico

@@ -1,5 +1,5 @@
 import { StyledCard } from "@/components/gestor/styled-card";
-import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 
 /**
  * Cards "fantasma" (sem dado real) reaproveitados por dois estados de

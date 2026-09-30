@@ -1,4 +1,4 @@
-import "../../../reports/consolidado/reports-consolidado.css";
+import "../../../s/reports/consolidado/reports-consolidado.css";
 import { DotSpinner } from "@/components/gestor/dot-spinner";
 
 export default function LoadingCoordenadorConsolidado() {

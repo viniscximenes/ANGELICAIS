@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 /**
  * Estilos e helpers centralizados do padrão visual "tabela estilo planilha"
  * do painel do gestor — extraído literalmente de EquipeTable (a referência
- * original, /reports/consolidado) pra ser reaproveitado por TODAS as
+ * original, /s/reports/consolidado) pra ser reaproveitado por TODAS as
  * tabelas do mesmo padrão (Equipe, Tempo Logado, Indisponibilidade),
  * eliminando qualquer chance de divergência por cópia manual entre elas.
  *

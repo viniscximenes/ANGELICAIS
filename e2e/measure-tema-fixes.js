@@ -26,7 +26,7 @@ async function setTheme(page, theme) {
       const page = await browser.newPage();
       await page.setViewportSize({ width: vw, height: 900 });
       await login(page);
-      await page.goto(`${BASE_URL}/reports/tempo-indisponibilidade`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE_URL}/s/reports/tempo-indisponibilidade`, { waitUntil: "networkidle" });
       await setTheme(page, theme);
 
       // Item 1: cor das 5 colunas (Login, Logout, NR17%, Pausa Particular%, Outras Pausas%)

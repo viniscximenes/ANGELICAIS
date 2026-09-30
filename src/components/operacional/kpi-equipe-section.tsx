@@ -24,7 +24,7 @@ import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import { getKpiMesHistoricoAction } from "@/lib/kpi/gestor/get-kpi-mes-historico-action";
-import { getKpiExtrasMesHistoricoAction } from "@/app/(dashboard)/kpi/operadores/_lib/get-kpi-extras-mes-historico-action";
+import { getKpiExtrasMesHistoricoAction } from "@/app/(dashboard)/s/kpi/operadores/_lib/get-kpi-extras-mes-historico-action";
 import { getRvOperadoresAction } from "@/lib/kpi/gestor/get-rv-operadores-action";
 import { toggleShowRvOperadoresAction } from "@/lib/kpi/gestor/toggle-show-rv-operadores-action";
 import type {
@@ -40,29 +40,29 @@ import type { RvScope } from "@/lib/rv/types";
 import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
 import { cn } from "@/lib/utils";
-import { MesSelector } from "@/app/(dashboard)/kpi/operadores/_components/mes-selector";
-import { RvSwitch } from "@/app/(dashboard)/kpi/operadores/_components/rv-switch";
-import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
-import { KpiEmptyState } from "@/app/(dashboard)/kpi/operadores/_components/kpi-empty-state";
-import { KpiTabelaSkeleton } from "@/app/(dashboard)/kpi/operadores/_components/kpi-tabela-skeleton";
-import { formatMesCapitalizado, formatMesPorExtenso } from "@/app/(dashboard)/kpi/operadores/_components/mes-format";
-import { formatHeaderLabel } from "@/app/(dashboard)/kpi/operadores/_lib/format-header-label";
-import { formatDuracaoHoras } from "@/app/(dashboard)/kpi/operadores/_lib/format-duracao-horas";
-import { formatKpiValueLocal } from "@/app/(dashboard)/kpi/operadores/_lib/format-kpi-value-local";
-import { celulaApresentacao } from "@/app/(dashboard)/kpi/operadores/_lib/celula-apresentacao";
-import type { KpiAnteriorPorOperador } from "@/app/(dashboard)/kpi/operadores/_lib/get-kpi-anterior-por-emails";
-import { computeEvolucaoTxRetencao, type EvolucaoTxRetencao } from "@/app/(dashboard)/kpi/operadores/_lib/kpi-delta";
-import { celulaIndicadorRv } from "@/app/(dashboard)/kpi/operadores/_lib/celula-indicador-rv";
-import { celulaBonusRv } from "@/app/(dashboard)/kpi/operadores/_lib/celula-bonus-rv";
-import { celulaMultiplicadorRv } from "@/app/(dashboard)/kpi/operadores/_lib/celula-multiplicador-rv";
-import { celulaTicketRv } from "@/app/(dashboard)/kpi/operadores/_lib/celula-ticket-rv";
-import { celulaRvTotal, STYLE_SUFIXO_DESCONTO } from "@/app/(dashboard)/kpi/operadores/_lib/celula-rv-total";
-import { recolorirOperadoresHistorico } from "@/app/(dashboard)/kpi/operadores/_lib/status-historico";
-import { IndicadorRvHeader, IndicadorRvCell } from "@/app/(dashboard)/kpi/operadores/_components/indicador-rv-coluna";
+import { MesSelector } from "@/app/(dashboard)/s/kpi/operadores/_components/mes-selector";
+import { RvSwitch } from "@/app/(dashboard)/s/kpi/operadores/_components/rv-switch";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
+import { KpiEmptyState } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-empty-state";
+import { KpiTabelaSkeleton } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-tabela-skeleton";
+import { formatMesCapitalizado, formatMesPorExtenso } from "@/app/(dashboard)/s/kpi/operadores/_components/mes-format";
+import { formatHeaderLabel } from "@/app/(dashboard)/s/kpi/operadores/_lib/format-header-label";
+import { formatDuracaoHoras } from "@/app/(dashboard)/s/kpi/operadores/_lib/format-duracao-horas";
+import { formatKpiValueLocal } from "@/app/(dashboard)/s/kpi/operadores/_lib/format-kpi-value-local";
+import { celulaApresentacao } from "@/app/(dashboard)/s/kpi/operadores/_lib/celula-apresentacao";
+import type { KpiAnteriorPorOperador } from "@/app/(dashboard)/s/kpi/operadores/_lib/get-kpi-anterior-por-emails";
+import { computeEvolucaoTxRetencao, type EvolucaoTxRetencao } from "@/app/(dashboard)/s/kpi/operadores/_lib/kpi-delta";
+import { celulaIndicadorRv } from "@/app/(dashboard)/s/kpi/operadores/_lib/celula-indicador-rv";
+import { celulaBonusRv } from "@/app/(dashboard)/s/kpi/operadores/_lib/celula-bonus-rv";
+import { celulaMultiplicadorRv } from "@/app/(dashboard)/s/kpi/operadores/_lib/celula-multiplicador-rv";
+import { celulaTicketRv } from "@/app/(dashboard)/s/kpi/operadores/_lib/celula-ticket-rv";
+import { celulaRvTotal, STYLE_SUFIXO_DESCONTO } from "@/app/(dashboard)/s/kpi/operadores/_lib/celula-rv-total";
+import { recolorirOperadoresHistorico } from "@/app/(dashboard)/s/kpi/operadores/_lib/status-historico";
+import { IndicadorRvHeader, IndicadorRvCell } from "@/app/(dashboard)/s/kpi/operadores/_components/indicador-rv-coluna";
 import {
   ConfigKpiOperadoresPopover,
   type ColunaKpiOperadoresDisponivel,
-} from "@/app/(dashboard)/kpi/operadores/_components/config-kpi-operadores-popover";
+} from "@/app/(dashboard)/s/kpi/operadores/_components/config-kpi-operadores-popover";
 import {
   KPI_COLUNAS_ORDER_LOCAL,
   LABELS_KPI_LOCAL,
@@ -70,13 +70,13 @@ import {
   TEMPO_LOGIN_SLUG,
   TEMPO_PROJETADO_SLUG,
   TEMPO_RESTANTE_SLUG,
-} from "@/app/(dashboard)/kpi/operadores/_lib/kpi-colunas-local";
-import { saveKpiColunasLocalAction } from "@/app/(dashboard)/kpi/operadores/_lib/save-kpi-colunas-local-action";
+} from "@/app/(dashboard)/s/kpi/operadores/_lib/kpi-colunas-local";
+import { saveKpiColunasLocalAction } from "@/app/(dashboard)/s/kpi/operadores/_lib/save-kpi-colunas-local-action";
 import { DEFAULT_KPI_COLUNAS_VISIVEIS } from "@/lib/kpi/gestor/kpi-colunas-config";
-import { RV_COLUNA_ORDER, type RvColunaId } from "@/app/(dashboard)/kpi/operadores/_lib/rv-colunas-config";
-import { formatMultiplicador } from "@/app/(dashboard)/kpi/operadores/_lib/format-multiplicador";
-import { celulaTempoRestante, valorTempoRestanteParaSort } from "@/app/(dashboard)/kpi/operadores/_lib/celula-tempo-restante";
-import type { KpiExtrasPorEmail } from "@/app/(dashboard)/kpi/operadores/_lib/extract-kpis-extras";
+import { RV_COLUNA_ORDER, type RvColunaId } from "@/app/(dashboard)/s/kpi/operadores/_lib/rv-colunas-config";
+import { formatMultiplicador } from "@/app/(dashboard)/s/kpi/operadores/_lib/format-multiplicador";
+import { celulaTempoRestante, valorTempoRestanteParaSort } from "@/app/(dashboard)/s/kpi/operadores/_lib/celula-tempo-restante";
+import type { KpiExtrasPorEmail } from "@/app/(dashboard)/s/kpi/operadores/_lib/extract-kpis-extras";
 
 type SortDir = "asc" | "desc";
 type SortState = { slug: string; dir: SortDir };

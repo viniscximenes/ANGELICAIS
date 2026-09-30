@@ -1,4 +1,4 @@
-// Suspense fallback do Next.js pra /reports/consolidado — mostrado
+// Suspense fallback do Next.js pra /s/reports/consolidado — mostrado
 // automaticamente enquanto o Server Component de page.tsx (async, aguarda
 // getGestorConsolidado + outras 4 chamadas em paralelo, mais o piso mínimo
 // de MIN_LOADING_MS — ver page.tsx) ainda não resolveu.
@@ -29,7 +29,7 @@
 import { Instrument_Sans } from "next/font/google";
 
 import "./reports-consolidado.css";
-import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 
 // MESMA fonte/variável de page.tsx (zenSans) — precisa ser importada aqui de
 // novo (loading.tsx é o fallback, monta ANTES de page.tsx resolver), senão o
@@ -188,7 +188,7 @@ function SkeletonNavSidebar() {
 // um frame na posição antiga, só depois corrigido pra topo. Este script
 // fecha essa janela, desligando a restauração nativa e forçando o topo o
 // mais cedo possível (antes do primeiro paint do documento). Mesma correção
-// replicada em /reports/tma-peso e /reports/tempo-indisponibilidade.
+// replicada em /s/reports/tma-peso e /s/reports/tempo-indisponibilidade.
 const DESLIGAR_SCROLL_RESTORATION_SCRIPT = `
 try {
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";

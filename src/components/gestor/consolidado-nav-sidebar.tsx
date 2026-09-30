@@ -41,7 +41,7 @@ const ICON_CLASS = "h-5 w-5 shrink-0 text-[color:var(--muted-foreground)]";
 
 /**
  * Navegação lateral animada (hover expande 60px → 300px, padrão Aceternity —
- * ver @/components/ui/hover-sidebar), EXCLUSIVA de /reports/consolidado.
+ * ver @/components/ui/hover-sidebar), EXCLUSIVA de /s/reports/consolidado.
  * Renderizada só no page.tsx desta rota — não é layout global, não afeta
  * nenhuma outra página, e não substitui o menu principal do dashboard
  * (@/components/dashboard/sidebar.tsx), que continua intacto.

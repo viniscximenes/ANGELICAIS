@@ -4,7 +4,7 @@
 // servidor.
 //
 // Replica a geometria EXATA da página real (mesmo padrão do loading de
-// /kpi/operadores e /reports/consolidado): mesmo wrapper (data-page,
+// /kpi/operadores e /s/reports/consolidado): mesmo wrapper (data-page,
 // paddings, margem esquerda/largura calculadas de page.tsx), mesmo
 // cabeçalho (título + subtítulo), mesma linha da busca (h-8 w-64) e a tabela
 // dentro do MESMO KpiFrame real, com as larguras de coluna reais
@@ -17,7 +17,7 @@ import { Instrument_Sans } from "next/font/google";
 
 import "./kpi-detalhado-polo.css";
 import { DotSpinner } from "@/components/gestor/dot-spinner";
-import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 
 // MESMA fonte/variável de page.tsx — o fallback monta antes de page.tsx.
 const zenSans = Instrument_Sans({

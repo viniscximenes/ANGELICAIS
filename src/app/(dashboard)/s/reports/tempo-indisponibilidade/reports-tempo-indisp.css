@@ -1,5 +1,5 @@
 /*
- * Ajustes visuais específicos de /reports/tempo-indisponibilidade.
+ * Ajustes visuais específicos de /s/reports/tempo-indisponibilidade.
  * As cores (tokens) vêm da paleta global em src/app/palettes/ (paleta ativa) —
  * não redefina --background/--card/--primary/... aqui, senão a troca de
  * paleta deixa de valer nesta página.
@@ -168,7 +168,7 @@ body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-corne
 }
 
 /* ───────── Controles (botões com aria-pressed, ex. olho/nome fantasia) ─────────
- * Mesmo padrão de /reports/consolidado: sem borda branca de foco (outline do
+ * Mesmo padrão de /s/reports/consolidado: sem borda branca de foco (outline do
  * navegador resetado e trocado por um anel na cor do tema, --ring).
  */
 [data-page="reports-tempo-indisponibilidade"] button[aria-pressed] {

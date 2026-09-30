@@ -3,7 +3,7 @@ import { formatNomeDotSobrenome, formatNomeProprio } from "./derive-nome-operado
 
 /**
  * Formata o nome do supervisor exibido no subtítulo "{nome} fez um report às
- * {hora}" (/reports/tempo-indisponibilidade e /reports/consolidado).
+ * {hora}" (/s/reports/tempo-indisponibilidade e /s/reports/consolidado).
  *
  * O dado bruto (`d1_tempo_logado.report_nome_supervisor` / mesma coluna em
  * d1_consolidado) é gravado, no upload, a partir de `profiles.full_name` —

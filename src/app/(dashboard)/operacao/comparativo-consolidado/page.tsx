@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 // Fonte do tema Zen Linen — carregada só nesta rota, mesmo padrão de
-// /reports/consolidado e /operacao/diario (ver comentário completo em
+// /s/reports/consolidado e /operacao/diario (ver comentário completo em
 // reports-consolidado.css).
 const zenSans = Instrument_Sans({
   subsets: ["latin", "latin-ext"],
@@ -50,7 +50,7 @@ export default async function ComparativoConsolidadoPage() {
         <div className="mx-auto max-w-7xl space-y-4">
           {/*
             Cabeçalho (título + subtítulo) usando EXATAMENTE as mesmas
-            classes/estrutura de GestorEquipeSection em /reports/consolidado
+            classes/estrutura de GestorEquipeSection em /s/reports/consolidado
             (título "Consolidado" + linha de report), pra manter título e
             subtítulo na mesma posição nas duas rotas: mesmo wrapper "pt-4
             mb-4" acima do <h1>, mesmo breakpoint (md, não sm) pro tamanho de

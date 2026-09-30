@@ -3,7 +3,7 @@
 import { motion } from "motion/react";
 
 /**
- * Toggle segmentado dos cards do Analítico (/reports/consolidado):
+ * Toggle segmentado dos cards do Analítico (/s/reports/consolidado):
  * Divisor de Quartil (Equipe/Polo, Q1–Q4) e Desempenho por marca e
  * unidade (Marca/Unidade). Mesmos tokens do
  * SegmentedControl de /kpi/operadores (--seg-track/--seg-thumb/--seg-text),

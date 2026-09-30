@@ -10,9 +10,9 @@ import {
   IconSelector,
 } from "@tabler/icons-react";
 
-import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
-import { celulaApresentacao } from "@/app/(dashboard)/kpi/operadores/_lib/celula-apresentacao";
-import { formatKpiValueLocal } from "@/app/(dashboard)/kpi/operadores/_lib/format-kpi-value-local";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
+import { celulaApresentacao } from "@/app/(dashboard)/s/kpi/operadores/_lib/celula-apresentacao";
+import { formatKpiValueLocal } from "@/app/(dashboard)/s/kpi/operadores/_lib/format-kpi-value-local";
 import { StyledCard } from "@/components/gestor/styled-card";
 import {
   Popover,
@@ -126,7 +126,7 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
     : null;
 
   // ── Sempre abrir no topo (cabeçalho) ao recarregar — réplica da correção
-  // de /reports/consolidado (RetencaoDetalheSection). O navegador restaura
+  // de /s/reports/consolidado (RetencaoDetalheSection). O navegador restaura
   // a posição de scroll anterior, e tenta de novo a cada vez que a altura
   // do documento cresce o bastante pra alcançá-la; um scrollTo(0,0) único
   // não cobre isso. Complementa o script inline do loading.tsx (que age

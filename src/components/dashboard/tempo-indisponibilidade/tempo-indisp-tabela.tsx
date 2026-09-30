@@ -22,7 +22,7 @@ import {
 
 /**
  * Hover da linha — mesmo token (`--accent`) usado em EquipeTable
- * (/reports/consolidado, ver equipe-table.tsx: TABELA_LINHA_HOVER_CLASS).
+ * (/s/reports/consolidado, ver equipe-table.tsx: TABELA_LINHA_HOVER_CLASS).
  * TABELA_LINHA_CLASS (compartilhada com Equipe/TMA, tabela-padrao.tsx) vem
  * com `hover:bg-muted/40` — string-replace local, só dentro deste
  * componente exclusivo desta rota, pra não editar o arquivo compartilhado

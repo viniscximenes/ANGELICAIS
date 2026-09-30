@@ -38,7 +38,7 @@ import type {
   KpisPreview,
 } from "@/lib/kpi/analise-operadores/serial-types";
 import { formatDateBR } from "@/lib/utils/format-datetime-br";
-import { SegmentedControl } from "@/app/(dashboard)/kpi/operadores/_components/segmented-control";
+import { SegmentedControl } from "@/app/(dashboard)/s/kpi/operadores/_components/segmented-control";
 
 import { EstadoVazioOperador } from "./estado-vazio-operador";
 import type { IdentificacaoMeta } from "./identificacao-bloco";

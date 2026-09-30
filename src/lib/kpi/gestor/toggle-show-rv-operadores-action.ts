@@ -34,7 +34,7 @@ export async function toggleShowRvOperadoresAction(
     return { success: false, error: "Erro ao salvar" };
   }
 
-  revalidatePath("/kpi/operadores");
+  revalidatePath("/s/kpi/operadores");
 
   return { success: true };
 }

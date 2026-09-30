@@ -32,14 +32,14 @@ interface ExportPopupPngButtonProps {
   /**
    * Classe extra aplicada aos toasts (sonner) deste botão — ex.
    * "reports-consolidado-toast", pra herdar o tema Zen Linen só nos toasts
-   * disparados a partir do /reports/consolidado, sem tocar no <Toaster/>
+   * disparados a partir do /s/reports/consolidado, sem tocar no <Toaster/>
    * global nem nos toasts de TMA/Tempo Indisponibilidade (que não passam
    * essa prop e continuam com o visual padrão). Default: undefined.
    */
   toastClassName?: string;
   /**
    * Toast "Imagem baixada" ao concluir. Default true (comportamento de
-   * sempre, TMA/Tempo Indisponibilidade). /reports/consolidado passa false:
+   * sempre, TMA/Tempo Indisponibilidade). /s/reports/consolidado passa false:
    * o próprio botão já confirma (ícone ✓ por 2s). Erros continuam com toast.
    */
   showSuccessToast?: boolean;

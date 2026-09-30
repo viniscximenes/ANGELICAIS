@@ -19,7 +19,7 @@ interface CopiarContratosProps {
    * Quando true, ocupa 100% da altura do container pai (que precisa ter
    * altura definida) e o card dimensiona pela altura real do conteúdo até
    * o teto (max-h-full) — sem esticar nem estourar. Usado dentro do trilho
-   * horizontal de /reports/consolidado (retencao-horizontal-scroll.tsx).
+   * horizontal de /s/reports/consolidado (retencao-horizontal-scroll.tsx).
    */
   scrollInterno?: boolean;
 }
@@ -119,7 +119,7 @@ function CustomSelect({
       {/*
         Portal pra document.body: este select vive dentro do card
         "Copiar Contratos", que dentro do trilho horizontal de
-        /reports/consolidado fica num slide com overflow-hidden (pra clipar
+        /s/reports/consolidado fica num slide com overflow-hidden (pra clipar
         os cards vizinhos durante o scroll-jacking). Sem portal, o menu
         (position: absolute local) seria cortado por esse overflow-hidden
         assim que abrisse. Posição calculada via getBoundingClientRect do

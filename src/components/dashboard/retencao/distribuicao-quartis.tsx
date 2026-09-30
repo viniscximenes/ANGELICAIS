@@ -12,7 +12,7 @@ interface DistribuicaoQuartisProps {
    * Quando true, ocupa 100% da altura do container pai (que precisa ter
    * altura definida) e SÓ a tabela de operadores rola internamente —
    * título e os toggles (Equipe/Polo, Q1-Q4) ficam fixos fora do scroll.
-   * Usado dentro do trilho horizontal de /reports/consolidado
+   * Usado dentro do trilho horizontal de /s/reports/consolidado
    * (retencao-horizontal-scroll.tsx): o Q4 pode listar boa parte da
    * equipe/polo e não pode esticar a altura do trilho inteiro.
    */

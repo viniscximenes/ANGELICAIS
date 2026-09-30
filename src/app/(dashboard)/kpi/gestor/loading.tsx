@@ -7,7 +7,7 @@
 //
 // Tela própria (KpiGestorLoadingScreen), espelhando a posição exata do
 // cabeçalho, da linha de ações e dos cards — mesma abordagem do loading.tsx
-// de /reports/consolidado.
+// de /s/reports/consolidado.
 import { Instrument_Sans } from "next/font/google";
 
 import "./kpi-gestor.css";
@@ -21,7 +21,7 @@ const zenSans = Instrument_Sans({
   variable: "--font-zen-sans",
 });
 
-// Script inline, síncrono — mesma correção de /reports/consolidado (e
+// Script inline, síncrono — mesma correção de /s/reports/consolidado (e
 // /kpi/operadores): roda no PARSE do HTML deste fallback, antes de qualquer
 // hidratação, desligando a restauração nativa de scroll e forçando o topo
 // antes do primeiro paint. A segunda camada (guarda por frames) fica no

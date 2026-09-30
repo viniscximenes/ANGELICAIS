@@ -32,7 +32,7 @@ const GRID_COLS = [
 
 /**
  * Visual = "Tabela de pausas detalhadas" (PausasDetalhadasAnalitico,
- * /reports/tempo-indisponibilidade) — MESMAS classes literais: cabeçalho
+ * /s/reports/tempo-indisponibilidade) — MESMAS classes literais: cabeçalho
  * ds-body bold uppercase tracking-wide (cor por tema em reports-tma-peso.css),
  * células py-3 px-4 text-xs, linhas separadas só por border/30 (sem
  * divisórias verticais, sem hover), coluna Operador centralizada em

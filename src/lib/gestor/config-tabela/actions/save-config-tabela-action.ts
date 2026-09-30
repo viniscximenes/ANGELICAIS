@@ -51,7 +51,7 @@ export async function saveConfigTabelaAction(
     return { success: false, error: "Erro ao salvar configuração." };
   }
 
-  revalidatePath("/reports/consolidado");
+  revalidatePath("/s/reports/consolidado");
 
   return { success: true };
 }

@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * Recebe o `gestorId` (profiles.id) diretamente — resolvido pelo chamador a
  * partir de `user.profile.id` (sessão já autenticada). Não re-resolve por
  * username/e-mail (ver `resolveGestorId`, deixado de ser usado aqui na fusão
- * de /reports/consolidado com /reports/consolidado/analitico).
+ * de /s/reports/consolidado com /s/reports/consolidado/analitico).
  */
 export async function getEmailsEquipe(gestorId: string): Promise<string[]> {
   if (!gestorId) return [];

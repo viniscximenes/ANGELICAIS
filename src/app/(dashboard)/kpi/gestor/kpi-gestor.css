@@ -89,14 +89,14 @@
 
 /* Painel flutuante da lista de operadores (fora da meta) no tema claro —
  * --popover (#F4EFE4) destoa, claro demais sobre o bege da página. Usa o
- * tom de fundo da página, mesmo tratamento do dialog de /reports/tma-peso
+ * tom de fundo da página, mesmo tratamento do dialog de /s/reports/tma-peso
  * (.reports-tma-peso-dialog). Tema escuro mantém o bg-popover. */
 [data-theme="light"] [data-page="kpi-gestor"] .kpi-gestor-painel {
   background-color: var(--background) !important;
 }
 
 /* Fundo dos cards de KPI no tema claro — mesmo tom dos cards de Visão Geral
- * (Tx Retenção/Pedidos/Cancelados) de /reports/consolidado, que se separam
+ * (Tx Retenção/Pedidos/Cancelados) de /s/reports/consolidado, que se separam
  * do fundo da página sem o branco do card padrão. Tema escuro mantém o
  * bg-card/70. */
 [data-theme="light"] [data-page="kpi-gestor"] .kpi-gestor-card.bg-card\/70 {

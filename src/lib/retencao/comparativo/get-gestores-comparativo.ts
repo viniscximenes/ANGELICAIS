@@ -18,7 +18,7 @@ export type GestorComRoster = {
   emails: string[];
 };
 
-/** Os 4 indicadores de topo, idênticos aos de /reports/consolidado/analitico. */
+/** Os 4 indicadores de topo, idênticos aos de /s/reports/consolidado/analitico. */
 export type IndicadoresGestor = {
   /** profiles.id */
   id: string;
@@ -66,7 +66,7 @@ export async function listarGestoresComRoster(): Promise<GestorComRoster[]> {
  * Calcula os 4 indicadores de um gestor a partir de retencao_atendimentos,
  * filtrando pelos operadores dele. Reaproveita `getVisaoGeral` (mesma query,
  * mesma classificação e mesma normalização usuario_login ↔ email de
- * /reports/consolidado/analitico).
+ * /s/reports/consolidado/analitico).
  */
 export async function getIndicadoresGestor(
   gestor: GestorComRoster,

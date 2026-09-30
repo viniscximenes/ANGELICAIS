@@ -11,7 +11,7 @@ import {
   buildKpiClipboardTextoPlano,
   escapeHtml,
   tituloComData,
-} from "@/app/(dashboard)/kpi/operadores/_lib/build-copy-html";
+} from "@/app/(dashboard)/s/kpi/operadores/_lib/build-copy-html";
 
 /**
  * Cópia local (não a shared src/lib/utils/copy-formatted-html.ts, NÃO

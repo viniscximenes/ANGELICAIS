@@ -16,7 +16,7 @@
  */
 
 import { DotSpinner } from "@/components/gestor/dot-spinner";
-import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 
 interface KpiLoadingScreenProps {
   /**
@@ -85,7 +85,7 @@ interface KpiLoadingScreenProps {
    * (border animate-spin) + texto "Carregando {titulo}...".
    * "dots": spinner Uiverse.io by abrahamcalsin ("dot-spinner", ver
    * dot-spinner.tsx) + SEM texto visível (só sr-only) — usado pelo overlay
-   * de refresh manual de /reports/consolidado (handleBaseCleared em
+   * de refresh manual de /s/reports/consolidado (handleBaseCleared em
    * gestor-equipe-section.tsx), mesmo ícone do loading.tsx daquela rota.
    * Depende da regra CSS `.dot-spinner*` de reports-consolidado.css
    * (escopada a [data-page="reports-consolidado"]) — só usar com
@@ -278,7 +278,7 @@ function SkeletonEquipe() {
 }
 
 /**
- * /reports/consolidado: tabela e anexo lado a lado; abaixo, o primeiro
+ * /s/reports/consolidado: tabela e anexo lado a lado; abaixo, o primeiro
  * slide do Analítico com o card principal, três secundários e o gráfico.
  *
  * Os 4 cards de resumo (card principal + 3 secundários) mantêm borda/fundo
@@ -422,7 +422,7 @@ function SkeletonTempoIndispNavSidebar() {
 }
 
 /**
- * /reports/tma-peso (usado só pelo overlay de refresh manual — o
+ * /s/reports/tma-peso (usado só pelo overlay de refresh manual — o
  * carregamento inicial tem loading.tsx próprio, ver comentário lá): tabela e
  * anexo lado a lado; abaixo, cards resumo (TMA + Atendidos) e o gráfico de
  * Evolução do TMA.

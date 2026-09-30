@@ -49,7 +49,7 @@ export async function saveKpiColunasAction(
     return { success: false, error: "Erro ao salvar configuração." };
   }
 
-  revalidatePath("/kpi/operadores");
+  revalidatePath("/s/kpi/operadores");
 
   return { success: true };
 }

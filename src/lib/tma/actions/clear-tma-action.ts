@@ -35,7 +35,7 @@ export async function clearTmaAction(): Promise<ClearTmaResult> {
       .eq("gestor_id", user.profile.id);
     if (erroAtendimentos) throw new Error(erroAtendimentos.message);
 
-    revalidatePath("/reports/tma-peso");
+    revalidatePath("/s/reports/tma-peso");
     return { success: true };
   } catch (err) {
     console.error("[clear-tma] erro:", err);

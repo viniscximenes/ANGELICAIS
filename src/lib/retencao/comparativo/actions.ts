@@ -99,7 +99,7 @@ export type ComparativoDetalheResult =
 /**
  * Detalhe de um gestor específico, carregado quando o accordion abre:
  * evolução por hora, retenção por tema e a tabela de operadores dele — todos
- * reaproveitando os getters de /reports/consolidado/analitico, só trocando o
+ * reaproveitando os getters de /s/reports/consolidado/analitico, só trocando o
  * conjunto de emails (roster do gestor pedido em vez do gestor logado).
  */
 export async function fetchComparativoDetalheAction(

@@ -12,7 +12,7 @@ interface TabelaTemasProps {
    * Quando true, ocupa 100% da altura do container pai (que precisa ter
    * altura definida) e SÓ o corpo da tabela rola internamente — título e
    * cabeçalho da tabela ficam fixos. Usado dentro do trilho horizontal de
-   * /reports/consolidado (retencao-horizontal-scroll.tsx): com submotivos
+   * /s/reports/consolidado (retencao-horizontal-scroll.tsx): com submotivos
    * expandidos a tabela pode crescer bastante e não pode esticar a altura
    * do trilho inteiro. Não afeta o uso deste componente em
    * comparativo-consolidado-section.tsx (prop não passada lá, mantém o

@@ -9,7 +9,7 @@ import { CopyTableButton } from "@/components/d-1/copy-table-button";
 import { EquipeTable } from "@/components/d-1/equipe-table";
 import { UploadDropzone } from "@/components/d-1/upload-dropzone";
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
-import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 import { ConfigTabelaPopover } from "@/components/gestor/config-tabela-popover";
 import { LabeledSwitch } from "@/components/gestor/labeled-switch";
 import { clearConsolidadoAction } from "@/lib/d1-db/actions/clear-consolidado-action";
@@ -34,7 +34,7 @@ import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individ
 import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
 import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog";
 import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
-import { ConsolidadoSkeleton } from "@/app/(dashboard)/reports/consolidado/loading";
+import { ConsolidadoSkeleton } from "@/app/(dashboard)/s/reports/consolidado/loading";
 
 // Texto da 2ª linha do cabeçalho ("{nome} fez um report às {hora}") — mesma
 // checagem de "hora ausente/zerada" de formatReportLabel (@/lib/gestor/
@@ -462,7 +462,7 @@ export function GestorEquipeSection({
         depois do loading.tsx sumir (motion renderiza o estado `initial` no
         SSR; só anima pra `animate` depois que o JS hidrata), causando a
         sequência "loading → tela vazia → dados" reportada em
-        /reports/consolidado. `initial={false}` faz o motion.section montar
+        /s/reports/consolidado. `initial={false}` faz o motion.section montar
         direto no estado final (opacity:1), sem essa janela vazia — mantém
         motion.section (em vez de trocar por <section>) só pra não precisar
         tocar em mais nada da árvore/props que dependam do elemento ser um

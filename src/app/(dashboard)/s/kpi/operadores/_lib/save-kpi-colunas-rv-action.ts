@@ -48,7 +48,7 @@ export async function saveKpiColunasRvAction(
     return { success: false, error: "Erro ao salvar configuração de RV." };
   }
 
-  revalidatePath("/kpi/operadores");
+  revalidatePath("/s/kpi/operadores");
 
   return { success: true };
 }

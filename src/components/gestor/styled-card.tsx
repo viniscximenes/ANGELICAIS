@@ -63,7 +63,7 @@ interface StyledCardProps {
 
 /**
  * Card com cantos marcados + bordas retas, usado só no painel do gestor
- * (`/reports/consolidado`). Não reaproveitar em páginas do operador — é uma variante
+ * (`/s/reports/consolidado`). Não reaproveitar em páginas do operador — é uma variante
  * visual própria deste painel, por cima do `Card` (shadcn) compartilhado.
  */
 export function StyledCard({

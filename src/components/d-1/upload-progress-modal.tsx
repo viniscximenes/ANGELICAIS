@@ -25,9 +25,9 @@ interface UploadProgressModalProps {
    * e a acessibilidade (aria-live/role=status, prefers-reduced-motion) são
    * IDÊNTICAS em todas as variantes — só a casca visual muda.
    * - "reports-consolidado": usada só por upload-dropzone.tsx (exclusivo de
-   *   /reports/consolidado).
+   *   /s/reports/consolidado).
    * - "reports-tempo-indisp": usada só por upload-tempo-logado-dropzone.tsx
-   *   (exclusivo de /reports/tempo-indisponibilidade).
+   *   (exclusivo de /s/reports/tempo-indisponibilidade).
    */
   variant?: "default" | "reports-consolidado" | "reports-tempo-indisp";
 }

@@ -24,15 +24,15 @@ export type UploadStep =
 
 interface UploadDropzoneProps {
   /**
-   * Variante enxuta (usada em /reports/consolidado/analitico): sem o ícone
+   * Variante enxuta (usada em /s/reports/consolidado/analitico): sem o ícone
    * central e com a área de drop bem mais baixa. Default false — o
-   * /reports/consolidado continua com o card cheio. Só muda o visual; drag &
+   * /s/reports/consolidado continua com o card cheio. Só muda o visual; drag &
    * drop, parse, action de upload, modal de progresso e popup do comparativo
    * seguem idênticos.
    */
   compact?: boolean;
   /**
-   * "vertical": mesmo card de anexo de /reports/tempo-indisponibilidade
+   * "vertical": mesmo card de anexo de /s/reports/tempo-indisponibilidade
    * (largura cheia, abaixo do cabeçalho, 140px de altura) — usado em
    * /c/reports/consolidado. Default "card" mantém o visual de sempre.
    */
@@ -42,7 +42,7 @@ interface UploadDropzoneProps {
    * .csv (sem a opção "Todos os arquivos"), via File System Access API
    * (showOpenFilePicker — Chrome/Edge). Navegadores sem a API seguem com o
    * seletor padrão de sempre. Arrastar e soltar não muda. Default false —
-   * só /reports/consolidado (GestorEquipeSection) ativa.
+   * só /s/reports/consolidado (GestorEquipeSection) ativa.
    */
   abrirEmDownloads?: boolean;
 }

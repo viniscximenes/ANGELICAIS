@@ -23,7 +23,7 @@ import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 
 /**
  * Engrenagem de meta do polo — mesmo visual do ConfigTabelaPopover de
- * /reports/consolidado (botão outline h-8/w-8, overlay com blur, popover
+ * /s/reports/consolidado (botão outline h-8/w-8, overlay com blur, popover
  * rounded-2xl), só com o campo de meta. Ao salvar, recarrega os dados do
  * Server Component (cores e lista de baixo rendimento dependem da meta).
  */
@@ -118,7 +118,7 @@ export function ConfigMetaPoloPopover({
         <PopoverContent
           data-page="reports-consolidado"
           align="end"
-          // Mesmo padrão do ConfigTabelaPopover (/reports/consolidado): sem
+          // Mesmo padrão do ConfigTabelaPopover (/s/reports/consolidado): sem
           // auto-foco (o valor da meta aparecia já selecionado), gap-0 + pt-3.
           onOpenAutoFocus={(e) => e.preventDefault()}
           className="bg-popover text-popover-foreground border-border w-72 gap-0 rounded-2xl border p-4 pt-3 shadow-2xl"

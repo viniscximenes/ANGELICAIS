@@ -69,7 +69,7 @@ export function OperadorAnaliticoDialog({
   // já montado no DOM — este Dialog roda em portal (document.body), então a
   // raiz do documento (comportamento padrão de getComputedStyle/resolverTokenCss)
   // NÃO carrega os tokens escopados dessa rota. Mesmo padrão de
-  // OperadorDetalheDialog (/reports/consolidado).
+  // OperadorDetalheDialog (/s/reports/consolidado).
   const elementoEscopoTema =
     typeof document !== "undefined"
       ? document.querySelector<HTMLElement>('[data-page="reports-tempo-indisponibilidade"]')
@@ -93,7 +93,7 @@ export function OperadorAnaliticoDialog({
         renderizado em portal (document.body), fora da árvore [data-page] da
         rota — sem o atributo aqui, ele não herdaria as CSS custom properties
         do tema Zen Linen definidas em reports-tempo-indisp.css. Mesmo padrão
-        de OperadorDetalheDialog (/reports/consolidado).
+        de OperadorDetalheDialog (/s/reports/consolidado).
       */}
       <DialogContent
         data-page="reports-tempo-indisponibilidade"
@@ -137,7 +137,7 @@ export function OperadorAnaliticoDialog({
           do que é capturado. A imagem sai igual ao modal na tela, no tema
           ATUAL da sessão (claro ou escuro) — não mais um template forçado em
           tema claro fixo. Mesmo padrão de OperadorDetalheDialog
-          (/reports/consolidado). Sem `data-tempo-indisp-png` aqui: esse
+          (/s/reports/consolidado). Sem `data-tempo-indisp-png` aqui: esse
           atributo é exclusivo do clone oculto da tabela principal e, no
           tema claro, clareia seus tokens para a captura. Aplicá-lo ao modal
           visível criava uma segunda camada quase branca dentro do fundo do

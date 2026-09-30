@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 import {
   ChartContainer,
   ChartTooltip,

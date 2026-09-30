@@ -16,8 +16,8 @@ import { cn } from "@/lib/utils";
 // por KpiEquipeSection (src/components/operacional/kpi-equipe-section.tsx),
 // que importa vários _components dessa rota de fora dela. Preferido a
 // duplicar o seletor de mês/formatação aqui.
-import { MesSelector } from "@/app/(dashboard)/kpi/operadores/_components/mes-selector";
-import { formatMesCapitalizado } from "@/app/(dashboard)/kpi/operadores/_components/mes-format";
+import { MesSelector } from "@/app/(dashboard)/s/kpi/operadores/_components/mes-selector";
+import { formatMesCapitalizado } from "@/app/(dashboard)/s/kpi/operadores/_components/mes-format";
 
 import { DefasadosTooltipContent, KpiGestorCard, SemDadoTooltipContent } from "./kpi-gestor-card";
 import type { KpiGestorCardSerial } from "@/lib/kpi/gestor/build-kpi-gestor-cards";
@@ -86,7 +86,7 @@ function SecaoTitulo({
 const MIN_CARDS_LOADING_MS = 2000;
 
 /** Piso da tela de loading do refresh após salvar metas — mesma regra de
- * MIN_REFRESH_LOADING_MS em gestor-equipe-section.tsx (/reports/consolidado)
+ * MIN_REFRESH_LOADING_MS em gestor-equipe-section.tsx (/s/reports/consolidado)
  * e do MIN_LOADING_MS de page.tsx: se já demorou mais, não espera nada extra. */
 const MIN_REFRESH_LOADING_MS = 3_000;
 

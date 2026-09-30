@@ -1,7 +1,7 @@
 /**
  * Sinal cross-tree pra pedir navegação até um card específico do trilho
  * horizontal (RetencaoHorizontalScroll) a partir de fora dela — ex: a
- * sidebar de navegação de /reports/consolidado (árvore irmã).
+ * sidebar de navegação de /s/reports/consolidado (árvore irmã).
  *
  * Mesmo padrão de base-cleared-event.ts: as árvores continuam decoupled
  * (sem Context/lift de estado), só um evento de `window` carregando o

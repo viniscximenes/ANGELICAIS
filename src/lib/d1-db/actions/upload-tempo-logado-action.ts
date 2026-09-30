@@ -259,7 +259,7 @@ export async function uploadTempoLogadoAction(
     );
   }
 
-  revalidatePath("/reports/tempo-indisponibilidade");
+  revalidatePath("/s/reports/tempo-indisponibilidade");
 
   return {
     success: true,

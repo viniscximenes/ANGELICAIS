@@ -5,7 +5,7 @@ const { login, BASE_URL } = require("./auth");
   const page = await browser.newPage();
   await page.setViewportSize({ width: 1440, height: 900 });
   await login(page);
-  await page.goto(`${BASE_URL}/reports/tempo-indisponibilidade`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/s/reports/tempo-indisponibilidade`, { waitUntil: "networkidle" });
   await page.waitForTimeout(400);
 
   for (const theme of ["dark", "light"]) {

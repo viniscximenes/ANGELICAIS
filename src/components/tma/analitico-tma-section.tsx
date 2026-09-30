@@ -78,7 +78,7 @@ export function AnaliticoTmaSection({
   // scroll anterior (ex.: estava no meio deste trilho) — some com o
   // cabeçalho e deixa a página abrindo "no meio". Desligamos a restauração
   // automática e forçamos o topo, só nesta rota (mesmo ajuste de
-  // /reports/consolidado — RetencaoDetalheSection — e /reports/tempo-
+  // /s/reports/consolidado — RetencaoDetalheSection — e /reports/tempo-
   // indisponibilidade — TempoIndispSection). A guarda vive AQUI, no
   // componente que efetivamente renderiza o RetencaoHorizontalScroll (não em
   // GestorTmaSection, componente-irmão que monta ANTES deste e não tem o
@@ -196,7 +196,7 @@ export function AnaliticoTmaSection({
     />,
     // Assinatura DENTRO do último slide, só no desktop (lg:block): aparece
     // logo abaixo do último card e desliza junto com ele — mesmo ajuste de
-    // /reports/consolidado e /reports/tempo-indisponibilidade. Mobile
+    // /s/reports/consolidado e /s/reports/tempo-indisponibilidade. Mobile
     // (slides empilhados) usa a do fim da seção.
     <div key="peso-desigual" className="flex flex-col">
       <CardPesoDesigual operadores={pesoDesigual} />

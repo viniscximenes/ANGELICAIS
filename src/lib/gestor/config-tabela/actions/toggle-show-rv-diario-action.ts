@@ -33,7 +33,7 @@ export async function toggleShowRvDiarioAction(
     return { success: false, error: "Erro ao salvar" };
   }
 
-  revalidatePath("/reports/consolidado");
+  revalidatePath("/s/reports/consolidado");
 
   return { success: true };
 }

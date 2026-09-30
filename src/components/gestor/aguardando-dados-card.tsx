@@ -8,7 +8,7 @@ interface Props {
 
 /**
  * Estado "sem dados do dia" — MESMA apresentação visual do placeholder
- * "Aguardando dados do dia" de /reports/consolidado
+ * "Aguardando dados do dia" de /s/reports/consolidado
  * (retencao-detalhe-section.tsx): StyledCard com gradiente, mini "gráfico
  * de barras" decorativo em CSS puro (6 divs com alturas fixas,
  * aria-hidden) com um "?" sobreposto, título + descrição.

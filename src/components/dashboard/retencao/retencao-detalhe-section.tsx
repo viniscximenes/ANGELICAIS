@@ -123,7 +123,7 @@ interface RetencaoDetalheSectionProps {
 
 /**
  * Seção de detalhamento analítico (temas, evolução por hora, segmentos,
- * quartis, operadores) exibida dentro de /reports/consolidado, abaixo da
+ * quartis, operadores) exibida dentro de /s/reports/consolidado, abaixo da
  * EquipeTable. Busca os próprios dados client-side (retencao_atendimentos)
  * via `fetchDashboardRetencaoAction`, sem bloquear o SSR/paint da tabela
  * principal (d1_consolidado) que já veio pronta do Server Component pai.
@@ -590,7 +590,7 @@ export function RetencaoDetalheSection({
               <ImpactoFaceIdCard key="impacto-faceid" scrollInterno data={data!.impactoFaceId} />,
               // Assinatura DENTRO do último slide, só no desktop (lg:block):
               // aparece logo abaixo do último card e desliza junto com ele —
-              // mesmo ajuste de /reports/tempo-indisponibilidade. O card
+              // mesmo ajuste de /s/reports/tempo-indisponibilidade. O card
               // (scrollInterno) cede altura pra ela via min-h-0: se a tabela
               // for maior que o espaço, só ela rola por dentro.
               // Mobile (slides empilhados) usa a do fim da seção.

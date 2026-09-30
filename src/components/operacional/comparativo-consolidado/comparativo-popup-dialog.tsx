@@ -11,7 +11,7 @@ interface ComparativoPopupDialogProps {
 
 /**
  * Convite pontual (1x por gestor por dia) para ver o comparativo entre
- * equipes, disparado no primeiro report do dia em /reports/consolidado.
+ * equipes, disparado no primeiro report do dia em /s/reports/consolidado.
  *
  * Toda a lógica de negócio (registro de exibição, 1x/dia, timezone) continua
  * no chamador (upload-dropzone.tsx). Aqui só mudou "como decidir se posso

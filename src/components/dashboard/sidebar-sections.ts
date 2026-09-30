@@ -17,14 +17,14 @@ const ALL_SECTIONS: SidebarSection[] = [
     id: "gestor",
     label: "Reports",
     iconName: "chart",
-    basePath: "/reports",
+    basePath: "/s/reports",
     permission: "view_gestor_panel",
     // Só o GESTOR vê — o ADM tem a permissão, mas não acessa esta tela.
     onlyRoles: ["GESTOR"],
     items: [
-      { label: "Consolidado", href: "/reports/consolidado" },
-      { label: "Tempo Logado & Indisp.", href: "/reports/tempo-indisponibilidade" },
-      { label: "TMA & Peso", href: "/reports/tma-peso" },
+      { label: "Consolidado", href: "/s/reports/consolidado" },
+      { label: "Tempo Logado & Indisp.", href: "/s/reports/tempo-indisponibilidade" },
+      { label: "TMA & Peso", href: "/s/reports/tma-peso" },
     ],
   },
   {
@@ -39,7 +39,7 @@ const ALL_SECTIONS: SidebarSection[] = [
     permission: "view_gestor_panel",
     onlyRoles: ["GESTOR"],
     items: [
-      { label: "Operadores", href: "/kpi/operadores" },
+      { label: "Operadores", href: "/s/kpi/operadores" },
       { label: "Gestor", href: "/kpi/gestor" },
       { label: "Detalhado Polo", href: "/kpi/detalhado-polo" },
       { label: "Evolução", href: "/kpi/evolucao" },

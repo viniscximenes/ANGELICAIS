@@ -37,7 +37,7 @@ function formatReportHtml(
   // de copyFormattedHtml é anexado ao <body> real da página, que reflete o
   // tema GLOBAL do dashboard, tipicamente escuro → texto branco), saindo
   // ilegíveis sobre o fundo branco do destino, mesmo com o tema de
-  // /reports/consolidado no claro. Cor fixa = sempre legível, os dois
+  // /s/reports/consolidado no claro. Cor fixa = sempre legível, os dois
   // "títulos" (acima e abaixo), independente do tema ativo no momento da
   // cópia.
   // Cor repetida no <b>/<i> internos (não só no <h2>/<div> pai): alguns

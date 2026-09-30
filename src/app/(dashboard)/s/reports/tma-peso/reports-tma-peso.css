@@ -1,5 +1,5 @@
 /*
- * Ajustes visuais específicos de /reports/tma-peso.
+ * Ajustes visuais específicos de /s/reports/tma-peso.
  * As cores (tokens) vêm da paleta global em src/app/palettes/ (paleta ativa) —
  * não redefina --background/--card/--primary/... aqui, senão a troca de
  * paleta deixa de valer nesta página.
@@ -292,7 +292,7 @@ body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] > svg {
  * ondulada recalcula a posição contra uma largura em movimento e parece se
  * desprender da barra. Aguardamos o retorno terminar antes de recolher o
  * botão; expansão e confirmação continuam inalteradas. Mesma solução já
- * aplicada em /reports/consolidado e /reports/tempo-indisponibilidade. */
+ * aplicada em /s/reports/consolidado e /s/reports/tempo-indisponibilidade. */
 [data-page="reports-tma-peso"] button[aria-label="Segure para limpar a base"][data-phase="idle"] {
   transition-delay: var(--hb-release), 0ms, 0ms, 0ms !important;
 }
@@ -304,7 +304,7 @@ body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] > svg {
  * antigo — cinza quase branco fora da paleta Zen Linen. Com !important, essa
  * regra vence QUALQUER classe Tailwind, inclusive a borda esquerda colorida
  * que distingue linha boa/ruim (hoverClass em tma-table.tsx), apagando essa
- * distinção no hover. Mesma correção já aplicada em /reports/consolidado
+ * distinção no hover. Mesma correção já aplicada em /s/reports/consolidado
  * (equipe-table.tsx/reports-consolidado.css).
  *
  * Correção: seletor AINDA mais específico (mesmo padrão + o escopo
@@ -362,7 +362,7 @@ body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] > svg {
 /* ───────── Fundo dos cards de Resumo (TMA/Atendidos) ─────────
  * CardsResumoTma.tsx usa bg-card/70 — no tema claro isso fica quase
  * idêntico ao --background da página ao redor (pouco contraste, "muito
- * claro"). Mesma correção já aplicada em /reports/consolidado
+ * claro"). Mesma correção já aplicada em /s/reports/consolidado
  * (VisaoGeralCards, via wrapper data-visao-geral-cards): não editamos o
  * componente (é usado só nesta página, mas mantemos o mesmo padrão de
  * escopar via wrapper) — data-cards-resumo-tma (adicionado em
@@ -385,8 +385,8 @@ body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] > svg {
  * utilities Tailwind) — fazendo a borda "animar"/escurecer ao passar o
  * mouse ali mesmo estando tudo desabilitado (não é um dropzone real, só um
  * placeholder). Duas regras abaixo cancelam o efeito nos dois casos,
- * restritas a esta rota. Mesma correção já aplicada em /reports/consolidado
- * e /reports/tempo-indisponibilidade.
+ * restritas a esta rota. Mesma correção já aplicada em /s/reports/consolidado
+ * e /s/reports/tempo-indisponibilidade.
  */
 [data-theme="light"] [data-page="reports-tma-peso"] .upload-dropzone-root-reports-tma-peso[data-dropzone-state="idle"]:hover {
   border-color: var(--border) !important;
@@ -409,7 +409,7 @@ body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] > svg {
 }
 
 /* ───────── Tabelas do Analítico (tema claro) ─────────
- * Mesmo tratamento já aplicado em /reports/tempo-indisponibilidade (as 3
+ * Mesmo tratamento já aplicado em /s/reports/tempo-indisponibilidade (as 3
  * tabelas do Analítico da TMA — AnaliticoTmaTabela, CardRechamada,
  * CardForaDaCurva — têm a mesma estrutura de grid com STICKY_HEADER_BG
  * inline + coluna(s) do nome do operador sem fundo próprio no claro):

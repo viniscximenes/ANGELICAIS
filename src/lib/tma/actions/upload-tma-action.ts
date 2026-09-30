@@ -146,7 +146,7 @@ export async function uploadTmaAction(payload: UploadTmaPayload): Promise<Upload
     console.warn(`[upload-tma] ${payload.colisoes} linha(s) descartadas por colisão de parte local.`);
   }
 
-  revalidatePath("/reports/tma-peso");
+  revalidatePath("/s/reports/tma-peso");
 
   return {
     success: true,

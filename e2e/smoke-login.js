@@ -7,7 +7,7 @@ const { login, BASE_URL } = require("./auth");
   try {
     await login(page);
     console.log("Login OK. URL final:", page.url());
-    await page.goto(`${BASE_URL}/reports/tempo-indisponibilidade`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/s/reports/tempo-indisponibilidade`, { waitUntil: "networkidle" });
     console.log("tempo-indisponibilidade status:", page.url());
     const title = await page.textContent("h1");
     console.log("h1:", title);

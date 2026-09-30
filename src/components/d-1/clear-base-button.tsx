@@ -34,11 +34,11 @@ interface Props {
   /**
    * "default" (padrão, usado por TMA/Pausas — NÃO alterado) = pílula
    * compacta py-1.5/12px de sempre. "compact" (só usado pelo
-   * /reports/consolidado até a 4ª rodada) = mesma família visual (h-8,
+   * /s/reports/consolidado até a 4ª rodada) = mesma família visual (h-8,
    * text-sm, rounded-md) dos demais controles outline daquela página,
    * mantendo o preenchimento destructive sólido (cor de alerta) pra não se
    * confundir com uma ação neutra. "icon-danger" (5ª rodada, /reports/
-   * consolidado e /reports/tempo-indisponibilidade) = ícone-only, MESMO
+   * consolidado e /s/reports/tempo-indisponibilidade) = ícone-only, MESMO
    * visual compacto do botão de engrenagem quando ocioso. Com
    * `holdToConfirm`, usa o Hold Button do React Bits: expande
    * horizontalmente, revela "Limpar Base" e só executa a ação após a
@@ -50,14 +50,14 @@ interface Props {
   /**
    * Classe extra aplicada aos toasts (sonner) desta ação — ex.
    * "reports-consolidado-toast", pra herdar o tema Zen Linen só nos toasts
-   * disparados a partir do /reports/consolidado, sem tocar no <Toaster/>
+   * disparados a partir do /s/reports/consolidado, sem tocar no <Toaster/>
    * global nem nos toasts de TMA/Tempo Indisponibilidade (que não passam
    * essa prop e continuam com o visual padrão). Default: undefined.
    */
   toastClassName?: string;
   /**
    * Toast "Base limpa" ao concluir. Default true (comportamento de sempre,
-   * usado por TMA/Pausas). "/reports/consolidado" passa false: o overlay de
+   * usado por TMA/Pausas). "/s/reports/consolidado" passa false: o overlay de
    * refresh (KpiLoadingScreen) já comunica visualmente que a ação rodou, o
    * toast era redundante/pedido pra sair só ali.
    */

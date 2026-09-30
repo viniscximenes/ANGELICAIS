@@ -7,13 +7,13 @@ import { usePathname } from "next/navigation";
  * Esconde a barra do bprogress (topo da tela, cor var(--primary) da paleta —
  * ver progress-provider.tsx) em /kpi/operadores, /kpi/gestor,
  * /kpi/detalhado-polo, /kpi/evolucao, /configuracoes/equipe,
- * /reports/consolidado e /reports/tempo-indisponibilidade: essas sete já têm
+ * /s/reports/consolidado e /s/reports/tempo-indisponibilidade: essas sete já têm
  * loading.tsx próprio (fundo borrado, tema Zen Linen), a barra genérica
  * ficaria redundante e destoando ali. Nenhuma outra página é afetada — a
  * barra continua normal em todo o resto do site.
  *
  * Duas camadas, pra não deixar a barra "piscar" nem por um frame ao ENTRAR
- * nessas rotas (agora seis, com /reports/consolidado — que também ganhou
+ * nessas rotas (agora seis, com /s/reports/consolidado — que também ganhou
  * loading.tsx próprio nesta rodada):
  * 1) Clique num link, capturado ANTES do onClick do Next <Link> que dispara
  *    router.push() → bprogress.start() — se o destino é uma das 2 rotas,
@@ -31,14 +31,14 @@ import { usePathname } from "next/navigation";
  * feature).
  */
 const ROTAS_SEM_BARRA = [
-  "/kpi/operadores",
+  "/s/kpi/operadores",
   "/kpi/gestor",
   "/kpi/detalhado-polo",
   "/kpi/evolucao",
   "/configuracoes/equipe",
-  "/reports/consolidado",
-  "/reports/tempo-indisponibilidade",
-  "/reports/tma-peso",
+  "/s/reports/consolidado",
+  "/s/reports/tempo-indisponibilidade",
+  "/s/reports/tma-peso",
   "/operacao/diario",
   "/operacao/comparativo-consolidado",
 ];

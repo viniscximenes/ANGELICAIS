@@ -6,7 +6,7 @@ import { Switch as SwitchPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
 
 /**
- * Switch local, EXCLUSIVO de /reports/consolidado — réplica intencional do
+ * Switch local, EXCLUSIVO de /s/reports/consolidado — réplica intencional do
  * LabeledSwitch de /kpi/operadores (app/(dashboard)/kpi/operadores/
  * _components/labeled-switch.tsx), mesmo padrão visual (Radix Switch direto,
  * não o components/ui/switch.tsx compartilhado): container h-8, label +

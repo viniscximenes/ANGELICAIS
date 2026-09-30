@@ -38,7 +38,7 @@ export async function clearTempoLogadoAction(): Promise<ClearTempoLogadoResult> 
       .eq("data_ref", dataRef);
     if (errIndisp) throw new Error(errIndisp.message);
 
-    revalidatePath("/reports/tempo-indisponibilidade");
+    revalidatePath("/s/reports/tempo-indisponibilidade");
     return { success: true };
   } catch (err) {
     console.error("[clear-tempo-logado] erro:", err);

@@ -8,7 +8,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 
-import { SegmentedControl } from "@/app/(dashboard)/kpi/operadores/_components/segmented-control";
+import { SegmentedControl } from "@/app/(dashboard)/s/kpi/operadores/_components/segmented-control";
 import { StyledCard } from "@/components/gestor/styled-card";
 import {
   gerarReportsDiario,

@@ -173,7 +173,7 @@
   --row-border: var(--border);
 
   --nav-menu-bg: color-mix(in srgb, var(--background) 92%, var(--foreground) 8%);
-  /* Mini sidebar de /reports/consolidado — branco + borda (mesmo visual do
+  /* Mini sidebar de /s/reports/consolidado — branco + borda (mesmo visual do
      botão "Tema" e dos cards). Lido só por reports-consolidado.css; as
      demais rotas continuam em --nav-menu-bg. */
   --nav-menu-bg-consolidado: var(--elevation-1-bg);

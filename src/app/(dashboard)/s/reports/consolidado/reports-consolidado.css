@@ -1,5 +1,5 @@
 /*
- * Ajustes visuais específicos de /reports/consolidado.
+ * Ajustes visuais específicos de /s/reports/consolidado.
  * As cores (tokens) vêm da paleta global em src/app/palettes/ (paleta ativa) —
  * não redefina --background/--card/--primary/... aqui, senão a troca de
  * paleta deixa de valer nesta página.
@@ -282,7 +282,7 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
  * ondulada recalcula a posição contra uma largura em movimento e parece se
  * desprender da barra. Nesta rota, aguardamos o retorno terminar antes de
  * recolher o botão; expansão e confirmação continuam inalteradas. Mesma
- * solução já aplicada em /reports/tempo-indisponibilidade. */
+ * solução já aplicada em /s/reports/tempo-indisponibilidade. */
 [data-page="reports-consolidado"] button[aria-label="Segure para limpar a base"][data-phase="idle"] {
   transition-delay: var(--hb-release), 0ms, 0ms, 0ms !important;
 }
@@ -317,7 +317,7 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
  * então não editamos o componente — só aqui, via wrapper com
  * data-visao-geral-cards (adicionado em retencao-detalhe-section.tsx,
  * exclusivo desta rota). Mesma correção já aplicada em
- * /reports/tempo-indisponibilidade (.tempo-indisp-resumo-card): no tema
+ * /s/reports/tempo-indisponibilidade (.tempo-indisp-resumo-card): no tema
  * claro, os cards precisam se separar do fundo da página sem voltar ao
  * branco do card padrão. Tema escuro mantém integralmente o bg-card/70.
  */
@@ -536,7 +536,7 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
  * o mouse ali mesmo estando tudo desabilitado. O dropzone real já tem a
  * regra acima cancelando o mesmo efeito; aqui cancelamos de novo, restrita a
  * esta rota, pra cobrir a caixa do loading também. Mesma correção já
- * aplicada em /reports/tempo-indisponibilidade.
+ * aplicada em /s/reports/tempo-indisponibilidade.
  */
 [data-theme="light"] [data-page="reports-consolidado"] .border-dashed:hover {
   border-color: var(--border) !important;
@@ -621,7 +621,7 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
  * TabelaTemas.tsx é COMPARTILHADO com /operacao/comparativo-consolidado
  * (comparativo-consolidado-section.tsx), então não editamos a classe do
  * componente ali — só aqui, escopado a esta rota. Alinha o título das
- * colunas ao padrão já usado em /reports/tempo-indisponibilidade
+ * colunas ao padrão já usado em /s/reports/tempo-indisponibilidade
  * (aderencia-analitico.tsx e afins): tracking mais suave (tracking-wide em
  * vez de tracking-wider), tamanho igual ao ds-body normal (em vez do
  * text-[11px] fixo) e cor muted-foreground cheia (antes a 70%, cinza

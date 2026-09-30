@@ -52,7 +52,7 @@ function getMesRetrasadoRef(): string {
 }
 
 // Piso mínimo da tela de loading (F5/entrada de rota) — mesma regra de
-// /reports/consolidado/page.tsx: a resolução deste Server Component é
+// /s/reports/consolidado/page.tsx: a resolução deste Server Component é
 // atrasada até completar MIN_LOADING_MS, contados desde a entrada na função.
 // Se a busca real já demorou mais que isso, não espera nada.
 const MIN_LOADING_MS = 3_000;

@@ -313,7 +313,7 @@ export function RetencaoHorizontalScroll({
         contentEls.forEach((el) => heightResizeObserver!.observe(el));
       }
 
-      // Navegação externa (ex: sidebar de /reports/consolidado) pra um card
+      // Navegação externa (ex: sidebar de /s/reports/consolidado) pra um card
       // específico do trilho — ADITIVO, não mexe em nenhuma fórmula de
       // end/snap/multiplier já calibrada, só REAPROVEITA o que já existe:
       // o mesmo getSnapPoints() usado pelo snap do ScrollTrigger, e o

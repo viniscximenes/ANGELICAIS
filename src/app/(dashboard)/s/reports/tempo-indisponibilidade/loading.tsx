@@ -1,10 +1,10 @@
-// Suspense fallback do Next.js pra /reports/tempo-indisponibilidade —
+// Suspense fallback do Next.js pra /s/reports/tempo-indisponibilidade —
 // mostrado automaticamente enquanto o Server Component de page.tsx (async,
 // aguarda getGestorTempoLogado + getGestorIndisponibilidade + outras 3
 // chamadas em paralelo, mais o piso mínimo de 3s de page.tsx) ainda não
 // resolveu.
 //
-// Reescrito no MESMO formato do loading.tsx de /reports/consolidado (não
+// Reescrito no MESMO formato do loading.tsx de /s/reports/consolidado (não
 // mais o KpiLoadingScreen formato="tempo-indisponibilidade", compartilhado):
 // mesmos blocos (SkeletonBloco, rounded-md + bg-card), mesma barra lateral
 // muda, mesmo esqueleto de tabela dentro do KpiFrame real e mesmo painel de
@@ -20,7 +20,7 @@
 import { Instrument_Sans } from "next/font/google";
 
 import "./reports-tempo-indisp.css";
-import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 
 // MESMA fonte/variável de page.tsx (zenSans) — loading.tsx monta ANTES de
 // page.tsx resolver; sem ela o skeleton mede com a fonte padrão do sistema.
@@ -171,7 +171,7 @@ function SkeletonNavSidebar() {
 // posição antiga, só depois corrigido pra topo. Este script fecha essa
 // janela, desligando a restauração nativa e forçando o topo o mais cedo
 // possível (antes do primeiro paint do documento). Mesma correção
-// replicada em /reports/consolidado e /reports/tma-peso.
+// replicada em /s/reports/consolidado e /s/reports/tma-peso.
 const DESLIGAR_SCROLL_RESTORATION_SCRIPT = `
 try {
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";

@@ -12,7 +12,7 @@ interface VisaoGeralCardsProps {
   /**
    * true: cards sem animação de entrada (sem BlurFade e sem contagem do
    * NumberTicker) — já aparecem prontos ao sair do loading. Usado só por
-   * /reports/consolidado; /operacao/comparativo-consolidado mantém o
+   * /s/reports/consolidado; /operacao/comparativo-consolidado mantém o
    * padrão (false).
    */
   semAnimacao?: boolean;
@@ -85,7 +85,7 @@ export function VisaoGeralCards({ data, meta, semAnimacao = false }: VisaoGeralC
       <Entrada delay={0} inView className="sm:col-span-2">
         <div className="relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 p-6 shadow-[var(--shadow-sm)] backdrop-blur-md">
           {/* data-status-meta: gancho sem efeito visual próprio — só
-              /reports/consolidado colore a barra por ele (verde/vermelho
+              /s/reports/consolidado colore a barra por ele (verde/vermelho
               conforme a meta, em reports-consolidado.css); as demais rotas
               seguem com var(--primary). */}
           <div
