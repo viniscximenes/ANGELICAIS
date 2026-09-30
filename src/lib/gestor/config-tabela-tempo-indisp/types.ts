@@ -10,10 +10,10 @@ export type OrdemTabelaTempoIndisp = (typeof ORDEM_TABELA_TEMPO_INDISP_VALUES)[n
 
 export const ORDEM_TABELA_TEMPO_INDISP_OPTIONS: { value: OrdemTabelaTempoIndisp; label: string }[] = [
   { value: "padrao", label: "Padrão" },
-  { value: "tempo_logado_desc", label: "Maior Tempo Logado primeiro" },
-  { value: "tempo_logado_asc", label: "Menor Tempo Logado primeiro" },
-  { value: "indisp_desc", label: "Maior Indisp. % primeiro" },
-  { value: "indisp_asc", label: "Menor Indisp. % primeiro" },
+  { value: "tempo_logado_desc", label: "Maior Tempo Logado Primeiro" },
+  { value: "tempo_logado_asc", label: "Menor Tempo Logado Primeiro" },
+  { value: "indisp_desc", label: "Maior Indisp. % Primeiro" },
+  { value: "indisp_asc", label: "Menor Indisp. % Primeiro" },
 ];
 
 export function isOrdemTabelaTempoIndisp(value: string): value is OrdemTabelaTempoIndisp {

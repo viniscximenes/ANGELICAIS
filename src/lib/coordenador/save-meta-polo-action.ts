@@ -8,20 +8,20 @@ import { createClient } from "@/lib/supabase/server";
 
 type SaveMetaPoloResult = { success: true } | { success: false; error: string };
 
-export async function saveMetaPoloAction(metaTxRetencao: number): Promise<SaveMetaPoloResult> {
+export async function saveMetaPoloAction(
+  metaTxRetencao: number,
+  metaTxFinanceiro: number,
+): Promise<SaveMetaPoloResult> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Não autenticado" };
   if (!can(user.profile.role, "view_coordenador_panel")) {
     return { success: false, error: "Sem permissão" };
   }
 
-  if (
-    typeof metaTxRetencao !== "number" ||
-    Number.isNaN(metaTxRetencao) ||
-    metaTxRetencao < 0 ||
-    metaTxRetencao > 100
-  ) {
-    return { success: false, error: "A meta deve ser um valor entre 0 e 100." };
+  for (const valor of [metaTxRetencao, metaTxFinanceiro]) {
+    if (typeof valor !== "number" || Number.isNaN(valor) || valor < 0 || valor > 100) {
+      return { success: false, error: "A meta deve ser um valor entre 0 e 100." };
+    }
   }
 
   const supabase = await createClient();
@@ -29,6 +29,7 @@ export async function saveMetaPoloAction(metaTxRetencao: number): Promise<SaveMe
     {
       coordenador_id: user.profile.id,
       meta_tx_retencao: metaTxRetencao,
+      meta_tx_financeiro: metaTxFinanceiro,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "coordenador_id" },

@@ -289,6 +289,20 @@ body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-corne
   background-color: color-mix(in oklch, var(--danger) 14%, transparent) !important;
 }
 
+/* ───────── Hover semântico das linhas (vermelho / verde, os dois temas) ─────────
+ * Mesmo bloco do Consolidado: cada linha clicável mantém a própria cor no
+ * hover, só um pouco mais intensa que o repouso — abaixo da meta = --danger
+ * (hover 10%); dentro da meta = --success (hover 7%), em vez do cinza neutro.
+ * [data-theme] + os mesmos :not() da regra neutra = especificidade maior,
+ * vence nos dois temas sem depender da ordem.
+ */
+[data-theme] [data-page="reports-tempo-indisponibilidade"] [data-tempo-indisp-table] > div.hover\:border-l-\[var\(--danger\)\]:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
+  background-color: color-mix(in oklch, var(--danger) 10%, transparent) !important;
+}
+[data-theme] [data-page="reports-tempo-indisponibilidade"] [data-tempo-indisp-table] > div.hover\:border-l-\[var\(--success\)\]:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
+  background-color: color-mix(in oklch, var(--success) 7%, transparent) !important;
+}
+
 /* Mesmo tom secundário aplicado ao título superior da tabela do
  * Consolidado no tema claro. Esta tabela não possui linha de totais
  * equivalente a "EQUIPE", então o seletor fica restrito ao cabeçalho e não
@@ -371,16 +385,26 @@ body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-corne
  * Mesmo tratamento de reports-consolidado.css (22ª rodada), aplicado ao
  * dropzone exclusivo desta rota (upload-tempo-logado-dropzone.tsx).
  */
+/* Fundo = o MESMO do Consolidado (reports-consolidado.css): escuro →
+ * --muted a 40%; claro → var(--muted). Hover = repouso nos dois temas:
+ * passar o mouse só anima o ícone (pasta abrindo), o fundo não muda de cor.
+ * Drag/reject/processing continuam sinalizados (outros estados). */
 [data-page="reports-tempo-indisponibilidade"] {
-  --dropzone-idle-bg: color-mix(in srgb, var(--card) 55%, var(--muted) 45%);
-  --dropzone-hover-bg: color-mix(in srgb, var(--card) 35%, var(--muted) 65%);
+  --dropzone-idle-bg: color-mix(in oklab, var(--muted) 40%, transparent);
+  --dropzone-hover-bg: var(--dropzone-idle-bg);
 }
 
-/* No tema claro, hover mantém a casca do card totalmente estável. A
- * animação interna da pasta continua ativa; drag/reject/processing não são
- * abrangidos porque possuem outro data-dropzone-state. */
 [data-theme="light"] [data-page="reports-tempo-indisponibilidade"] {
-  --dropzone-hover-bg: color-mix(in srgb, var(--card) 55%, var(--muted) 45%);
+  --dropzone-idle-bg: var(--muted);
+  --dropzone-hover-bg: var(--muted);
+}
+
+/* Folhas da pasta (Vercel clara) — mesmos tons do Consolidado: mais escuras
+ * que as do vercel.css, mantendo a escada (1 = mais escura, atrás). */
+:root[data-palette="vercel"][data-theme="light"] [data-page="reports-tempo-indisponibilidade"] {
+  --upload-folder-paper-1: oklch(0.30 0 0);
+  --upload-folder-paper-2: oklch(0.42 0 0);
+  --upload-folder-paper-3: oklch(0.56 0 0);
 }
 
 [data-theme="light"] [data-page="reports-tempo-indisponibilidade"] .upload-dropzone-root-reports-tempo-indisp[data-dropzone-state="idle"]:hover {
@@ -500,4 +524,32 @@ body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-corne
   color: var(--foreground);
   border: 1px solid var(--border);
   box-shadow: 0 20px 50px -12px color-mix(in oklch, var(--foreground) 25%, transparent);
+}
+
+/* ───────── Input "Meta Indisp. %" (Configurações da Tabela) ─────────
+ * Mesmas regras do #config-meta-tx do consolidado: sem o outline global de
+ * foco (globals.css: input:focus-visible) e, no tema claro, o mesmo fundo
+ * leve (--input a 30%) que o Input já tem no escuro (dark:bg-input/30).
+ */
+[data-page="reports-tempo-indisponibilidade"] #config-meta-indisp,
+[data-page="reports-tempo-indisponibilidade"] #config-meta-indisp:focus,
+[data-page="reports-tempo-indisponibilidade"] #config-meta-indisp:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] #config-meta-indisp {
+  background-color: color-mix(in oklab, var(--input) 30%, transparent);
+}
+
+/* ───────── Fonte única: Instrument Sans em tudo ─────────
+ * Mesma regra do consolidado: ds-mono / ds-mono-sm / ds-display
+ * (globals.css) e o utilitário font-mono usam var(--font-mono) = Geist Mono.
+ * Escopado a esta rota — cobre também os portais que carregam o atributo
+ * (popover de config, dialog do operador). tabular-nums mantém o
+ * alinhamento das colunas numéricas que o mono garantia.
+ */
+[data-page="reports-tempo-indisponibilidade"] :is(.ds-mono, .ds-mono-sm, .ds-display, .font-mono) {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
 }

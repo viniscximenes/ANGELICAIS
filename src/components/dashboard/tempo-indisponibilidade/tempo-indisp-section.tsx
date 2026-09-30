@@ -397,7 +397,21 @@ export function TempoIndispSection({
             */}
             <div
               id="tempo-indisp-tabela"
-              className={cn("relative transition-[z-index] duration-0", configPopoverOpen && "z-[45]")}
+              className={cn(
+                "relative",
+                // bg-background junto com o z-[45] (mesma correção do
+                // consolidado): KpiFrame não tem fundo próprio e as linhas
+                // da tabela são transparentes — sem isso só o cabeçalho
+                // ficava nítido e as linhas mostravam o blur por trás.
+                configPopoverOpen && "z-[45] bg-background",
+              )}
+              // Inline (não classe): a regra global de troca de tema em
+              // globals.css (div { transition: background-color 0.2s ... })
+              // é unlayered e vence utilitários do Tailwind — o bg-background
+              // entrava com fade de 200ms (a tabela "piscava" sobre o blur).
+              // No consolidado o style inline (transition: width) já anula
+              // essa regra; aqui o mesmo efeito com transition: none.
+              style={{ transition: "none" }}
             >
               <KpiFrame>
                 <TempoIndispTabela

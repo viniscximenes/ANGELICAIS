@@ -11,7 +11,7 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { getCoordenadorConsolidado } from "@/lib/coordenador/get-coordenador-consolidado";
-import { getMetaPolo } from "@/lib/coordenador/meta-polo";
+import { getMetasPolo } from "@/lib/coordenador/meta-polo";
 
 export const metadata: Metadata = {
   title: "Coordenação - Consolidado",
@@ -36,7 +36,7 @@ export default async function CoordenadorConsolidadoPage() {
     redirect(getPostLoginPath(user.profile.role));
   }
 
-  const meta = await getMetaPolo(user.profile.id);
+  const { meta, metaFinanceiro } = await getMetasPolo(user.profile.id);
   const dados = await getCoordenadorConsolidado(meta);
 
   return (
@@ -45,7 +45,7 @@ export default async function CoordenadorConsolidadoPage() {
       className={`min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
     >
       <div className="mx-auto max-w-7xl space-y-10">
-        <CoordenadorConsolidadoView dados={dados} meta={meta} />
+        <CoordenadorConsolidadoView dados={dados} meta={meta} metaFinanceiro={metaFinanceiro} />
         <SignatureFooter />
       </div>
     </div>
