@@ -1,15 +1,6 @@
 "use client";
 
-import { IconClockCheck } from "@tabler/icons-react";
-
-import {
-  TABELA_HEADER_BORDA,
-  TABELA_HEADER_CELL_CLASS,
-  TABELA_HEADER_CELL_ULTIMA_CLASS,
-  TABELA_LINHA_CLASS,
-  TABELA_NOME_CELL_CLASS,
-  TABELA_VALOR_CELL_CLASS,
-} from "@/components/gestor/tabela-padrao";
+import { TABELA_HEADER_BORDA } from "@/components/gestor/tabela-padrao";
 import {
   buildForecastPorOperador,
   calcularAderenciaOperador,
@@ -62,7 +53,10 @@ const ADERENCIA_OBSERVACAO_TEXTO =
  * diferença inicial entre elas.
  */
 const PISO_OPERADOR_PX = 182;
-const DATA_COL_PISO_PX = 132;
+// 132 → 150: títulos com px-4 (32px) e o tamanho do cabeçalho de
+// "Desempenho por marca e unidade" — "PAUSA 10 PREV." (~115px) + 32, com
+// folga, pra nenhum título ser cortado com reticências.
+const DATA_COL_PISO_PX = 150;
 
 const COLUNAS_HORARIO: { key: 0 | 1 | 2 | 3; sufixo: "Prev." | "Real" }[] = [
   { key: 0, sufixo: "Prev." },
@@ -90,19 +84,19 @@ const LABELS_ITEM: Record<0 | 1 | 2 | 3, string> = {
 /** Colunas cuja célula "Real" recebe cor semântica (dentro/fora da tolerância) — Login fica de fora, sem cor, como já era. */
 const COLUNAS_COM_COR: Set<0 | 1 | 2 | 3> = new Set([1, 2, 3]);
 
-/** Fundo opaco da coluna Operador (sticky) no cabeçalho — mesma técnica já usada em pausas-detalhadas-analitico.tsx. */
-const STICKY_HEADER_BG = "color-mix(in oklch, var(--muted) 40%, var(--card))";
-
 /**
- * Cabeçalho — MESMO estilo local usado no cabeçalho da tabela principal
- * (TempoIndispTabela/EquipeTable): ds-body/font-bold/text-foreground/
- * tracking-wide, em vez de TABELA_HEADER_CLASS (ds-mono-sm/font-bold/
- * text-muted-foreground/tracking-wider) — alinhado à tipografia sans usada
- * nas tabelas analíticas do consolidado (TabelaTemas/DistribuicaoQuartis),
- * que também não usam fonte monoespaçada no cabeçalho.
+ * Visual = "Desempenho por marca e unidade" (tabela-segmentos.tsx, consolidado),
+ * o mesmo já aplicado em pausas-detalhadas-analitico.tsx: cabeçalho ds-body
+ * bold uppercase tracking-wide (cor por tema em reports-tempo-indisp.css),
+ * células py-3 px-4 text-xs, linhas separadas só por border/30 (sem
+ * divisórias verticais, sem hover), Operador centralizado em font-semibold.
+ * Fundo opaco da coluna sticky Operador no CSS da página — mesma cor da
+ * linha, sem destaque próprio.
  */
-const HEADER_ROW_CLASS =
-  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground";
+const HEADER_ROW_CLASS = "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase";
+const HEADER_CELL_CLASS = "min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-4 py-2.5 text-center";
+const NOME_CELL_CLASS = "min-w-0 truncate whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-foreground";
+const VALOR_CELL_CLASS = "min-w-0 whitespace-nowrap px-4 py-3 text-center text-xs font-medium";
 
 const GRID_COLS = [
   `minmax(${PISO_OPERADOR_PX}px, 1.6fr)`,
@@ -119,7 +113,7 @@ interface Props {
 }
 
 /**
- * Bloco "Aderência" — título com ícone e texto de observação, seguido da
+ * Bloco "Aderência de login e pausas" — título e texto de observação, seguido da
  * tabela sem container visual, como os blocos analíticos do Consolidado:
  * uma linha por operador, comparando horário previsto x real de Login e das
  * 3 pausas que já entram na aderência do dialog hoje (calcularAderenciaOperador,
@@ -162,10 +156,7 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-            <IconClockCheck size={20} className="text-foreground" />
-            Aderência
-          </h3>
+          <h3 className="ds-h3 font-semibold text-foreground">Aderência de login e pausas</h3>
           <p className="ds-small text-muted-foreground mt-1">{ADERENCIA_OBSERVACAO_TEXTO}</p>
         </div>
       </div>
@@ -189,22 +180,16 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
                 style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA }}
               >
                 <div
-                  className={cn(TABELA_HEADER_CELL_CLASS, "sticky left-0 z-10")}
-                  style={{ background: STICKY_HEADER_BG }}
+                  data-tabela-sticky-header
+                  className={cn(HEADER_CELL_CLASS, "sticky left-0 z-10")}
                 >
                   Operador
                 </div>
-                {COLUNAS_HORARIO.map((col, i) => {
-                  const isLast = i === COLUNAS_HORARIO.length - 1;
-                  return (
-                    <div
-                      key={i}
-                      className={isLast ? TABELA_HEADER_CELL_ULTIMA_CLASS : TABELA_HEADER_CELL_CLASS}
-                    >
-                      {LABELS_ITEM[col.key]} {col.sufixo}
-                    </div>
-                  );
-                })}
+                {COLUNAS_HORARIO.map((col, i) => (
+                  <div key={i} className={HEADER_CELL_CLASS}>
+                    {LABELS_ITEM[col.key]} {col.sufixo}
+                  </div>
+                ))}
               </div>
 
               {linhas.map(({ op, aderencia }, idx) => {
@@ -213,15 +198,12 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
                 return (
                   <div
                     key={op.email}
-                    className={TABELA_LINHA_CLASS}
-                    style={{
-                      gridTemplateColumns: GRID_COLS,
-                      borderBottom: isLastLinha ? "none" : "1px solid var(--border)/40",
-                    }}
+                    className={cn("grid items-center gap-0", !isLastLinha && "border-b border-border/30")}
+                    style={{ gridTemplateColumns: GRID_COLS }}
                   >
                     <div
-                      className={cn(TABELA_NOME_CELL_CLASS, "sticky left-0 z-10")}
-                      style={{ background: "var(--card)" }}
+                      data-tabela-sticky-nome
+                      className={cn(NOME_CELL_CLASS, "sticky left-0 z-10")}
                     >
                       {formatNomeDotSobrenome(op.email)}
                     </div>
@@ -248,7 +230,7 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
                         <div
                           key={i}
                           className={cn(
-                            TABELA_VALOR_CELL_CLASS,
+                            VALOR_CELL_CLASS,
                             cor ? undefined : isEmpty ? "text-muted-foreground" : "text-foreground",
                           )}
                           style={{
@@ -260,7 +242,7 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
                             // font-*) — reaproveitado aqui, não inventado.
                             // Só quando há cor (Real dentro/fora da
                             // tolerância); "—" e valores sem cor continuam
-                            // no peso normal de TABELA_VALOR_CELL_CLASS.
+                            // no peso de VALOR_CELL_CLASS.
                             fontWeight: cor ? 600 : undefined,
                           }}
                         >

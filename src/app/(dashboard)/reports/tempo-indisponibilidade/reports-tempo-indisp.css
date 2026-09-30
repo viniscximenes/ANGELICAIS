@@ -139,7 +139,10 @@ body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-corne
  * reports-consolidado.css.
  */
 .reports-tempo-indisp-nav .bg-sidebar {
-  background-color: var(--nav-menu-bg) !important;
+  /* Mesmo fundo do consolidado: --nav-menu-bg-consolidado só existe na
+     Vercel clara (vercel.css); nos demais temas/paletas cai no
+     --nav-menu-bg de sempre. */
+  background-color: var(--nav-menu-bg-consolidado, var(--nav-menu-bg)) !important;
   box-shadow: var(--kpi-shadow);
 }
 .reports-tempo-indisp-nav .border-border\/60 {
@@ -151,9 +154,12 @@ body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-corne
 .reports-tempo-indisp-nav a:hover .text-neutral-700 {
   color: var(--foreground) !important;
 }
+/* Hover do item: SEM fundo cinza — igual ao consolidado, a única animação é
+   o título deslizando pro lado + a cor do texto indo pra --foreground.
+   Transparente explícito (!important) pra nenhuma regra de fundo no hover
+   sobreviver, nem de CSS antigo ainda carregado. */
 .reports-tempo-indisp-nav a:hover {
-  background-color: color-mix(in srgb, var(--foreground) 8%, transparent);
-  border-radius: 0.5rem;
+  background: transparent !important;
 }
 .reports-tempo-indisp-nav a:focus-visible {
   outline: 2px solid var(--ring);
@@ -319,13 +325,10 @@ body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-corne
 }
 
 /* ───────── Tabelas do Analítico (tema claro) ─────────
- * Os quatro blocos usavam combinações diferentes de text-foreground e
- * text-muted-foreground/70 no cabeçalho, enquanto a coluna sticky do
- * operador alternava entre var(--card), uma mistura opaca e o fundo
- * herdado. Normalizamos todos pelos mesmos tokens da paleta Zen Linen:
- * títulos em muted-foreground, cabeçalho sticky no mesmo bege opaco e as
- * células com o nome do operador em um bege um pouco mais marcado para
- * separar visualmente a coluna fixa do restante da linha. */
+ * Cabeçalho das quatro tabelas no tema claro = cabeçalho de "Desempenho
+ * por marca e unidade" do consolidado: --muted, borda 2px e títulos em
+ * muted-foreground. A coluna sticky do operador não tem cor própria (ver
+ * bloco "Tabelas do Analítico" abaixo). */
 [data-theme="light"] [data-page="reports-tempo-indisponibilidade"] :is(
   [data-pausas-tabela],
   [data-aderencia-tabela],
@@ -337,22 +340,54 @@ body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-corne
   color: var(--muted-foreground) !important;
 }
 
-[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] :is(
-  [data-pausas-tabela],
-  [data-aderencia-tabela],
-  [data-pausas-nao-realizadas-tabela],
-  [data-estouro-pausa-tabela]
-) > div:first-child > div:first-child {
-  background-color: color-mix(in srgb, var(--card) 60%, var(--muted) 40%) !important;
+/* ───────── Tabelas do Analítico = "Desempenho por marca e unidade" ─────────
+ * Mesmo visual da tabela de referência do Consolidado (data-tabela-segmentos):
+ * cabeçalho escuro = --muted a 40% + borda 1px, claro = --muted + 2px (regra
+ * acima / globals.css), títulos em --foreground (escuro) e
+ * --muted-foreground (claro). A coluna Operador continua sticky (rolagem
+ * horizontal), mas SEM cor própria: o fundo opaco só replica a cor da linha
+ * (cabeçalho) ou o fundo da página (dados). */
+[data-page="reports-tempo-indisponibilidade"] :is([data-pausas-tabela], [data-aderencia-tabela], [data-pausas-nao-realizadas-tabela], [data-estouro-pausa-tabela]) > div:first-child {
+  color: var(--foreground);
+}
+/* in srgb (não oklab): a linha do cabeçalho é --muted a 40% de opacidade
+ * sobre o fundo da página, e o navegador compõe transparência em sRGB. A
+ * mistura em oklab dava um tom mais escuro que o resto do cabeçalho. */
+[data-page="reports-tempo-indisponibilidade"] :is([data-pausas-sticky-header], [data-tabela-sticky-header]) {
+  background-color: color-mix(in srgb, var(--muted) 40%, var(--background));
+}
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] :is([data-pausas-sticky-header], [data-tabela-sticky-header]) {
+  background-color: var(--muted);
+}
+[data-page="reports-tempo-indisponibilidade"] :is([data-pausas-sticky-nome], [data-tabela-sticky-nome]) {
+  background-color: var(--background);
 }
 
-[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] :is(
-  [data-pausas-tabela],
-  [data-aderencia-tabela],
-  [data-pausas-nao-realizadas-tabela],
-  [data-estouro-pausa-tabela]
-) > div:not(:first-child) > div:first-child {
-  background-color: color-mix(in srgb, var(--card) 68%, var(--muted) 32%) !important;
+/* ───────── Tabelas do modal do operador (Aderência / Pausas Detalhadas) ─────────
+ * Mesmo cabeçalho da "Retenção por Tema" do modal do operador do Consolidado
+ * (data-tabela-operador-temas em reports-consolidado.css): escuro = --muted a
+ * 40% + borda 1px e títulos em --foreground; claro = --muted + borda 2px e
+ * títulos em --muted-foreground. Fonte ds-body 14px bold uppercase.
+ */
+[data-page="reports-tempo-indisponibilidade"] [data-tabela-operador-tempo] thead tr {
+  background-color: color-mix(in oklab, var(--muted) 40%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+[data-page="reports-tempo-indisponibilidade"] [data-tabela-operador-tempo] thead th {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  line-height: var(--leading-normal);
+  color: var(--foreground);
+}
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] [data-tabela-operador-tempo] thead tr {
+  background-color: var(--muted);
+  border-bottom-width: 2px;
+}
+[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] [data-tabela-operador-tempo] thead th {
+  color: var(--muted-foreground);
 }
 
 /* ───────── Banner de erro do upload ─────────
@@ -367,19 +402,13 @@ body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-corne
   border-color: color-mix(in oklch, var(--danger) 35%, transparent);
 }
 
-/* ───────── Imagem exportada no tema claro ─────────
- * Mesma correção do Consolidado: redefinir --background usando ele próprio
- * criava um ciclo de custom property no elemento capturado. A resolução do
- * token falhava e a biblioteca caía em branco puro, diferente da tabela da
- * página. Os valores-base abaixo são os próprios tokens do tema claro desta
- * rota; o color-mix preserva o mesmo ajuste suave usado no Consolidado sem
- * criar autorreferência. O seletor continua restrito ao clone de exportação.
+/* ───────── Imagem exportada ("Copiar imagem") ─────────
+ * Mesmo tratamento do Consolidado (reports-consolidado.css): havia aqui um
+ * override (só tema claro) que fixava --background/--card/--muted com os
+ * hex da paleta antiga Zen Linen (#E9E4D8 / #F4EFE4 / #CFC8B8) — a imagem
+ * saía bege mesmo com a paleta Vercel ativa. Removido: a imagem herda os
+ * MESMOS tokens do tema/paleta ativos, igual à tabela na tela.
  */
-[data-theme="light"] [data-page="reports-tempo-indisponibilidade"] [data-tempo-indisp-png] {
-  --background: color-mix(in srgb, #E9E4D8 88%, white 12%);
-  --card: color-mix(in srgb, #F4EFE4 90%, white 10%);
-  --muted: color-mix(in srgb, #CFC8B8 85%, white 15%);
-}
 
 /* ───────── Dropzone "Anexar Base" — ícone único animado ─────────
  * Mesmo tratamento de reports-consolidado.css (22ª rodada), aplicado ao
@@ -552,4 +581,29 @@ body:has([data-page="reports-tempo-indisponibilidade"])::-webkit-scrollbar-corne
 [data-page="reports-tempo-indisponibilidade"] :is(.ds-mono, .ds-mono-sm, .ds-display, .font-mono) {
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
+}
+
+/* ───────── Skeleton de carregamento (loading.tsx + overlay de refresh) ─────────
+ * Mesmo ajuste do Consolidado (.consolidado-skeleton em
+ * reports-consolidado.css): os blocos usavam bg-card (e variações com
+ * opacidade) — na Vercel clara é branco puro sobre fundo quase branco, e os
+ * "cards fantasmas" sumiam. Tom = --muted-foreground a 14%, em degraus pelas
+ * opacidades originais (cheio > /70 > /60 e /40). Vale nos dois temas.
+ * KpiLoadingScreen é compartilhado — o ajuste entra pela classe do wrapper,
+ * só nesta rota.
+ */
+.tempo-indisp-skeleton .bg-card {
+  background-color: color-mix(in oklab, var(--muted-foreground) 14%, transparent);
+}
+.tempo-indisp-skeleton .bg-card\/70 {
+  background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
+}
+.tempo-indisp-skeleton :is(.bg-card\/60, .bg-card\/40) {
+  background-color: color-mix(in oklab, var(--muted-foreground) 7%, transparent);
+}
+
+/* Sem indicador girando (igual ao Consolidado): o carregamento é só o
+ * skeleton. O texto sr-only do status continua pra leitor de tela. */
+.tempo-indisp-skeleton .dot-spinner {
+  display: none;
 }

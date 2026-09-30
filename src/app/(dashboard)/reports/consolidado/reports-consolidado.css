@@ -748,7 +748,6 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
 [data-theme="light"] [data-page="reports-consolidado"] :is([data-tabela-temas], [data-tabela-quartis], [data-tabela-segmentos], [data-tabela-contratos], [data-tabela-faceid], [data-tabela-perfilacao], [data-tabela-operador-temas]) thead th {
   color: var(--muted-foreground);
 }
-
 /* ───────── Submotivos da "Taxa de retenção por tema" ─────────
  * Fundo: o bg-black/5 do componente virava um cinza "sujo", fora da paleta.
  * Troca por um tom leve de --muted (a mesma família do cabeçalho), só pra

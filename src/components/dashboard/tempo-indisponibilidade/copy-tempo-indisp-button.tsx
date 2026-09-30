@@ -4,10 +4,29 @@ import { useState } from "react";
 import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
-import { buildClipboardReportHtml } from "@/lib/gestor/build-clipboard-report-html";
 import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 import { copyFormattedHtml, escapeHtml } from "@/lib/utils/copy-formatted-html";
 import { cn } from "@/lib/utils";
+
+/**
+ * HTML colado — MESMO formato de formatReportHtml em copy-table-button.tsx
+ * (consolidado): título <h2><b> → report <div><i> → imagem. Cor do texto
+ * FIXA (#1E1E1E), repetida no <b>/<i>: o HTML é colado fora do site
+ * (Teams/Slack/email, fundo claro) e, sem cor própria, herdava a cor do tema
+ * da página de origem (escuro → texto branco, ilegível no destino). O
+ * builder compartilhado (buildClipboardReportHtml) não fixa cor — por isso
+ * montado aqui, sem mexer nele (usado por outras páginas).
+ */
+function formatReportHtml(hora: string, pngDataUrl: string): string {
+  const TITULO_COR = "color: #1E1E1E;";
+  const parts: string[] = [
+    `<h2 style="font-size: 16px; margin: 0; ${TITULO_COR}"><b style="${TITULO_COR}">D-1 TEMPO LOGADO &amp; INDISPONIBILIDADE</b></h2>`,
+    `<div style="margin-top: 4px; ${TITULO_COR}"><i style="${TITULO_COR}">report às ${escapeHtml(hora)}</i></div>`,
+    `<br>`,
+    `<div style="margin-top: 8px;"><img src="${pngDataUrl}" style="display: block; max-width: 1000px; width: 100%;" alt="Tabela tempo logado e indisponibilidade"></div>`,
+  ];
+  return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1E1E1E;">${parts.join("")}</div>`;
+}
 
 interface CopyTempoIndispButtonProps {
   horaReport: string;
@@ -46,14 +65,7 @@ export function CopyTempoIndispButton({ horaReport }: CopyTempoIndispButtonProps
         horaReport && horaReport !== "—"
           ? horaReport.match(/^(\d{1,2}:\d{2})/)?.[1] ?? horaReport
           : "—";
-      const textoReport = `report às ${escapeHtml(hora)}`;
-
-      const html = buildClipboardReportHtml({
-        titulo: "D-1 TEMPO LOGADO & INDISPONIBILIDADE",
-        subtitulo: textoReport,
-        pngDataUrl,
-        altText: "Tabela tempo logado e indisponibilidade",
-      });
+      const html = formatReportHtml(hora, pngDataUrl);
 
       await copyFormattedHtml(html);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
 import { IconFileSpreadsheet, IconLoader2, IconUpload } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
@@ -20,9 +20,33 @@ type UploadStep =
 interface UploadTempoLogadoDropzoneProps {
   /** Visual compacto (barra horizontal fina) — usado na página unificada do gestor. Default: card grande vertical. */
   compact?: boolean;
+  /**
+   * Clique/teclado abre o seletor de arquivos já na pasta Downloads e só com
+   * .csv (sem a opção "Todos os arquivos"), via File System Access API
+   * (showOpenFilePicker — Chrome/Edge). Navegadores sem a API seguem com o
+   * seletor padrão de sempre. Arrastar e soltar não muda. MESMO mecanismo
+   * de UploadDropzone (/reports/consolidado, prop de mesmo nome).
+   */
+  abrirEmDownloads?: boolean;
 }
 
-export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogadoDropzoneProps = {}) {
+// Tipagem mínima da File System Access API (não está no lib.dom do TS).
+type ShowOpenFilePicker = (options: {
+  startIn?: "downloads";
+  types?: { description: string; accept: Record<string, string[]> }[];
+  excludeAcceptAllOption?: boolean;
+  multiple?: boolean;
+}) => Promise<{ getFile: () => Promise<File> }[]>;
+
+export function UploadTempoLogadoDropzone({
+  compact = false,
+  abrirEmDownloads = false,
+}: UploadTempoLogadoDropzoneProps = {}) {
+  // Detectado só no client (evita divergência de hidratação com o SSR).
+  const [pickerNativo, setPickerNativo] = useState(false);
+  useEffect(() => {
+    setPickerNativo(abrirEmDownloads && "showOpenFilePicker" in window);
+  }, [abrirEmDownloads]);
   const [step, setStep] = useState<UploadStep>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [rowsWritten, setRowsWritten] = useState<number>(0);
@@ -102,7 +126,7 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
     [handleFile],
   );
 
-  const { getRootProps, getInputProps, isDragActive, isDragReject } =
+  const { getRootProps, getInputProps, isDragActive, isDragReject, open } =
     useDropzone({
       onDrop,
       accept: {
@@ -111,9 +135,36 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
       },
       multiple: false,
       disabled: step !== null && step !== "done",
+      // Com o seletor nativo ativo, clique/teclado são tratados abaixo
+      // (abrirSeletorDownloads); o drag & drop continua com o dropzone.
+      noClick: pickerNativo,
+      noKeyboard: pickerNativo,
     });
 
   const isProcessing = step !== null && step !== "done";
+
+  const abrirSeletorDownloads = useCallback(async () => {
+    const showOpenFilePicker = (window as unknown as { showOpenFilePicker: ShowOpenFilePicker })
+      .showOpenFilePicker;
+    try {
+      const [handle] = await showOpenFilePicker({
+        startIn: "downloads",
+        types: [{ description: "Arquivo CSV", accept: { "text/csv": [".csv"] } }],
+        excludeAcceptAllOption: true,
+        multiple: false,
+      });
+      const file = await handle.getFile();
+      // Mesmo critério do `accept` do dropzone: arquivo fora de .csv é
+      // ignorado em silêncio, como no fluxo padrão.
+      if (!file.name.toLowerCase().endsWith(".csv")) return;
+      handleFile(file);
+    } catch (err) {
+      // Usuário fechou/cancelou o seletor — nada a fazer.
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      // Qualquer outra falha da API: volta pro seletor padrão.
+      open();
+    }
+  }, [handleFile, open]);
   // Favicon animado ("carregando") — step volta pra null em todo caminho
   // de erro (ver catches acima), então cobre sucesso e falha igual.
   useFaviconLoading(isProcessing);
@@ -183,6 +234,16 @@ export function UploadTempoLogadoDropzone({ compact = false }: UploadTempoLogado
   const rootProps = getRootProps({
     onMouseEnter: () => setIsHovering(true),
     onMouseLeave: () => setIsHovering(false),
+    ...(pickerNativo && {
+      onClick: () => {
+        if (!isProcessing) void abrirSeletorDownloads();
+      },
+      onKeyDown: (e: KeyboardEvent<HTMLElement>) => {
+        if (isProcessing || (e.key !== "Enter" && e.key !== " ")) return;
+        e.preventDefault();
+        void abrirSeletorDownloads();
+      },
+    }),
   });
 
   return (

@@ -2,9 +2,9 @@
 
 import {
   IconCalendarX,
-  IconChartLine,
   IconClockCheck,
   IconClockExclamation,
+  IconListDetails,
   IconUsersGroup,
 } from "@tabler/icons-react";
 import { getLenisInstance } from "@/lib/lenis/lenis-instance";
@@ -33,15 +33,6 @@ const TRILHO_CARD = {
 const ICON_CLASS = "h-5 w-5 shrink-0 text-[color:var(--muted-foreground)]";
 
 /**
- * Mesma altura do header fixo do app (app-header.tsx: `sticky top-0 z-30
- * h-[60px]`) — MESMA constante (HEADER_HEIGHT_PX) já usada em
- * retencao-horizontal-scroll.tsx pro pin engatar abaixo do header. Usada
- * aqui como offset negativo no lenis.scrollTo pro cabeçalho da tabela não
- * ficar escondido atrás do header sticky.
- */
-const HEADER_HEIGHT_PX = 60;
-
-/**
  * Navegação lateral animada do trilho de /reports/tempo-indisponibilidade —
  * MESMO componente/mecanismo de ConsolidadoNavSidebar (ambos delegam a
  * FloatingNavSidebar), só com a lista de itens/ícones trocada.
@@ -50,19 +41,11 @@ const HEADER_HEIGHT_PX = 60;
  * nenhuma (nenhum scroll-spy, nenhum IntersectionObserver, nenhum estado de
  * "item selecionado" em lugar nenhum do projeto).
  *
- * Primeiro item ("Equipe") = a tabela unificada de operadores. Alvo do
- * scroll: id="tempo-indisp-tabela" (o card da tabela em si, cabeçalho de
- * colunas incluso) — NÃO mais id="tempo-indisp-section" (a section raiz
- * inteira, que engloba título + card de anexo + tabela + trilho). Causa do
- * ponto de chegada errado: o alvo antigo fazia o Lenis posicionar o topo
- * da SECTION (onde fica o título "Equipe") no topo da viewport — como
- * nesta página (diferente do consolidado, onde upload e tabela ficam
- * lado a lado) o card de anexo "Anexar Base" fica EMPILHADO ACIMA da
- * tabela, ele consumia a viewport visível logo abaixo do título,
- * escondendo o cabeçalho da tabela. Corrigido apontando direto pro card
- * da tabela + offset de -HEADER_HEIGHT_PX (mesma constante do header fixo
- * do app, já usada em retencao-horizontal-scroll.tsx) pro cabeçalho não
- * ficar colado/escondido atrás do header sticky.
+ * Primeiro item ("Tabela operadores") = a tabela unificada de operadores.
+ * Alvo do scroll: id="tempo-indisp-cabecalho" (bloco do título da página),
+ * sem offset — MESMO ponto de chegada do Consolidado (#equipe-section):
+ * a linha "{nome} fez um report às HH:MM" fica logo abaixo do header fixo,
+ * seguida dos controles, anexo e tabela.
  *
  * Um item por SLIDE — "Resumo" (slide 0), "Aderência" (slide 1), "Pausas
  * Detalhadas" (rótulo do item que leva ao slide 0 — reaproveita o mesmo
@@ -70,19 +53,22 @@ const HEADER_HEIGHT_PX = 60;
  * renomeado pra "Pausas Detalhadas" (mesmo destino/ícone/posição, só o
  * rótulo mudou). Os itens do trilho, com o MESMO ícone que aparece ao lado
  * do título do card correspondente:
- *   - "Pausas Detalhadas" → IconChartLine (mesmo ícone que o consolidado
- *     usa no item equivalente "Visão Geral")
- *   - "Aderência" → IconClockCheck
- *   - "Pausas não realizadas" → IconCalendarX
- *   - "Estouro de pausa" → IconClockExclamation
+ *   - "Pausas detalhadas" → IconListDetails
+ *   - "Aderência de login e pausas" → IconClockCheck
+ *   - "Pausas NR17 não tiradas" → IconCalendarX
+ *   - "Estouro de NR17" → IconClockExclamation
  */
 export function TempoIndispNavSidebar() {
+  // Mesmo ponto de chegada do Consolidado (scrollToEquipe em
+  // consolidado-nav-sidebar.tsx): topo do bloco do título, SEM offset — o
+  // título fica sob o header fixo e a linha "{nome} fez um report às HH:MM"
+  // aparece logo abaixo dele, seguida dos controles/anexo/tabela.
   function scrollToTabela() {
-    const el = document.getElementById("tempo-indisp-tabela");
+    const el = document.getElementById("tempo-indisp-cabecalho");
     if (!el) return;
     const lenis = getLenisInstance();
     if (lenis) {
-      lenis.scrollTo(el, { duration: 1, offset: -HEADER_HEIGHT_PX });
+      lenis.scrollTo(el, { duration: 1 });
     } else {
       el.scrollIntoView({ behavior: "smooth" });
     }
@@ -90,31 +76,31 @@ export function TempoIndispNavSidebar() {
 
   const links = [
     {
-      label: "Equipe",
-      href: "#tempo-indisp-tabela",
+      label: "Tabela operadores",
+      href: "#tempo-indisp-cabecalho",
       icon: <IconUsersGroup className={ICON_CLASS} />,
       onClick: scrollToTabela,
     },
     {
-      label: "Pausas Detalhadas",
+      label: "Pausas detalhadas",
       href: "#trilho-card-0",
-      icon: <IconChartLine className={ICON_CLASS} />,
+      icon: <IconListDetails className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.resumo),
     },
     {
-      label: "Aderência",
+      label: "Aderência de login e pausas",
       href: "#trilho-card-1",
       icon: <IconClockCheck className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.aderencia),
     },
     {
-      label: "Pausas não realizadas",
+      label: "Pausas NR17 não tiradas",
       href: "#trilho-card-2",
       icon: <IconCalendarX className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.pausasNaoRealizadas),
     },
     {
-      label: "Estouro de pausa",
+      label: "Estouro de NR17",
       href: "#trilho-card-3",
       icon: <IconClockExclamation className={ICON_CLASS} />,
       onClick: () => requestScrollToCard(TRILHO_CARD.estouroPausa),

@@ -5,7 +5,6 @@ import { Instrument_Sans } from "next/font/google";
 import "./reports-consolidado.css";
 import { GestorEquipeSection } from "@/components/gestor/gestor-equipe-section";
 import { RetencaoDetalheSection } from "@/components/dashboard/retencao/retencao-detalhe-section";
-import { SignatureFooter } from "@/components/gestor/signature-footer";
 import { ConsolidadoNavSidebar } from "@/components/gestor/consolidado-nav-sidebar";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
@@ -202,8 +201,8 @@ export default async function ReportsConsolidadoPage() {
               gestora={gestora}
               reportHoraInicial={reportHora}
             />
-
-            <SignatureFooter />
+            {/* SignatureFooter agora é renderizada dentro de RetencaoDetalheSection
+                (no desktop, logo abaixo do último card do trilho). */}
           </div>
         </div>
       </div>

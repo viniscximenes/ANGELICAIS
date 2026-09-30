@@ -113,7 +113,17 @@ export function CardsResumoAnalitico({
           <div
             aria-hidden="true"
             className="absolute top-0 left-0 h-full w-[3px]"
-            style={{ background: "var(--primary)" }}
+            // Mesma cor do número (verde dentro da meta, vermelho abaixo) —
+            // igual à barra do card "Taxa de Retenção" do consolidado. Sem
+            // dado: mantém var(--primary).
+            style={{
+              background:
+                tempoLogadoMedioSegundos === null
+                  ? "var(--primary)"
+                  : tempoLogadoMedioSegundos >= META_TEMPO_LOGADO_SEGUNDOS
+                    ? "var(--success)"
+                    : "var(--danger)",
+            }}
           />
           <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             Tempo Logado

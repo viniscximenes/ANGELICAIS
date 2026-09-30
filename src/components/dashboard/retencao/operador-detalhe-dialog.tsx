@@ -24,6 +24,7 @@ import { getDataPngHoje } from "@/components/dashboard/export-popup-png-theme";
 import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
 import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
 import { resolverTokenCss } from "@/lib/utils/resolver-token-css";
+import { formatDistanciaMeta, formatFaixaHora } from "./grafico-evolucao";
 
 interface Props {
   operador: OperadorIndividual | null;
@@ -77,9 +78,8 @@ function ChipQuartil({
       style={{ backgroundColor: estilo.bg, borderColor: estilo.bd }}
     >
       <span>{rotulo}:</span>
-      <strong className="font-semibold" style={{ color: estilo.fg }}>
-        {quartil}
-      </strong>
+      {/* Sem negrito (pedido): mesmo peso do resto do chip, só a cor destaca. */}
+      <span style={{ color: estilo.fg }}>{quartil}</span>
       <span className="text-muted-foreground/70">
         ({rank}/{totalOperadores})
       </span>
@@ -285,10 +285,10 @@ export function OperadorDetalheDialog({
                   key={c.label}
                   className="flex flex-col justify-center gap-1 px-4 py-3.5"
                 >
-                  <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
+                  <p className="ds-small text-muted-foreground mb-1 font-bold tracking-wider uppercase">
                     {c.label}
                   </p>
-                  <p className={`ds-display text-2xl font-semibold tabular-nums ${valueColorClass}`}>
+                  <p className={`ds-display text-2xl font-bold tabular-nums ${valueColorClass}`}>
                     {c.valor}
                   </p>
                 </div>
@@ -298,9 +298,12 @@ export function OperadorDetalheDialog({
 
           {/* ── Evolução por hora ──────────────────────────────── */}
           <div className="space-y-2">
-            <h3 className="ds-h3 font-semibold text-foreground">
-              Evolução por Hora
-            </h3>
+            {/* Título + linha até a borda (mesmo padrão de título com
+                divisória de operador-tecnico-dialog.tsx). */}
+            <div className="flex items-center gap-3">
+              <h3 className="ds-h3 shrink-0 font-semibold text-foreground">Evolução por hora</h3>
+              <div aria-hidden="true" className="bg-border h-px flex-1" />
+            </div>
             {/* grafico-evolucao-chart: mesma regra dos gráficos "Evolução da
                 equipe" (reports-consolidado.css) — sem a borda de foco que
                 "marcava" o gráfico ao clicar nele. */}
@@ -355,26 +358,32 @@ export function OperadorDetalheDialog({
                       content={({ active, payload }) => {
                         if (!active || !payload || !payload.length) return null;
                         const info = payload[0].payload as typeof chartData[0];
+                        // Mesmo visual do tooltip do gráfico "Evolução da
+                        // equipe" (grafico-evolucao.tsx, visualDetalhado):
+                        // faixa em cinza no topo, só a taxa em destaque (com a
+                        // distância da meta) e o resto em texto normal, sem
+                        // negrito. Hora sem pedidos não mostra tooltip.
+                        if (info.total === 0) return null;
+                        const abaixo = info.txDisplay !== null && info.txDisplay < meta;
                         return (
-                          <div className="bg-popover border border-border/80 rounded-lg p-3 shadow-md space-y-1.5 font-sans">
-                            <p className="text-[11px] font-semibold text-foreground uppercase tracking-wider">
-                              Hora: {formatEixoLabel(info.label)}
+                          <div className="bg-popover border border-border/80 w-64 rounded-lg p-3 shadow-md font-sans">
+                            <p className="text-muted-foreground text-[11px] tracking-wider uppercase">
+                              {formatFaixaHora(info.label)}
                             </p>
-                            <div className="h-px bg-border/60 my-1" />
-                            <p className="text-xs text-muted-foreground">
-                              Retenção:{" "}
-                              <strong className={info.txDisplay !== null && info.txDisplay < meta ? "text-danger" : "text-success"}>
+                            <p className="mt-1 flex items-baseline gap-2 text-sm">
+                              <span className={`font-semibold ${abaixo ? "text-danger" : "text-success"}`}>
                                 {info.txDisplay !== null ? `${info.txDisplay}%` : "—"}
-                              </strong>
+                              </span>
+                              {info.txDisplay !== null && (
+                                <span className={`text-xs ${abaixo ? "text-danger" : "text-success"}`}>
+                                  {formatDistanciaMeta(info.txDisplay, meta)}
+                                </span>
+                              )}
                             </p>
-                            <p className="text-xs text-muted-foreground">
-                              Pedidos: <strong className="text-foreground">{info.total}</strong>
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Retidos: <strong className="text-foreground">{info.retidos}</strong>
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Cancelados: <strong className="text-foreground">{info.cancelados}</strong>
+                            <p className="text-muted-foreground mt-0.5 text-xs">
+                              {info.total} {info.total === 1 ? "pedido" : "pedidos"} · {info.retidos}{" "}
+                              {info.retidos === 1 ? "retido" : "retidos"} · {info.cancelados}{" "}
+                              {info.cancelados === 1 ? "cancelado" : "cancelados"}
                             </p>
                           </div>
                         );
@@ -477,9 +486,10 @@ export function OperadorDetalheDialog({
 
           {/* ── Retenção por tema ──────────────────────────────── */}
           <div className="space-y-2">
-            <h3 className="ds-h3 font-semibold text-foreground">
-              Retenção por Tema
-            </h3>
+            <div className="flex items-center gap-3">
+              <h3 className="ds-h3 shrink-0 font-semibold text-foreground">Retenção por tema</h3>
+              <div aria-hidden="true" className="bg-border h-px flex-1" />
+            </div>
             <div className="overflow-hidden">
               {operador.porMotivo.length === 0 ? (
                 <p className="ds-small text-muted-foreground p-6 text-center text-xs">

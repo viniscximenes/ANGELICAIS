@@ -1,15 +1,6 @@
 "use client";
 
-import { IconClockExclamation } from "@tabler/icons-react";
-
-import {
-  TABELA_HEADER_BORDA,
-  TABELA_HEADER_CELL_CLASS,
-  TABELA_HEADER_CELL_ULTIMA_CLASS,
-  TABELA_LINHA_CLASS,
-  TABELA_NOME_CELL_CLASS,
-  TABELA_VALOR_CELL_CLASS,
-} from "@/components/gestor/tabela-padrao";
+import { TABELA_HEADER_BORDA } from "@/components/gestor/tabela-padrao";
 import { horaParaSegundos } from "@/lib/d1-db/parse";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
 import { cn } from "@/lib/utils";
@@ -42,8 +33,10 @@ function formatMaisMinSeg(segundos: number): string {
 }
 
 const PISO_OPERADOR_PX = PISO_OPERADOR_PX_COMPARTILHADO;
-// Maior título ("ESTOURO PAUSA 10"/"ESTOURO PAUSA 20") medido via Puppeteer.
-const DATA_COL_PISO_PX = 150;
+// Maior título ("ESTOURO PAUSA 10"/"ESTOURO PAUSA 20"). 150 → 170: títulos
+// agora com px-4 (32px) e o tamanho do cabeçalho de "Desempenho por marca e
+// unidade" (~135px + 32), pra não serem cortados com reticências.
+const DATA_COL_PISO_PX = 170;
 
 const COLUNAS = ["Pausa 10", "Estouro Pausa 10", "Pausa 20", "Estouro Pausa 20"];
 
@@ -53,16 +46,23 @@ const GRID_COLS = [`minmax(${PISO_OPERADOR_PX}px, 1.6fr)`, ...COLUNAS.map(() => 
 
 export const ESTOURO_PAUSA_MIN_WIDTH_PX = PISO_OPERADOR_PX + COLUNAS.length * DATA_COL_PISO_PX;
 
-/** Cabeçalho — mesmo estilo sans (não mono) de EquipeTable/TempoIndispTabela, ver aderencia-analitico.tsx. */
-const HEADER_ROW_CLASS =
-  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground";
+/**
+ * Visual = "Desempenho por marca e unidade" (tabela-segmentos.tsx,
+ * consolidado) — mesmas classes de aderencia-analitico.tsx e
+ * pausas-detalhadas-analitico.tsx. Cor do cabeçalho por tema e fundo opaco da
+ * coluna sticky Operador (sem destaque próprio) em reports-tempo-indisp.css.
+ */
+const HEADER_ROW_CLASS = "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase";
+const HEADER_CELL_CLASS = "min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-4 py-2.5 text-center";
+const NOME_CELL_CLASS = "min-w-0 truncate whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-foreground";
+const VALOR_CELL_CLASS = "min-w-0 whitespace-nowrap px-4 py-3 text-center text-xs font-medium";
 
 interface Props {
   operadores: OperadorAnaliticoTempoIndisp[];
 }
 
 /**
- * Card "Estouro de pausa" — uma linha por operador com estouro (Pausa 10
+ * Card "Estouro de NR17" — uma linha por operador com estouro (Pausa 10
  * e/ou Pausa 20 acima de 20:00, sem tolerância, regra fixa). Reaproveita
  * horaParaSegundos (parse.ts, já usado por get-gestor-indisponibilidade.ts)
  * pra converter as colunas "HH:MM:SS" de op.pausas.
@@ -90,10 +90,7 @@ export function EstouroPausaAnalitico({ operadores }: Props) {
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-            <IconClockExclamation size={20} className="text-foreground" />
-            Estouro de pausa
-          </h3>
+          <h3 className="ds-h3 font-semibold text-foreground">Estouro de NR17</h3>
           <p className="ds-small text-muted-foreground mt-1">
             Regra: tempo total acima de 20:00 na Pausa 10 ou na Pausa 20, sem tolerância. {linhas.length}{" "}
             de {comDados} operadores com dados estouraram alguma das duas hoje.
@@ -109,12 +106,11 @@ export function EstouroPausaAnalitico({ operadores }: Props) {
                 className={HEADER_ROW_CLASS}
                 style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA }}
               >
-                <div className={cn(TABELA_HEADER_CELL_CLASS, "sticky left-0 z-10")}>Operador</div>
-                {COLUNAS.map((c, i) => (
-                  <div
-                    key={c}
-                    className={i === COLUNAS.length - 1 ? TABELA_HEADER_CELL_ULTIMA_CLASS : TABELA_HEADER_CELL_CLASS}
-                  >
+                <div data-tabela-sticky-header className={cn(HEADER_CELL_CLASS, "sticky left-0 z-10")}>
+                  Operador
+                </div>
+                {COLUNAS.map((c) => (
+                  <div key={c} className={HEADER_CELL_CLASS}>
                     {c}
                   </div>
                 ))}
@@ -125,23 +121,20 @@ export function EstouroPausaAnalitico({ operadores }: Props) {
                 return (
                   <div
                     key={op.email}
-                    className={TABELA_LINHA_CLASS}
-                    style={{
-                      gridTemplateColumns: GRID_COLS,
-                      borderBottom: isLast ? "none" : "1px solid var(--border)/40",
-                    }}
+                    className={cn("grid items-center gap-0", !isLast && "border-b border-border/30")}
+                    style={{ gridTemplateColumns: GRID_COLS }}
                   >
                     <div
-                      className={cn(TABELA_NOME_CELL_CLASS, "sticky left-0 z-10")}
-                      style={{ background: "var(--card)" }}
+                      data-tabela-sticky-nome
+                      className={cn(NOME_CELL_CLASS, "sticky left-0 z-10")}
                     >
                       {formatNomeDotSobrenome(op.email)}
                     </div>
-                    <div className={cn(TABELA_VALOR_CELL_CLASS, "text-foreground")} style={{ fontVariantNumeric: "tabular-nums" }}>
+                    <div className={cn(VALOR_CELL_CLASS, "text-foreground")} style={{ fontVariantNumeric: "tabular-nums" }}>
                       {op.pausas.pausa10}
                     </div>
                     <div
-                      className={cn(TABELA_VALOR_CELL_CLASS, estouroP10 > 0 ? "font-medium" : "text-muted-foreground")}
+                      className={cn(VALOR_CELL_CLASS, estouroP10 <= 0 && "text-muted-foreground")}
                       style={{
                         fontVariantNumeric: "tabular-nums",
                         color: estouroP10 > 0 ? "var(--danger)" : undefined,
@@ -149,11 +142,11 @@ export function EstouroPausaAnalitico({ operadores }: Props) {
                     >
                       {estouroP10 > 0 ? formatMaisMinSeg(estouroP10) : "—"}
                     </div>
-                    <div className={cn(TABELA_VALOR_CELL_CLASS, "text-foreground")} style={{ fontVariantNumeric: "tabular-nums" }}>
+                    <div className={cn(VALOR_CELL_CLASS, "text-foreground")} style={{ fontVariantNumeric: "tabular-nums" }}>
                       {op.pausas.pausa20}
                     </div>
                     <div
-                      className={cn(TABELA_VALOR_CELL_CLASS, estouroP20 > 0 ? "font-medium" : "text-muted-foreground")}
+                      className={cn(VALOR_CELL_CLASS, estouroP20 <= 0 && "text-muted-foreground")}
                       style={{
                         fontVariantNumeric: "tabular-nums",
                         color: estouroP20 > 0 ? "var(--danger)" : undefined,

@@ -1,15 +1,6 @@
 "use client";
 
-import { IconClock } from "@tabler/icons-react";
-
-import {
-  TABELA_HEADER_BORDA,
-  TABELA_HEADER_CELL_CLASS,
-  TABELA_HEADER_CELL_ULTIMA_CLASS,
-  TABELA_LINHA_CLASS,
-  TABELA_NOME_CELL_CLASS,
-  TABELA_VALOR_CELL_CLASS,
-} from "@/components/gestor/tabela-padrao";
+import { TABELA_HEADER_BORDA } from "@/components/gestor/tabela-padrao";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
 import type { GestorIndispLinha, PausasDetalhe } from "@/lib/d1-db/types";
 import { cn } from "@/lib/utils";
@@ -56,7 +47,10 @@ const PISO_OPERADOR_PX = 182; // 152 (nome real mais longo) + 24 (px-3) + 6
  * diferença de piso nunca desaparece (medido: 12px de diferença entre a
  * mais larga e a mais estreita). Com piso uniforme essa diferença é 0.
  */
-const DATA_COL_PISO_PX = 100;
+// 100 → 132: títulos agora com px-4 (32px) e o mesmo tamanho do cabeçalho
+// de "Desempenho por marca e unidade" — "PARTICULAR" (~100px) + 32 = 132,
+// pra nenhum título ser cortado com reticências.
+const DATA_COL_PISO_PX = 132;
 
 const COLUNAS: { key: PausaKey; label: string }[] = [
   { key: "pausa10", label: "Pausa 10" },
@@ -97,17 +91,18 @@ function fmt(s: string): string {
   return s;
 }
 
-/** Fundo opaco da coluna Operador (sticky) no cabeçalho — mesma mistura de tokens já usada nos outros cabeçalhos sticky do projeto (color-mix, sem cor hardcoded). */
-const STICKY_HEADER_BG = "color-mix(in oklch, var(--muted) 40%, var(--card))";
-
 /**
- * Cabeçalho — mesmo estilo sans (ds-body, não ds-mono-sm) de
- * EquipeTable/TempoIndispTabela (ver aderencia-analitico.tsx), com a cor
- * ainda mais discreta (text-muted-foreground/70 em vez de text-foreground)
- * pedida explicitamente pra esta tabela ficar mais discreta que as outras.
+ * Visual = "Desempenho por marca e unidade" (tabela-segmentos.tsx, consolidado):
+ * cabeçalho ds-body bold uppercase tracking-wide (cor por tema em
+ * reports-tempo-indisp.css), células py-3 px-4 text-xs, linhas separadas só
+ * por border/30 (sem divisórias verticais, sem hover), primeira coluna
+ * centralizada em font-semibold. Fundo opaco da coluna sticky Operador também no
+ * CSS da página — mesma cor da linha, sem destaque próprio.
  */
-const HEADER_ROW_CLASS =
-  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground";
+const HEADER_ROW_CLASS = "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase";
+const HEADER_CELL_CLASS = "min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-4 py-2.5 text-center";
+const NOME_CELL_CLASS = "min-w-0 truncate whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-foreground";
+const VALOR_CELL_CLASS = "min-w-0 whitespace-nowrap px-4 py-3 text-center text-xs font-medium";
 
 interface Props {
   operadores: GestorIndispLinha[];
@@ -128,10 +123,7 @@ export function PausasDetalhadasAnalitico({ operadores }: Props) {
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-          <IconClock size={20} className="text-foreground" />
-          Tabela de Pausas Detalhadas
-        </h3>
+        <h3 className="ds-h3 font-semibold text-foreground">Tabela de pausas detalhadas</h3>
         <p className="ds-small text-muted-foreground mt-1">
           Detalhamento de todas as pausas registradas por operador no período.
         </p>
@@ -153,27 +145,26 @@ export function PausasDetalhadasAnalitico({ operadores }: Props) {
               >
                 {/*
                   sticky left-0: mesma coluna Operador acompanha o scroll
-                  horizontal. Fundo opaco (STICKY_HEADER_BG) — sem isso, o
-                  texto das colunas de trás apareceria por baixo ao rolar.
-                  Centralizado (TABELA_HEADER_CELL_CLASS já é text-center)
-                  — mesmo alinhamento do cabeçalho "Operador" da tabela
-                  unificada de operadores.
-                  whitespace-nowrap (herdado de TABELA_HEADER_CELL_CLASS):
+                  horizontal. Fundo opaco (data-pausas-sticky-header, cor
+                  da própria linha, em reports-tempo-indisp.css) — sem isso,
+                  o texto das colunas de trás apareceria por baixo ao rolar.
+                  Centralizado, como os nomes da tabela principal.
+                  whitespace-nowrap (HEADER_CELL_CLASS):
                   título NUNCA quebra linha — o piso da coluna garante que o
                   texto sempre cabe.
                 */}
                 <div
-                  className={cn(TABELA_HEADER_CELL_CLASS, "sticky left-0 z-10")}
-                  style={{ background: STICKY_HEADER_BG }}
+                  data-pausas-sticky-header
+                  className={cn(HEADER_CELL_CLASS, "sticky left-0 z-10")}
                 >
                   Operador
                 </div>
                 {COLUNAS.map((col) => (
-                  <div key={col.key} className={TABELA_HEADER_CELL_CLASS}>
+                  <div key={col.key} className={HEADER_CELL_CLASS}>
                     {col.label}
                   </div>
                 ))}
-                <div className={TABELA_HEADER_CELL_ULTIMA_CLASS}>{SISTEMA_LABEL}</div>
+                <div className={HEADER_CELL_CLASS}>{SISTEMA_LABEL}</div>
               </div>
 
               {comDados.map((op, idx) => {
@@ -184,24 +175,19 @@ export function PausasDetalhadasAnalitico({ operadores }: Props) {
                 return (
                   <div
                     key={op.email}
-                    className={TABELA_LINHA_CLASS}
-                    style={{
-                      gridTemplateColumns: GRID_COLS,
-                      borderBottom: isLast ? "none" : "1px solid var(--border)/40",
-                    }}
+                    className={cn("grid items-center gap-0", !isLast && "border-b border-border/30")}
+                    style={{ gridTemplateColumns: GRID_COLS }}
                   >
                     {/*
-                      Fundo opaco var(--card), o bastante pra cobrir o
-                      conteúdo das colunas que passam por baixo ao rolar.
-                      Sem zebra (fundo uniforme) — mesmo padrão da
-                      tabela de operadores quando não há estado semântico
-                      (aqui nunca há, de propósito). whitespace-nowrap
-                      (herdado de TABELA_NOME_CELL_CLASS) + piso calculado
+                      Fundo opaco = fundo da página (data-pausas-sticky-nome,
+                      em reports-tempo-indisp.css), o bastante pra cobrir o
+                      conteúdo das colunas que passam por baixo ao rolar, sem
+                      destacar a coluna. whitespace-nowrap + piso calculado
                       pelo maior nome real da base: nome NUNCA é cortado.
                     */}
                     <div
-                      className={cn(TABELA_NOME_CELL_CLASS, "sticky left-0 z-10")}
-                      style={{ background: "var(--card)" }}
+                      data-pausas-sticky-nome
+                      className={cn(NOME_CELL_CLASS, "sticky left-0 z-10")}
                     >
                       {formatNomeDotSobrenome(op.email)}
                     </div>
@@ -212,7 +198,7 @@ export function PausasDetalhadasAnalitico({ operadores }: Props) {
                         <div
                           key={col.key}
                           className={cn(
-                            TABELA_VALOR_CELL_CLASS,
+                            VALOR_CELL_CLASS,
                             isEmpty ? "text-muted-foreground" : "text-foreground",
                           )}
                           style={{ fontVariantNumeric: "tabular-nums" }}
@@ -229,7 +215,7 @@ export function PausasDetalhadasAnalitico({ operadores }: Props) {
                     */}
                     <div
                       className={cn(
-                        "ds-mono-sm min-w-0 whitespace-nowrap px-3 py-2 text-center",
+                        VALOR_CELL_CLASS,
                         sistemaVazio ? "text-muted-foreground" : "text-foreground",
                       )}
                       style={{ fontVariantNumeric: "tabular-nums" }}

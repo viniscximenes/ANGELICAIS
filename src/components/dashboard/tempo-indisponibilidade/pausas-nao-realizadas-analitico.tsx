@@ -1,15 +1,6 @@
 "use client";
 
-import { IconCalendarX } from "@tabler/icons-react";
-
-import {
-  TABELA_HEADER_BORDA,
-  TABELA_HEADER_CELL_CLASS,
-  TABELA_HEADER_CELL_ULTIMA_CLASS,
-  TABELA_LINHA_CLASS,
-  TABELA_NOME_CELL_CLASS,
-  TABELA_VALOR_CELL_CLASS,
-} from "@/components/gestor/tabela-padrao";
+import { TABELA_HEADER_BORDA } from "@/components/gestor/tabela-padrao";
 import {
   buildForecastPorOperador,
   formatarHoraCurta,
@@ -50,9 +41,16 @@ const GRID_COLS = [`minmax(${PISO_OPERADOR_PX}px, 1.6fr)`, ...PAUSAS.map(() => `
 
 export const PAUSAS_NAO_REALIZADAS_MIN_WIDTH_PX = PISO_OPERADOR_PX + PAUSAS.length * DATA_COL_PISO_PX;
 
-/** Cabeçalho — mesmo estilo sans (não mono) de EquipeTable/TempoIndispTabela, ver aderencia-analitico.tsx. */
-const HEADER_ROW_CLASS =
-  "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase text-muted-foreground";
+/**
+ * Visual = "Desempenho por marca e unidade" (tabela-segmentos.tsx,
+ * consolidado) — mesmas classes de aderencia-analitico.tsx e
+ * pausas-detalhadas-analitico.tsx. Cor do cabeçalho por tema e fundo opaco da
+ * coluna sticky Operador (sem destaque próprio) em reports-tempo-indisp.css.
+ */
+const HEADER_ROW_CLASS = "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase";
+const HEADER_CELL_CLASS = "min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-4 py-2.5 text-center";
+const NOME_CELL_CLASS = "min-w-0 truncate whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-foreground";
+const VALOR_CELL_CLASS = "min-w-0 whitespace-nowrap px-4 py-3 text-center text-xs font-medium";
 
 interface Props {
   operadores: OperadorAnaliticoTempoIndisp[];
@@ -60,7 +58,7 @@ interface Props {
 }
 
 /**
- * Card "Pausas obrigatórias não realizadas" — uma linha por operador que
+ * Card "Pausas NR17 não tiradas" — uma linha por operador que
  * LOGOU (horaLogin preenchida) e tem pelo menos uma das 3 pausas
  * (1ª P10, P20, 2ª P10) sem horário real registrado, MAS com horário
  * previsto cadastrado em base_pausas_programadas (senão não dá pra saber
@@ -96,10 +94,7 @@ export function PausasNaoRealizadasAnalitico({ operadores, forecastPorOperador }
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="ds-h3 font-semibold text-foreground flex items-center gap-2">
-            <IconCalendarX size={20} className="text-foreground" />
-            Pausas obrigatórias não realizadas
-          </h3>
+          <h3 className="ds-h3 font-semibold text-foreground">Pausas NR17 não tiradas</h3>
           <p className="ds-small text-muted-foreground mt-1">
             {linhas.length} de {logados.length} operadores que logaram hoje têm pelo menos uma pausa
             obrigatória não realizada. Operadores sem login no dia não entram nesta lista.
@@ -115,12 +110,11 @@ export function PausasNaoRealizadasAnalitico({ operadores, forecastPorOperador }
                 className={HEADER_ROW_CLASS}
                 style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA }}
               >
-                <div className={cn(TABELA_HEADER_CELL_CLASS, "sticky left-0 z-10")}>Operador</div>
-                {PAUSAS.map((p, i) => (
-                  <div
-                    key={p.label}
-                    className={i === PAUSAS.length - 1 ? TABELA_HEADER_CELL_ULTIMA_CLASS : TABELA_HEADER_CELL_CLASS}
-                  >
+                <div data-tabela-sticky-header className={cn(HEADER_CELL_CLASS, "sticky left-0 z-10")}>
+                  Operador
+                </div>
+                {PAUSAS.map((p) => (
+                  <div key={p.label} className={HEADER_CELL_CLASS}>
                     {p.label}
                   </div>
                 ))}
@@ -131,22 +125,19 @@ export function PausasNaoRealizadasAnalitico({ operadores, forecastPorOperador }
                 return (
                   <div
                     key={op.email}
-                    className={TABELA_LINHA_CLASS}
-                    style={{
-                      gridTemplateColumns: GRID_COLS,
-                      borderBottom: isLast ? "none" : "1px solid var(--border)/40",
-                    }}
+                    className={cn("grid items-center gap-0", !isLast && "border-b border-border/30")}
+                    style={{ gridTemplateColumns: GRID_COLS }}
                   >
                     <div
-                      className={cn(TABELA_NOME_CELL_CLASS, "sticky left-0 z-10")}
-                      style={{ background: "var(--card)" }}
+                      data-tabela-sticky-nome
+                      className={cn(NOME_CELL_CLASS, "sticky left-0 z-10")}
                     >
                       {formatNomeDotSobrenome(op.email)}
                     </div>
                     {status.map((s, i) => {
                       if (!s.aplica) {
                         return (
-                          <div key={i} className={cn(TABELA_VALOR_CELL_CLASS, "text-muted-foreground")}>
+                          <div key={i} className={cn(VALOR_CELL_CLASS, "text-muted-foreground")}>
                             —
                           </div>
                         );
@@ -155,7 +146,7 @@ export function PausasNaoRealizadasAnalitico({ operadores, forecastPorOperador }
                         return (
                           <div
                             key={i}
-                            className={cn(TABELA_VALOR_CELL_CLASS, "font-medium")}
+                            className={VALOR_CELL_CLASS}
                             style={{ color: "var(--danger)" }}
                           >
                             {NAO_REALIZADA_LABEL}
@@ -165,7 +156,7 @@ export function PausasNaoRealizadasAnalitico({ operadores, forecastPorOperador }
                       return (
                         <div
                           key={i}
-                          className={cn(TABELA_VALOR_CELL_CLASS, "text-foreground")}
+                          className={cn(VALOR_CELL_CLASS, "text-foreground")}
                           style={{ fontVariantNumeric: "tabular-nums" }}
                         >
                           {formatarHoraCurta(s.real) ?? "—"}

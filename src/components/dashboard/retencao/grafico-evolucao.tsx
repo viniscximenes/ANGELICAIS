@@ -41,7 +41,7 @@ interface GraficoEvolucaoProps {
 const MIN_PEDIDOS_AMOSTRA = 10;
 
 /** Distância da meta em texto — "2.6% abaixo da meta" / "5.3% acima da meta". */
-function formatDistanciaMeta(tx: number, meta: number): string {
+export function formatDistanciaMeta(tx: number, meta: number): string {
   const diff = tx - meta;
   if (Math.abs(diff) < 0.05) return "na meta";
   return `${Math.abs(diff).toFixed(1)}% ${diff < 0 ? "abaixo" : "acima"} da meta`;
@@ -82,7 +82,7 @@ function formatEixoLabel(label: string): string {
 }
 
 /** Faixa completa da hora pro tooltip: "15:00" → "15:00 – 15:59". */
-function formatFaixaHora(label: string): string {
+export function formatFaixaHora(label: string): string {
   if (label === "< 08") return "Até 08h";
   if (label === "≥ 20") return "Após 20h";
   const h = label.slice(0, 2);

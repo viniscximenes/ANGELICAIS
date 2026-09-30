@@ -44,11 +44,24 @@ export function OperadorAnaliticoDialog({
   const nomeReal = operador.email.split("@")[0] || operador.email;
   const { file: dataFile } = getDataPngHoje();
 
+  // Cor semântica nos valores com meta — igual à TX RETENÇÃO do modal do
+  // Consolidado (verde dentro, vermelho fora). MESMOS critérios da tabela
+  // principal (tempo-indisp-tabela.tsx: belowMetaTL / acimaMetaIndisp): Tempo
+  // Logado só é avaliado com o dia completo; sem dado fica neutro.
+  const corTempoLogado =
+    operador.statusTL !== "completo" ? "text-foreground" : operador.cumpriuMetaTL ? "text-success" : "text-danger";
+  const corIndisp =
+    operador.indisponibilidade === null
+      ? "text-foreground"
+      : operador.cumpriuMetaIndisp
+        ? "text-success"
+        : "text-danger";
+
   const resumo = [
-    { label: "Tempo Logado", valor: operador.tempoLogado || "—" },
-    { label: "Indisponibilidade", valor: fmtPct(operador.indisponibilidade) },
-    { label: "Hora Login", valor: formatLogin(operador.horaLogin) },
-    { label: "Hora Logout", valor: formatLogout(operador.statusTL, operador.horaLogout) },
+    { label: "Tempo Logado", valor: operador.tempoLogado || "—", cor: corTempoLogado },
+    { label: "Indisponibilidade", valor: fmtPct(operador.indisponibilidade), cor: corIndisp },
+    { label: "Hora Login", valor: formatLogin(operador.horaLogin), cor: "text-foreground" },
+    { label: "Hora Logout", valor: formatLogout(operador.statusTL, operador.horaLogout), cor: "text-foreground" },
   ];
 
   // Escopo do tema Zen Linen (reports-tempo-indisp.css): resolvido a partir
@@ -84,7 +97,8 @@ export function OperadorAnaliticoDialog({
       */}
       <DialogContent
         data-page="reports-tempo-indisponibilidade"
-        className="max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-2xl bg-background border-border/80 p-6 shadow-2xl"
+        // sm:max-w-4xl: mesma largura do modal do operador do Consolidado.
+        className="max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-4xl bg-background border-border/80 p-6 shadow-2xl"
         style={fontFamilyEscopo ? { fontFamily: fontFamilyEscopo } : undefined}
       >
         <ExportPopupPngButton
@@ -149,10 +163,10 @@ export function OperadorAnaliticoDialog({
                   key={c.label}
                   className="flex flex-col justify-center gap-1 px-4 py-3.5"
                 >
-                  <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
+                  <p className="ds-small text-muted-foreground mb-1 font-bold tracking-wider uppercase">
                     {c.label}
                   </p>
-                  <p className="ds-display text-2xl font-semibold tabular-nums text-foreground">
+                  <p className={`ds-display text-2xl font-bold tabular-nums ${c.cor}`}>
                     {c.valor}
                   </p>
                 </div>
@@ -161,7 +175,12 @@ export function OperadorAnaliticoDialog({
 
             {/* ── Aderência (real x programado) ─────────────────────── */}
             <div className="space-y-2">
-              <h3 className="ds-h3 font-semibold text-foreground">Aderência</h3>
+              {/* Título + linha até a borda — mesmo padrão do modal do
+                  operador do Consolidado ("Evolução por hora"). */}
+              <div className="flex items-center gap-3">
+                <h3 className="ds-h3 shrink-0 font-semibold text-foreground">Aderência</h3>
+                <div aria-hidden="true" className="bg-border h-px flex-1" />
+              </div>
               <div className="overflow-hidden">
                 {aderencia.forecast === null ? (
                   <p className="ds-small text-muted-foreground p-6 text-center">
@@ -169,9 +188,12 @@ export function OperadorAnaliticoDialog({
                   </p>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-left text-sm">
+                    {/* data-tabela-operador-tempo: cabeçalho no visual da
+                        "Retenção por Tema" do modal do Consolidado
+                        (reports-tempo-indisp.css). */}
+                    <table data-tabela-operador-tempo className="w-full border-collapse text-left text-sm">
                       <thead>
-                        <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 text-[11px] font-bold tracking-wider uppercase">
+                        <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 font-bold tracking-wide uppercase">
                           <th className="px-4 py-2.5 font-semibold">Item</th>
                           <th className="px-4 py-2.5 text-center font-semibold">Forecast</th>
                           <th className="px-4 py-2.5 text-center font-semibold">Real</th>
@@ -183,15 +205,15 @@ export function OperadorAnaliticoDialog({
                         {aderencia.items.map((item) => (
                           <tr
                             key={item.label}
-                            className="border-border/20 hover:bg-accent border-b transition-colors last:border-0"
+                            className="border-border/20 border-b last:border-0"
                           >
                             <td className="text-foreground ds-body px-4 py-2.5 text-xs font-medium">
                               {item.label}
                             </td>
-                            <td className="text-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
+                            <td className="text-muted-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
                               {item.horaForecast ?? "—"}
                             </td>
-                            <td className="text-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
+                            <td className="text-muted-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
                               {item.horaReal ?? "—"}
                             </td>
                             <td className="text-muted-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
@@ -228,7 +250,10 @@ export function OperadorAnaliticoDialog({
 
               return (
                 <div className="space-y-2">
-                  <h3 className="ds-h3 font-semibold text-foreground">Pausas Detalhadas</h3>
+                  <div className="flex items-center gap-3">
+                    <h3 className="ds-h3 shrink-0 font-semibold text-foreground">Pausas detalhadas</h3>
+                    <div aria-hidden="true" className="bg-border h-px flex-1" />
+                  </div>
                   <div className="overflow-hidden">
                     {pausasComDados.length === 0 ? (
                       <p className="ds-small text-muted-foreground p-6 text-center">
@@ -236,9 +261,9 @@ export function OperadorAnaliticoDialog({
                       </p>
                     ) : (
                       <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-left text-sm">
+                        <table data-tabela-operador-tempo className="w-full border-collapse text-left text-sm">
                           <thead>
-                            <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 text-[11px] font-bold tracking-wider uppercase">
+                            <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 font-bold tracking-wide uppercase">
                               <th className="px-4 py-2.5 font-semibold">Pausa</th>
                               <th className="px-4 py-2.5 text-center font-semibold">Duração</th>
                             </tr>
@@ -249,12 +274,12 @@ export function OperadorAnaliticoDialog({
                               return (
                                 <tr
                                   key={f.key}
-                                  className="border-border/20 hover:bg-accent border-b transition-colors last:border-0"
+                                  className="border-border/20 border-b last:border-0"
                                 >
                                   <td className="text-foreground ds-body px-4 py-2.5 text-xs font-medium">
                                     {f.label}
                                   </td>
-                                  <td className="text-foreground ds-mono-sm px-4 py-2.5 text-center text-xs font-semibold tabular-nums">
+                                  <td className="text-muted-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
                                     {val}
                                   </td>
                                 </tr>

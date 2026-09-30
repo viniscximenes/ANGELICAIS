@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -8,6 +8,7 @@ import { UploadTempoLogadoDropzone } from "@/components/d-1/tempo-logado/upload-
 import { ClearBaseButton } from "@/components/d-1/clear-base-button";
 import { AguardandoDadosCard } from "@/components/gestor/aguardando-dados-card";
 import { KpiLoadingScreen } from "@/components/gestor/kpi-loading-screen";
+import { SignatureFooter } from "@/components/gestor/signature-footer";
 import { KpiFrame } from "@/app/(dashboard)/kpi/operadores/_components/kpi-frame";
 import type { PausaProgramadaDb } from "@/lib/bases/pausas-programadas/types";
 import {
@@ -232,6 +233,48 @@ export function TempoIndispSection({
     (op) => op.tempoLogadoSegundos > 0 || op.indisponibilidade !== null,
   );
 
+  // Sobra de rolagem no fim da página (desktop): o trilho do Analítico tem
+  // a altura do MAIOR slide (dynamicHeight) e, pinado em top:60px, pode
+  // passar do fim da tela — depois que o pin solta, a página ainda rolava
+  // esse excesso + as margens/padding de baixo, só mostrando espaço vazio
+  // (o último card e a assinatura já estavam visíveis). No consolidado o
+  // trilho tem altura fixa e a página termina antes do pin soltar.
+  // Aqui mede quanto a rolagem máxima passa do fim do pin e recolhe essa
+  // diferença com margin-bottom negativo + overflow clip no bloco pai (ver
+  // o JSX) — a página termina exatamente
+  // quando o trilho acaba. Recalcula a cada refresh do ScrollTrigger
+  // (altura do trilho mudou) e no resize. Mobile (sem pin): nada muda.
+  const [recuoFinal, setRecuoFinal] = useState(0);
+  useEffect(() => {
+    let atual = 0;
+    const aplicar = (novo: number) => {
+      if (novo !== atual) {
+        atual = novo;
+        setRecuoFinal(novo);
+      }
+    };
+    const medir = () => {
+      const spacer = document.getElementById("trilho-card-0")?.closest<HTMLElement>(".pin-spacer");
+      if (!hasDados || !spacer || !window.matchMedia("(min-width: 1024px)").matches) {
+        aplicar(0);
+        return;
+      }
+      // 60 = start do pin (top 60px, abaixo do header fixo — mesmo valor de
+      // HEADER_HEIGHT_PX em retencao-horizontal-scroll.tsx).
+      const fimDoPin =
+        spacer.getBoundingClientRect().top + window.scrollY - 60 + parseFloat(getComputedStyle(spacer).paddingBottom);
+      const rolagemMax = document.documentElement.scrollHeight - window.innerHeight;
+      aplicar(Math.max(0, Math.round(rolagemMax + atual - fimDoPin)));
+    };
+    ScrollTrigger.addEventListener("refresh", medir);
+    window.addEventListener("resize", medir);
+    medir();
+    return () => {
+      ScrollTrigger.removeEventListener("refresh", medir);
+      window.removeEventListener("resize", medir);
+    };
+  }, [hasDados]);
+
   const forecastPorOperador = useMemo(
     () => buildForecastPorOperador(pausasProgramadasState),
     [pausasProgramadasState],
@@ -266,7 +309,10 @@ export function TempoIndispSection({
         (loading.tsx do Next só substitui {children} dentro de <main>).
       */}
       {isRefreshing && (
-        <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] lg:left-[240px]">
+        // tempo-indisp-skeleton: mesmo tom de blocos do loading.tsx
+        // (reports-tempo-indisp.css) — KpiLoadingScreen é compartilhado, então
+        // o ajuste entra pela classe deste wrapper, só aqui.
+        <div className="tempo-indisp-skeleton fixed inset-x-0 top-[60px] bottom-0 z-[100] lg:left-[240px]">
           <KpiLoadingScreen
             dataPage="reports-tempo-indisponibilidade"
             titulo="Tempo Logado & Indisponibilidade"
@@ -294,7 +340,9 @@ export function TempoIndispSection({
         base] [Copiar imagem] — sem toggle "Exibir RV" (não existe
         equivalente nesta tabela).
       */}
-      <div>
+      {/* id: alvo do item "Tabela operadores" da barra lateral — mesmo ponto
+          de chegada do Consolidado (#equipe-section, que começa no título). */}
+      <div id="tempo-indisp-cabecalho">
         <div className="pt-4">
           <h1 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             Tempo Logado &amp; Indisponibilidade
@@ -365,15 +413,31 @@ export function TempoIndispSection({
           (pb-2 da linha de controles acima + pt-2 daqui), igual ao respiro
           entre título e controles no cabeçalho logo acima.
         */}
-          <div className="flex flex-col gap-4 pt-2">
+          {/*
+            overflowY clip só com recuoFinal ativo: o margin-bottom negativo
+            (abaixo) encurta ESTE bloco, e o clip corta a sobra do pin-spacer
+            (a parte vazia do trilho abaixo do último card) — sem ele, o
+            spacer transbordava e a página continuava contando essa altura.
+            `clip` não cria container de rolagem (sticky continua funcionando)
+            e não corta o trilho enquanto pinado (position: fixed).
+          */}
+          <div
+            className="flex flex-col gap-4 pt-2"
+            style={recuoFinal ? { overflowY: "clip" } : undefined}
+          >
             {/*
               Anexo horizontal — somente o dropzone, sem StyledCard externo e
               sem título próprio. Ocupa toda a largura da coluna, alinhado à
               tabela abaixo, e continua sempre visível quando showUpload.
             */}
-          {showUpload && <UploadTempoLogadoDropzone />}
+          {showUpload && <UploadTempoLogadoDropzone abrirEmDownloads />}
 
-          <div className="space-y-6">
+          {/*
+            space-y-10: mesma distância entre a tabela e o título "Analítico"
+            do consolidado (page.tsx de lá: <div className="space-y-10">
+            entre GestorEquipeSection e RetencaoDetalheSection).
+          */}
+          <div className="space-y-10" style={recuoFinal ? { marginBottom: -recuoFinal } : undefined}>
             {/*
               Tabela unificada SEMPRE visível — MESMO padrão de EquipeTable
               no consolidado: o roster inteiro aparece sempre, cada
@@ -442,8 +506,11 @@ export function TempoIndispSection({
               );
 
               if (!hasDados) {
+                // <div> (não fragmento): header + card viram UM filho só do
+                // space-y-10 — o espaço entre eles continua só o mb-6 do
+                // header, igual ao consolidado.
                 return (
-                  <>
+                  <div>
                     {cabecalhoAnalitico}
                     {/*
                       MESMO placeholder "Aguardando dados do dia" do
@@ -455,7 +522,7 @@ export function TempoIndispSection({
                       rodando, só o card estático.
                     */}
                     <AguardandoDadosCard descricao="Ainda não há registros de tempo logado ou indisponibilidade reportados hoje pra sua equipe." />
-                  </>
+                  </div>
                 );
               }
 
@@ -481,7 +548,21 @@ export function TempoIndispSection({
                       operadores={operadoresMerged}
                       forecastPorOperador={forecastPorOperador}
                     />,
-                    <EstouroPausaAnalitico key="estouro-pausa" operadores={operadoresMerged} />,
+                    // Assinatura DENTRO do último slide, só no desktop (lg:block):
+                    // o trilho tem a altura do MAIOR slide (dynamicHeight —
+                    // resumo + pausas detalhadas, ~780px), então abaixo do
+                    // Estouro sobrava espaço vazio e a assinatura (no fim da
+                    // página) ficava fora da tela mesmo com o último card
+                    // já visível. No consolidado o trilho tem altura fixa
+                    // (≤700px) e ela aparece junto com o último card — aqui,
+                    // colocada logo abaixo do Estouro, o efeito é o mesmo.
+                    // Mobile (slides empilhados) usa a do fim da seção.
+                    <div key="estouro-pausa" className="flex flex-col">
+                      <EstouroPausaAnalitico operadores={operadoresMerged} />
+                      <div className="mt-10 hidden lg:block">
+                        <SignatureFooter />
+                      </div>
+                    </div>,
                   ]}
                 />
               );
@@ -520,6 +601,15 @@ export function TempoIndispSection({
         conteúdo — nunca sobra espaço pra rolar, em nenhum cenário, sem
         depender de nenhuma conta em pixels.
       */}
+      {/*
+        Assinatura no fim da seção — mt-10 = o space-y-10 que a separa do
+        conteúdo no consolidado. Com dados, no desktop ela já aparece dentro
+        do último slide do trilho (acima), então aqui fica só no mobile.
+      */}
+      <div className={cn("mt-10", hasDados && "lg:hidden")}>
+        <SignatureFooter />
+      </div>
+
       <div
         aria-hidden="true"
         style={{

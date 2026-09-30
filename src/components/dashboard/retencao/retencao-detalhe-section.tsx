@@ -31,6 +31,7 @@ import { ImpactoFaceIdCard } from "./impacto-faceid-card";
 import { EfetividadeArgumentoCard } from "./efetividade-argumento-card";
 import { ConfigMetasPopover } from "./config-metas-popover";
 import { RetencaoHorizontalScroll } from "./retencao-horizontal-scroll";
+import { SignatureFooter } from "@/components/gestor/signature-footer";
 
 /** Duração mínima do skeleton ao ligar/desligar o toggle "Acumulada". */
 const TROCA_VISAO_MS = 3_000;
@@ -587,15 +588,33 @@ export function RetencaoDetalheSection({
                 operadoresIndividual={data!.operadoresIndividual}
               />,
               <ImpactoFaceIdCard key="impacto-faceid" scrollInterno data={data!.impactoFaceId} />,
-              <EfetividadeArgumentoCard
-                key="efetividade-argumento"
-                scrollInterno
-                argumentos={data!.efetividadeArgumento}
-              />,
+              // Assinatura DENTRO do último slide, só no desktop (lg:block):
+              // aparece logo abaixo do último card e desliza junto com ele —
+              // mesmo ajuste de /reports/tempo-indisponibilidade. O card
+              // (scrollInterno) cede altura pra ela via min-h-0: se a tabela
+              // for maior que o espaço, só ela rola por dentro.
+              // Mobile (slides empilhados) usa a do fim da seção.
+              <div key="efetividade-argumento" className="flex h-full flex-col">
+                <div className="min-h-0">
+                  <EfetividadeArgumentoCard scrollInterno argumentos={data!.efetividadeArgumento} />
+                </div>
+                <div className="mt-10 hidden shrink-0 lg:block">
+                  <SignatureFooter />
+                </div>
+              </div>,
             ]}
           />
         </div>
       )}
+
+      {/*
+        Assinatura no fim da seção — mt-10 = o space-y-10 que a separava do
+        Analítico em page.tsx. Com o trilho ativo, no desktop ela já aparece
+        dentro do último slide (acima), então aqui fica só no mobile.
+      */}
+      <div className={loading || error || hasNoData ? "mt-10" : "mt-10 lg:hidden"}>
+        <SignatureFooter />
+      </div>
     </section>
   );
 }

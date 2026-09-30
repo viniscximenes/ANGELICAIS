@@ -5,7 +5,6 @@ import { Instrument_Sans } from "next/font/google";
 import "./reports-tempo-indisp.css";
 import { TempoIndispSection } from "@/components/dashboard/tempo-indisponibilidade/tempo-indisp-section";
 import { TempoIndispNavSidebar } from "@/components/gestor/tempo-indisp-nav-sidebar";
-import { SignatureFooter } from "@/components/gestor/signature-footer";
 import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
@@ -166,16 +165,10 @@ export default async function ReportsTempoIndisponibilidadePage() {
           />
 
           {/*
-            MESMO componente/posição do consolidado (SignatureFooter,
-            reports/consolidado/page.tsx): irmã, DEPOIS de todo o conteúdo
-            de scroll (incluindo o trilho horizontal pinado dentro de
-            TempoIndispSection) — fora de qualquer área pinada, em fluxo de
-            documento normal. Sem espaçador manual e sem dynamicHeight: o
-            consolidado também não usa nenhum dos dois pra ela (investigado
-            — ela nunca esteve dentro do trilho, então nunca precisou
-            entrar no cálculo de altura/pin do GSAP).
+            SignatureFooter agora é renderizada DENTRO de TempoIndispSection:
+            no desktop, logo abaixo do último card do trilho (Estouro de
+            NR17); no mobile/sem dados, no fim da seção. Ver lá o porquê.
           */}
-          <SignatureFooter />
         </div>
       </div>
     </>
