@@ -895,6 +895,9 @@ function KpiOperadoresTabela({
                         style={{
                           ...(tempoRestanteInfo ? tempoRestanteInfo.style : style),
                           fontVariantNumeric: "tabular-nums",
+                          // Reserva simétrica: o valor fica no centro real
+                          // da coluna e continua livre do selo à direita.
+                          paddingLeft: ehTxAtual ? SELO_RESERVA_PX : undefined,
                           paddingRight: ehTxAtual ? SELO_RESERVA_PX : undefined,
                         }}
                         title={tempoRestanteInfo?.title}
@@ -936,7 +939,7 @@ function KpiOperadoresTabela({
                           style={{
                             fontVariantNumeric: "tabular-nums",
                             paddingLeft: SELO_RESERVA_PX,
-                            paddingRight: "0.75rem",
+                            paddingRight: SELO_RESERVA_PX,
                           }}
                           aria-label={ariaLabelUltimoReport}
                         >
@@ -1158,7 +1161,12 @@ export function KpiEquipeSection({
   // históricos distantes buscados sob demanda (getKpiExtrasMesHistoricoAction)
   // — igual historicoCache, mas separado porque vem de outra action/query.
   const [historicoExtrasCache, setHistoricoExtrasCache] = useState<Record<string, KpiExtrasPorEmail>>({});
-  const [carregandoMes, setCarregandoMes] = useState<string | null>(null);
+  // Com "Exibir RV" já ligado, a entrada na página começa com o skeleton da
+  // tabela ativo até a RV do mês atual chegar (ver o useEffect de montagem) —
+  // a tabela nunca aparece com as colunas de RV ainda vazias.
+  const [carregandoMes, setCarregandoMes] = useState<string | null>(
+    showRvInicial ? dataAtual.mesRef : null,
+  );
   const carregamentoMesIdRef = useRef(0);
   const [sort, setSort] = useState<SortState>({ slug: "tx_retencao_bruta", dir: "desc" });
   const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
@@ -1240,8 +1248,15 @@ export function KpiEquipeSection({
   // Se o toggle já veio ligado (preferência persistida), busca a RV do mês
   // atual assim que o componente monta — senão a coluna apareceria vazia
   // até alguma outra interação (trocar de mês) disparar a primeira busca.
+  // A tabela segue no skeleton (carregandoMes inicial) até a RV terminar;
+  // se o usuário trocar de mês antes disso, o handleMesChange assume.
   useEffect(() => {
-    if (rvVisivel) void buscarRv(mesSelecionado);
+    if (!rvVisivel) return;
+    const carregamentoId = carregamentoMesIdRef.current;
+    void buscarRv(mesSelecionado).finally(() => {
+      if (carregamentoMesIdRef.current !== carregamentoId) return;
+      setCarregandoMes(null);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1773,7 +1788,17 @@ export function KpiEquipeSection({
           espaçamento entre os controles e as cantoneiras replica o
           Consolidado: pb-2 da linha acima + pt-2 daqui = 16px.
         */}
-        <div className="pt-2 relative">
+        <div
+          className={cn(
+            // -mx-2/-mb-2 + px-2/pb-2: layout idêntico, mas a área que sobe
+            // acima do blur ganha 8px de respiro além das cantoneiras.
+            "pt-2 -mx-2 px-2 -mb-2 pb-2 relative transition-[z-index] duration-0",
+            // Mesmo padrão do Consolidado (gestor-equipe-section.tsx): com o
+            // popover de colunas aberto, a tabela sobe acima do overlay de
+            // blur (z-40); bg-background porque as linhas são transparentes.
+            configOpen && "z-[45] bg-background",
+          )}
+        >
           {isLoadingAtual ? (
             // Toda troca de mês usa este skeleton por no mínimo 2s e até
             // todas as buscas necessárias terminarem.

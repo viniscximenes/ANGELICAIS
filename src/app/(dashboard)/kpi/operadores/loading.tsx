@@ -5,8 +5,7 @@
 import { Instrument_Sans } from "next/font/google";
 
 import "./kpi-operadores.css";
-import { DotSpinner } from "@/components/gestor/dot-spinner";
-import { KpiFrame } from "./_components/kpi-frame";
+import { KpiTabelaSkeleton } from "./_components/kpi-tabela-skeleton";
 
 const zenSans = Instrument_Sans({
   subsets: ["latin", "latin-ext"],
@@ -15,7 +14,6 @@ const zenSans = Instrument_Sans({
 });
 
 const TOTAL_COLUNAS_DADOS = 8;
-const TOTAL_LINHAS = 12;
 
 function Bloco({ className }: { className: string }) {
   return <div aria-hidden="true" className={`rounded-md bg-card ${className}`} />;
@@ -37,43 +35,6 @@ function SkeletonAcoes() {
   );
 }
 
-function SkeletonTabela() {
-  return (
-    <KpiFrame>
-      <div className="overflow-hidden">
-        <table className="kpi-operadores-table border-collapse text-sm" style={{ minWidth: 860 }}>
-          <thead className="kpi-operadores-table-head ds-body font-bold text-foreground tracking-wide uppercase">
-            <tr style={{ borderBottom: "1px solid var(--border)" }}>
-              <th className="kpi-operadores-table-head-sticky h-10 px-2">
-                <Bloco className="mx-auto h-3 w-20 bg-muted-foreground/20" />
-              </th>
-              {Array.from({ length: TOTAL_COLUNAS_DADOS }).map((_, coluna) => (
-                <th key={coluna} className="h-10 px-2">
-                  <Bloco className="mx-auto h-3 w-[70%] bg-muted-foreground/20" />
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: TOTAL_LINHAS }).map((_, linha) => (
-              <tr key={linha}>
-                <td className="h-[42px] px-3">
-                  <Bloco className="mx-auto h-3 w-[75%]" />
-                </td>
-                {Array.from({ length: TOTAL_COLUNAS_DADOS }).map((_, coluna) => (
-                  <td key={coluna} className="h-[42px] px-3">
-                    <Bloco className="mx-auto h-3 w-12" />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </KpiFrame>
-  );
-}
-
 const DESLIGAR_SCROLL_RESTORATION_SCRIPT = `
 try {
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
@@ -87,7 +48,7 @@ export default function LoadingKpiOperadores() {
       <script dangerouslySetInnerHTML={{ __html: DESLIGAR_SCROLL_RESTORATION_SCRIPT }} />
       <div
         data-page="kpi-operadores"
-        className={`relative min-h-screen overflow-hidden px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
+        className={`kpi-operadores-skeleton relative min-h-screen overflow-hidden px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
       >
         <div
           aria-hidden="true"
@@ -103,19 +64,16 @@ export default function LoadingKpiOperadores() {
               </div>
               <SkeletonAcoes />
               <div className="pt-2">
-                <SkeletonTabela />
+                <KpiTabelaSkeleton totalColunasDados={TOTAL_COLUNAS_DADOS} />
               </div>
             </div>
           </div>
         </div>
 
-        <div
-          role="status"
-          aria-live="polite"
-          className="pointer-events-none absolute inset-x-0 top-[29rem] flex -translate-y-1/2 flex-col items-center gap-3"
-        >
-          <DotSpinner />
-          <span className="sr-only">Carregando Operadores, aguarde.</span>
+        {/* Sem indicador girando, como no Consolidado: o carregamento é só o
+            skeleton. Fica apenas o aviso para leitor de tela. */}
+        <div role="status" aria-live="polite" className="sr-only">
+          Carregando Operadores, aguarde.
         </div>
       </div>
     </>

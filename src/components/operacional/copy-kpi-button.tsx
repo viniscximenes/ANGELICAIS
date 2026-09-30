@@ -119,7 +119,7 @@ export function CopyKpiButton({
       await copyFormattedHtml(html, textoPlano);
 
       // Sem toast de sucesso: o próprio botão confirma a cópia por 2s,
-      // seguindo o mesmo padrão de /reports/consolidado.
+      // seguindo o mesmo padrão de /s/reports/consolidado.
       setState("done");
 
       setTimeout(() => setState("idle"), 2000);

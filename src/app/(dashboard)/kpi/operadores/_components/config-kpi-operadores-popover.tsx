@@ -2,10 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Popover as PopoverPrimitive } from "radix-ui";
 import { IconCheck, IconSettings } from "@tabler/icons-react";
 import { toast } from "sonner";
 
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { saveKpiColunasLocalAction } from "../_lib/save-kpi-colunas-local-action";
 import { saveKpiColunasRvAction } from "../_lib/save-kpi-colunas-rv-action";
@@ -65,14 +71,9 @@ export function ConfigKpiOperadoresPopover({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const firstItemRef = useRef<HTMLButtonElement>(null);
-
   function handleOpenChange(next: boolean) {
     setOpen(next);
     onOpenChange?.(next);
-    if (next) {
-      requestAnimationFrame(() => firstItemRef.current?.focus());
-    }
   }
 
   // ── Colunas normais (debounce ~400ms, otimista, reverte em erro) ────────
@@ -166,130 +167,146 @@ export function ConfigKpiOperadoresPopover({
             aria-hidden="true"
             onClick={() => handleOpenChange(false)}
             className={cn(
-              "fixed inset-0 z-40 bg-black/20 backdrop-blur-sm transition-all duration-200",
-              open ? "opacity-100" : "pointer-events-none opacity-0",
+              "fixed inset-0 z-40 bg-black/20 backdrop-blur-sm transition-all",
+              // Entrada imediata (sem fade), saída mantém os 200ms.
+              open ? "opacity-100 duration-0" : "pointer-events-none opacity-0 duration-200",
             )}
           />,
           document.body,
         )}
 
-      <PopoverPrimitive.Root open={open} onOpenChange={handleOpenChange}>
-        <PopoverPrimitive.Trigger asChild>
+      <Popover open={open} onOpenChange={handleOpenChange}>
+        <PopoverTrigger asChild>
           <button
             type="button"
-            aria-label="Configurar colunas"
+            aria-label="Configurações das colunas"
             className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-transparent outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
           >
             <IconSettings size={15} aria-hidden="true" />
           </button>
-        </PopoverPrimitive.Trigger>
+        </PopoverTrigger>
 
-        <PopoverPrimitive.Portal>
-          <PopoverPrimitive.Content
-            data-page="kpi-operadores"
-            align="end"
-            sideOffset={8}
-            className="font-sans z-50 w-84 rounded-2xl border border-border/80 bg-popover p-5 text-popover-foreground shadow-2xl outline-none backdrop-blur-md data-[side=bottom]:slide-in-from-top-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
-          >
-            <div className="pb-3 border-b border-border/40">
-              <p className="text-sm font-semibold text-foreground">Colunas</p>
-              <p className="text-[11px] text-muted-foreground">
-                Escolha e ordene os KPIs exibidos na tabela e na exportação
+        {/* Mesma casca/animação/tipografia do "Configurações da Tabela"
+            (@/components/gestor/config-tabela-popover.tsx): w-72, p-4 pt-3,
+            gap-0, título ds-h3 uppercase, rótulos text-xs font-medium,
+            itens rounded-lg text-xs font-medium, sem auto-foco ao abrir. */}
+        <PopoverContent
+          data-page="kpi-operadores"
+          align="end"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="bg-popover text-popover-foreground border-border w-80 gap-0 rounded-2xl border p-4 pt-3 shadow-2xl"
+        >
+          <PopoverHeader className="border-border/50 border-b pb-2">
+            <PopoverTitle className="ds-h3 font-semibold text-foreground uppercase whitespace-nowrap">
+              Configurações das Colunas
+            </PopoverTitle>
+          </PopoverHeader>
+
+          <div className="space-y-4 pt-3">
+            <div className="space-y-1.5">
+              <p className="text-foreground text-xs font-medium">
+                Colunas da tabela
               </p>
-            </div>
 
-            <div className="space-y-1.5 pt-3 max-h-72 overflow-y-auto pr-1 scrollbar-tema">
-              {/* Operador — sempre visível, sempre no topo, não editável. */}
-              <div
-                className="w-full flex items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-xs border bg-muted/30 border-border/60 text-muted-foreground"
-                aria-disabled="true"
-              >
-                <span className="flex items-center gap-2">
-                  <span>Operador</span>
-                  <span className="text-[10px] text-muted-foreground/70">(sempre visível)</span>
-                </span>
-                <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background/50 text-muted-foreground">
-                  <IconCheck size={11} strokeWidth={3} aria-hidden="true" />
-                </div>
-              </div>
-
-              {listaOrdenada.map((col, idx) => {
-                const posicao = colunasVisiveis.indexOf(col.slug);
-                const checked = posicao !== -1;
-                return (
-                  <button
-                    key={col.slug}
-                    ref={idx === 0 ? firstItemRef : undefined}
-                    type="button"
-                    role="checkbox"
-                    aria-checked={checked}
-                    onClick={() => toggleColuna(col.slug)}
-                    className={cn(
-                      "w-full flex items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-xs transition-all cursor-pointer text-left border",
-                      checked
-                        ? "bg-primary text-primary-foreground font-semibold border-primary shadow-sm"
-                        : "bg-muted/30 border-border/60 text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    )}
-                  >
-                    <span className="flex items-center gap-2">
-                      {checked && (
-                        <span
-                          aria-label={`posição ${posicao + 1}`}
-                          className={cn(
-                            "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tabular-nums",
-                            "bg-primary-foreground/20 text-primary-foreground",
-                          )}
-                        >
-                          {posicao + 1}
-                        </span>
-                      )}
-                      <span>{col.label}</span>
+              <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1 scrollbar-tema">
+                {/* Operador — sempre visível, sempre no topo, não editável. */}
+                <div
+                  className="w-full flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5 text-xs font-medium border border-border bg-transparent text-muted-foreground"
+                  aria-disabled="true"
+                >
+                  <span className="flex items-center gap-2">
+                    <span>Operador</span>
+                    <span className="text-[10px] text-muted-foreground/70">
+                      (Sempre Visível)
                     </span>
-                    <div
+                  </span>
+                  <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background/50 text-muted-foreground">
+                    <IconCheck size={11} strokeWidth={3} aria-hidden="true" />
+                  </div>
+                </div>
+
+                {listaOrdenada.map((col) => {
+                  const posicao = colunasVisiveis.indexOf(col.slug);
+                  const checked = posicao !== -1;
+                  return (
+                    <button
+                      key={col.slug}
+                      type="button"
+                      role="checkbox"
+                      aria-checked={checked}
+                      onClick={() => toggleColuna(col.slug)}
                       className={cn(
-                        "flex h-4 w-4 shrink-0 items-center justify-center rounded-md transition-colors border",
+                        "w-full flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5 text-xs font-medium transition-colors cursor-pointer text-left border",
                         checked
-                          ? "border-primary-foreground/30 bg-primary-foreground/20 text-primary-foreground"
-                          : "border-border/60 bg-background/50 text-transparent",
+                          ? "bg-primary text-primary-foreground font-semibold border-primary shadow-sm"
+                          : "border-border bg-transparent text-foreground hover:bg-accent",
                       )}
                     >
-                      <IconCheck size={11} strokeWidth={3} aria-hidden="true" />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                      <span className="flex items-center gap-2">
+                        {checked && (
+                          <span
+                            aria-label={`posição ${posicao + 1}`}
+                            className={cn(
+                              "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tabular-nums",
+                              "bg-primary-foreground/20 text-primary-foreground",
+                            )}
+                          >
+                            {posicao + 1}
+                          </span>
+                        )}
+                        <span>{col.label}</span>
+                      </span>
+                      <div
+                        className={cn(
+                          "flex h-4 w-4 shrink-0 items-center justify-center rounded-md transition-colors border",
+                          checked
+                            ? "border-primary-foreground/30 bg-primary-foreground/20 text-primary-foreground"
+                            : "border-border/60 bg-background/50 text-transparent",
+                        )}
+                      >
+                        <IconCheck
+                          size={11}
+                          strokeWidth={3}
+                          aria-hidden="true"
+                        />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2.5 text-[11px]">
-              <button
-                type="button"
-                onClick={handleLimpar}
-                className="text-muted-foreground hover:text-foreground font-medium cursor-pointer"
-              >
-                Limpar
-              </button>
-              <span className="text-muted-foreground/40" aria-hidden>·</span>
-              <button
-                type="button"
-                onClick={handleRestaurarPadrao}
-                className="text-primary hover:underline font-medium cursor-pointer"
-              >
-                Restaurar padrão
-              </button>
+              <div className="flex items-center justify-end gap-3 pt-1 text-[11px]">
+                <button
+                  type="button"
+                  onClick={handleLimpar}
+                  className="text-primary font-medium cursor-pointer"
+                >
+                  Limpar
+                </button>
+                <span className="text-muted-foreground/40" aria-hidden>
+                  ·
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRestaurarPadrao}
+                  className="text-primary font-medium cursor-pointer"
+                >
+                  Restaurar padrão
+                </button>
+              </div>
             </div>
 
             {/* ── Colunas de RV ── */}
-            <div className="pt-4 mt-3 border-t border-border/40">
-              <p className="text-sm font-semibold text-foreground">Colunas de RV</p>
-              <p className="text-[11px] text-muted-foreground">
+            <div className="space-y-1.5">
+              <p className="text-foreground text-xs font-medium">
                 {rvDisponivel
-                  ? "Visíveis só com \"Exibir RV\" ligado"
-                  : "RV disponível só no mês atual"}
+                  ? 'Colunas de RV - Com "Exibir RV" ligado'
+                  : "Colunas De RV - Só No Mês Atual"}
               </p>
 
               <div
                 className={cn(
-                  "space-y-1.5 pt-3",
+                  "space-y-1.5",
                   !rvDisponivel && "pointer-events-none opacity-40",
                 )}
                 aria-disabled={!rvDisponivel}
@@ -305,11 +322,11 @@ export function ConfigKpiOperadoresPopover({
                       disabled={!rvDisponivel}
                       onClick={() => toggleColunaRv(id)}
                       className={cn(
-                        "w-full flex items-center justify-between gap-3 rounded-xl px-3.5 py-2 text-xs transition-all border text-left",
+                        "w-full flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5 text-xs font-medium transition-colors border text-left",
                         rvDisponivel ? "cursor-pointer" : "cursor-not-allowed",
                         checked
                           ? "bg-primary text-primary-foreground font-semibold border-primary shadow-sm"
-                          : "bg-muted/30 border-border/60 text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                          : "border-border bg-transparent text-foreground hover:bg-accent",
                       )}
                     >
                       <span>{RV_COLUNA_LABELS[id]}</span>
@@ -321,16 +338,20 @@ export function ConfigKpiOperadoresPopover({
                             : "border-border/60 bg-background/50 text-transparent",
                         )}
                       >
-                        <IconCheck size={11} strokeWidth={3} aria-hidden="true" />
+                        <IconCheck
+                          size={11}
+                          strokeWidth={3}
+                          aria-hidden="true"
+                        />
                       </div>
                     </button>
                   );
                 })}
               </div>
             </div>
-          </PopoverPrimitive.Content>
-        </PopoverPrimitive.Portal>
-      </PopoverPrimitive.Root>
+          </div>
+        </PopoverContent>
+      </Popover>
     </>
   );
 }

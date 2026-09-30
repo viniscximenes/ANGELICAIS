@@ -18,7 +18,7 @@
   height: 26px;
 }
 
-/* Cabeçalho da tabela no mesmo padrão visual de /reports/consolidado.
+/* Cabeçalho da tabela no mesmo padrão visual de /s/reports/consolidado.
  * No escuro, bg-muted/40 sobre o fundo da página; a célula sticky usa a
  * mistura opaca equivalente para não deixar outras colunas vazarem por
  * baixo durante a rolagem horizontal. */
@@ -45,7 +45,9 @@
 [data-page="kpi-operadores"] .kpi-operadores-table {
   width: max-content;
   min-width: 100%;
-  table-layout: fixed;
+  /* auto (não fixed): coluna cresce até caber o título — ver regra
+   * "Título NUNCA cortado" mais abaixo. */
+  table-layout: auto;
 }
 
 [data-page="kpi-operadores"] .kpi-operadores-table th:first-child,
@@ -64,21 +66,54 @@
 
 /* No Consolidado, Tx Retenção usa o mesmo track largo da coluna Operador.
  * As duas taxas desta tabela seguem literalmente essa proporção. */
-[data-page="kpi-operadores"] .kpi-operadores-table .kpi-operadores-taxa-coluna {
+/* :is(th, td) iguala a especificidade da regra de 160px acima (que tem
+ * :not(:first-child)) — sem isso, os 160px venciam e as taxas nunca
+ * recebiam a largura própria. */
+[data-page="kpi-operadores"] .kpi-operadores-table :is(th, td).kpi-operadores-taxa-coluna {
   width: 190px;
   min-width: 190px;
   max-width: 190px;
 }
 
-/* Só na captura: dá respiro extra ao título TAXA ANTERIOR. A tabela da
- * tela conserva os 190px do padrão acima. Header e células recebem a mesma
- * largura para preservar o alinhamento da coluna no PNG. */
-[data-kpi-tabela-png][data-page="kpi-operadores"]
-  .kpi-operadores-table
-  .kpi-operadores-taxa-anterior-coluna {
+/* TAXA ANTERIOR: 220px na tela e na captura — título inteiro, sem "…",
+ * e valor centralizado com a mesma reserva do selo dos dois lados. */
+[data-page="kpi-operadores"] .kpi-operadores-table :is(th, td).kpi-operadores-taxa-anterior-coluna {
   width: 220px;
   min-width: 220px;
   max-width: 220px;
+}
+
+/* Título NUNCA cortado — na tela e no Copiar imagem. A tabela passa para
+ * layout automático e sem teto de largura: as larguras acima (160/190/220px)
+ * viram só o mínimo, e a coluna cresce até caber o título inteiro. Na tela,
+ * "Operador" (1ª coluna, sticky) mantém os 190px fixos e o truncamento dos
+ * nomes; na captura, nada tem teto. */
+[data-page="kpi-operadores"] .kpi-operadores-table :is(th, td):not(:first-child) {
+  max-width: none !important;
+}
+
+[data-page="kpi-operadores"] .kpi-operadores-table-head th:not(:first-child),
+[data-page="kpi-operadores"] .kpi-operadores-table-head th:not(:first-child) > span {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+/* A instância fica num wrapper position:fixed (largura limitada à viewport):
+ * com as colunas maiores, a captura não pode cortar nada pela direita. */
+[data-kpi-tabela-png][data-page="kpi-operadores"] {
+  width: max-content;
+}
+
+[data-kpi-tabela-png][data-page="kpi-operadores"] .kpi-operadores-table :is(th, td) {
+  max-width: none !important;
+}
+
+[data-kpi-tabela-png][data-page="kpi-operadores"] .kpi-operadores-table-head th,
+[data-kpi-tabela-png][data-page="kpi-operadores"] .kpi-operadores-table-head th > span {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
 }
 
 [data-page="kpi-operadores"] .kpi-operadores-table-head th:not(:last-child) {
@@ -107,26 +142,6 @@
 
 [data-theme="light"] [data-page="kpi-operadores"] .kpi-operadores-table-head-sticky {
   background-color: var(--muted);
-}
-
-/* Colunas ligadas ao RV: somente o FUNDO do cabeçalho recebe um tom um pouco
- * mais escuro. O texto continua herdando exatamente a mesma cor das demais
- * colunas. Valores explícitos garantem fidelidade na captura da imagem. */
-[data-page="kpi-operadores"] .kpi-operadores-table-head th.kpi-operadores-rv-header {
-  background-color: #191919 !important;
-}
-
-[data-theme="light"] [data-page="kpi-operadores"] .kpi-operadores-table-head th.kpi-operadores-rv-header {
-  background-color: #BDB6A6 !important;
-}
-
-/* Reforço específico da instância off-screen do Copiar imagem. */
-[data-kpi-tabela-png][data-page="kpi-operadores"] .kpi-operadores-table-head th.kpi-operadores-rv-header {
-  background-color: #191919 !important;
-}
-
-[data-theme="light"] [data-kpi-tabela-png][data-page="kpi-operadores"] .kpi-operadores-table-head th.kpi-operadores-rv-header {
-  background-color: #BDB6A6 !important;
 }
 
 /* ───────── Escala de z-index da tabela (coluna fixa "Operador" x selo de
@@ -331,4 +346,28 @@ body:has([data-page="kpi-operadores"])::-webkit-scrollbar-corner {
 }
 [data-theme="light"] .kpi-op-toast[data-type="error"] [data-icon] svg {
   color: #B3321C !important;
+}
+
+/* ───────── Fonte única: Instrument Sans na página toda, números incluídos ─────────
+ * Mesma regra do Consolidado (reports-consolidado.css): as classes de número
+ * dos componentes compartilhados (ds-mono-sm de tabela-padrao.tsx etc.) usam
+ * var(--font-mono) — trocadas aqui por var(--font-sans), só nesta rota.
+ * body:has(...) cobre também o que é montado em portal fora do [data-page]
+ * (popovers, tooltips, dialogs, toasts) enquanto esta página está aberta.
+ * tabular-nums mantém a largura fixa dos algarismos (alinhamento das colunas). */
+:is([data-page="kpi-operadores"], body:has([data-page="kpi-operadores"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) :is(.ds-mono, .ds-mono-sm, .ds-display, .font-mono) {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ───────── Skeletons (F5/loading.tsx e troca de mês) ─────────
+ * Mesmo tom do skeleton do Consolidado (.consolidado-skeleton em
+ * reports-consolidado.css): bg-card sozinho some sobre o fundo do tema
+ * (branco sobre quase-branco no claro). --muted-foreground a 14% / 10%,
+ * nos dois temas. */
+.kpi-operadores-skeleton .bg-card {
+  background-color: color-mix(in oklab, var(--muted-foreground) 14%, transparent);
+}
+.kpi-operadores-skeleton .bg-card\/70 {
+  background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
 }
