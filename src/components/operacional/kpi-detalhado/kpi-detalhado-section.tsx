@@ -117,6 +117,11 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const theadRef = useRef<HTMLTableSectionElement | null>(null);
+  // Barra de rolagem horizontal logo abaixo dos títulos das colunas (a
+  // nativa do card, embaixo da tabela, fica oculta) — sincronizada com o
+  // scrollLeft do card nos dois sentidos.
+  const barraRef = useRef<HTMLDivElement | null>(null);
+  const [barra, setBarra] = useState({ visivel: 0, total: 0 });
   // "Último clique foi dentro do container da tabela?" — decide se as setas
   // rolam a tabela ou a página.
   const cliqueDentroRef = useRef(false);
@@ -195,33 +200,225 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
       if (digitando) return; // deixa o cursor de texto se mover nativamente
 
       const cont = scrollRef.current;
+      const horizontal = e.key === "ArrowLeft" || e.key === "ArrowRight";
+      // ←/→ rolam a tabela (quando o último clique foi nela); ↑/↓ sempre a
+      // página — o card não tem rolagem vertical própria (cresce até a
+      // altura da tabela), então mandar ↑/↓ pra ele não fazia nada.
       const alvo: HTMLElement | Window =
-        cliqueDentroRef.current && cont ? cont : window;
-
-      const passoV = 120;
-      const passoH = 160;
-      const delta =
-        e.key === "ArrowUp"
-          ? { top: -passoV, left: 0 }
-          : e.key === "ArrowDown"
-            ? { top: passoV, left: 0 }
-            : e.key === "ArrowLeft"
-              ? { top: 0, left: -passoH }
-              : { top: 0, left: passoH };
+        horizontal && cliqueDentroRef.current && cont ? cont : window;
 
       // A página não rola horizontalmente — ignora ←/→ quando o alvo é a
       // janela, pra não engolir a tecla à toa.
-      if (alvo === window && delta.left !== 0) return;
+      if (alvo === window && horizontal) return;
 
       e.preventDefault();
-      alvo.scrollBy({ ...delta, behavior: "smooth" });
+      // Repetições automáticas da tecla segurada são ignoradas: quem rola
+      // enquanto ela está apertada é o loop abaixo, em velocidade constante.
+      if (e.repeat) return;
+
+      const dir = e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 1;
+      const eixo = horizontal ? "x" : "y";
+      const mesmoMovimento = anim.raf !== 0 && anim.alvo === alvo && anim.eixo === eixo;
+      anim.alvo = alvo;
+      anim.eixo = eixo;
+      anim.dir = dir;
+      anim.tecla = e.key;
+      anim.segurando = true;
+      anim.inicioToque = performance.now();
+      anim.destino = limitar(
+        (mesmoMovimento ? anim.destino : lerPos()) + dir * (horizontal ? PASSO_H : PASSO_V),
+      );
+      if (!anim.raf) {
+        anim.ultimo = performance.now();
+        anim.raf = requestAnimationFrame(quadro);
+      }
+    }
+
+    // ── Rolagem por teclado com animação própria (requestAnimationFrame).
+    // Antes era `scrollBy({ behavior: "smooth" })` a cada keydown: ao
+    // SEGURAR a seta, o navegador repete o keydown ~30x/s e cada chamada
+    // reiniciava a animação suave do zero — rolagem atrasada e aos trancos.
+    // Agora:
+    //  - toque: avança um passo (160px ←/→, 120px ↑/↓) com desaceleração
+    //    suave (aproximação exponencial do destino);
+    //  - segurando: depois de ATRASO_HOLD_MS o destino passa a avançar em
+    //    velocidade constante e a posição o acompanha com a mesma suavização;
+    //  - ao soltar: desliza até o destino e para.
+    const PASSO_H = 160;
+    const PASSO_V = 120;
+    const VEL_H = 1100; // px/s segurando ←/→
+    const VEL_V = 900; // px/s segurando ↑/↓
+    const ATRASO_HOLD_MS = 180;
+    const SUAVIZACAO = 14; // maior = alcança o destino mais rápido
+
+    const anim = {
+      alvo: null as HTMLElement | Window | null,
+      eixo: "x" as "x" | "y",
+      dir: 1 as 1 | -1,
+      tecla: "",
+      segurando: false,
+      inicioToque: 0,
+      destino: 0,
+      ultimo: 0,
+      raf: 0,
+    };
+
+    function lerPos(): number {
+      const a = anim.alvo;
+      if (!a) return 0;
+      if (a === window) return anim.eixo === "y" ? window.scrollY : window.scrollX;
+      const el = a as HTMLElement;
+      return anim.eixo === "x" ? el.scrollLeft : el.scrollTop;
+    }
+
+    function maxPos(): number {
+      const a = anim.alvo;
+      if (!a) return 0;
+      if (a === window) {
+        const doc = document.documentElement;
+        return anim.eixo === "y"
+          ? doc.scrollHeight - window.innerHeight
+          : doc.scrollWidth - window.innerWidth;
+      }
+      const el = a as HTMLElement;
+      return anim.eixo === "x"
+        ? el.scrollWidth - el.clientWidth
+        : el.scrollHeight - el.clientHeight;
+    }
+
+    function limitar(v: number): number {
+      return Math.min(Math.max(0, v), Math.max(0, maxPos()));
+    }
+
+    function escrever(v: number) {
+      const a = anim.alvo;
+      if (!a) return;
+      const opcoes: ScrollToOptions =
+        anim.eixo === "x" ? { left: v, behavior: "instant" } : { top: v, behavior: "instant" };
+      a.scrollTo(opcoes);
+    }
+
+    function quadro(agora: number) {
+      const dt = Math.min(agora - anim.ultimo, 50) / 1000;
+      anim.ultimo = agora;
+
+      if (anim.segurando && agora - anim.inicioToque >= ATRASO_HOLD_MS) {
+        const vel = anim.eixo === "x" ? VEL_H : VEL_V;
+        anim.destino = limitar(anim.destino + anim.dir * vel * dt);
+      }
+
+      const atual = lerPos();
+      const falta = anim.destino - atual;
+      if (!anim.segurando && Math.abs(falta) < 1) {
+        escrever(anim.destino);
+        anim.raf = 0;
+        return;
+      }
+      // Passo mínimo de 1px: o navegador arredonda o scroll e um passo
+      // fracionário no fim da desaceleração não sairia do lugar.
+      let passo = falta * Math.min(1, dt * SUAVIZACAO);
+      if (Math.abs(passo) < 1) passo = Math.sign(falta) * Math.min(1, Math.abs(falta));
+      escrever(atual + passo);
+      anim.raf = requestAnimationFrame(quadro);
+    }
+
+    function onKeyUp(e: KeyboardEvent) {
+      if (e.key === anim.tecla) anim.segurando = false;
+    }
+
+    function onBlur() {
+      anim.segurando = false;
     }
 
     document.addEventListener("mousedown", onDocMouseDown, true);
     window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
     return () => {
+      if (anim.raf) cancelAnimationFrame(anim.raf);
       document.removeEventListener("mousedown", onDocMouseDown, true);
       window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, []);
+
+  // ── Barra de rolagem abaixo do cabeçalho: mede a largura visível e total
+  // do card e espelha o scrollLeft entre o card e a barra.
+  useEffect(() => {
+    const cont = scrollRef.current;
+    const barraEl = barraRef.current;
+    if (!cont || !barraEl) return;
+
+    function medir() {
+      if (!cont) return;
+      setBarra({ visivel: cont.clientWidth, total: cont.scrollWidth });
+    }
+
+    // Só um lado "comanda" por vez: a barra só empurra o card enquanto o
+    // ponteiro está sobre ela (arrastar/roda na barra). Sem isso, a rolagem
+    // suave das setas do teclado no card era desfeita: o card copiava o
+    // valor pra barra, a barra devolvia um valor já atrasado e o card
+    // voltava, travando a navegação.
+    // Arrastando o polegar, o ponteiro pode sair da barra — continua sendo
+    // ela quem comanda até soltar o botão.
+    let sobreBarra = false;
+    let arrastando = false;
+    let ponteiroNaBarra = false;
+    const atualizar = () => {
+      ponteiroNaBarra = sobreBarra || arrastando;
+    };
+    const entrarBarra = () => {
+      sobreBarra = true;
+      atualizar();
+    };
+    const sairBarra = () => {
+      sobreBarra = false;
+      atualizar();
+    };
+    const apertarBarra = () => {
+      arrastando = true;
+      atualizar();
+    };
+    const soltar = () => {
+      arrastando = false;
+      atualizar();
+    };
+
+    function onContScroll() {
+      if (!cont || !barraEl || ponteiroNaBarra) return;
+      if (Math.abs(barraEl.scrollLeft - cont.scrollLeft) >= 1) {
+        barraEl.scrollLeft = cont.scrollLeft;
+      }
+    }
+
+    function onBarraScroll() {
+      if (!cont || !barraEl || !ponteiroNaBarra) return;
+      if (Math.abs(cont.scrollLeft - barraEl.scrollLeft) >= 1) {
+        cont.scrollLeft = barraEl.scrollLeft;
+      }
+    }
+
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(cont);
+    if (cont.firstElementChild) ro.observe(cont.firstElementChild);
+    cont.addEventListener("scroll", onContScroll, { passive: true });
+    barraEl.addEventListener("scroll", onBarraScroll, { passive: true });
+    barraEl.addEventListener("pointerenter", entrarBarra);
+    barraEl.addEventListener("pointerleave", sairBarra);
+    barraEl.addEventListener("pointerdown", apertarBarra);
+    window.addEventListener("pointerup", soltar);
+    window.addEventListener("mouseup", soltar);
+    return () => {
+      barraEl.removeEventListener("pointerdown", apertarBarra);
+      window.removeEventListener("pointerup", soltar);
+      window.removeEventListener("mouseup", soltar);
+      ro.disconnect();
+      cont.removeEventListener("scroll", onContScroll);
+      barraEl.removeEventListener("scroll", onBarraScroll);
+      barraEl.removeEventListener("pointerenter", entrarBarra);
+      barraEl.removeEventListener("pointerleave", sairBarra);
     };
   }, []);
 
@@ -407,6 +604,7 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
           <KpiFrame className="min-w-0">
             <div
               ref={scrollRef}
+              data-kpi-det-scroll
               className="scrollbar-tema overflow-x-auto rounded-[var(--radius)] border border-border"
             >
               <table
@@ -546,6 +744,21 @@ export function KpiDetalhadoSection({ dados }: KpiDetalhadoSectionProps) {
                         </th>
                       );
                     })}
+                  </tr>
+                  {/* Barra de rolagem horizontal logo abaixo dos títulos —
+                      acompanha o cabeçalho congelado. `sticky left-0` com a
+                      largura visível do card: fica sempre no campo de visão,
+                      mesmo com a tabela rolada pro lado. */}
+                  <tr data-kpi-det-barra aria-hidden="true">
+                    <th colSpan={colunas.length + 3}>
+                      <div
+                        ref={barraRef}
+                        className="scrollbar-tema sticky left-0 overflow-x-auto overflow-y-hidden"
+                        style={{ width: barra.visivel || undefined }}
+                      >
+                        <div style={{ width: barra.total, height: 1 }} />
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

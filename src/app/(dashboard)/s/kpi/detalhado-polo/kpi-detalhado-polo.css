@@ -1,5 +1,5 @@
 /*
- * Ajustes visuais específicos de /kpi/detalhado-polo.
+ * Ajustes visuais específicos de /s/kpi/detalhado-polo.
  * As cores (tokens) vêm da paleta global em src/app/palettes/ (paleta ativa) —
  * não redefina --background/--card/--primary/... aqui, senão a troca de
  * paleta deixa de valer nesta página.
@@ -10,6 +10,17 @@
   color: var(--foreground);
   font-family: var(--font-sans);
   letter-spacing: var(--letter-spacing);
+}
+
+/* ───────── Fonte única: Instrument Sans em tudo ─────────
+ * Mesmo bloco de reports-consolidado.css: ds-mono / ds-mono-sm / ds-display
+ * e font-mono (var(--font-mono) = Geist Mono, globals.css) passam a usar a
+ * fonte da página só aqui — inclui o popover do filtro de gestores e o
+ * loading, que também carregam o data-page. tabular-nums mantém os números
+ * com largura fixa. */
+[data-page="kpi-detalhado-polo"] :is(.ds-mono, .ds-mono-sm, .ds-display, .font-mono) {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Títulos das colunas da tabela — mesmo padrão de /kpi/operadores
@@ -23,6 +34,10 @@
   color: var(--foreground);
 }
 
+/* Mesmo tom do bg-muted/40 do Consolidado/operadores (40% de opacidade
+ * sobre o fundo), só que opaco por causa das colunas fixas — mistura em
+ * srgb, igual a .kpi-operadores-table-head-sticky. Em oklab a mistura com
+ * o fundo escuro sai bem mais escura (quase preta). */
 [data-page="kpi-detalhado-polo"] table > thead th {
   background-color: color-mix(in srgb, var(--muted) 40%, var(--background) 60%);
   color: inherit !important;
@@ -124,6 +139,31 @@
   --kpi-det-th-borda: 2px;
 }
 
+/* ───────── Barra de rolagem horizontal abaixo dos títulos ─────────
+ * A barra nativa do card (embaixo da tabela) fica oculta — a rolagem
+ * continua funcionando (shift+roda, touchpad, setas); a barra visível é a
+ * linha [data-kpi-det-barra] do <thead>, sincronizada no componente. */
+[data-page="kpi-detalhado-polo"] [data-kpi-det-scroll] {
+  scrollbar-width: none;
+}
+
+[data-page="kpi-detalhado-polo"] [data-kpi-det-scroll]::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Linha da barra: sem padding, altura, sombra/divisória nem tipografia de
+ * título — só a barra sobre o fundo opaco da página (as linhas do corpo
+ * passam por baixo com o cabeçalho congelado). */
+[data-page="kpi-detalhado-polo"] table > thead > tr[data-kpi-det-barra] > th {
+  height: auto;
+  padding: 0;
+  box-shadow: none;
+  background-color: var(--background);
+  line-height: 0;
+}
+
 /* ───────── Corpo da tabela — mesmo padrão de /kpi/operadores ─────────
  * Contêiner sem borda/arredondado próprio (operadores usa só o KpiFrame). */
 [data-page="kpi-detalhado-polo"] .overflow-x-auto:has(> table) {
@@ -131,8 +171,10 @@
   border-radius: 0;
 }
 
-/* Sem linhas horizontais nem hover de linha: operadores não tem nenhum dos
- * dois. !important vence o borderBottom inline de cada <tr>. */
+/* Linhas — mesmo padrão das linhas NÃO clicáveis da EquipeTable de
+ * /s/reports/consolidado: sem linhas horizontais (!important vence o
+ * borderBottom inline de cada <tr>) e sem mudança de fundo no hover (a
+ * linha não abre nada, então não deve parecer clicável). */
 [data-page="kpi-detalhado-polo"] table > tbody > tr,
 [data-page="kpi-detalhado-polo"] table > tbody > tr:hover {
   border-bottom: 0 !important;
@@ -140,8 +182,10 @@
 }
 
 /* Colunas fixas (Operador/Gestor) sempre com o fundo opaco da página,
- * inclusive no hover — igual à coluna fixa de operadores. */
-[data-page="kpi-detalhado-polo"] table > tbody td.sticky {
+ * inclusive no hover — as outras colunas não vazam por baixo na rolagem
+ * horizontal. */
+[data-page="kpi-detalhado-polo"] table > tbody td.sticky,
+[data-page="kpi-detalhado-polo"] table > tbody > tr:hover > td.sticky {
   background-color: var(--background) !important;
 }
 
@@ -165,10 +209,16 @@
   padding: 0.5rem 0.75rem;
 }
 
+/* Números em Instrument Sans (não Geist Mono), mesmo padrão do Consolidado
+ * ("Fonte única"): tabular-nums mantém a largura fixa dos dígitos. */
 [data-page="kpi-detalhado-polo"] table > tbody td:nth-child(n + 4) {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: var(--text-mono-sm);
   font-weight: 400;
+  /* Consolidado: ds-mono-sm herda o 1.5 do documento (aqui viria o
+   * line-height do text-sm da <table>). */
+  line-height: 1.5;
   padding: 0.5rem 0.75rem;
 }
 
@@ -231,6 +281,20 @@
 [data-page="kpi-detalhado-polo"] table > tbody td:nth-child(2),
 [data-page="kpi-detalhado-polo"] table > tbody td:nth-child(3) {
   color: var(--foreground);
+}
+
+/* ───────── Skeleton de carregamento (loading.tsx) ─────────
+ * Mesmos tons de .consolidado-skeleton (reports-consolidado.css): o bg-card
+ * puro ficava claro demais no tema atual. --muted-foreground a 14% no bloco
+ * cheio, 10% no /70 e 7% no /60 e /40 — mesma hierarquia, nos dois temas. */
+.kpi-detalhado-skeleton .bg-card {
+  background-color: color-mix(in oklab, var(--muted-foreground) 14%, transparent);
+}
+.kpi-detalhado-skeleton .bg-card\/70 {
+  background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
+}
+.kpi-detalhado-skeleton :is(.bg-card\/60, .bg-card\/40) {
+  background-color: color-mix(in oklab, var(--muted-foreground) 7%, transparent);
 }
 
 /* Spinner do loading inicial/refresh — mesmas dimensões, cor e animação do

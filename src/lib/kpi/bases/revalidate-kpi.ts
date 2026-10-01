@@ -15,7 +15,7 @@ const ROTAS_KPI = [
   "/bases/kpi",
   "/s/kpi/operadores",
   "/s/kpi/gestor",
-  "/kpi/detalhado-polo",
+  "/s/kpi/detalhado-polo",
   "/operacao/analise-operadores",
   "/operacao/diario",
 ] as const;

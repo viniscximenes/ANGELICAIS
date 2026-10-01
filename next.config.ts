@@ -8,12 +8,12 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      // /operacao/kpi-detalhado migrou pra /kpi/detalhado-polo. Mantém o
+      // /operacao/kpi-detalhado migrou pra /s/kpi/detalhado-polo. Mantém o
       // link/favorito antigo funcionando — o gate de acesso roda na rota
       // nova (page.tsx), não aqui.
       {
         source: "/operacao/kpi-detalhado",
-        destination: "/kpi/detalhado-polo",
+        destination: "/s/kpi/detalhado-polo",
         permanent: false,
       },
       // /operacao/analise-operadores migrou pra /kpi/evolucao. Mantém o
