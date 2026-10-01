@@ -40,7 +40,7 @@ const ALL_SECTIONS: SidebarSection[] = [
     onlyRoles: ["GESTOR"],
     items: [
       { label: "Operadores", href: "/s/kpi/operadores" },
-      { label: "Gestor", href: "/kpi/gestor" },
+      { label: "Gestor", href: "/s/kpi/gestor" },
       { label: "Detalhado Polo", href: "/kpi/detalhado-polo" },
       { label: "Evolução", href: "/kpi/evolucao" },
     ],

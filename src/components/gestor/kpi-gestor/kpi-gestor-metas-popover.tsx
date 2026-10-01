@@ -2,12 +2,18 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { Popover as PopoverPrimitive } from "radix-ui";
 import { IconCheck, IconLoader2, IconSettings } from "@tabler/icons-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { MetaDirecao, MetaGestorConfig } from "@/lib/kpi/gestor/avaliar-meta-gestor";
@@ -106,15 +112,16 @@ export function KpiGestorMetasPopover({ metasIniciais, onSaved }: KpiGestorMetas
             aria-hidden="true"
             onClick={() => handleOpenChange(false)}
             className={cn(
-              "fixed inset-0 z-40 bg-black/20 backdrop-blur-sm transition-all duration-200",
-              open ? "opacity-100" : "pointer-events-none opacity-0",
+              "fixed inset-0 z-40 bg-black/20 backdrop-blur-sm transition-all",
+              // Entrada imediata (sem fade), saída mantém os 200ms.
+              open ? "opacity-100 duration-0" : "pointer-events-none opacity-0 duration-200",
             )}
           />,
           document.body,
         )}
 
-      <PopoverPrimitive.Root open={open} onOpenChange={handleOpenChange}>
-        <PopoverPrimitive.Trigger asChild>
+      <Popover open={open} onOpenChange={handleOpenChange}>
+        <PopoverTrigger asChild>
           <button
             type="button"
             aria-label="Configurações de metas"
@@ -122,24 +129,30 @@ export function KpiGestorMetasPopover({ metasIniciais, onSaved }: KpiGestorMetas
           >
             <IconSettings size={15} aria-hidden="true" />
           </button>
-        </PopoverPrimitive.Trigger>
+        </PopoverTrigger>
 
-        <PopoverPrimitive.Portal>
-          <PopoverPrimitive.Content
-            data-page="kpi-gestor"
-            align="start"
-            sideOffset={8}
-            className="font-sans z-50 w-[420px] max-w-[calc(100vw-2rem)] rounded-2xl border border-border/80 bg-popover p-5 text-popover-foreground shadow-2xl outline-none backdrop-blur-md data-[side=bottom]:slide-in-from-top-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
-          >
-            <div className="pb-3 border-b border-border/40">
-              <p className="text-sm font-semibold text-foreground">Metas KPI Gestor</p>
-            </div>
+        {/* Mesma casca/animação/tipografia do "Configurações das Colunas" de
+            /kpi/operadores (config-kpi-operadores-popover.tsx): gap-0,
+            p-4 pt-3, título ds-h3 uppercase, itens rounded-lg text-xs
+            font-medium, sem auto-foco ao abrir. Largura maior que o w-80 de
+            lá porque cada linha tem input + select. */}
+        <PopoverContent
+          data-page="kpi-gestor"
+          align="start"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="font-sans bg-popover text-popover-foreground border-border w-[420px] max-w-[calc(100vw-2rem)] gap-0 rounded-2xl border p-4 pt-3 shadow-2xl"
+        >
+            <PopoverHeader className="border-border/50 border-b pb-2">
+              <PopoverTitle className="ds-h3 font-semibold text-foreground uppercase whitespace-nowrap">
+                Metas KPI Gestor
+              </PopoverTitle>
+            </PopoverHeader>
 
             {/* overscroll-contain: mesmo tratamento do painel de detalhes dos
                 cards (kpi-gestor-card.tsx) — sem isso, ao chegar no fim da
                 lista o resto do gesto de rolagem vaza pra rolar a página por
                 trás do popover. */}
-            <div className="space-y-1.5 pt-3 max-h-80 overflow-y-auto overscroll-contain pr-1 scrollbar-tema">
+            <div className="space-y-1.5 pt-3 max-h-72 overflow-y-auto overscroll-contain pr-1 scrollbar-tema">
               {KPI_GESTOR_CARDS.map((card) => {
                 const atual = metas[card.configSlug] ?? { meta: null, direcao: null };
                 const isTempo = card.valueType === "time";
@@ -148,9 +161,9 @@ export function KpiGestorMetasPopover({ metasIniciais, onSaved }: KpiGestorMetas
                 return (
                   <div
                     key={card.configSlug}
-                    className="grid grid-cols-[1fr_76px_120px] items-center gap-2 rounded-xl px-3.5 py-2 border bg-muted/30 border-border/60 hover:bg-muted/60 transition-all"
+                    className="grid grid-cols-[1fr_76px_120px] items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-medium border border-border bg-transparent text-foreground hover:bg-accent transition-colors"
                   >
-                    <span className="text-xs font-medium text-foreground truncate" title={card.label}>
+                    <span className="truncate" title={card.label}>
                       {card.label}
                     </span>
                     <Input
@@ -193,12 +206,12 @@ export function KpiGestorMetasPopover({ metasIniciais, onSaved }: KpiGestorMetas
               })}
             </div>
 
-            <div className="pt-3 mt-3 border-t border-border/40">
+            <div className="pt-3 mt-3 border-t border-border/50">
               <Button
                 type="button"
                 onClick={handleSave}
                 disabled={isPending}
-                className="w-full h-9 rounded-xl bg-primary text-primary-foreground font-semibold text-xs shadow-sm hover:bg-primary/90 transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full h-9 rounded-lg border border-primary bg-primary text-primary-foreground font-semibold text-xs shadow-sm hover:bg-primary/90 transition-colors cursor-pointer flex items-center justify-center gap-2"
               >
                 {isPending ? (
                   <>
@@ -213,9 +226,8 @@ export function KpiGestorMetasPopover({ metasIniciais, onSaved }: KpiGestorMetas
                 )}
               </Button>
             </div>
-          </PopoverPrimitive.Content>
-        </PopoverPrimitive.Portal>
-      </PopoverPrimitive.Root>
+        </PopoverContent>
+      </Popover>
     </>
   );
 }

@@ -1,4 +1,4 @@
-// Suspense fallback do Next.js pra /kpi/gestor — mostrado automaticamente
+// Suspense fallback do Next.js pra /s/kpi/gestor — mostrado automaticamente
 // enquanto o Server Component de page.tsx (async, aguarda as buscas + o piso
 // mínimo de MIN_LOADING_MS — ver page.tsx) ainda não resolveu. Só dispara em
 // NAVEGAÇÃO de rota (entrar na página, inclusive acesso direto/F5) — a troca

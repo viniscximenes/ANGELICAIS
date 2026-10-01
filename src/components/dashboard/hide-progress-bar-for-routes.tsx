@@ -32,7 +32,7 @@ import { usePathname } from "next/navigation";
  */
 const ROTAS_SEM_BARRA = [
   "/s/kpi/operadores",
-  "/kpi/gestor",
+  "/s/kpi/gestor",
   "/kpi/detalhado-polo",
   "/kpi/evolucao",
   "/configuracoes/equipe",

@@ -61,7 +61,7 @@ export async function saveKpiGestorMetasAction(
     return { success: false, error: "Erro ao salvar configuração." };
   }
 
-  revalidatePath("/kpi/gestor");
+  revalidatePath("/s/kpi/gestor");
 
   return { success: true };
 }

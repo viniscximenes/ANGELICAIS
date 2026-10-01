@@ -14,7 +14,7 @@ import { revalidatePath } from "next/cache";
 const ROTAS_KPI = [
   "/bases/kpi",
   "/s/kpi/operadores",
-  "/kpi/gestor",
+  "/s/kpi/gestor",
   "/kpi/detalhado-polo",
   "/operacao/analise-operadores",
   "/operacao/diario",

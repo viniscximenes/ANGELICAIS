@@ -1,5 +1,5 @@
 /*
- * Ajustes visuais específicos de /kpi/gestor.
+ * Ajustes visuais específicos de /s/kpi/gestor.
  * As cores (tokens) vêm da paleta global em src/app/palettes/ (paleta ativa) —
  * não redefina --background/--card/--primary/... aqui, senão a troca de
  * paleta deixa de valer nesta página.
@@ -101,4 +101,31 @@
  * bg-card/70. */
 [data-theme="light"] [data-page="kpi-gestor"] .kpi-gestor-card.bg-card\/70 {
   background-color: color-mix(in srgb, var(--background) 82%, var(--muted) 18%) !important;
+}
+
+/* Skeletons de carregamento (F5, troca de mês e refresh após salvar metas) —
+ * mesmo tratamento de .consolidado-skeleton (reports-consolidado.css): o
+ * bg-card é branco puro no tema claro e os blocos sumiam sobre o fundo.
+ * Tom de --muted-foreground em degraus pelas opacidades originais (bloco
+ * cheio > /70 > /60 e /40). Vale nos dois temas. */
+.kpi-gestor-skeleton .bg-card {
+  background-color: color-mix(in oklab, var(--muted-foreground) 14%, transparent);
+}
+.kpi-gestor-skeleton .bg-card\/70 {
+  background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
+}
+.kpi-gestor-skeleton :is(.bg-card\/60, .bg-card\/40) {
+  background-color: color-mix(in oklab, var(--muted-foreground) 7%, transparent);
+}
+
+/* Fonte única: Instrument Sans na página toda, números incluídos — mesma
+ * regra de /s/kpi/operadores e do Consolidado. As classes de número
+ * (ds-display do valor dos cards, font-mono do contador das seções e do
+ * campo de meta) usam var(--font-mono) — trocadas aqui por var(--font-sans),
+ * só nesta rota. body:has(...) cobre também o que é montado em portal fora
+ * do [data-page] (popovers, selects, tooltips, dialogs, toasts) enquanto esta
+ * página está aberta. tabular-nums mantém a largura fixa dos algarismos. */
+:is([data-page="kpi-gestor"], body:has([data-page="kpi-gestor"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="select-content"], [data-slot="tooltip-content"], [data-sonner-toast])) :is(.ds-mono, .ds-mono-sm, .ds-display, .font-mono) {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
 }

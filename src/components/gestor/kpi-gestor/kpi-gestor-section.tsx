@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { IconX } from "@tabler/icons-react";
+import { IconCalendarOff, IconX } from "@tabler/icons-react";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { MetaGestorConfig } from "@/lib/kpi/gestor/avaliar-meta-gestor";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 // duplicar o seletor de mês/formatação aqui.
 import { MesSelector } from "@/app/(dashboard)/s/kpi/operadores/_components/mes-selector";
 import { formatMesCapitalizado } from "@/app/(dashboard)/s/kpi/operadores/_components/mes-format";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 
 import { DefasadosTooltipContent, KpiGestorCard, SemDadoTooltipContent } from "./kpi-gestor-card";
 import type { KpiGestorCardSerial } from "@/lib/kpi/gestor/build-kpi-gestor-cards";
@@ -443,6 +444,15 @@ export function KpiGestorSection({
     }
   }, [isRefreshing, refreshTarefasOk, isRefreshPending]);
 
+  // Skeleton espelha o que vai entrar: se o mês já está em memória e não tem
+  // dados, mostra a forma do "Nenhum dado encontrado"; senão, a dos cards
+  // (com a mesma quantidade do mês, quando conhecida).
+  const skeletonSemDados = !!dataSelecionado && !dataSelecionado.hasData;
+  const skeletonPrincipais =
+    dataSelecionado?.cards.filter((c) => c.secao === "principais").length || undefined;
+  const skeletonComplementares =
+    dataSelecionado?.cards.filter((c) => c.secao === "complementares").length || undefined;
+
   const principais = data?.cards.filter((c) => c.secao === "principais") ?? [];
   const complementares = data?.cards.filter((c) => c.secao === "complementares") ?? [];
   // Cor semântica de meta (verde/vermelho) só faz sentido no Mês Atual —
@@ -472,7 +482,11 @@ export function KpiGestorSection({
           direita da sidebar de 240px em lg+), igual a um F5. */}
       {isRefreshing && (
         <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] overflow-hidden bg-background lg:left-[240px]">
-          <KpiGestorLoadingScreen />
+          <KpiGestorLoadingScreen
+            semDados={skeletonSemDados}
+            totalPrincipais={skeletonPrincipais}
+            totalComplementares={skeletonComplementares}
+          />
         </div>
       )}
 
@@ -525,15 +539,26 @@ export function KpiGestorSection({
           // Toda troca de mês usa este skeleton por no mínimo 2s e até a
           // busca necessária terminar — mesmo padrão de /kpi/operadores.
           <KpiGestorCardsSkeleton
-            totalPrincipais={principais.length || undefined}
-            totalComplementares={complementares.length || undefined}
+            semDados={skeletonSemDados}
+            totalPrincipais={skeletonPrincipais}
+            totalComplementares={skeletonComplementares}
           />
         ) : !data || !data.hasData ? (
-          <div className="p-12 text-center rounded-xl bg-card border border-border/60">
-            <p className="text-xs font-medium text-muted-foreground">
-              Nenhum dado encontrado para {formatMesRef(mesExibido)}.
-            </p>
-          </div>
+          // Mesma moldura do estado vazio de /kpi/operadores (KpiEmptyState):
+          // só as cantoneiras, sem fundo/borda, texto muted em font-sans.
+          <KpiFrame className="flex min-h-[220px] flex-col items-center justify-center gap-3 px-6 py-12 text-center">
+            <div className="flex size-10 items-center justify-center rounded-xl border border-border/60 bg-muted/40 text-muted-foreground">
+              <IconCalendarOff size={18} aria-hidden="true" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-sans text-sm font-medium text-foreground">
+                Nenhum dado encontrado para {formatMesRef(mesExibido)}
+              </p>
+              <p className="font-sans text-xs text-muted-foreground">
+                Os KPIs aparecem aqui assim que a base do mês for importada.
+              </p>
+            </div>
+          </KpiFrame>
         ) : (
           <div className="space-y-8">
             <section className="space-y-3">
