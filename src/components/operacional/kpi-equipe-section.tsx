@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useMotionValue, useSpring } from "motion/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   IconSelector,
@@ -451,11 +451,14 @@ function KpiOperadoresTabela({
   onHeaderDragEnd,
   colunasRvVisiveis,
   valoresCompletos,
+  rvProgresso = 1,
 }: {
   operadores: OperadorKpiSerial[];
   headers: { slug: string; displayName: string }[];
   sort: SortState;
   rvColunaAtiva: boolean;
+  /** 0→1 da animação do "Exibir RV" (largura/opacidade das colunas de RV). Export = 1, sem animação. */
+  rvProgresso?: number;
   /** Colunas de RV configuradas como visíveis (kpi_colunas_rv) — independente do switch "Exibir RV" (rvColunaAtiva). */
   colunasRvVisiveis: RvColunaId[];
   /** Todas as colunas (visíveis ou não) por email — usado pelas colunas de RV cuja base está oculta. */
@@ -562,7 +565,10 @@ function KpiOperadoresTabela({
             : undefined
         }
       >
-        <table className="kpi-operadores-table border-collapse text-sm" style={{ minWidth: 860 }}>
+        <table
+          className="kpi-operadores-table border-collapse text-sm"
+          style={{ minWidth: 860, ["--kpi-rv-p" as string]: rvProgresso }}
+        >
           <thead className="kpi-operadores-table-head ds-body font-bold text-foreground tracking-wide uppercase">
             <tr style={{ borderBottom: "1px solid var(--border)" }}>
               <th
@@ -1004,15 +1010,17 @@ function KpiOperadoresTabela({
                       return (
                         <td
                           key={id}
-                          className={cn(TABELA_VALOR_CELL_CLASS, "whitespace-nowrap")}
+                          className={cn(TABELA_VALOR_CELL_CLASS, "kpi-operadores-rv-col whitespace-nowrap")}
                           style={{ ...resultado.style, fontVariantNumeric: "tabular-nums" }}
                           title={resultado.title}
                           aria-label={resultado.ariaLabel}
                         >
-                          {resultado.texto}
-                          {resultado.sufixoDesconto && (
-                            <span style={{ ...STYLE_SUFIXO_DESCONTO, marginLeft: 4 }}>{resultado.sufixoDesconto}</span>
-                          )}
+                          <div className="kpi-operadores-rv-inner">
+                            {resultado.texto}
+                            {resultado.sufixoDesconto && (
+                              <span style={{ ...STYLE_SUFIXO_DESCONTO, marginLeft: 4 }}>{resultado.sufixoDesconto}</span>
+                            )}
+                          </div>
                         </td>
                       );
                     }
@@ -1498,6 +1506,20 @@ export function KpiEquipeSection({
   // muda, só a renderização.
   const rvColunaAtiva = rvVisivel && !!scopeAtual;
 
+  // Animação do "Exibir RV" — mesma do Consolidado (EquipeTable, coluna RV
+  // Diário): spring do motion (damping 30, stiffness 220) num progresso
+  // 0→1 que dirige a largura e a opacidade das colunas de RV (CSS vars
+  // --kpi-rv-p, ver kpi-operadores.css). As colunas continuam montadas
+  // enquanto o progresso não zera, pra animar também o fechamento.
+  const rvAlvo = useMotionValue(rvColunaAtiva ? 1 : 0);
+  useEffect(() => {
+    rvAlvo.set(rvColunaAtiva ? 1 : 0);
+  }, [rvColunaAtiva, rvAlvo]);
+  const rvSpring = useSpring(rvAlvo, { damping: 30, stiffness: 220 });
+  const [rvProgresso, setRvProgresso] = useState(rvSpring.get());
+  useEffect(() => rvSpring.on("change", setRvProgresso), [rvSpring]);
+  const rvColunasRenderizadas = !!scopeAtual && (rvColunaAtiva || rvProgresso > 0.001);
+
   // "Retenção (dd/mm)" — sempre ativa no mês atual, sem toggle;
   // não renderizada em meses históricos (reaproveita scopeAtual, mesma regra
   // de "mês atual" que o RV já usa).
@@ -1828,7 +1850,8 @@ export function KpiEquipeSection({
                   operadores={sortedOps}
                   headers={headers}
                   sort={sort}
-                  rvColunaAtiva={rvColunaAtiva}
+                  rvColunaAtiva={rvColunasRenderizadas}
+                  rvProgresso={rvProgresso}
                   mostrarToggleOlho={!!nomeFantasia?.ativo}
                   olhoAberto={olhoAberto}
                   onToggleOlho={handleToggleOlho}

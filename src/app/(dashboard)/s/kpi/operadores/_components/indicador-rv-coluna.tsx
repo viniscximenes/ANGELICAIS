@@ -48,12 +48,14 @@ export function IndicadorRvHeader({ titulo, sortSlug, sort, interativo, onSort, 
       onKeyDown={interativo ? handleKeyDown : undefined}
       className={cn(
         TABELA_HEADER_CELL_CLASS,
-        "kpi-operadores-rv-header group/th relative select-none",
+        "kpi-operadores-rv-header kpi-operadores-rv-col group/th relative select-none",
         interativo &&
           "hover:text-foreground transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]",
       )}
     >
-      <span className="block overflow-hidden px-5 text-ellipsis">{titulo}</span>
+      <div className="kpi-operadores-rv-inner">
+        <span className="block overflow-hidden px-5 text-ellipsis">{titulo}</span>
+      </div>
       {interativo && sortIcon}
     </th>
   );
@@ -66,12 +68,12 @@ export interface IndicadorRvCellProps {
 export function IndicadorRvCell({ resultado }: IndicadorRvCellProps) {
   return (
     <td
-      className={cn(TABELA_VALOR_CELL_CLASS, "whitespace-nowrap")}
+      className={cn(TABELA_VALOR_CELL_CLASS, "kpi-operadores-rv-col whitespace-nowrap")}
       style={{ ...resultado.style, fontVariantNumeric: "tabular-nums" }}
       title={resultado.title}
       aria-label={resultado.ariaLabel}
     >
-      {resultado.texto}
+      <div className="kpi-operadores-rv-inner">{resultado.texto}</div>
     </td>
   );
 }

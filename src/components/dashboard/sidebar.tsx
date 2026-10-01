@@ -126,7 +126,11 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
       <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
         {sections.map((section, index) => {
           const Icon = ICONS[section.iconName];
-          const isActiveSection = pathname.startsWith(section.basePath);
+          // Também ativa quando a rota é de um item da seção fora do basePath
+          // (ex.: /s/kpi/operadores dentro da seção KPI, basePath "/kpi").
+          const isActiveSection =
+            pathname.startsWith(section.basePath) ||
+            section.items.some((item) => pathname.startsWith(item.href));
           const firstHref = section.items[0]?.href ?? section.basePath;
           const itens = itensDaSecao(section, pathname);
 

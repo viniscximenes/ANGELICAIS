@@ -371,3 +371,38 @@ body:has([data-page="kpi-operadores"])::-webkit-scrollbar-corner {
 .kpi-operadores-skeleton .bg-card\/70 {
   background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
 }
+
+/* ───────── Animação do "Exibir RV" (mesma do Consolidado) ─────────
+ * --kpi-rv-p (0→1, spring do motion em kpi-equipe-section.tsx, mesmos
+ * damping/stiffness da coluna RV Diário do Consolidado) dirige largura e
+ * opacidade das colunas de RV. A célula fica sem padding/largura próprios
+ * e o wrapper interno é quem cresce: min 160px (largura padrão das colunas)
+ * e teto de 320px, ambos multiplicados pelo progresso — no fim (p = 1) a
+ * coluna fica igual às demais e o título continua inteiro. Sem a var
+ * (instância do Copiar imagem), p = 1. */
+[data-page="kpi-operadores"] .kpi-operadores-table :is(th, td).kpi-operadores-rv-col {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+[data-page="kpi-operadores"] .kpi-operadores-rv-inner {
+  box-sizing: border-box;
+  min-width: calc(var(--kpi-rv-p, 1) * 160px);
+  max-width: calc(var(--kpi-rv-p, 1) * 320px);
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: var(--kpi-rv-p, 1);
+  padding-inline: calc(var(--kpi-rv-p, 1) * 0.75rem);
+}
+
+[data-page="kpi-operadores"] th .kpi-operadores-rv-inner {
+  padding-inline: calc(var(--kpi-rv-p, 1) * 0.5rem);
+}
+
+[data-page="kpi-operadores"] .kpi-operadores-rv-inner > span {
+  overflow: visible;
+  text-overflow: clip;
+}
