@@ -1,5 +1,5 @@
 /*
- * Ajustes visuais específicos de /kpi/evolucao.
+ * Ajustes visuais específicos de /s/kpi/evolucao.
  * As cores (tokens) vêm da paleta global em src/app/palettes/ (paleta ativa) —
  * não redefina --background/--card/--primary/... aqui, senão a troca de
  * paleta deixa de valer nesta página.
@@ -10,6 +10,34 @@
   color: var(--foreground);
   font-family: var(--font-sans);
   letter-spacing: var(--letter-spacing);
+}
+
+/* ───────── Fonte única: Instrument Sans em tudo ─────────
+ * Mesmo bloco de reports-consolidado.css: ds-mono / ds-mono-sm / ds-display
+ * e font-mono (var(--font-mono) = Geist Mono, globals.css) passam a usar a
+ * fonte da página só aqui — inclui os portais que carregam o data-page
+ * (dropdown do seletor de operador, popover de meta). Textos dos gráficos
+ * (eixos/legendas/tooltip do Recharts) herdam a fonte do contêiner.
+ * tabular-nums mantém os números com largura fixa. */
+[data-page="kpi-evolucao"] :is(.ds-mono, .ds-mono-sm, .ds-display, .font-mono),
+[data-page="kpi-evolucao"] svg text {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ───────── Skeleton (loading.tsx + trocas dentro da página) ─────────
+ * Mesmos tons de .consolidado-skeleton (reports-consolidado.css): o bg-card
+ * puro e as opacidades baixas do skeleton antigo sumiam no tema claro.
+ * --muted-foreground a 14% no bloco cheio, 10% no /70 e 7% no /60 e /40 —
+ * mesma hierarquia, nos dois temas. */
+.kpi-evolucao-skeleton .bg-card {
+  background-color: color-mix(in oklab, var(--muted-foreground) 14%, transparent);
+}
+.kpi-evolucao-skeleton .bg-card\/70 {
+  background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
+}
+.kpi-evolucao-skeleton :is(.bg-card\/60, .bg-card\/40) {
+  background-color: color-mix(in oklab, var(--muted-foreground) 7%, transparent);
 }
 
 /* Seletor de período — mesmo ajuste do seletor de meses de /kpi/operadores
@@ -44,13 +72,6 @@
   border-bottom: 2px solid var(--border);
 }
 
-/* Engrenagem da meta (MetaTxRetencaoPopover) dentro da faixa de título —
- * no claro, --border (#D2CBBB) é quase o mesmo tom do fundo da faixa
- * (--muted, #CFC8B8) e a borda sumia. Borda mais escura só no claro;
- * escuro inalterado. */
-[data-theme="light"] [data-page="kpi-evolucao"] .kpi-evolucao-meta-trigger {
-  border-color: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
-}
 
 /*
  * Contorno de foco nativo desligado nesta página.

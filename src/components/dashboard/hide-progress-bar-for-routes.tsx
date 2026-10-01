@@ -34,7 +34,7 @@ const ROTAS_SEM_BARRA = [
   "/s/kpi/operadores",
   "/s/kpi/gestor",
   "/s/kpi/detalhado-polo",
-  "/kpi/evolucao",
+  "/s/kpi/evolucao",
   "/configuracoes/equipe",
   "/s/reports/consolidado",
   "/s/reports/tempo-indisponibilidade",

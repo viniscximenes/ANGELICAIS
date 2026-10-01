@@ -16,12 +16,12 @@ const nextConfig: NextConfig = {
         destination: "/s/kpi/detalhado-polo",
         permanent: false,
       },
-      // /operacao/analise-operadores migrou pra /kpi/evolucao. Mantém o
+      // /operacao/analise-operadores migrou pra /s/kpi/evolucao. Mantém o
       // link/favorito antigo funcionando — o gate de acesso roda na rota
       // nova (page.tsx), não aqui.
       {
         source: "/operacao/analise-operadores",
-        destination: "/kpi/evolucao",
+        destination: "/s/kpi/evolucao",
         permanent: false,
       },
     ];

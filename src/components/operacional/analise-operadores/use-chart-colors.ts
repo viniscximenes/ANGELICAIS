@@ -91,7 +91,13 @@ function lerTokensDaPagina(): ChartColors {
  * (a captura sempre sai em tema claro), independente do tema da sessão.
  */
 export function useChartColors(forceLight = false): ChartColors {
-  const [cores, setCores] = useState<ChartColors>(FALLBACK);
+  // Lido já no 1º render: os gráficos só montam no client (depois de
+  // selecionar operador), então o tema já está no DOM. Antes começava no
+  // FALLBACK e trocava pras cores do tema num render seguinte — a cor do
+  // gráfico "chegava depois".
+  const [cores, setCores] = useState<ChartColors>(() =>
+    forceLight ? lerTokensTemaClaro() : lerTokensDaPagina(),
+  );
 
   useEffect(() => {
     setCores(forceLight ? lerTokensTemaClaro() : lerTokensDaPagina());

@@ -32,19 +32,16 @@ import {
   PERIODO_VALUES,
   type Periodo,
 } from "@/lib/kpi/analise-operadores/periodo";
-import { TX_RETENCAO_SLUG } from "@/lib/kpi/analise-operadores/constants";
 import type {
   AnaliseOperadorSerial,
   KpisPreview,
 } from "@/lib/kpi/analise-operadores/serial-types";
-import { formatDateBR } from "@/lib/utils/format-datetime-br";
+import type { MetaAnaliseKpi } from "@/lib/kpi/analise-operadores/metas-analise";
 import { SegmentedControl } from "@/app/(dashboard)/s/kpi/operadores/_components/segmented-control";
 
 import { EstadoVazioOperador } from "./estado-vazio-operador";
-import type { IdentificacaoMeta } from "./identificacao-bloco";
-import { IdentificacaoBloco } from "./identificacao-bloco";
 import { KpiPrincipalCard } from "./kpi-principal-card";
-import { MetaTxRetencaoPopover } from "./meta-tx-retencao-popover";
+import { ConfigMetasEvolucaoPopover } from "./config-metas-evolucao-popover";
 import { KpiSecundariosGrid } from "./kpi-secundarios-grid";
 import { RelatorioCarregando } from "./relatorio-carregando";
 
@@ -55,6 +52,8 @@ interface Props {
   mesMaisRecenteDisponivel: string | null;
   gestorNome: string;
   kpisPreview: KpisPreview;
+  /** Metas dos KPIs principais (override do gestor ?? padrão), carregadas no servidor. */
+  metasIniciais: MetaAnaliseKpi[];
 }
 
 // Peso do título — mesma constante local duplicada em kpi-equipe-section.tsx
@@ -165,7 +164,7 @@ function SeletorOperadorPopover({
             onChange={(e) => onBuscaChange(e.target.value)}
             placeholder="Buscar operador..."
             aria-label="Buscar operador por nome ou e-mail"
-            className="font-sans text-foreground placeholder:text-muted-foreground h-8 w-full rounded-[var(--radius)] border border-[var(--seg-track-border)] bg-[var(--seg-track)] py-1.5 pr-3 pl-8 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
+            className="font-sans text-foreground placeholder:text-muted-foreground h-8 w-full rounded-[var(--radius)] border border-[var(--seg-track-border)] bg-[var(--seg-track)] py-1.5 pr-3 pl-8 text-sm outline-none transition-colors"
           />
         </div>
 
@@ -230,15 +229,17 @@ export function AnaliseOperadoresSection({
   mesMaisRecenteDisponivel,
   gestorNome,
   kpisPreview,
+  metasIniciais,
 }: Props) {
+  // Metas da engrenagem — atualizadas com o retorno do salvar.
+  const [metas, setMetas] = useState<MetaAnaliseKpi[]>(metasIniciais);
   const [operatorEmail, setOperatorEmail] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState<Periodo>(PERIODO_PADRAO);
   const [incluirMesAtual, setIncluirMesAtual] = useState(true);
-  // Bump para forçar refetch após salvar a meta de retenção desta página.
+  // Bump para forçar refetch após salvar as metas desta página.
   const [metaVersion, setMetaVersion] = useState(0);
   const [data, setData] = useState<AnaliseOperadorSerial | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [geradoEm, setGeradoEm] = useState<string>("");
   const [isPending, startTransition] = useTransition();
   // true enquanto o skeleton (RelatorioCarregando) deve substituir o
   // relatório: troca de operador, de período ou do "incluir mês atual" —
@@ -310,7 +311,6 @@ export function AnaliseOperadoresSection({
       if (res.success) {
         setData(res.data);
         setErro(null);
-        setGeradoEm(formatDateBR(new Date()));
       } else {
         setData(null);
         setErro(res.error);
@@ -325,15 +325,6 @@ export function AnaliseOperadoresSection({
     setPopoverAberto(false);
     setBusca("");
   }
-
-  const meta: IdentificacaoMeta = {
-    operador: nomeSelecionado,
-    periodoLabel: PERIODO_LABELS[periodo],
-    intervalo: data ? formatIntervaloMesRef(data.meses) : "—",
-    mesesCount: data?.meses.length ?? 0,
-    gestorNome,
-    geradoEm,
-  };
 
   const temRelatorio = Boolean(
     data && data.meses.length > 0 && data.principais.length > 0,
@@ -385,8 +376,19 @@ export function AnaliseOperadoresSection({
           (SegmentedControl reaproveitado de lá). Todos com 32px de altura.
         */}
         <div className="flex flex-wrap items-center gap-3 pt-4 pb-2">
-          {/* Esquerda: operador + switch "incluir mês atual". */}
+          {/* Esquerda: engrenagem (metas de Tx. Retenção Bruta, TMA, ABS e
+              Indisp Total — mesma posição da engrenagem de
+              /s/kpi/operadores, primeiro item da linha, sempre ativa) +
+              operador + switch "incluir mês atual". */}
           <div className="flex flex-wrap items-center gap-3">
+            <ConfigMetasEvolucaoPopover
+              metas={metas}
+              onSaved={(novas) => {
+                setMetas(novas);
+                setMetaVersion((v) => v + 1);
+              }}
+            />
+
             <SeletorOperadorPopover
               trigger={
                 <button
@@ -452,9 +454,12 @@ export function AnaliseOperadoresSection({
 
       {/* ── Estados ───────────────────────────────────────────── */}
       {!mesMaisRecenteDisponivel && (
-        <p className="text-muted-foreground text-sm">
-          Ainda não há snapshots de KPI carregados no sistema.
-        </p>
+        <EstadoVazioOperador
+          kpisPreview={kpisPreview}
+          periodo={periodo}
+          mensagem="Ainda não há dados de KPI carregados"
+          mensagemSr="Ainda não há snapshots de KPI carregados no sistema."
+        />
       )}
 
       {/*
@@ -488,38 +493,32 @@ export function AnaliseOperadoresSection({
         <p className="text-danger text-sm">{erro}</p>
       )}
 
-      {!carregandoOperador &&
+      {/* Operador sem dados no período: skeleton do relatório com o aviso
+          sobre os gráficos (mesmo tratamento do estado sem operador), em vez
+          de uma linha de texto solta. */}
+      {mesMaisRecenteDisponivel &&
+        !carregandoOperador &&
         operatorEmail &&
         !isPending &&
         !erro &&
         data &&
-        data.meses.length === 0 && (
-          <p className="text-muted-foreground text-sm">
-            Sem dados de KPI para <strong>{nomeSelecionado}</strong> no
-            período selecionado.
-          </p>
+        !temRelatorio && (
+          <EstadoVazioOperador
+            kpisPreview={kpisPreview}
+            periodo={periodo}
+            mensagem={`Sem dados de ${nomeSelecionado} no período`}
+            mensagemSr={`Sem dados de KPI para ${nomeSelecionado} no período selecionado.`}
+          />
         )}
 
       {/* ── Relatório ─────────────────────────────────────────── */}
       {!carregandoOperador && temRelatorio && data && (
         <div className="space-y-8">
-          <IdentificacaoBloco meta={meta} />
-
           <div className="space-y-10">
             {data.principais.map((serie) => (
               <KpiPrincipalCard
                 key={serie.slug}
                 serie={serie}
-                acoes={
-                  serie.slug === TX_RETENCAO_SLUG ? (
-                    <MetaTxRetencaoPopover
-                      metaAtual={data.metaTxRetencao}
-                      ehOverride={data.metaTxRetencaoEhOverride}
-                      metaPadrao={data.metaTxRetencaoPadrao}
-                      onSaved={() => setMetaVersion((v) => v + 1)}
-                    />
-                  ) : undefined
-                }
               />
             ))}
           </div>

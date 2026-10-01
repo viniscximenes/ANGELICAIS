@@ -42,7 +42,7 @@ const ALL_SECTIONS: SidebarSection[] = [
       { label: "Operadores", href: "/s/kpi/operadores" },
       { label: "Gestor", href: "/s/kpi/gestor" },
       { label: "Detalhado Polo", href: "/s/kpi/detalhado-polo" },
-      { label: "Evolução", href: "/kpi/evolucao" },
+      { label: "Evolução", href: "/s/kpi/evolucao" },
     ],
   },
   {

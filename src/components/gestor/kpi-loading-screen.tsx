@@ -218,7 +218,6 @@ function SkeletonKpiEvolucao() {
   return (
     <div className="space-y-8">
       <div className="h-20 rounded-lg border border-dashed border-border bg-card" />
-      <div className="h-36 rounded-lg border border-border bg-card" />
 
       <div className="space-y-10">
         {Array.from({ length: 2 }).map((_, i) => (

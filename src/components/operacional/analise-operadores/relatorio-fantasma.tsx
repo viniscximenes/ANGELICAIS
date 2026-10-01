@@ -1,105 +1,94 @@
-import { StyledCard } from "@/components/gestor/styled-card";
 import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
+import { cn } from "@/lib/utils";
 
 /**
- * Cards "fantasma" (sem dado real) reaproveitados por dois estados de
- * /kpi/evolucao: o estado vazio (sem operador selecionado,
- * estado-vazio-operador.tsx) e o loading ao selecionar/trocar operador
- * (relatorio-carregando.tsx) — mesma estrutura visual do relatório real,
- * só muda a mensagem sobreposta ao gráfico fantasma. Extraído pra um
- * arquivo só, sem duplicar entre os dois.
+ * Skeleton do relatório de /kpi/evolucao — mesma construção do loading de
+ * /s/reports/consolidado: blocos `bg-card` (tons remapeados por
+ * .kpi-evolucao-skeleton em kpi-evolucao.css, iguais a
+ * .consolidado-skeleton — o bg-card puro / opacidades baixas ficavam
+ * apagados demais no tema claro), dentro do MESMO KpiFrame real, sem
+ * spinner e com entrada em fade.
  *
- * Sem Recharts: os "gráficos" são um `<path>` de SVG estático (uma curva
- * decorativa fixa, não dados) — mais leve, e sem risco do aviso
- * `width(-1)/height(-1)` do ResponsiveContainer (que só existe pra medir
- * um contêiner real com dados de verdade).
+ * Geometria = a do relatório real (kpi-principal-card.tsx,
+ * quartil-faixa.tsx, kpi-secundarios-grid.tsx), pra nada "pular" quando os
+ * dados chegam: faixa de título (.kpi-evolucao-titulo-head) com nome +
+ * meta à esquerda e média à direita, gráfico de 240px, faixa de quartil com
+ * um marcador por mês e o cabeçalho recolhido de "KPIs secundários".
+ *
+ * Usado em quatro estados: loading da rota (loading.tsx), troca de
+ * operador/período/"incluir mês atual" (relatorio-carregando.tsx), sem
+ * operador selecionado (estado-vazio-operador.tsx) e operador sem dados no
+ * período (analise-operadores-section.tsx) — só muda a mensagem sobre o
+ * gráfico.
  */
 
-const CURVA_PRINCIPAL =
-  "M0,64 C 40,30 70,90 110,55 C 150,20 190,85 230,48 C 260,20 290,60 320,42 C 345,28 370,50 400,38";
-const CURVA_SPARKLINE = "M0,15 L15,8 L30,17 L45,6 L60,13 L75,9 L90,15 L100,10";
+export function SkeletonBloco({ className }: { className: string }) {
+  return <div className={cn("rounded-md bg-card", className)} aria-hidden="true" />;
+}
 
-export function GhostKpiCard({
-  nome,
+/** Card de KPI principal em skeleton. */
+export function SkeletonKpiCard({
   nMeses,
   mensagem,
 }: {
-  nome: string;
   nMeses: number;
-  /** Texto sobreposto ao gráfico fantasma — "Sem operador selecionado" no
-   *  estado vazio, "Carregando…" durante a troca de operador. */
-  mensagem: string;
+  /** Texto sobre o gráfico (ex.: "Sem operador selecionado"). Sem texto = só o bloco. */
+  mensagem?: string;
 }) {
   return (
     <KpiFrame>
+      {/* Faixa de título — mesmas alturas de linha do card real: nome
+          (ds-body, 21px) + meta (text-xs, 16px) à esquerda; média
+          (ds-display text-2xl, 32px) + rótulo (10px) à direita. */}
       <div className="kpi-evolucao-titulo-head flex items-end justify-between gap-4 px-4 py-2.5">
         <div>
-          <h3 className="ds-body font-bold tracking-wide uppercase">{nome}</h3>
-          <p className="ds-small text-muted-foreground/70 mt-0.5 text-xs">
-            Meta: ?
-          </p>
+          <div className="flex h-[21px] items-center">
+            <SkeletonBloco className="h-3 w-40" />
+          </div>
+          <div className="mt-0.5 flex h-4 items-center">
+            <SkeletonBloco className="h-2.5 w-24 bg-card/70" />
+          </div>
         </div>
-        <div className="text-right">
-          <p className="ds-display text-muted-foreground/40 text-2xl font-semibold">
-            ?
-          </p>
-          <p className="text-muted-foreground/50 text-[10px] tracking-wider uppercase">
-            média
-          </p>
+        <div className="flex flex-col items-end">
+          <div className="flex h-8 items-center">
+            <SkeletonBloco className="h-6 w-20" />
+          </div>
+          <div className="flex h-[15px] items-center">
+            <SkeletonBloco className="h-2 w-10 bg-card/70" />
+          </div>
         </div>
       </div>
 
       <div className="px-2 pt-5 pb-2">
-        <div className="relative h-[240px] w-full overflow-hidden rounded-[var(--radius)]">
-          <svg
-            viewBox="0 0 400 120"
-            preserveAspectRatio="none"
-            className="text-muted-foreground/25 h-full w-full motion-safe:animate-pulse motion-reduce:animate-none"
-          >
-            <line
-              x1="0"
-              y1="100"
-              x2="400"
-              y2="100"
-              stroke="currentColor"
-              strokeOpacity={0.5}
-              strokeDasharray="6 5"
-            />
-            <path
-              d={CURVA_PRINCIPAL}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.5}
-              strokeLinecap="round"
-            />
-          </svg>
-          {/*
-            No topo (não centralizado na vertical) — a curva fantasma passa
-            perto do meio da caixa, e o texto centralizado encostava nela.
-            Só depende da altura fixa (h-[240px] no container pai), não da
-            largura — estável em qualquer largura de tela.
-          */}
-          <span className="text-muted-foreground/40 font-sans absolute inset-x-0 top-3 flex justify-center text-xs tracking-wider uppercase">
-            {mensagem}
-          </span>
+        {/* Gráfico — mesmo bloco do gráfico do Consolidado (bg-card/60). */}
+        <div className="relative h-[240px] w-full rounded-lg bg-card/60">
+          {mensagem && (
+            <span className="text-muted-foreground font-sans absolute inset-x-0 top-3 flex justify-center px-4 text-center text-xs tracking-wider uppercase">
+              {mensagem}
+            </span>
+          )}
         </div>
 
-        <div className="border-border/30 mt-4 border-t pt-4">
-          <p className="font-sans text-muted-foreground/50 text-[10px] font-semibold tracking-wider uppercase">
-            Quartil no mês (Q1 melhor · Q4 pior) — vs. toda a empresa
-          </p>
-          <div
-            className="mt-1 grid gap-1"
-            style={{ gridTemplateColumns: `repeat(${nMeses}, minmax(0, 1fr))` }}
-          >
-            {Array.from({ length: nMeses }).map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-0.5">
-                <div className="border-border/30 text-muted-foreground/30 flex h-6 w-full items-center justify-center rounded border border-dashed text-[11px]">
-                  ?
+        {/* Faixa de quartil — título + um marcador (h-6) e um rótulo de mês
+            por coluna, mesmo grid de quartil-faixa.tsx. */}
+        <div className="border-border/40 mt-4 border-t pt-4">
+          <div className="space-y-1">
+            <div className="flex h-[15px] items-center">
+              <SkeletonBloco className="h-2.5 w-72 max-w-full bg-card/70" />
+            </div>
+            <div
+              className="grid gap-1"
+              style={{ gridTemplateColumns: `repeat(${nMeses}, minmax(0, 1fr))` }}
+            >
+              {Array.from({ length: nMeses }).map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-0.5">
+                  <SkeletonBloco className="h-6 w-full rounded bg-card/60" />
+                  <div className="flex h-[13.5px] items-center">
+                    <SkeletonBloco className="h-2 w-6 bg-card/40" />
+                  </div>
                 </div>
-                <span className="text-muted-foreground/30 text-[9px]">--</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -107,62 +96,43 @@ export function GhostKpiCard({
   );
 }
 
-export function GhostSecundarioCard({ nome }: { nome: string }) {
+/**
+ * Relatório inteiro em skeleton: N cards de KPI principal (space-y-10) +
+ * o cabeçalho recolhido "KPIs secundários" (o grid real abre fechado).
+ */
+export function SkeletonRelatorio({
+  nPrincipais,
+  nMeses,
+  temSecundarios = true,
+  mensagem,
+  className,
+}: {
+  nPrincipais: number;
+  nMeses: number;
+  temSecundarios?: boolean;
+  mensagem?: string;
+  className?: string;
+}) {
   return (
-    <StyledCard className="flex flex-col gap-2 p-4" withGradient corners="none">
-      <p className="text-muted-foreground/60 text-[10px] font-semibold tracking-wider uppercase">
-        {nome}
-      </p>
-      <p className="ds-display text-muted-foreground/35 text-lg font-semibold">
-        ?
-      </p>
-      <div className="h-8 w-full">
-        <svg
-          viewBox="0 0 100 20"
-          preserveAspectRatio="none"
-          className="text-muted-foreground/25 h-full w-full"
-        >
-          <path
-            d={CURVA_SPARKLINE}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            strokeLinecap="round"
-          />
-        </svg>
-      </div>
-    </StyledCard>
-  );
-}
-
-export function GhostIdentificacaoBloco() {
-  const linhas = [
-    "Operador",
-    "Período",
-    "Meses com dados",
-    "Gerado por",
-    "Gerado em",
-  ];
-  return (
-    <KpiFrame>
-      <p className="kpi-evolucao-titulo-head ds-body px-3 py-2.5 font-bold tracking-wide uppercase">
-        Relatório de performance histórica
-      </p>
-      <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-2 px-3 pb-2 sm:grid-cols-2">
-        {linhas.map((label) => (
-          <div
-            key={label}
-            className="border-border/30 flex items-baseline justify-between gap-3 border-b border-dashed py-1.5"
-          >
-            <span className="font-sans text-muted-foreground/60 text-[11px] tracking-wide uppercase">
-              {label}
-            </span>
-            <span className="font-sans text-muted-foreground/40 text-right text-sm font-medium">
-              —
-            </span>
-          </div>
+    <div
+      aria-hidden="true"
+      className={cn(
+        "kpi-evolucao-skeleton animate-in fade-in space-y-8 duration-300 motion-reduce:animate-none",
+        className,
+      )}
+    >
+      <div className="space-y-10">
+        {Array.from({ length: nPrincipais }).map((_, i) => (
+          <SkeletonKpiCard key={i} nMeses={nMeses} mensagem={mensagem} />
         ))}
       </div>
-    </KpiFrame>
+
+      {temSecundarios && (
+        <div className="flex h-4 items-center gap-2">
+          <SkeletonBloco className="h-4 w-4 rounded-sm bg-card/70" />
+          <SkeletonBloco className="h-3 w-40" />
+        </div>
+      )}
+    </div>
   );
 }

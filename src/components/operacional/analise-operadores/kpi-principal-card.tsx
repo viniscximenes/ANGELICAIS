@@ -43,12 +43,10 @@ const PLOT_BOTTOM = 240 - 30;
 
 export function KpiPrincipalCard({
   serie,
-  estatico = false,
   forceLight = false,
   acoes,
 }: {
   serie: KpiSerie;
-  estatico?: boolean;
   forceLight?: boolean;
   acoes?: ReactNode;
 }) {
@@ -377,8 +375,9 @@ export function KpiPrincipalCard({
                   type="linear"
                   stroke="none"
                   fill={`url(#${areaId}-${i})`}
-                  isAnimationActive={!estatico}
-                  animationDuration={estatico ? 0 : 300}
+                  // Sem animação de entrada (como a linha e os pontos): o
+                  // degradê "crescia" 300ms depois do gráfico aparecer.
+                  isAnimationActive={false}
                   connectNulls
                   activeDot={false}
                   tooltipType="none"
