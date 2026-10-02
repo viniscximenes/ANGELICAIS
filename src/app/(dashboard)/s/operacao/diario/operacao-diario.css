@@ -133,6 +133,20 @@
   color: #B3321C !important;
 }
 
+/* ───────── Instrument Sans em TODA a página, inclusive números ─────────
+ * Qualquer elemento (texto, números, rótulos SVG, popovers desta rota) usa
+ * var(--font-sans) = Instrument Sans (--font-zen-sans, carregada no
+ * page.tsx), mesmo que algum componente compartilhado defina outra família
+ * (ds-mono/ds-display/font-mono = Geist Mono). tabular-nums mantém os
+ * números alinhados nas colunas, como o mono garantia.
+ */
+:is([data-page="operacao-diario"], .operacao-diario-portal),
+:is([data-page="operacao-diario"], .operacao-diario-portal) *,
+:is([data-page="operacao-diario"], .operacao-diario-portal) svg text {
+  font-family: var(--font-sans) !important;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ───────── Skeleton (loading.tsx + overlay ao anexar base) ─────────
  * Mesmos tons do skeleton de /s/reports/consolidado — bg-card sozinho é
  * branco puro na Vercel clara e os blocos sumiam. */
