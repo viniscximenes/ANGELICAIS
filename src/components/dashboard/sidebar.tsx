@@ -1,12 +1,14 @@
 "use client";
 
 import type { ComponentType } from "react";
+import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   IconChartBar,
   IconDatabase,
   IconHeadset,
+  IconLoader2,
   IconLogout,
   IconSettings,
   IconUsers,
@@ -245,15 +247,38 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
           expandindo para a esquerda por cima do nome, sem empurrar o layout.
         */}
         <form action={logoutAction} className="sidebar-logout-slot">
-          <button type="submit" aria-label="Sair" className="sidebar-logout">
-            <span className="sidebar-logout__sign">
-              <IconLogout size={16} stroke={2} aria-hidden="true" />
-            </span>
-            <span className="sidebar-logout__text">Sair</span>
-          </button>
+          <LogoutButton />
         </form>
       </div>
     </div>
+  );
+}
+
+/**
+ * Botão do form de logout — precisa ser filho do <form> pro useFormStatus
+ * enxergar o envio. Enquanto a action roda, a pílula fica aberta com
+ * spinner e "Saindo…" (data-pending, ver nav-zen-linen.css).
+ */
+function LogoutButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      aria-label={pending ? "Saindo" : "Sair"}
+      aria-busy={pending}
+      disabled={pending}
+      data-pending={pending ? "" : undefined}
+      className="sidebar-logout"
+    >
+      <span className="sidebar-logout__sign">
+        {pending ? (
+          <IconLoader2 size={16} stroke={2} aria-hidden="true" className="animate-spin" />
+        ) : (
+          <IconLogout size={16} stroke={2} aria-hidden="true" />
+        )}
+      </span>
+      <span className="sidebar-logout__text">{pending ? "Saindo…" : "Sair"}</span>
+    </button>
   );
 }
 

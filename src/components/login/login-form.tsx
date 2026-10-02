@@ -19,6 +19,9 @@ import { loginAction } from "@/lib/auth/login-action";
 const MAX_ATTEMPTS = 5;
 const LOCK_DURATION = 60;
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+// O usuário é só o nome.sobrenome — o domínio é completado pela loginAction.
+// Quem digita o e-mail inteiro (com "@") nunca loga, então avisamos já.
+const AVISO_ARROBA = "Digite só nome.sobrenome, sem o @ e o domínio.";
 
 export function LoginForm() {
   const usernameRef = useRef<HTMLInputElement>(null);
@@ -28,6 +31,9 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Só erro de credencial conta pro bloqueio — é o único caso em que o
+  // alerta mostra as tentativas restantes.
+  const [erroCredencial, setErroCredencial] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
@@ -53,6 +59,10 @@ export function LoginForm() {
   function validateUsername(value: string) {
     if (!value.trim()) {
       setUsernameError("Informe seu usuário");
+      return false;
+    }
+    if (value.includes("@")) {
+      setUsernameError(AVISO_ARROBA);
       return false;
     }
     setUsernameError(null);
@@ -87,6 +97,7 @@ export function LoginForm() {
         setLoading(false);
         const next = attempts + 1;
         setAttempts(next);
+        setErroCredencial(result.error === "credenciais");
         setErrorMessage(
           result.error === "conexao"
             ? "Não foi possível conectar. Tente novamente."
@@ -109,6 +120,7 @@ export function LoginForm() {
       }
 
       setLoading(false);
+      setErroCredencial(false);
       setErrorMessage("Não foi possível conectar. Tente novamente.");
       console.error("[form] exception:", err);
     }
@@ -145,6 +157,11 @@ export function LoginForm() {
                     aria-hidden="true"
                     className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
                   />
+                  {/* autofill:[transition…]: o preenchimento automático do
+                      Chrome/Edge pinta o fundo de azul-claro (com !important,
+                      sem como sobrescrever). A transição "infinita" adia essa
+                      troca, então o campo mantém o fundo e a cor de texto do
+                      tema. Mesmo tratamento no campo de senha. */}
                   <Input
                     id="username"
                     ref={usernameRef}
@@ -153,11 +170,15 @@ export function LoginForm() {
                     autoComplete="username"
                     spellCheck={false}
                     placeholder="nome.sobrenome"
-                    className="h-10 pl-10 bg-black/10 border-white/5 focus-visible:ring-ring/30 focus-visible:border-ring/40"
+                    className="h-10 pl-10 bg-black/10 border-white/5 autofill:[transition:background-color_600000s_0s,color_600000s_0s] autofill:[-webkit-text-fill-color:var(--foreground)] autofill:[caret-color:var(--foreground)] focus-visible:outline-none! focus-visible:rounded-lg! focus-visible:ring-0 focus-visible:border-white/15"
                     value={username}
                     onChange={(e) => {
-                      setUsername(e.target.value.toLowerCase());
-                      if (usernameError) setUsernameError(null);
+                      const value = e.target.value.toLowerCase();
+                      setUsername(value);
+                      // Aviso do "@" aparece enquanto digita; os demais erros
+                      // somem ao editar, como antes.
+                      if (value.includes("@")) setUsernameError(AVISO_ARROBA);
+                      else if (usernameError) setUsernameError(null);
                     }}
                     onBlur={(e) => {
                       if (e.target.value) validateUsername(e.target.value);
@@ -197,7 +218,11 @@ export function LoginForm() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
-                    className="h-10 pr-10 pl-10 bg-black/10 border-white/5 focus-visible:ring-ring/30 focus-visible:border-ring/40"
+                    // ::-ms-reveal/::-ms-clear: o Edge desenha um olho
+                    // nativo próprio no campo de senha, duplicado com o
+                    // botão abaixo (e que não revela nada com o type
+                    // controlado pelo React).
+                    className="h-10 pr-10 pl-10 [&::-ms-clear]:hidden [&::-ms-reveal]:hidden bg-black/10 border-white/5 autofill:[transition:background-color_600000s_0s,color_600000s_0s] autofill:[-webkit-text-fill-color:var(--foreground)] autofill:[caret-color:var(--foreground)] focus-visible:outline-none! focus-visible:rounded-lg! focus-visible:ring-0 focus-visible:border-white/15"
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
@@ -248,14 +273,33 @@ export function LoginForm() {
                   animate={{ opacity: 1, y: 0, height: "auto" }}
                   exit={{ opacity: 0, y: -4, height: 0 }}
                   transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
-                  className="status-danger ds-small mt-6 flex items-center gap-2 overflow-hidden rounded-md p-3"
+                  className="overflow-hidden"
                 >
-                  <IconAlertCircle
-                    size={16}
-                    aria-hidden="true"
-                    className="shrink-0"
-                  />
-                  <span>{errorMessage}</span>
+                  {/* Espaço acima como padding (não margem): entra na altura
+                      animada, senão ele "pula" no fim da animação. */}
+                  <div className="pt-6">
+                    <div className="flex items-start gap-3 rounded-xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-3 pr-4">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--danger)_16%,transparent)] text-[var(--danger)]">
+                        <IconAlertCircle size={16} stroke={2} aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0 pt-0.5">
+                        <p className="text-foreground text-[13px] leading-5 font-semibold">
+                          Não foi possível entrar
+                        </p>
+                        <p className="text-muted-foreground mt-0.5 text-[12.5px] leading-[18px]">
+                          {errorMessage}
+                          {erroCredencial && attempts < MAX_ATTEMPTS && (
+                            <>
+                              {" "}
+                              {MAX_ATTEMPTS - attempts === 1
+                                ? "Resta 1 tentativa antes do bloqueio de 1 minuto."
+                                : `Restam ${MAX_ATTEMPTS - attempts} tentativas antes do bloqueio de 1 minuto.`}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -281,11 +325,6 @@ export function LoginForm() {
               </Button>
             </div>
 
-            <div className="mt-4">
-              <p className="ds-small text-muted-foreground text-center">
-                Esqueceu sua senha? Fale com o administrador.
-              </p>
-            </div>
           </div>
         </form>
       </div>

@@ -18,7 +18,7 @@ export const PALETTES = [
     id: "claude-amber",
     label: "Claude Amber",
     description: "Tons de papel e areia com acento âmbar",
-    swatches: ["#FAF9F5", "#EDE9DE", "#DAD9D4", "#C96442", "#3D3929"],
+    swatches: ["#FBFBF8", "#ECEAE3", "#D6D4CD", "#C96442", "#29261B"],
   },
 ] as const;
 
@@ -29,3 +29,25 @@ export const DEFAULT_PALETTE: PaletteId = "vercel";
 export function isPaletteId(value: unknown): value is PaletteId {
   return PALETTES.some((p) => p.id === value);
 }
+
+// Paleta ainda não tem coluna no perfil; fica no navegador até existir
+// motivo pra persistir no banco.
+export const PALETTE_STORAGE_KEY = "palette-preference";
+
+/**
+ * Script inline do <head> (root layout): aplica a paleta salva no
+ * localStorage durante o parse do HTML, antes do primeiro paint. Sem ele o
+ * SSR sempre sai com DEFAULT_PALETTE e o ThemeProvider só troca depois da
+ * hidratação — todo reload (ex.: anexo de base, que faz
+ * window.location.reload) piscava a Vercel antes da paleta escolhida.
+ */
+export const PALETTE_EARLY_SCRIPT = `
+(function () {
+  try {
+    var p = localStorage.getItem(${JSON.stringify(PALETTE_STORAGE_KEY)});
+    if (${JSON.stringify(PALETTES.map((p) => p.id))}.indexOf(p) !== -1) {
+      document.documentElement.setAttribute("data-palette", p);
+    }
+  } catch (e) {}
+})();
+`;

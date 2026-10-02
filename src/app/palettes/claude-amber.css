@@ -16,28 +16,32 @@
  *   de origem.
  * - --font-mono/--font-serif e os tokens --shadow-* não são redefinidos
  *   (o projeto já carrega Geist Mono via next/font e não usa --shadow-*).
+ * - Neutros menos pastel: fundos/bordas com menos tom de areia e mais
+ *   contraste (texto mais escuro no claro, fundos mais fundos no escuro),
+ *   status do escuro um pouco mais saturados. Acento laranja inalterado.
  */
 
 /* ───────── ESCURO (base do projeto) ← .dark do tema ───────── */
 :root[data-palette="claude-amber"] {
-  --background: #262624;
-  --foreground: #F1F1EF;
-  --card: #2C2C2B;
+  --background: #222221;
+  --foreground: #F5F5F3;
+  --card: #2A2A28;
   --card-foreground: #FAF9F5;
-  --popover: #30302E;
+  --popover: #2F2F2D;
   --popover-foreground: #E5E5E2;
   --primary: #D97757;
   --primary-foreground: #141413;
   --secondary: #FAF9F5;
-  --secondary-foreground: #30302E;
-  --muted: #1B1B19;
-  --muted-foreground: #B7B5A9;
+  --secondary-foreground: #2F2F2D;
+  /* --muted um tom abaixo: é o fundo do cabeçalho das tabelas. */
+  --muted: #131313;
+  --muted-foreground: #BAB8B0;
   --accent: #1A1915;
   --accent-foreground: #F5F4EE;
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
-  --border: #3E3E38;
-  --input: #52514A;
+  --border: #3B3B37;
+  --input: #4E4D48;
   --ring: #D97757;
 
   --chart-1: #B05730;
@@ -46,21 +50,21 @@
   --chart-4: #2F2B48;
   --chart-5: #B4552D;
 
-  --sidebar: #1F1E1D;
+  --sidebar: #1C1C1B;
   /* Fundo da sidebar principal: um tom abaixo de --sidebar. */
-  --sidebar-nav: #1A1918;
-  --sidebar-foreground: #C3C0B6;
+  --sidebar-nav: #171716;
+  --sidebar-foreground: #CAC8C0;
   --sidebar-primary: #343434;
   --sidebar-primary-foreground: #FBFBFB;
   --sidebar-accent: #0F0F0E;
-  --sidebar-accent-foreground: #C3C0B6;
-  --sidebar-border: #3E3E38;
+  --sidebar-accent-foreground: #CAC8C0;
+  --sidebar-border: #3B3B37;
   --sidebar-ring: #B5B5B5;
 
-  /* Status (derivados — legíveis sobre #2C2C2B) */
-  --success: #8DB596;
-  --warning: #D9A74A;
-  --danger: #F07A62;
+  /* Status (derivados — legíveis sobre #2A2A28) */
+  --success: #7FB88C;
+  --warning: #E0A93E;
+  --danger: #F2705A;
   --success-bg: color-mix(in srgb, var(--success) 12%, transparent);
   --success-border: color-mix(in srgb, var(--success) 30%, transparent);
   --warning-bg: color-mix(in srgb, var(--warning) 12%, transparent);
@@ -69,8 +73,8 @@
   --danger-border: color-mix(in srgb, var(--danger) 35%, transparent);
 
   /* Elevação */
-  --elevation-1-bg: #2C2C2B;
-  --elevation-1-border: #3E3E38;
+  --elevation-1-bg: #2A2A28;
+  --elevation-1-border: #3B3B37;
   --elevation-2-bg: var(--card);
   --elevation-2-border: var(--border);
   --elevation-3-bg: var(--card);
@@ -89,27 +93,31 @@
   --kpi-shadow: 0px 6px 15px 0px rgb(0 0 0 / 0.3);
 
   /* Seletor segmentado / switch */
-  --seg-track: #1F1E1D;
-  --seg-track-border: #3E3E38;
+  --seg-track: #1C1C1B;
+  --seg-track-border: #3B3B37;
   --seg-thumb: #D97757;
   --seg-thumb-border: #D97757;
-  --seg-text: #B7B5A9;
+  /* Destaque do Segmentado (Analítico) concêntrico com o trilho
+     (rounded-md = --radius - 2px; menos 2px de padding e 1px de borda). */
+  --seg-thumb-radius: calc(var(--radius) - 5px);
+  --seg-text: #BAB8B0;
   --seg-text-active: #141413;
-  --switch-off: #3E3E38;
-  --switch-off-border: #52514A;
+  --switch-off: #3B3B37;
+  --switch-off-border: #4E4D48;
   --switch-on: #D97757;
   --switch-knob: #FAF9F5;
-  --switch-knob-off: #B7B5A9;
+  --switch-knob-off: #BAB8B0;
 
-  /* Folhas do Folder (React Bits) */
-  --upload-folder-paper-1: #4A4944;
-  --upload-folder-paper-2: #75736B;
-  --upload-folder-paper-3: #B7B5A9;
+  /* Folhas do Folder (React Bits): neutros misturados com o laranja do
+     --primary, mantendo a escada (1 = mais escura, atrás; 3 = mais clara). */
+  --upload-folder-paper-1: #7A5344;
+  --upload-folder-paper-2: #A77561;
+  --upload-folder-paper-3: #EACABB;
 
   /* Toasts (sonner) */
-  --normal-bg: #30302E;
-  --normal-border: #3E3E38;
-  --normal-text: #F1F1EF;
+  --normal-bg: #2F2F2D;
+  --normal-border: #3B3B37;
+  --normal-text: #F5F5F3;
 
   --radius: 1rem;
   --radius-sm: calc(var(--radius) - 4px);
@@ -125,24 +133,25 @@
 
 /* ───────── CLARO ← :root do tema ───────── */
 :root[data-palette="claude-amber"][data-theme="light"] {
-  --background: #FAF9F5;
-  --foreground: #3D3929;
-  --card: #F5F4EF;
+  --background: #FBFBF8;
+  --foreground: #29261B;
+  --card: #F4F3EE;
   --card-foreground: #141413;
   --popover: #FFFFFF;
-  --popover-foreground: #28261B;
+  --popover-foreground: #1F1D16;
   --primary: #C96442;
   --primary-foreground: #FFFFFF;
-  --secondary: #E9E6DC;
+  --secondary: #E8E6DF;
   --secondary-foreground: #535146;
-  --muted: #EDE9DE;
-  --muted-foreground: #6E6D68;
-  --accent: #E9E6DC;
-  --accent-foreground: #28261B;
+  /* --muted um tom abaixo: é o fundo do cabeçalho das tabelas. */
+  --muted: #E3E2DE;
+  --muted-foreground: #5F5E58;
+  --accent: #E8E6DF;
+  --accent-foreground: #1F1D16;
   --destructive: #141413;
   --destructive-foreground: #FFFFFF;
-  --border: #DAD9D4;
-  --input: #B4B2A7;
+  --border: #D6D4CD;
+  --input: #A9A79E;
   --ring: #C96442;
 
   --chart-1: #B05730;
@@ -151,24 +160,24 @@
   --chart-4: #DBD3F0;
   --chart-5: #B4552D;
 
-  --sidebar: #F5F4EE;
+  --sidebar: #F5F4F0;
   /* Fundo da sidebar principal: um tom abaixo de --sidebar. */
-  --sidebar-nav: #EEEDE6;
+  --sidebar-nav: #EDECE7;
   --sidebar-foreground: #3D3D3A;
   --sidebar-primary: #C96442;
   --sidebar-primary-foreground: #FBFBFB;
-  --sidebar-accent: #E9E6DC;
+  --sidebar-accent: #E8E6DF;
   --sidebar-accent-foreground: #343434;
-  --sidebar-border: #EBEBEB;
+  --sidebar-border: #E3E2DC;
   --sidebar-ring: #B5B5B5;
 
-  /* Status (derivados — escuros o bastante p/ texto sobre #F5F4EF) */
+  /* Status (derivados — escuros o bastante p/ texto sobre #F4F3EE) */
   --success: #3D6B47;
   --warning: #93600F;
   --danger: #B3321C;
 
-  --elevation-1-bg: #F5F4EF;
-  --elevation-1-border: #DAD9D4;
+  --elevation-1-bg: #F4F3EE;
+  --elevation-1-border: #D6D4CD;
 
   --card-hover-bg: color-mix(in srgb, var(--card) 80%, var(--muted) 20%);
   --muted-hover-bg: color-mix(in srgb, var(--card) 55%, var(--muted) 45%);
@@ -178,25 +187,25 @@
 
   --kpi-shadow: 0px 4px 10px 0px rgb(0 0 0 / 0.1);
 
-  --seg-track: #EDE9DE;
-  --seg-track-border: #DAD9D4;
+  --seg-track: #ECEAE3;
+  --seg-track-border: #D6D4CD;
   --seg-thumb: #C96442;
   --seg-thumb-border: #C96442;
-  --seg-text: #6E6D68;
+  --seg-text: #5F5E58;
   --seg-text-active: #FFFFFF;
-  --switch-off: #DAD9D4;
-  --switch-off-border: #B4B2A7;
+  --switch-off: #D6D4CD;
+  --switch-off-border: #A9A79E;
   --switch-on: #C96442;
   --switch-knob: #FFFFFF;
   --switch-knob-off: #FFFFFF;
 
-  --upload-folder-paper-1: #9A988F;
-  --upload-folder-paper-2: #B4B2A7;
-  --upload-folder-paper-3: #DAD9D4;
+  --upload-folder-paper-1: #A67864;
+  --upload-folder-paper-2: #B99482;
+  --upload-folder-paper-3: #DCC2B4;
 
   --normal-bg: #FFFFFF;
-  --normal-border: #DAD9D4;
-  --normal-text: #3D3929;
+  --normal-border: #D6D4CD;
+  --normal-text: #29261B;
 }
 
 :root[data-palette="claude-amber"] body {

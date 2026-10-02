@@ -129,3 +129,13 @@
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
+
+/* ───────── Contagem das seções (Principais/Complementares) no Claude Amber ─────────
+ * O bg-muted virava um quadradinho quase preto (#131313) no escuro, fora do
+ * tom da paleta. Mesmo chip tingido do "Fora da curva" de /s/reports/tma-peso:
+ * laranja do --primary, nos dois temas. Vercel inalterada.
+ */
+:root[data-palette="claude-amber"] [data-page="kpi-gestor"] [data-secao-total] {
+  background-color: color-mix(in srgb, var(--primary) 16%, transparent);
+  color: var(--primary);
+}

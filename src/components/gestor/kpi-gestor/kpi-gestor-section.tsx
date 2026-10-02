@@ -72,7 +72,7 @@ function SecaoTitulo({
           {texto}
         </span>
         {typeof count === "number" && (
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted text-muted-foreground font-medium">
+          <span data-secao-total className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted text-muted-foreground font-medium">
             {count}
           </span>
         )}

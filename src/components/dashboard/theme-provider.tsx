@@ -15,6 +15,7 @@ import { flushSync } from "react-dom";
 import {
   DEFAULT_PALETTE,
   isPaletteId,
+  PALETTE_STORAGE_KEY,
   type PaletteId,
 } from "@/lib/theme/palettes";
 import { updateThemePreferenceAction } from "@/lib/users/actions/update-theme-preference-action";
@@ -37,10 +38,6 @@ interface Props {
   initialTheme: Theme;
   children: ReactNode;
 }
-
-// Paleta ainda não tem coluna no perfil; fica no navegador até existir
-// motivo pra persistir no banco.
-const PALETTE_STORAGE_KEY = "palette-preference";
 
 // Troca de modo (claro/escuro): o tema novo se revela num círculo que nasce
 // do ponto clicado. Troca de paleta: crossfade curto da página inteira.

@@ -41,7 +41,7 @@ export function Segmentado<T extends string | number>({
             role="radio"
             aria-checked={ativo}
             onClick={() => onChange(op.valor)}
-            className={`relative h-full min-w-10 cursor-pointer rounded-[5px] px-3 text-xs font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${
+            className={`relative h-full min-w-10 cursor-pointer rounded-[var(--seg-thumb-radius,5px)] px-3 text-xs font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${
               ativo ? "text-[var(--seg-text-active)]" : "text-[var(--seg-text)] hover:text-foreground"
             }`}
           >
@@ -49,7 +49,7 @@ export function Segmentado<T extends string | number>({
               <motion.span
                 layoutId={`${grupo}-destaque`}
                 aria-hidden="true"
-                className="absolute inset-0 rounded-[5px] bg-[var(--seg-thumb)] shadow-sm"
+                className="absolute inset-0 rounded-[var(--seg-thumb-radius,5px)] bg-[var(--seg-thumb)] shadow-sm"
                 transition={{ type: "spring", stiffness: 500, damping: 38 }}
               />
             )}

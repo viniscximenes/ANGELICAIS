@@ -59,6 +59,7 @@ function TabelaForaDaCurva({
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold tracking-wide text-foreground uppercase">{titulo}</span>
         <span
+          data-fora-curva-total
           className="inline-flex min-w-6 items-center justify-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-foreground"
           style={{ fontVariantNumeric: "tabular-nums" }}
         >

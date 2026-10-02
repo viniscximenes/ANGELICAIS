@@ -13,7 +13,7 @@ import { ProgressBarProvider } from "@/components/dashboard/progress-provider";
 import { ThemeProvider } from "@/components/dashboard/theme-provider";
 import { LenisProvider } from "@/components/providers/lenis-provider";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { DEFAULT_PALETTE } from "@/lib/theme/palettes";
+import { DEFAULT_PALETTE, PALETTE_EARLY_SCRIPT } from "@/lib/theme/palettes";
 import { FAVICON_EARLY_SCRIPT } from "@/lib/favicon/favicon-early-script";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +57,8 @@ export default async function RootLayout({
       lang="pt-BR"
       data-theme={theme}
       data-palette={DEFAULT_PALETTE}
+      // data-palette é trocado pelo PALETTE_EARLY_SCRIPT antes da hidratação.
+      suppressHydrationWarning
       className={cn(
         theme === "dark" && "dark",
         "font-sans",
@@ -65,6 +67,11 @@ export default async function RootLayout({
         zenSans.variable,
       )}
     >
+      <head>
+        {/* <script> cru (não next/script): precisa rodar no parse, antes do
+            primeiro paint — ver PALETTE_EARLY_SCRIPT. */}
+        <script dangerouslySetInnerHTML={{ __html: PALETTE_EARLY_SCRIPT }} />
+      </head>
       <body>
         {/* beforeInteractive: injetado no <head> e executado durante o parse
             do HTML, antes do bundle React carregar/hidratar — ver

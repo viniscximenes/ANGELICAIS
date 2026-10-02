@@ -655,3 +655,13 @@ body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] > svg {
 .tma-peso-skeleton :is(.bg-card\/60, .bg-card\/40) {
   background-color: color-mix(in oklab, var(--muted-foreground) 7%, transparent);
 }
+
+/* ───────── Contagem do "Fora da curva" (Curtas/Longas) no Claude Amber ─────────
+ * O bg-muted virava uma pílula quase preta (#131313) no escuro, fora do tom
+ * da paleta. Aqui vira um chip tingido com o laranja do --primary, nos dois
+ * temas. Vercel inalterada.
+ */
+:root[data-palette="claude-amber"] [data-page="reports-tma-peso"] [data-fora-curva-total] {
+  background-color: color-mix(in srgb, var(--primary) 16%, transparent);
+  color: var(--primary);
+}
