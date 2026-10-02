@@ -17,6 +17,7 @@ import { getShowRvOperadoresConfig } from "@/lib/kpi/gestor/get-show-rv-operador
 import { VIRTUAL_KPI_LABELS } from "@/lib/kpi/gestor/retidos-brutos";
 import { toKpiEquipeSerial, type KpiEquipeSerial } from "@/lib/kpi/gestor/serial-types";
 import { stripUnitSuffix } from "@/lib/kpi/strip-unit-suffix";
+import { getRvParaEquipe } from "@/lib/rv/get-rv-para-equipe";
 import { getDatePartsInBR } from "@/lib/utils/format-datetime-br";
 import {
   getKpiAnteriorPorEmails,
@@ -147,11 +148,20 @@ export default async function KpiOperadoresPage() {
   // "anterior do anterior" pra meses passados). O filtro por data_corte só
   // roda depois (não é I/O), quando dataAtual.dataCorte já é conhecido —
   // ver comentário em getKpiAnteriorPorEmails.
-  const [dataAtualRaw, dataPassadoRaw, dataRetrasadoRaw, kpiAnteriorBruto] = await Promise.all([
+  // Com "Exibir RV" ligado, a RV do mês atual também vem daqui (dentro do
+  // mesmo loading da rota) — no F5 cabeçalho e tabela aparecem juntos. Em
+  // falha, cai no comportamento antigo (busca no client após montar).
+  const [dataAtualRaw, dataPassadoRaw, dataRetrasadoRaw, kpiAnteriorBruto, rvAtual] = await Promise.all([
     getKpiEquipePorEmails(emailsEquipe, definitions, mesAtual, false),
     getKpiEquipePorEmails(emailsEquipe, definitions, mesPassado, true),
     getKpiEquipePorEmails(emailsEquipe, definitions, mesRetrasado, true),
     getKpiAnteriorPorEmails(emailsEquipe, mesAtual),
+    showRvOperadores
+      ? getRvParaEquipe(emailsEquipe, mesAtual, "current").catch((err) => {
+          console.error("[kpi-operadores] falha ao calcular RV inicial:", err);
+          return null;
+        })
+      : Promise.resolve(null),
   ]);
 
   const nomeFantasia = {
@@ -220,6 +230,7 @@ export default async function KpiOperadoresPage() {
           colunasRvIniciais={kpiColunasRv}
           kpisExtrasPorMes={kpisExtrasPorMes}
           showRvInicial={showRvOperadores}
+          rvInicial={dataAtual.mesRef === mesAtual ? rvAtual : null}
           kpiAnterior={kpiAnterior.porOperador}
           kpiDefinitions={definitions}
         />

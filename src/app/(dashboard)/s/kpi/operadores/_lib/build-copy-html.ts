@@ -32,17 +32,16 @@ export function tituloComData(tituloBase: string, dataCorte: string | null): str
  */
 export function buildKpiClipboardHtml(options: {
   titulo: string;
-  subtitulo: string;
   pngDataUrl: string;
   altText: string;
   /** true = inclui o aviso de RV (somente com a coluna "Total (RV)" visível). */
   comAvisoRv: boolean;
 }): string {
-  const { titulo, subtitulo, pngDataUrl, altText, comAvisoRv } = options;
+  const { titulo, pngDataUrl, altText, comAvisoRv } = options;
 
+  // Só o título ("TABELA DO KPI - dd/mm") — sem a linha "atualizado até".
   const parts: string[] = [
     `<h2 style="font-size: 16px; margin: 0;"><b>${titulo}</b></h2>`,
-    `<div style="margin-top: 4px;"><i>${subtitulo}</i></div>`,
     `<br>`,
     `<div style="margin-top: 8px;"><img src="${pngDataUrl}" style="display: block; max-width: 1000px; width: 100%;" alt="${altText}"></div>`,
   ];

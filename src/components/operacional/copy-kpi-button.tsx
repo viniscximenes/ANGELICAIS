@@ -5,11 +5,9 @@ import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import { formatDateBR } from "@/lib/utils/format-datetime-br";
 import {
   buildKpiClipboardHtml,
   buildKpiClipboardTextoPlano,
-  escapeHtml,
   tituloComData,
 } from "@/app/(dashboard)/s/kpi/operadores/_lib/build-copy-html";
 
@@ -60,7 +58,7 @@ async function copyFormattedHtml(html: string, textoPlano: string): Promise<void
 }
 
 interface CopyKpiButtonProps {
-  /** Data de corte dos dados (mesRef não tem precisão de dia) — vira o subtítulo "atualizado até DD/MM/YYYY" E o sufixo "- dd/mm" do título. */
+  /** Data de corte dos dados (mesRef não tem precisão de dia) — vira o sufixo "- dd/mm" do título. */
   dataCorte: string | null;
   /** true = inclui o aviso de RV no conteúdo copiado (somente quando "Total (RV)" está efetivamente visível). */
   comAvisoRv: boolean;
@@ -102,14 +100,10 @@ export function CopyKpiButton({
     try {
       const pngDataUrl = await onCapturar();
 
-      const subtitulo = dataCorte
-        ? `atualizado até ${escapeHtml(formatDateBR(dataCorte))}`
-        : "—";
       const titulo = tituloComData(tituloBase, dataCorte);
 
       const html = buildKpiClipboardHtml({
         titulo,
-        subtitulo,
         pngDataUrl,
         altText,
         comAvisoRv,

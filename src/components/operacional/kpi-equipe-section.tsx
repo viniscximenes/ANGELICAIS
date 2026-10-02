@@ -1090,6 +1090,8 @@ interface KpiEquipeSectionProps {
   kpisExtrasPorMes: Record<string, KpiExtrasPorEmail>;
   /** Toggle "Exibir RV" salvo — gestor_config_fantasia.show_rv_operadores. */
   showRvInicial?: boolean;
+  /** RV do mês atual já calculada no servidor (só com "Exibir RV" ligado) — tabela e cabeçalho aparecem juntos no F5. */
+  rvInicial?: RvEquipeResultado | null;
   /** Valor ANTERIOR de tx_retencao_bruta (kpi_monthly_snapshots_anterior), só do mês atual — ver _lib/get-kpi-anterior-por-emails.ts. */
   kpiAnterior?: KpiAnteriorPorOperador;
   /** kpi_definitions (thresholds atuais) — usado só pra recolorir meses ANTIGOS no client (ver _lib/status-historico.ts); mês atual já vem colorido do server. */
@@ -1109,6 +1111,7 @@ export function KpiEquipeSection({
   colunasRvIniciais,
   kpisExtrasPorMes,
   showRvInicial = false,
+  rvInicial = null,
   kpiAnterior,
   kpiDefinitions,
 }: KpiEquipeSectionProps) {
@@ -1171,9 +1174,11 @@ export function KpiEquipeSection({
   const [historicoExtrasCache, setHistoricoExtrasCache] = useState<Record<string, KpiExtrasPorEmail>>({});
   // Com "Exibir RV" já ligado, a entrada na página começa com o skeleton da
   // tabela ativo até a RV do mês atual chegar (ver o useEffect de montagem) —
-  // a tabela nunca aparece com as colunas de RV ainda vazias.
+  // a tabela nunca aparece com as colunas de RV ainda vazias. Com a RV já
+  // vinda do servidor (rvInicial), não há skeleton: tabela e cabeçalho
+  // aparecem juntos.
   const [carregandoMes, setCarregandoMes] = useState<string | null>(
-    showRvInicial ? dataAtual.mesRef : null,
+    showRvInicial && !rvInicial ? dataAtual.mesRef : null,
   );
   const carregamentoMesIdRef = useRef(0);
   const [sort, setSort] = useState<SortState>({ slug: "tx_retencao_bruta", dir: "desc" });
@@ -1190,7 +1195,9 @@ export function KpiEquipeSection({
   const [rvVisivel, setRvVisivel] = useState(showRvInicial);
   // Cache por mês, igual historicoCache — busca sob demanda ao ligar o
   // toggle ou trocar de mês com ele já ligado.
-  const [rvCache, setRvCache] = useState<Record<string, RvEquipeResultado>>({});
+  const [rvCache, setRvCache] = useState<Record<string, RvEquipeResultado>>(
+    rvInicial ? { [dataAtual.mesRef]: rvInicial } : {},
+  );
   const [carregandoRv, setCarregandoRv] = useState<string | null>(null);
 
   const data: KpiEquipeSerial | null =
