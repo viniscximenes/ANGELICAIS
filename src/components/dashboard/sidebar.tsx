@@ -147,19 +147,13 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
             // Sem animação de entrada: a navegação aparece já pronta, inclusive
             // no F5 (antes cada seção entrava com BlurFade).
             <div key={section.id}>
-              {section.divider && (
+              {/* Divisória = só uma linha reta, sem texto. Na 1ª seção não há
+                  nada acima pra separar, então não renderiza. */}
+              {section.divider && index > 0 && (
                 <div
                   aria-hidden="true"
-                  className={`border-muted-foreground/20 mb-1.5 border-t border-dashed px-3 pt-2 ${
-                    // Sem branding acima, a divisória da 1ª seção não precisa
-                    // de respiro no topo — senão sobra um vão morto.
-                    index === 0 ? "mt-0 border-t-0 pt-0" : "mt-4"
-                  }`}
-                >
-                  <span className="text-muted-foreground/50 text-[10px] font-semibold tracking-[0.2em] uppercase">
-                    {section.divider}
-                  </span>
-                </div>
+                  className="border-muted-foreground/20 mx-3 mt-4 mb-3 border-t"
+                />
               )}
 
               <Link
