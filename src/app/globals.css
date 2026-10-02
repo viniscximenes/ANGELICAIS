@@ -722,17 +722,33 @@ select option {
   color: var(--foreground);
 }
 
-/* === Transição de tema (claro/escuro) ===
-   Enquanto o ThemeTransitionOverlay está trocando o tema por baixo do blur,
-   desliga TODAS as transições/animações CSS do conteúdo da página. Sem isso,
-   a regra global "*, *::before, *::after { transition-duration: ... }" faz
-   cada elemento animar sua própria cor com timing levemente diferente,
-   gerando um "cintilar" perceptível por baixo do overlay. Fora de @layer de
-   propósito: precisa vencer a regra base independentemente da ordem de
-   camadas. */
+/* === Transição de tema / paleta ===
+   A troca é feita via View Transitions API (theme-provider.tsx): o navegador
+   anima do snapshot antigo pro estado novo. Enquanto isso, desliga as
+   transições CSS do conteúdo — sem isso, a regra global
+   "*, *::before, *::after { transition-duration: ... }" faz cada elemento
+   animar a própria cor com timing diferente por baixo da máscara. Fora de
+   @layer de propósito: precisa vencer a regra base.
+   Só transition: desligar `animation` aqui fazia as animações de entrada
+   (ex.: o popover do card de tema) reiniciarem quando a classe saía. */
 .theme-transitioning *,
 .theme-transitioning *::before,
 .theme-transitioning *::after {
   transition: none !important;
-  animation: none !important;
+}
+
+/* As animações do snapshot são feitas em JS (element.animate) — desliga o
+   crossfade padrão do navegador pra não somar com elas. Na revelação em
+   círculo, o snapshot antigo fica parado embaixo e o novo cresce por cima. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+:root[data-theme-transition="reveal"]::view-transition-old(root) {
+  z-index: 1;
+}
+:root[data-theme-transition="reveal"]::view-transition-new(root) {
+  z-index: 2;
 }

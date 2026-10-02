@@ -13,14 +13,7 @@ import {
 } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "motion/react";
 
-import { BlurFade } from "@/components/ui/blur-fade";
 import { LineSidebar, type LineSidebarItem } from "@/components/ui/line-sidebar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import type { UserRole } from "@/lib/auth/get-current-user";
 import { logoutAction } from "@/lib/auth/logout-action";
 import type { Permission } from "@/lib/auth/permissions";
@@ -56,6 +49,17 @@ function itensDaSecao(section: SidebarSection, pathname: string): LineSidebarIte
   ]);
 }
 
+/**
+ * Nome exibido no rodapé, a partir do e-mail corporativo:
+ *   "angelica.mattos@alloha.com" → "Angelica Mattos"
+ * Sem e-mail, cai no full_name.
+ */
+function nomeExibicao(user: SidebarUser): string {
+  const local = (user.emailCorporativo ?? "").split("@")[0]?.trim() ?? "";
+  const base = local ? local.split(/[._-]+/).join(" ") : user.fullName;
+  return formatNomeProprio(base);
+}
+
 /** Item ativo: igualdade exata com o pathname (mesma regra de antes). */
 function indiceAtivo(itens: LineSidebarItem[], pathname: string): number | null {
   const idx = itens.findIndex((i) => i.href === pathname);
@@ -85,6 +89,8 @@ export type SidebarSection = {
 /** Dados do usuário exibidos no branding e no rodapé da navegação. */
 export type SidebarUser = {
   fullName: string;
+  /** nome.sobrenome@alloha.com — fonte do nome exibido no rodapé. */
+  emailCorporativo: string;
   role: UserRole;
   /** GESTOR que também acumula acesso administrativo — ver sidebar-sections.ts. */
   isAdminSkill: boolean;
@@ -94,6 +100,7 @@ const ICONS: Record<
   SidebarSection["iconName"],
   ComponentType<{
     size?: number;
+    stroke?: number;
     className?: string;
     "aria-hidden"?: boolean | "true" | "false";
   }>
@@ -121,9 +128,9 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="sidebar-zen flex h-full flex-col">
       {/* ── Seções ───────────────────────────────────────────── */}
-      <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto">
         {sections.map((section, index) => {
           const Icon = ICONS[section.iconName];
           // Também ativa quando a rota é de um item da seção fora do basePath
@@ -135,7 +142,9 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
           const itens = itensDaSecao(section, pathname);
 
           return (
-            <BlurFade key={section.id} delay={0.05 * index} inView>
+            // Sem animação de entrada: a navegação aparece já pronta, inclusive
+            // no F5 (antes cada seção entrava com BlurFade).
+            <div key={section.id}>
               {section.divider && (
                 <div
                   aria-hidden="true"
@@ -156,14 +165,19 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                 onClick={onNavigate}
                 aria-expanded={isActiveSection}
                 aria-current={isActiveSection ? "page" : undefined}
-                className={`flex items-center gap-3 rounded-md px-3 py-2 transition-colors duration-150 ${
+                className={`flex h-9 items-center gap-3 rounded-lg px-3 text-[14px] tracking-[-0.005em] transition-colors duration-150 ${
                   isActiveSection
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    ? "bg-foreground/[0.07] text-foreground font-semibold"
+                    : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground font-medium"
                 }`}
               >
-                <Icon size={18} aria-hidden="true" />
-                <span className="ds-body font-medium">{section.label}</span>
+                <Icon
+                  size={18}
+                  stroke={1.75}
+                  aria-hidden="true"
+                  className={isActiveSection ? "text-foreground" : "opacity-80"}
+                />
+                <span>{section.label}</span>
               </Link>
 
               <AnimatePresence initial={false}>
@@ -182,8 +196,13 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                       reduzidas pra caber nos 240px da sidebar; cores pelos
                       tokens da paleta (claro/escuro).
                     */}
+                    {/*
+                      Linha-guia vertical alinhada ao centro do ícone da
+                      seção (px-3 + metade dos 18px) — substitui os traços
+                      horizontais, que ficavam desalinhados.
+                    */}
                     <LineSidebar
-                      className="line-sidebar--compact ml-1"
+                      className="line-sidebar--compact ml-[20px] mb-1 border-l border-[var(--sidebar-border)] pl-[14px]"
                       items={itens}
                       activeIndex={indiceAtivo(itens, pathname)}
                       linkComponent={Link}
@@ -192,22 +211,19 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                       textColor="var(--muted-foreground)"
                       markerColor="color-mix(in srgb, var(--muted-foreground) 45%, transparent)"
                       showIndex
-                      showMarker
-                      proximityRadius={40}
-                      maxShift={8}
+                      showMarker={false}
+                      proximityRadius={36}
+                      maxShift={4}
                       falloff="smooth"
-                      markerLength={18}
-                      markerGap={10}
-                      tickScale={0.5}
-                      scaleTick
-                      itemGap={10}
+                      scaleTick={false}
+                      itemGap={12}
                       fontSize={0.8125}
                       smoothing={100}
                     />
                   </motion.div>
                 )}
               </AnimatePresence>
-            </BlurFade>
+            </div>
           );
         })}
       </div>
@@ -215,30 +231,25 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
       {/* ── Rodapé: usuário + logout ─────────────────────────── */}
       <div className="mt-auto flex items-center justify-between gap-2 border-t border-[var(--sidebar-border)] pt-3">
         <span
-          className="ds-small text-muted-foreground min-w-0 flex-1 truncate px-1"
-          title={formatNomeProprio(user.fullName)}
+          className="text-foreground/85 min-w-0 flex-1 truncate pl-1.5 text-[13px] font-medium"
+          title={nomeExibicao(user)}
         >
-          {formatNomeProprio(user.fullName)}
+          {nomeExibicao(user)}
         </span>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <form action={logoutAction} className="shrink-0">
-                <button
-                  type="submit"
-                  aria-label="Sair"
-                  className="text-muted-foreground hover:bg-muted/50 hover:text-foreground flex size-8 items-center justify-center rounded-md transition-colors duration-150"
-                >
-                  <IconLogout size={16} aria-hidden="true" />
-                </button>
-              </form>
-            </TooltipTrigger>
-            <TooltipContent side="top" data-nav-theme="zen-linen">
-              Sair
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        {/*
+          Botão de logout (Uiverse — vinodjangid07): círculo que, no hover,
+          se expande em pílula revelando "Sair". Ancorado à direita e
+          expandindo para a esquerda por cima do nome, sem empurrar o layout.
+        */}
+        <form action={logoutAction} className="sidebar-logout-slot">
+          <button type="submit" aria-label="Sair" className="sidebar-logout">
+            <span className="sidebar-logout__sign">
+              <IconLogout size={16} stroke={2} aria-hidden="true" />
+            </span>
+            <span className="sidebar-logout__text">Sair</span>
+          </button>
+        </form>
       </div>
     </div>
   );
@@ -258,7 +269,7 @@ export function Sidebar({ sections, user }: SidebarProps) {
     <nav
       aria-label="Navegação principal"
       data-nav-theme="zen-linen"
-      className="sticky top-[60px] hidden h-[calc(100vh-60px)] w-[240px] shrink-0 flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar)] px-4 pt-3 pb-4 lg:flex"
+      className="sticky top-[60px] hidden h-[calc(100vh-60px)] w-[240px] shrink-0 flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar-nav)] px-3 pt-4 pb-3 lg:flex"
     >
       <SidebarNav sections={sections} user={user} />
     </nav>

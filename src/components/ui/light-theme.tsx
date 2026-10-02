@@ -1,20 +1,37 @@
-import { ThemePreview } from "@/components/ui/theme-preview"
+import { ThemePreview, type ThemePreviewColors } from "@/components/ui/theme-preview"
+import type { PaletteId } from "@/lib/theme/palettes"
 
-// Tokens claros do Zen Linen (tema/kpi-operadores.css).
-export const LightTheme = () => (
-  <ThemePreview
-    colors={{
-      window: "#E9E4D8",
-      content: "#F4EFE4",
-      dot: "#A89F8F",
-      navItem: "#D8D2C4",
-      navActive: "#F4EFE4",
-      navMuted: "#DFD9CC",
-      textStrong: "#2E2E2E",
-      textMuted: "#CFC8B8",
-      block: "#D8D2C4",
-      accent: "#A89F8F",
-      shadeOpacity: 0.04,
-    }}
-  />
+// Tokens claros de cada paleta (src/app/palettes/*.css) — a miniatura
+// acompanha a paleta ativa pra ser fiel ao que o site vai mostrar.
+export const LIGHT_PREVIEW: Record<PaletteId, ThemePreviewColors> = {
+  vercel: {
+    window: "oklch(0.965 0 0)", // --sidebar-nav
+    content: "oklch(0.99 0 0)", // --background
+    dot: "oklch(0.44 0 0)", // --muted-foreground
+    navItem: "oklch(0.92 0 0)", // --border
+    navActive: "oklch(1 0 0)", // --card
+    navMuted: "oklch(0.94 0 0)", // --secondary
+    textStrong: "oklch(0 0 0)", // --foreground
+    textMuted: "oklch(0.85 0 0)",
+    block: "oklch(0.94 0 0)",
+    accent: "oklch(0.44 0 0)",
+    shadeOpacity: 0.04,
+  },
+  "claude-amber": {
+    window: "#EEEDE6",
+    content: "#FAF9F5",
+    dot: "#6E6D68",
+    navItem: "#DAD9D4",
+    navActive: "#FAF9F5",
+    navMuted: "#E9E6DC",
+    textStrong: "#3D3929",
+    textMuted: "#DAD9D4",
+    block: "#EDE9DE",
+    accent: "#C96442",
+    shadeOpacity: 0.04,
+  },
+}
+
+export const LightTheme = ({ palette }: { palette: PaletteId }) => (
+  <ThemePreview colors={LIGHT_PREVIEW[palette]} />
 )

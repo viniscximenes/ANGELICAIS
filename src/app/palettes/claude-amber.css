@@ -47,6 +47,8 @@
   --chart-5: #B4552D;
 
   --sidebar: #1F1E1D;
+  /* Fundo da sidebar principal: um tom abaixo de --sidebar. */
+  --sidebar-nav: #1A1918;
   --sidebar-foreground: #C3C0B6;
   --sidebar-primary: #343434;
   --sidebar-primary-foreground: #FBFBFB;
@@ -150,6 +152,8 @@
   --chart-5: #B4552D;
 
   --sidebar: #F5F4EE;
+  /* Fundo da sidebar principal: um tom abaixo de --sidebar. */
+  --sidebar-nav: #EEEDE6;
   --sidebar-foreground: #3D3D3A;
   --sidebar-primary: #C96442;
   --sidebar-primary-foreground: #FBFBFB;

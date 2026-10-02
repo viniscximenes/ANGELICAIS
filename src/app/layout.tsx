@@ -17,14 +17,26 @@ import { DEFAULT_PALETTE } from "@/lib/theme/palettes";
 import { FAVICON_EARLY_SCRIPT } from "@/lib/favicon/favicon-early-script";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
+// Geist/Geist Mono sem preload: as paletas sobrescrevem --font-sans com a
+// Instrument Sans, e o mono só aparece em pontos isolados. Assim, num
+// Ctrl+Shift+R (sem cache) a Instrument Sans é o único download de fonte
+// disputando o início do carregamento.
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans", preload: false });
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  preload: false,
+});
 // Fonte padrão das paletas (Vercel e Claude Amber) — referenciada por
 // --font-sans em palettes/vercel.css e palettes/claude-amber.css.
 const zenSans = Instrument_Sans({
   subsets: ["latin", "latin-ext"],
   weight: "variable",
   variable: "--font-zen-sans",
+  // "block" em vez do padrão "swap": no F5 o texto não pisca com a fonte de
+  // fallback (Arial ajustada) antes da Instrument Sans entrar — com a fonte
+  // em cache ela já está pronta no 1º paint, sem troca visível.
+  display: "block",
 });
 
 export const metadata: Metadata = {

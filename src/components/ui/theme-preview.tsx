@@ -3,7 +3,7 @@ import * as React from "react"
 /**
  * Miniatura de "janela" usada nos cards do seletor de tema. Mesmo desenho do
  * DarkTheme original (campsite), parametrizado por cores para servir aos
- * modos claro/escuro da paleta Zen Linen.
+ * modos claro/escuro de cada paleta (ver dark-theme.tsx / light-theme.tsx).
  */
 export interface ThemePreviewColors {
   window: string

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { IconMoonFilled, IconSunFilled } from "@tabler/icons-react";
+import { IconChevronDown, IconMoon, IconSun } from "@tabler/icons-react";
 
 import {
   Popover,
@@ -13,8 +13,8 @@ import { PALETTES } from "@/lib/theme/palettes";
 import { cn } from "@/lib/utils";
 import { useTheme } from "./theme-provider";
 
-// Marca que o usuário já abriu o menu de tema — até lá o botão pulsa e
-// mostra o selo "Novo" para chamar atenção para a personalização.
+// Marca que o usuário já abriu o menu de tema — até lá o botão mostra um
+// ponto discreto para chamar atenção para a personalização.
 const DISCOVERED_KEY = "theme-menu-discovered";
 
 /**
@@ -23,11 +23,10 @@ const DISCOVERED_KEY = "theme-menu-discovered";
  * data-nav-theme="zen-linen" (ver nav-zen-linen.css).
  */
 export function ThemeMenu() {
-  const { theme, palette, isPending, isTransitioning } = useTheme();
+  const { theme, palette } = useTheme();
   const [open, setOpen] = useState(false);
   // Começa "descoberto" para não piscar o destaque em quem já conhece o botão.
   const [discovered, setDiscovered] = useState(true);
-  const isBusy = isPending || isTransitioning;
   const paletteLabel =
     PALETTES.find((p) => p.id === palette)?.label ?? PALETTES[0].label;
 
@@ -54,56 +53,39 @@ export function ThemeMenu() {
           type="button"
           aria-label="Personalizar tema"
           className={cn(
-            "group border-border bg-card/70 hover:bg-card focus-visible:ring-ring relative flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 outline-none hover:shadow-md focus-visible:ring-2",
-            open && "bg-card shadow-md",
+            // Claro: fundo do conteúdo + borda/sombra sutis pra destacar do header
+            // (o header claro é um tom abaixo). Escuro: só borda, já contrasta.
+            "text-muted-foreground hover:text-foreground focus-visible:ring-ring border-border bg-background hover:bg-background/70 relative flex h-9 items-center gap-2 rounded-lg border pr-2.5 pl-3 text-[13px] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] transition-colors duration-150 outline-none focus-visible:ring-2 dark:border-[var(--sidebar-border)] dark:bg-transparent dark:shadow-none dark:hover:bg-foreground/[0.04]",
+            open && "text-foreground dark:bg-foreground/[0.06]",
           )}
         >
-          <span className="relative flex size-7 shrink-0 items-center justify-center">
-            {!discovered && (
-              <span
-                aria-hidden="true"
-                className="absolute inset-0 animate-ping rounded-full bg-[#A89F8F]/50"
-              />
+          {/* Ícone do modo atual, em traço fino como o resto da navegação. */}
+          {theme === "dark" ? (
+            <IconMoon size={16} stroke={1.75} aria-hidden="true" className="shrink-0" />
+          ) : (
+            <IconSun size={16} stroke={1.75} aria-hidden="true" className="shrink-0" />
+          )}
+
+          <span>Tema</span>
+          <span aria-hidden="true" className="bg-[var(--sidebar-border)] h-3.5 w-px" />
+          <span>{paletteLabel}</span>
+
+          <IconChevronDown
+            size={14}
+            stroke={1.75}
+            aria-hidden="true"
+            className={cn(
+              "shrink-0 opacity-60 transition-transform duration-200",
+              open && "rotate-180",
             )}
-            {/* Orbe dividido claro/escuro: gira ao passar o mouse, com o
-                lado do modo atual virado para cima. */}
+          />
+
+          {/* Destaque discreto até o primeiro uso (antes: ping + selo "Novo"). */}
+          {!discovered && (
             <span
               aria-hidden="true"
-              className={cn(
-                "relative size-7 overflow-hidden rounded-full shadow-inner ring-1 ring-black/15 transition-transform duration-500 ease-out group-hover:rotate-180",
-                theme === "dark" && "rotate-180 group-hover:rotate-0",
-                open && (theme === "dark" ? "rotate-0" : "rotate-180"),
-                isBusy && "animate-spin",
-              )}
-              style={{
-                background:
-                  "linear-gradient(135deg, #F4EFE4 0 50%, #2E2E2E 50% 100%)",
-              }}
-            >
-              <IconSunFilled
-                size={10}
-                className="absolute top-[5px] left-[5px] text-[#A89F8F]"
-              />
-              <IconMoonFilled
-                size={10}
-                className="absolute right-[5px] bottom-[5px] text-[#D8D2C4]"
-              />
-            </span>
-          </span>
-
-          <span className="flex flex-col items-start leading-none">
-            <span className="text-foreground text-[12px] font-semibold">
-              Tema
-            </span>
-            <span className="text-muted-foreground mt-0.5 text-[10px] tracking-wide">
-              {paletteLabel}
-            </span>
-          </span>
-
-          {!discovered && (
-            <span className="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 rounded-full px-1.5 py-0.5 text-[9px] leading-none font-semibold tracking-wide uppercase shadow-sm">
-              Novo
-            </span>
+              className="bg-foreground absolute -top-0.5 -right-0.5 size-2 rounded-full ring-2 ring-[var(--sidebar-nav)]"
+            />
           )}
         </button>
       </PopoverTrigger>

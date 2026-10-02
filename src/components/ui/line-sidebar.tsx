@@ -91,7 +91,12 @@ export function LineSidebar({
   const listRef = useRef<HTMLUListElement>(null);
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
   const targetsRef = useRef<number[]>([]);
-  const currentRef = useRef<number[]>([]);
+  // Item ativo no 1º render já nasce destacado (--effect: 1 no SSR), sem
+  // animar a entrada no F5 — o rAF só anima mudanças a partir daí.
+  const initialActiveRef = useRef(activeIndex);
+  const currentRef = useRef<number[]>(
+    activeIndex != null ? Object.assign([], { [activeIndex]: 1 }) : [],
+  );
   const rafRef = useRef<number | null>(null);
   const lastRef = useRef(0);
   const activeRef = useRef(activeIndex);
@@ -204,6 +209,11 @@ export function LineSidebar({
               itemRefs.current[index] = el;
             }}
             className="line-sidebar__item"
+            style={
+              {
+                "--effect": index === initialActiveRef.current ? 1 : 0,
+              } as CSSProperties
+            }
           >
             {showMarker && (
               <span className="line-sidebar__marker" aria-hidden="true" />

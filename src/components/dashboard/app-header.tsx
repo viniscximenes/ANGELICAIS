@@ -41,7 +41,7 @@ export function AppHeader({ user, sections }: AppHeaderProps) {
   return (
     <header
       data-nav-theme="zen-linen"
-      className="border-[var(--sidebar-border)] bg-[var(--sidebar)]/95 shadow-[0_1px_2px_rgba(0,0,0,0.04)] sticky top-0 z-30 h-[60px] border-b backdrop-blur-md dark:shadow-none"
+      className="sidebar-zen sticky top-0 z-30 h-[60px] border-b border-[var(--sidebar-border)] bg-[var(--sidebar-nav)]"
     >
       <div className="flex h-[60px] items-center justify-between gap-4 px-6">
         {/* ── Esquerda: hamburger (mobile) + branding ────────── */}
@@ -50,16 +50,16 @@ export function AppHeader({ user, sections }: AppHeaderProps) {
             type="button"
             onClick={() => setMobileOpen(true)}
             aria-label="Abrir navegação"
-            className="text-muted-foreground hover:bg-muted/50 hover:text-foreground flex size-9 shrink-0 items-center justify-center rounded-md transition-colors duration-150 lg:hidden"
+            className="text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-150 lg:hidden"
           >
-            <IconMenu2 size={20} aria-hidden="true" />
+            <IconMenu2 size={20} stroke={1.75} aria-hidden="true" />
           </button>
 
-          <div className="flex min-w-0 flex-col justify-center">
-            <span className="text-muted-foreground text-lg leading-tight font-bold tracking-wider cursor-default">
+          <div className="flex min-w-0 cursor-default flex-col justify-center gap-0.5">
+            <span className="text-foreground text-[17px] leading-none font-semibold tracking-[-0.01em]">
               CRM
             </span>
-            <span className="text-muted-foreground/70 text-xs leading-tight tracking-wide">
+            <span className="text-muted-foreground truncate text-[10px] leading-none font-medium tracking-[0.14em] uppercase">
               {roleLabel}
             </span>
           </div>
@@ -76,7 +76,7 @@ export function AppHeader({ user, sections }: AppHeaderProps) {
         <SheetContent
           side="left"
           data-nav-theme="zen-linen"
-          className="w-[280px] bg-[var(--sidebar)] px-4 py-6 sm:max-w-[280px]"
+          className="w-[280px] bg-[var(--sidebar-nav)] px-4 py-6 sm:max-w-[280px]"
         >
           <SheetTitle className="sr-only">Navegação principal</SheetTitle>
           <SidebarNav

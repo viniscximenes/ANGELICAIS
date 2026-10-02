@@ -33,6 +33,7 @@ export default async function DashboardLayout({
   // por request, e sem acesso a full_name/role).
   const sidebarUser: SidebarUser = {
     fullName: user.profile.fullName,
+    emailCorporativo: user.profile.emailCorporativo,
     role: user.profile.role,
     isAdminSkill: user.profile.isAdminSkill,
   };

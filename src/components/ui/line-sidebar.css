@@ -108,3 +108,17 @@
   transform-origin: left center;
   transform: translateY(-50%) scaleX(calc(0.7 + var(--effect, 0) * 0.6));
 }
+
+/* Variante compacta (sidebar do site): mesma fonte da navegação também nos
+ * índices (01, 02…), item ativo em peso maior. */
+.line-sidebar--compact .line-sidebar__index {
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8em;
+  font-weight: 500;
+  margin-right: 0.55rem;
+}
+
+.line-sidebar--compact .line-sidebar__link[aria-current="page"] .line-sidebar__text {
+  font-weight: 600;
+}

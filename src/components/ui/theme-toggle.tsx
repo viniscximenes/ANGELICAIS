@@ -5,16 +5,16 @@ import { motion } from "motion/react"
 import { IconCheck, IconChevronDown, IconPalette } from "@tabler/icons-react"
 
 import { useTheme, type Theme } from "@/components/dashboard/theme-provider"
-import { DarkTheme } from "@/components/ui/dark-theme"
-import { LightTheme } from "@/components/ui/light-theme"
+import { DARK_PREVIEW, DarkTheme } from "@/components/ui/dark-theme"
+import { LIGHT_PREVIEW, LightTheme } from "@/components/ui/light-theme"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { PALETTES } from "@/lib/theme/palettes"
+import { PALETTES, type PaletteId } from "@/lib/theme/palettes"
 import { cn } from "@/lib/utils"
 
 interface ModeOption {
   value: Theme
   label: string
-  icon: React.ComponentType
+  icon: React.ComponentType<{ palette: PaletteId }>
 }
 
 const modes: ModeOption[] = [
@@ -61,10 +61,11 @@ function PaletteSwatches({ swatches }: { swatches: readonly string[] }) {
 }
 
 export function ThemeToggle({ className }: { className?: string }) {
-  const { theme, setTheme, palette, setPalette, isPending, isTransitioning } =
-    useTheme()
+  const { theme, setTheme, palette, setPalette, isTransitioning } = useTheme()
   const [paletteOpen, setPaletteOpen] = React.useState(false)
-  const isBusy = isPending || isTransitioning
+  // Trava só durante a animação; o salvamento no perfil roda em segundo
+  // plano sem bloquear o seletor nem mudar o cursor.
+  const isBusy = isTransitioning
   const current = PALETTES.find((p) => p.id === palette) ?? PALETTES[0]
 
   return (
@@ -97,9 +98,13 @@ export function ThemeToggle({ className }: { className?: string }) {
                   key={mode.value}
                   className={cn(
                     tileClass,
-                    mode.value === "light" ? "bg-[#E9E4D8]" : "bg-[#1C1C1C]",
                     selected && selectedTileClass,
                   )}
+                  style={{
+                    backgroundColor: (mode.value === "light"
+                      ? LIGHT_PREVIEW
+                      : DARK_PREVIEW)[current.id].window,
+                  }}
                 >
                   <RadioGroupItem
                     value={mode.value}
@@ -108,13 +113,10 @@ export function ThemeToggle({ className }: { className?: string }) {
                   />
                   <label
                     htmlFor={`theme-mode-${mode.value}`}
-                    className={cn(
-                      "relative cursor-pointer rounded-t-sm peer-focus-visible:ring-2 peer-focus-visible:ring-ring",
-                      isBusy && "cursor-wait",
-                    )}
+                    className="relative cursor-pointer rounded-t-sm peer-focus-visible:ring-2 peer-focus-visible:ring-ring"
                   >
                     <span className="block overflow-hidden rounded-t-sm border border-b-0 border-black/10 shadow-xl shadow-black/20">
-                      <Icon />
+                      <Icon palette={current.id} />
                     </span>
                     <TileLabel selected={selected}>{mode.label}</TileLabel>
                   </label>

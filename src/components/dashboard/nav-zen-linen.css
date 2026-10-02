@@ -20,8 +20,93 @@
  * --background em vez de --sidebar. As regras abaixo usam seletores mais
  * específicos (elemento+atributo / atributo+atributo) para sempre vencer,
  * independente da ordem de carga. */
+/* Header + sidebar (fixa + drawer mobile): token próprio, levemente mais
+ * escuro que --sidebar — definido por paleta/tema em src/app/palettes/. */
 header[data-nav-theme="zen-linen"],
 nav[data-nav-theme="zen-linen"],
 [data-nav-theme="zen-linen"][data-slot="sheet-content"] {
-  background-color: var(--sidebar);
+  background-color: var(--sidebar-nav, var(--sidebar));
+}
+
+/* Fonte da navegação (header, sidebar fixa e drawer mobile): Instrument Sans
+ * em tudo, inclusive números. */
+.sidebar-zen,
+.sidebar-zen * {
+  font-family: var(--font-zen-sans), "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ── Botão de logout do rodapé (Uiverse.io — vinodjangid07) ──────────────
+ * Adaptado: cinza leve do tema, tamanho reduzido pra sidebar de 240px, ícone Tabler, texto
+ * "Sair", e expansão para a esquerda (absolute à direita do slot) pra não
+ * empurrar o nome do usuário. */
+.sidebar-logout-slot {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+.sidebar-logout {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  overflow: hidden;
+  transition-duration: 0.3s;
+  /* Cinza leve (foreground 8%), opaco — misturado ao fundo da sidebar — pra
+   * não deixar o nome aparecer por trás no hover. */
+  background-color: color-mix(in oklab, var(--foreground) 8%, var(--sidebar-nav, var(--sidebar)));
+  color: var(--foreground);
+}
+
+.sidebar-logout__sign {
+  width: 100%;
+  transition-duration: 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-logout__text {
+  position: absolute;
+  right: 0%;
+  width: 0%;
+  opacity: 0;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition-duration: 0.3s;
+}
+
+.sidebar-logout:hover,
+.sidebar-logout:focus-visible {
+  width: 70px;
+  border-radius: 40px;
+  outline: none;
+}
+
+.sidebar-logout:hover .sidebar-logout__sign,
+.sidebar-logout:focus-visible .sidebar-logout__sign {
+  width: 28px;
+  padding-left: 8px;
+}
+
+.sidebar-logout:hover .sidebar-logout__text,
+.sidebar-logout:focus-visible .sidebar-logout__text {
+  opacity: 1;
+  width: calc(100% - 28px);
+  padding-left: 4px;
+  padding-right: 10px;
+}
+
+.sidebar-logout:active {
+  transform: translate(2px, 2px);
 }
