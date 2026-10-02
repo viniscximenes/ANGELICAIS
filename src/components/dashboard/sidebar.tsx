@@ -167,7 +167,9 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                 aria-current={isActiveSection ? "page" : undefined}
                 className={`flex h-9 items-center gap-3 rounded-lg px-3 text-[14px] tracking-[-0.005em] transition-colors duration-150 ${
                   isActiveSection
-                    ? "bg-foreground/[0.07] text-foreground font-semibold"
+                    ? // Bloco sólido na cor primária do tema: escuro no claro,
+                      // branco no escuro.
+                      "bg-primary text-primary-foreground font-semibold"
                     : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground font-medium"
                 }`}
               >
@@ -175,7 +177,7 @@ export function SidebarNav({ sections, user, onNavigate }: SidebarNavProps) {
                   size={18}
                   stroke={1.75}
                   aria-hidden="true"
-                  className={isActiveSection ? "text-foreground" : "opacity-80"}
+                  className={isActiveSection ? "text-primary-foreground" : "opacity-80"}
                 />
                 <span>{section.label}</span>
               </Link>
