@@ -20,6 +20,12 @@ export const PALETTES = [
     description: "Tons de papel e areia com acento âmbar",
     swatches: ["#FBFBF8", "#ECEAE3", "#D6D4CD", "#C96442", "#29261B"],
   },
+  {
+    id: "sage-garden",
+    label: "Sage Garden",
+    description: "Verde-sálvia sobre papel e grafite",
+    swatches: ["#F8F7F4", "#E8E6E1", "#BFC9BB", "#7C9082", "#1A1F2E"],
+  },
 ] as const;
 
 export type PaletteId = (typeof PALETTES)[number]["id"];

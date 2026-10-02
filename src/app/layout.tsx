@@ -3,6 +3,7 @@ import "./globals.css";
 // Paletas depois do globals.css (ver src/app/palettes/).
 import "./palettes/vercel.css";
 import "./palettes/claude-amber.css";
+import "./palettes/sage-garden.css";
 import { Geist, Geist_Mono, Instrument_Sans } from "next/font/google";
 import Script from "next/script";
 import { Toaster } from "sonner";
@@ -27,8 +28,8 @@ const geistMono = Geist_Mono({
   variable: "--font-mono",
   preload: false,
 });
-// Fonte padrão das paletas (Vercel e Claude Amber) — referenciada por
-// --font-sans em palettes/vercel.css e palettes/claude-amber.css.
+// Fonte padrão das paletas (Vercel, Claude Amber e Sage Garden) —
+// referenciada por --font-sans em cada arquivo de src/app/palettes/.
 const zenSans = Instrument_Sans({
   subsets: ["latin", "latin-ext"],
   weight: "variable",

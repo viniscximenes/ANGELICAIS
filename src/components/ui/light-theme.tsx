@@ -30,6 +30,19 @@ export const LIGHT_PREVIEW: Record<PaletteId, ThemePreviewColors> = {
     accent: "#C96442",
     shadeOpacity: 0.04,
   },
+  "sage-garden": {
+    window: "#F3F2EE",
+    content: "#F8F7F4",
+    dot: "#6B7280",
+    navItem: "#E8E6E1",
+    navActive: "#F8F7F4",
+    navMuted: "#E8E6E1",
+    textStrong: "#1A1F2E",
+    textMuted: "#E8E6E1",
+    block: "#FFFFFF",
+    accent: "#7C9082",
+    shadeOpacity: 0.04,
+  },
 }
 
 export const LightTheme = ({ palette }: { palette: PaletteId }) => (

@@ -42,6 +42,10 @@ const CORES: Record<PaletteId, Record<"dark" | "light", [string, string, string]
     dark: ["#4E4D48", "#B05730", "#D97757"],
     light: ["#C9B8A8", "#D97757", "#B05730"],
   },
+  "sage-garden": {
+    dark: ["#2F3A32", "#7C9082", "#A0AA88"],
+    light: ["#BFC9BB", "#8B9D83", "#5A6B5E"],
+  },
 };
 
 export function LoginFloatingBackground() {

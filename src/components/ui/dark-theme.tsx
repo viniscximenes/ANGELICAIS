@@ -30,6 +30,19 @@ export const DARK_PREVIEW: Record<PaletteId, ThemePreviewColors> = {
     accent: "#D97757",
     shadeOpacity: 0.32,
   },
+  "sage-garden": {
+    window: "#0D0D0D",
+    content: "#0A0A0A",
+    dot: "#A0A0A0",
+    navItem: "#1A1A1A",
+    navActive: "#2A2A2A",
+    navMuted: "#0F0F0F",
+    textStrong: "#F5F5F5",
+    textMuted: "#3A3A3A",
+    block: "#121212",
+    accent: "#7C9082",
+    shadeOpacity: 0.32,
+  },
 }
 
 export const DarkTheme = ({ palette }: { palette: PaletteId }) => (
