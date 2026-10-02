@@ -12,6 +12,68 @@
   letter-spacing: var(--letter-spacing);
 }
 
+/* ───────── Fonte única: Instrument Sans em tudo (incluindo números) ─────────
+ * Mesma fonte do título "Equipe" (var(--font-sans)) em todos os elementos
+ * da página — inputs, botões e utilitários mono (ds-mono/font-mono, que
+ * usam Geist Mono) inclusive. Mesmo ajuste de /s/reports/consolidado;
+ * tabular-nums mantém os números com largura fixa.
+ */
+[data-page="configuracoes-equipe"] * {
+  font-family: var(--font-sans);
+}
+[data-page="configuracoes-equipe"] :is(.ds-mono, .ds-mono-sm, .ds-display, .font-mono) {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ───────── Cabeçalho da tabela de operadores = cabeçalho do Consolidado ─────────
+ * Mesmo visual da linha OPERADOR/RETIDOS/... de /s/reports/consolidado:
+ * - fundo: muted a 40% no escuro, var(--muted) no claro (inclusive no hover);
+ * - linha inferior: 1px var(--border) no escuro, 2px no claro;
+ * - texto: 14px, negrito, espaçamento 0.025em, caixa alta; cor --foreground
+ *   no escuro e --muted-foreground no claro.
+ */
+[data-page="configuracoes-equipe"] [data-slot="table-header"] [data-slot="table-row"],
+[data-page="configuracoes-equipe"] [data-slot="table-header"] [data-slot="table-row"]:hover {
+  background-color: color-mix(in oklab, var(--muted) 40%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+[data-page="configuracoes-equipe"] [data-slot="table-header"] [data-slot="table-head"] {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  line-height: var(--leading-normal);
+  color: var(--foreground);
+}
+[data-theme="light"] [data-page="configuracoes-equipe"] [data-slot="table-header"] [data-slot="table-row"],
+[data-theme="light"] [data-page="configuracoes-equipe"] [data-slot="table-header"] [data-slot="table-row"]:hover {
+  background-color: var(--muted);
+  border-bottom-width: 2px;
+}
+[data-theme="light"] [data-page="configuracoes-equipe"] [data-slot="table-header"] [data-slot="table-head"] {
+  color: var(--muted-foreground);
+}
+
+/* ───────── Skeleton de carregamento (loading.tsx) ─────────
+ * Mesmo tom do skeleton de /s/reports/consolidado: bg-card sozinho é branco
+ * puro na Vercel clara e os blocos sumiam. --muted-foreground em degraus
+ * pelas opacidades originais (bloco cheio > /70 > /60 e /40).
+ */
+.config-equipe-skeleton .bg-card {
+  background-color: color-mix(in oklab, var(--muted-foreground) 14%, transparent);
+}
+.config-equipe-skeleton .bg-card\/70 {
+  background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
+}
+.config-equipe-skeleton :is(.bg-card\/60, .bg-card\/40) {
+  background-color: color-mix(in oklab, var(--muted-foreground) 7%, transparent);
+}
+[data-theme="light"] .config-equipe-skeleton .bg-muted\/40 {
+  background-color: var(--muted);
+}
+
 /*
  * Contorno de foco nativo desligado nesta página — mesmo ajuste de
  * /kpi/evolucao (ver comentário lá): globals.css aplica, pra todo o site,

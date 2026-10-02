@@ -5,7 +5,6 @@ import { Instrument_Sans } from "next/font/google";
 import "./reports-tempo-indisp.css";
 import { TempoIndispSection } from "@/components/dashboard/tempo-indisponibilidade/tempo-indisp-section";
 import { TempoIndispNavSidebar } from "@/components/gestor/tempo-indisp-nav-sidebar";
-import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
@@ -88,24 +87,22 @@ export default async function ReportsTempoIndisponibilidadePage() {
     dataIndisponibilidade.operadores.length === 0
   ) {
     return (
-      <PageTransition>
+      <div
+        data-page="reports-tempo-indisponibilidade"
+        className={`flex min-h-[60vh] items-center justify-center px-6 ${zenSans.variable}`}
+      >
         <div
-          data-page="reports-tempo-indisponibilidade"
-          className={`flex min-h-[60vh] items-center justify-center px-6 ${zenSans.variable}`}
+          className="elevation-1 ds-body text-muted-foreground max-w-md rounded-xl px-6 py-10 text-center"
+          style={{ border: "1px solid var(--border)" }}
         >
-          <div
-            className="elevation-1 ds-body text-muted-foreground max-w-md rounded-xl px-6 py-10 text-center"
-            style={{ border: "1px solid var(--border)" }}
-          >
-            Não foi possível carregar os dados da equipe.
-            <br />
-            <span className="ds-mono-sm" style={{ color: "var(--muted-foreground)" }}>
-              Verifique se há operadores cadastrados na sua equipe (Configurações
-              &rarr; Operadores do D-1) e se a base do dia já foi atualizada.
-            </span>
-          </div>
+          Não foi possível carregar os dados da equipe.
+          <br />
+          <span className="ds-mono-sm" style={{ color: "var(--muted-foreground)" }}>
+            Verifique se há operadores cadastrados na sua equipe (Configurações
+            &rarr; Operadores do D-1) e se a base do dia já foi atualizada.
+          </span>
         </div>
-      </PageTransition>
+      </div>
     );
   }
 
@@ -116,8 +113,8 @@ export default async function ReportsTempoIndisponibilidadePage() {
     mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
   };
 
-  // NÃO envolvido em <PageTransition> (diferente do branch "sem dados"
-  // acima) — mesmo motivo documentado em reports/consolidado/page.tsx:
+  // NÃO envolvido em <PageTransition> (o branch "sem dados" acima
+  // também não) — mesmo motivo documentado em reports/consolidado/page.tsx:
   // PageTransition faz um fade a partir de opacity:0 via motion/react, que
   // só anima depois que o JS hidrata no client. Como esta página agora tem
   // loading.tsx cobrindo a espera do Server Component, esse fade adicional

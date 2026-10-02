@@ -42,6 +42,7 @@ const ROTAS_SEM_BARRA = [
   "/s/operacao/diario",
   "/s/operacao/comparativo",
   "/s/operacao/quartil",
+  "/c/reports/consolidado",
 ];
 const HIDE_CLASS = "hide-bprogress-bar";
 

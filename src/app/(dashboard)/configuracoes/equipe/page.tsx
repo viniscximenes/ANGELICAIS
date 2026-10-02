@@ -4,7 +4,6 @@ import { Instrument_Sans } from "next/font/google";
 
 import "./configuracoes-equipe.css";
 import { EquipeConfig } from "@/components/gestor/equipe-config";
-import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
@@ -27,12 +26,28 @@ const zenSans = Instrument_Sans({
 
 export const dynamic = "force-dynamic";
 
+// Piso mínimo do skeleton (loading.tsx) — mesmo padrão de
+// /s/reports/consolidado: se os dados voltarem rápido, o skeleton só
+// piscaria na tela. Atrasa a resolução deste Server Component até completar
+// MIN_LOADING_MS desde a entrada na função; se a busca já demorou mais que
+// isso, não espera nada.
+const MIN_LOADING_MS = 3_000;
+
+async function aguardarPisoMinimo(desde: number) {
+  const faltam = MIN_LOADING_MS - (Date.now() - desde);
+  if (faltam > 0) {
+    await new Promise((resolve) => setTimeout(resolve, faltam));
+  }
+}
+
 /**
  * Unifica as duas telas antigas (/configuracoes/operadores-d1, que fazia o
  * CRUD do roster, e /configuracoes/operadores, que definia os apelidos).
  * As duas liam a mesma tabela por caminhos diferentes; aqui é uma lista só.
  */
 export default async function ConfigEquipePage() {
+  const inicioCarregamento = Date.now();
+
   const user = await getCurrentUser();
 
   if (!user) redirect("/login");
@@ -42,8 +57,10 @@ export default async function ConfigEquipePage() {
 
   const result = await getEquipeAction();
 
+  await aguardarPisoMinimo(inicioCarregamento);
+
   return (
-    <PageTransition>
+    <>
       <div
         data-page="configuracoes-equipe"
         className={`min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
@@ -87,6 +104,6 @@ export default async function ConfigEquipePage() {
           </div>
         </div>
       </div>
-    </PageTransition>
+    </>
   );
 }

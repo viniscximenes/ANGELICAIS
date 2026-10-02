@@ -6,7 +6,6 @@ import "./reports-consolidado.css";
 import { GestorEquipeSection } from "@/components/gestor/gestor-equipe-section";
 import { RetencaoDetalheSection } from "@/components/dashboard/retencao/retencao-detalhe-section";
 import { ConsolidadoNavSidebar } from "@/components/gestor/consolidado-nav-sidebar";
-import { PageTransition } from "@/components/motion/page-transition";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
@@ -96,24 +95,22 @@ export default async function ReportsConsolidadoPage() {
 
   if (data.operadores.length === 0) {
     return (
-      <PageTransition>
+      <div
+        data-page="reports-consolidado"
+        className={`flex min-h-[60vh] items-center justify-center px-6 ${zenSans.variable}`}
+      >
         <div
-          data-page="reports-consolidado"
-          className={`flex min-h-[60vh] items-center justify-center px-6 ${zenSans.variable}`}
+          className="elevation-1 ds-body text-muted-foreground max-w-md rounded-xl px-6 py-10 text-center"
+          style={{ border: "1px solid var(--border)" }}
         >
-          <div
-            className="elevation-1 ds-body text-muted-foreground max-w-md rounded-xl px-6 py-10 text-center"
-            style={{ border: "1px solid var(--border)" }}
-          >
-            Não foi possível carregar os dados da equipe.
-            <br />
-            <span className="ds-mono-sm" style={{ color: "var(--muted-foreground)" }}>
-              Verifique se há operadores cadastrados na sua equipe (Configurações
-              &rarr; Operadores do D-1) e se a base do dia já foi atualizada.
-            </span>
-          </div>
+          Não foi possível carregar os dados da equipe.
+          <br />
+          <span className="ds-mono-sm" style={{ color: "var(--muted-foreground)" }}>
+            Verifique se há operadores cadastrados na sua equipe (Configurações
+            &rarr; Operadores do D-1) e se a base do dia já foi atualizada.
+          </span>
         </div>
-      </PageTransition>
+      </div>
     );
   }
 
@@ -145,8 +142,8 @@ export default async function ReportsConsolidadoPage() {
     ? formatNomeProprio(data.consolidado.gestora)
     : "Equipe";
 
-  // NÃO envolvido em <PageTransition> (diferente do branch "sem dados"
-  // acima): PageTransition faz um fade a partir de opacity:0 via
+  // NÃO envolvido em <PageTransition> (o branch "sem dados" acima
+  // também não): PageTransition faz um fade a partir de opacity:0 via
   // motion/react, que só anima depois que o JS hidrata no client. Como esta
   // página já tem loading.tsx cobrindo a espera do Server Component, esse
   // fade adicional (mais o fade PRÓPRIO de GestorEquipeSection, com delay de
