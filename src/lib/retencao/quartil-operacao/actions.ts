@@ -3,37 +3,38 @@
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
+import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
-import { getPorTema, type TemaData } from "@/lib/retencao/get-por-tema";
 import {
-  getQuartilOperadores,
-  type OperadorQuartilItem,
-} from "@/lib/retencao/get-quartil-operadores";
+  getPorOperadorIndividual,
+  type OperadorIndividual,
+} from "@/lib/retencao/get-por-operador-individual";
+import {
+  montarQuartilPorOperador,
+  quartilDoOperador,
+  type QuartilOperador,
+} from "@/lib/retencao/get-quartil-operador";
+import { getQuartilOperadores } from "@/lib/retencao/get-quartil-operadores";
 import { getMetaTxRetencao } from "@/lib/retencao/meta";
 import {
   getIndicadoresGestor,
   listarGestoresComRoster,
+  type IndicadoresGestor,
 } from "@/lib/retencao/comparativo/get-gestores-comparativo";
 import { getMapaOperadorGestor } from "@/lib/retencao/get-mapa-operador-gestor";
 
-/** Resumo por supervisor mostrado no card fechado da lista. */
-export type SupervisorQuartilResumo = {
-  /** profiles.id */
-  id: string;
-  nome: string;
+/**
+ * Resumo por supervisor mostrado na linha fechada da lista — os mesmos 4
+ * indicadores do comparativo (IndicadoresGestor) + a contagem de Q4.
+ */
+export type SupervisorQuartilResumo = IndicadoresGestor & {
   /** Quantos operadores do roster dele estão em Q4 do ranking da EMPRESA. */
   qtdOperadoresQ4: number;
-  /** Taxa de retenção geral da equipe dele (0-1, null sem pedidos). */
-  txEquipe: number | null;
-  /** PEDIDOS = RETIDOS + CANCELADOS da equipe. */
-  pedidosEquipe: number;
-  retidosEquipe: number;
-  canceladosEquipe: number;
 };
 
 type QuartilOperacaoResumo = {
-  /** Meta de tx (0-100) do gestor logado, para colorir as taxas. */
-  meta: number;
+  /** Indicadores do gestor logado — bloco fixo de topo (igual ao comparativo). */
+  gestorLogado: IndicadoresGestor & { meta: number };
   /** Um item por supervisor, ordenado por qtd de operadores em Q4 (desc). */
   supervisores: SupervisorQuartilResumo[];
 };
@@ -43,15 +44,46 @@ export type QuartilOperacaoResumoResult =
   | { success: false; error: string };
 
 /**
- * Nível 1 — lista de supervisores com a contagem de operadores em Q4.
+ * Ranking de quartil da empresa inteira, restrito aos operadores cadastrados
+ * em d1_operadores_gestor (união de todos os rosters). Sem a allowlist,
+ * logins que não são operadores de ninguém (ADM testando, gestor cancelando
+ * 1 atendimento na mão, login de outra área) entram com volume ínfimo e tx
+ * ~0% e empurram operadores reais para quartis piores.
  *
- * O quartil é calculado UMA vez sobre a empresa inteira
- * (`getQuartilOperadores("empresa", [])`, que reaproveita
- * compute-quartis.ts). Cada operador Q4 é atribuído ao supervisor dono dele
- * via o roster global (`getMapaOperadorGestor`).
+ * Usado nos dois níveis (resumo e detalhe), então a contagem de Q4 da linha
+ * sempre bate com a lista aberta.
+ */
+async function getRankingEmpresa(mapaOperadorGestor: Map<string, string>) {
+  return getQuartilOperadores("empresa", [], {
+    loginsPermitidos: mapaOperadorGestor.keys(),
+  });
+}
+
+/** Mais operadores em Q4 primeiro; empate segue a ordem do comparativo. */
+function ordenarPorQ4(a: SupervisorQuartilResumo, b: SupervisorQuartilResumo): number {
+  // Supervisores com mais operadores em Q4 primeiro (precisam de suporte).
+  if (b.qtdOperadoresQ4 !== a.qtdOperadoresQ4) {
+    return b.qtdOperadoresQ4 - a.qtdOperadoresQ4;
+  }
+  // Empate: mesma regra do comparativo — tx desc, sem pedidos no fim.
+  if (a.tx === null && b.tx === null) return a.nome.localeCompare(b.nome, "pt-BR");
+  if (a.tx === null) return 1;
+  if (b.tx === null) return -1;
+  if (b.tx !== a.tx) return b.tx - a.tx;
+  return a.nome.localeCompare(b.nome, "pt-BR");
+}
+
+/**
+ * Nível 1 — indicadores do gestor logado (topo) + lista de supervisores com
+ * os 4 indicadores da equipe e a contagem de operadores em Q4 da empresa.
  *
- * O detalhe de cada supervisor (operadores + retenção por tema) é carregado
- * sob demanda por `fetchQuartilOperacaoDetalheAction`.
+ * Indicadores: mesma fonte do comparativo (getIndicadoresGestor →
+ * getVisaoGeral sobre o roster). Q4: o ranking é calculado UMA vez sobre a
+ * empresa inteira e cada operador Q4 é atribuído ao supervisor dono dele via
+ * o roster global (`getMapaOperadorGestor`).
+ *
+ * O detalhe de cada supervisor é carregado sob demanda por
+ * `fetchQuartilOperacaoDetalheAction`.
  */
 export async function fetchQuartilOperacaoAction(): Promise<QuartilOperacaoResumoResult> {
   const user = await getCurrentUser();
@@ -66,14 +98,10 @@ export async function fetchQuartilOperacaoAction(): Promise<QuartilOperacaoResum
       getMetaTxRetencao(user.profile.id),
     ]);
 
-    // O ranking empresa-wide de quartil só considera emails cadastrados em
-    // d1_operadores_gestor (união de todos os rosters). Sem isso, logins que
-    // não são operadores de ninguém (ADM testando, gestor cancelando 1
-    // atendimento na mão, login de outra área) entram no ranking com volume
-    // ínfimo e tx ~0% e empurram operadores reais para quartis piores.
-    const rankingEmpresa = await getQuartilOperadores("empresa", [], {
-      loginsPermitidos: mapaOperadorGestor.keys(),
-    });
+    const [rankingEmpresa, indicadores] = await Promise.all([
+      getRankingEmpresa(mapaOperadorGestor),
+      Promise.all(gestores.map(getIndicadoresGestor)),
+    ]);
 
     // Conta operadores em Q4 por gestor dono do operador (roster global).
     const q4PorGestor = new Map<string, number>();
@@ -84,62 +112,43 @@ export async function fetchQuartilOperacaoAction(): Promise<QuartilOperacaoResum
       q4PorGestor.set(gestorId, (q4PorGestor.get(gestorId) ?? 0) + 1);
     }
 
-    // Mesma característica do comparativo: 1 varredura de retencao_atendimentos
-    // por gestor para os 4 indicadores da equipe.
-    const indicadores = await Promise.all(gestores.map(getIndicadoresGestor));
-    const indicadorPorId = new Map(indicadores.map((i) => [i.id, i]));
+    const supervisores: SupervisorQuartilResumo[] = indicadores
+      .map((ind) => ({ ...ind, qtdOperadoresQ4: q4PorGestor.get(ind.id) ?? 0 }))
+      .sort(ordenarPorQ4);
 
-    const supervisores: SupervisorQuartilResumo[] = gestores
-      .map((g) => {
-        const ind = indicadorPorId.get(g.id);
-        return {
-          id: g.id,
-          nome: g.nome,
-          qtdOperadoresQ4: q4PorGestor.get(g.id) ?? 0,
-          txEquipe: ind?.tx ?? null,
-          pedidosEquipe: ind?.pedidos ?? 0,
-          retidosEquipe: ind?.retidos ?? 0,
-          canceladosEquipe: ind?.cancelados ?? 0,
-        };
-      })
-      .sort((a, b) => {
-        // Supervisores com mais operadores em Q4 primeiro (precisam de suporte).
-        if (b.qtdOperadoresQ4 !== a.qtdOperadoresQ4) {
-          return b.qtdOperadoresQ4 - a.qtdOperadoresQ4;
-        }
-        return a.nome.localeCompare(b.nome, "pt-BR");
-      });
+    // Mesmo fallback do comparativo quando o logado não tem roster.
+    const logado =
+      indicadores.find((g) => g.id === user.profile.id) ?? {
+        id: user.profile.id,
+        nome: formatNomeProprio(user.profile.fullName),
+        username: user.profile.username ?? null,
+        tx: null,
+        pedidos: 0,
+        retidos: 0,
+        cancelados: 0,
+      };
 
-    return { success: true, data: { meta, supervisores } };
+    return {
+      success: true,
+      data: { gestorLogado: { ...logado, meta }, supervisores },
+    };
   } catch (err) {
     console.error("[fetchQuartilOperacaoAction] erro:", err);
     return { success: false, error: "Erro ao carregar o quartil da operação." };
   }
 }
 
-/** Um operador em Q4 da empresa, com o breakdown de retenção por tema dele. */
-export type OperadorQ4Detalhe = {
-  /** Identificador REAL do operador (login/email do roster), nunca fantasia. */
-  login: string;
-  /** Taxa de retenção 0-1 (null sem pedidos). */
-  tx: number | null;
-  retidos: number;
-  cancelados: number;
-  /** PEDIDOS = RETIDOS + CANCELADOS. */
-  pedidos: number;
-  /** Posição no ranking da empresa (1 = melhor tx). */
-  rank: number | null;
-  /** Quantos operadores entraram no ranking da empresa. */
-  totalRankeados: number;
-  /** Retenção por tema (motivo normalizado) só deste operador. */
-  temas: TemaData[];
-};
-
 type QuartilOperacaoDetalhe = {
   /** Meta de tx (0-100) do supervisor consultado. */
   meta: number;
-  /** Operadores em Q4 do supervisor, ordenados por tx asc (pior primeiro). */
-  operadores: OperadorQ4Detalhe[];
+  /**
+   * Operadores em Q4 da empresa que são do supervisor — mesmo formato da
+   * tabela de operadores do comparativo (getPorOperadorIndividual), já com
+   * evolução por hora e quebra por tema para o card individual.
+   */
+  operadores: OperadorIndividual[];
+  /** Quartil de cada operador (equipe e empresa), indexado por prefixo. */
+  quartilPorOperador: Record<string, QuartilOperador>;
 };
 
 export type QuartilOperacaoDetalheResult =
@@ -147,12 +156,12 @@ export type QuartilOperacaoDetalheResult =
   | { success: false; error: string };
 
 /**
- * Nível 2 — detalhe de um supervisor, carregado quando o card expande.
+ * Nível 2 — detalhe de um supervisor, carregado quando a linha expande.
  *
- * Recalcula o ranking da empresa (mesma varredura paginada de
- * get-visao-geral/get-por-tema — aceitável, é o custo esperado), recorta os
- * operadores em Q4 que pertencem ao roster do supervisor pedido e, para cada
- * um, busca a retenção por tema individual (`getPorTema([emailDoOperador])`).
+ * Mesmas regras do detalhe do comparativo: os números de cada operador vêm de
+ * `getPorOperadorIndividual(roster)` (uma varredura só, com a quebra por
+ * tema e por hora já agregadas). O recorte de Q4 usa o mesmo ranking e o
+ * mesmo mapa operador → supervisor do nível 1.
  */
 export async function fetchQuartilOperacaoDetalheAction(
   gestorId: string,
@@ -181,42 +190,35 @@ export async function fetchQuartilOperacaoDetalheAction(
       getMapaOperadorGestor(),
     ]);
 
-    // Mesmo recorte do nível 1: o ranking empresa-wide só considera emails
-    // cadastrados em d1_operadores_gestor, para não deixar logins que não são
-    // operadores (ADM, outras áreas) contaminarem os quartis. Assim o rank e
-    // o Q4 mostrados aqui batem com a contagem da lista de supervisores.
-    const rankingEmpresa = await getQuartilOperadores("empresa", [], {
-      loginsPermitidos: mapaOperadorGestor.keys(),
-    });
+    const [rankingEmpresa, rankingEquipe, individuais] = await Promise.all([
+      getRankingEmpresa(mapaOperadorGestor),
+      getQuartilOperadores("equipe", roster),
+      getPorOperadorIndividual(roster),
+    ]);
 
-    const totalRankeados = rankingEmpresa.filter((op) => op.rank !== null).length;
-    const rosterPrefixos = new Set(roster.map(getEmailPrefix));
-
-    const q4DoGestor = rankingEmpresa.filter(
-      (op) => op.quartil === 4 && rosterPrefixos.has(getEmailPrefix(op.login)),
+    // Mesmo critério de atribuição do nível 1 (mapa global), pra a lista
+    // aberta sempre bater com a contagem da linha.
+    const prefixosQ4 = new Set(
+      rankingEmpresa
+        .filter(
+          (op) =>
+            op.quartil === 4 &&
+            mapaOperadorGestor.get(getEmailPrefix(op.login)) === gestorId,
+        )
+        .map((op) => getEmailPrefix(op.login)),
     );
 
-    const operadores: OperadorQ4Detalhe[] = await Promise.all(
-      q4DoGestor.map(async (op: OperadorQuartilItem) => ({
-        login: op.login,
-        tx: op.tx,
-        retidos: op.retidos,
-        cancelados: op.cancelados,
-        pedidos: op.retidos + op.cancelados,
-        rank: op.rank,
-        totalRankeados,
-        temas: await getPorTema([op.login]),
-      })),
+    const operadores = individuais.filter((op) =>
+      prefixosQ4.has(getEmailPrefix(op.login)),
     );
 
-    operadores.sort((a, b) => {
-      if (a.tx === null && b.tx === null) return a.login.localeCompare(b.login);
-      if (a.tx === null) return 1;
-      if (b.tx === null) return -1;
-      return a.tx - b.tx; // pior tx primeiro
-    });
+    const quartilTodos = montarQuartilPorOperador(rankingEquipe, rankingEmpresa);
+    const quartilPorOperador: Record<string, QuartilOperador> = {};
+    for (const op of operadores) {
+      quartilPorOperador[getEmailPrefix(op.login)] = quartilDoOperador(quartilTodos, op.login);
+    }
 
-    return { success: true, data: { meta, operadores } };
+    return { success: true, data: { meta, operadores, quartilPorOperador } };
   } catch (err) {
     console.error("[fetchQuartilOperacaoDetalheAction] erro:", err);
     return { success: false, error: "Erro ao carregar o detalhe do supervisor." };

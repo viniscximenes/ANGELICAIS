@@ -1,32 +1,78 @@
 "use client";
 
 import { useState } from "react";
-import { IconLoader2 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
+import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog";
+import { VisaoGeralCards } from "@/components/dashboard/retencao/visao-geral-cards";
+import type { IndicadoresGestor } from "@/lib/retencao/comparativo/get-gestores-comparativo";
+import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
+import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
 import {
   fetchQuartilOperacaoDetalheAction,
   type QuartilOperacaoDetalheResult,
   type SupervisorQuartilResumo,
 } from "@/lib/retencao/quartil-operacao/actions";
+import { getEmailPrefix } from "@/lib/utils/email-variants";
 
 import { LinhaSupervisorQuartil } from "./linha-supervisor-quartil";
-import { OperadorQ4Card } from "./operador-q4-card";
+import { TabelaOperadoresQ4 } from "./tabela-operadores-q4";
+
+/** Mesmo tom do skeleton do detalhe no comparativo / Analítico do Consolidado. */
+const SKELETON_BLOCO = "bg-[color-mix(in_oklab,var(--muted-foreground)_14%,transparent)]";
+
+/**
+ * Skeleton do detalhe do supervisor (enquanto
+ * fetchQuartilOperacaoDetalheAction roda), no formato da tabela de
+ * operadores — mesmo bloco da tabela no skeleton do comparativo.
+ */
+function DetalheSupervisorSkeleton() {
+  return (
+    <div
+      className="animate-pulse space-y-2 motion-reduce:animate-none"
+      aria-busy="true"
+      aria-label="Carregando detalhe do supervisor"
+    >
+      <div className={`${SKELETON_BLOCO} h-11 w-full rounded-md`} />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div key={i} className={`${SKELETON_BLOCO} h-10 w-full rounded-md opacity-60`} />
+      ))}
+    </div>
+  );
+}
 
 type Detalhe = NonNullable<
   Extract<QuartilOperacaoDetalheResult, { success: true }>["data"]
 >;
 
+const TOAST_CLASS = "operacao-quartil-toast";
+
 interface QuartilSectionProps {
-  /** Meta de tx (0-100) do gestor logado, para colorir as taxas do resumo. */
-  meta: number;
+  gestorLogado: IndicadoresGestor & { meta: number };
   supervisores: SupervisorQuartilResumo[];
 }
 
-export function QuartilSection({ meta, supervisores }: QuartilSectionProps) {
+export function QuartilSection({ gestorLogado, supervisores }: QuartilSectionProps) {
   const [abertoId, setAbertoId] = useState<string | null>(null);
   const [carregandoId, setCarregandoId] = useState<string | null>(null);
   const [detalhes, setDetalhes] = useState<Record<string, Detalhe>>({});
+
+  // Card individual do operador (clique na linha da tabela) — mesmo
+  // OperadorDetalheDialog do comparativo/Consolidado, aqui com os chips de
+  // quartil. Os dados já vêm no detalhe do supervisor, sem nova busca.
+  const [operadorSelecionado, setOperadorSelecionado] = useState<OperadorIndividual | null>(null);
+  const [operadorQuartil, setOperadorQuartil] = useState<QuartilOperador | null>(null);
+  const [operadorMeta, setOperadorMeta] = useState(0);
+  const [operadorDialogOpen, setOperadorDialogOpen] = useState(false);
+
+  function abrirOperador(detalhe: Detalhe, login: string) {
+    const operador = detalhe.operadores.find((op) => op.login === login);
+    if (!operador) return;
+    setOperadorSelecionado(operador);
+    setOperadorQuartil(detalhe.quartilPorOperador[getEmailPrefix(login)] ?? null);
+    setOperadorMeta(detalhe.meta);
+    setOperadorDialogOpen(true);
+  }
 
   async function toggle(gestorId: string) {
     if (abertoId === gestorId) {
@@ -44,12 +90,12 @@ export function QuartilSection({ meta, supervisores }: QuartilSectionProps) {
       if (res.success) {
         setDetalhes((prev) => ({ ...prev, [gestorId]: res.data }));
       } else {
-        toast.error(res.error);
+        toast.error(res.error, { className: TOAST_CLASS });
         setAbertoId((cur) => (cur === gestorId ? null : cur));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao carregar o detalhe do supervisor.");
+      toast.error("Erro ao carregar o detalhe do supervisor.", { className: TOAST_CLASS });
       setAbertoId((cur) => (cur === gestorId ? null : cur));
     } finally {
       setCarregandoId((cur) => (cur === gestorId ? null : cur));
@@ -57,57 +103,69 @@ export function QuartilSection({ meta, supervisores }: QuartilSectionProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Bloco fixo de topo: os 4 indicadores do gestor logado (igual ao comparativo). */}
       <section className="space-y-3">
-        <div>
-          <h2 className="ds-h3 font-semibold text-foreground">
-            Operadores em Q4 por supervisor
-          </h2>
-          <p className="ds-small text-muted-foreground mt-1">
-            Abra um supervisor para ver os operadores dele que estão no pior
-            quartil (Q4) da empresa inteira, com a retenção por tema de cada um.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          {supervisores.map((s) => {
-            const detalhe = detalhes[s.id];
-            return (
-              <LinhaSupervisorQuartil
-                key={s.id}
-                resumo={s}
-                meta={meta}
-                aberto={abertoId === s.id}
-                carregando={carregandoId === s.id}
-                onToggle={() => toggle(s.id)}
-              >
-                {detalhe ? (
-                  detalhe.operadores.length === 0 ? (
-                    <p className="ds-small text-muted-foreground py-6 text-center">
-                      Nenhum operador deste supervisor está em Q4 da empresa.
-                    </p>
-                  ) : (
-                    <div className="space-y-4">
-                      {detalhe.operadores.map((op) => (
-                        <OperadorQ4Card
-                          key={op.login}
-                          operador={op}
-                          meta={detalhe.meta}
-                        />
-                      ))}
-                    </div>
-                  )
-                ) : (
-                  <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-                    <IconLoader2 size={18} className="animate-spin" />
-                    <span className="ds-small">Carregando detalhe…</span>
-                  </div>
-                )}
-              </LinhaSupervisorQuartil>
-            );
-          })}
+        <div data-visao-geral-cards>
+          <VisaoGeralCards
+            data={{
+              total: gestorLogado.pedidos,
+              retidos: gestorLogado.retidos,
+              cancelados: gestorLogado.cancelados,
+              tx: gestorLogado.tx,
+            }}
+            meta={gestorLogado.meta}
+            semAnimacao
+          />
         </div>
       </section>
+
+      {/* Operadores em Q4 por supervisor */}
+      <section className="space-y-3">
+        {supervisores.map((s) => {
+          const detalhe = detalhes[s.id];
+          return (
+            <LinhaSupervisorQuartil
+              key={s.id}
+              resumo={s}
+              meta={gestorLogado.meta}
+              aberto={abertoId === s.id}
+              carregando={carregandoId === s.id}
+              onToggle={() => toggle(s.id)}
+            >
+              {detalhe ? (
+                <TabelaOperadoresQ4
+                  operadores={detalhe.operadores}
+                  meta={detalhe.meta}
+                  onOperadorClick={(login) => abrirOperador(detalhe, login)}
+                />
+              ) : (
+                <DetalheSupervisorSkeleton />
+              )}
+            </LinhaSupervisorQuartil>
+          );
+        })}
+      </section>
+
+      {/*
+        Marcador do tema do Consolidado: o OperadorDetalheDialog roda em
+        portal e lê a fonte/cores do primeiro [data-page="reports-consolidado"]
+        do DOM — mesmo recurso do comparativo.
+      */}
+      <span data-page="reports-consolidado" hidden aria-hidden="true" />
+
+      <OperadorDetalheDialog
+        operador={operadorSelecionado}
+        nomeExibido={
+          operadorSelecionado
+            ? operadorSelecionado.login.split("@")[0] || operadorSelecionado.login
+            : ""
+        }
+        open={operadorDialogOpen}
+        onOpenChange={setOperadorDialogOpen}
+        meta={operadorMeta}
+        quartil={operadorQuartil}
+      />
     </div>
   );
 }

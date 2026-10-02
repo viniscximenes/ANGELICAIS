@@ -41,6 +41,7 @@ const ROTAS_SEM_BARRA = [
   "/s/reports/tma-peso",
   "/s/operacao/diario",
   "/s/operacao/comparativo",
+  "/s/operacao/quartil",
 ];
 const HIDE_CLASS = "hide-bprogress-bar";
 
