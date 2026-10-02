@@ -1,0 +1,147 @@
+/*
+ * Ajustes visuais específicos de /operacao/diario.
+ * As cores (tokens) vêm da paleta global em src/app/palettes/ (paleta ativa) —
+ * não redefina --background/--card/--primary/... aqui, senão a troca de
+ * paleta deixa de valer nesta página.
+ */
+
+:is([data-page="operacao-diario"], .operacao-diario-portal) {
+  --kpi-shadow: 0 6px 15px rgb(0 0 0 / 0.3);
+
+  --font-sans:
+    var(--font-zen-sans, "Instrument Sans"),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+
+[data-theme="light"] :is([data-page="operacao-diario"], .operacao-diario-portal) {
+  --kpi-shadow: 0 4px 10px rgb(0 0 0 / 0.1);
+}
+
+[data-page="operacao-diario"] {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    var(--font-zen-sans, "Instrument Sans"),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  letter-spacing: 0.01em;
+  /* Card de anexo: mesmos tokens de /s/reports/consolidado (hover = repouso;
+   * passar o mouse só anima a pasta). */
+  --dropzone-idle-bg: color-mix(in oklab, var(--muted) 40%, transparent);
+  --dropzone-hover-bg: var(--dropzone-idle-bg);
+  --glow-accent: color-mix(in oklch, var(--primary) 18%, transparent);
+}
+
+[data-theme="light"] [data-page="operacao-diario"] {
+  --dropzone-idle-bg: var(--muted);
+  --dropzone-hover-bg: var(--muted);
+}
+
+[data-theme="light"] [data-page="operacao-diario"] .upload-dropzone-root-operacao-diario[data-dropzone-state="idle"]:hover {
+  border-color: var(--border) !important;
+}
+
+/* Folhas da pasta na Vercel clara — mesmos tons de /s/reports/consolidado. */
+:root[data-palette="vercel"][data-theme="light"] [data-page="operacao-diario"] {
+  --upload-folder-paper-1: oklch(0.30 0 0);
+  --upload-folder-paper-2: oklch(0.42 0 0);
+  --upload-folder-paper-3: oklch(0.56 0 0);
+}
+
+.operacao-diario-portal {
+  font-family:
+    var(--font-zen-sans, "Instrument Sans"),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+
+[data-page="operacao-diario"] [data-diario-table] > :first-child {
+  border-radius: 0;
+}
+
+[data-page="operacao-diario"] .diario-theme-count {
+  display: inline-grid;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 9%, transparent);
+  padding-inline: 0.3rem;
+  color: inherit;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  line-height: 1;
+}
+
+[data-page="operacao-diario"]
+  [role="radio"][aria-checked="true"]
+  .diario-theme-count {
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
+  background: color-mix(in srgb, currentColor 13%, transparent);
+}
+
+[data-page="operacao-diario"] [data-just-editable]:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+[data-page="operacao-diario"] .status-danger {
+  color: var(--danger);
+  background: color-mix(in oklch, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in oklch, var(--danger) 35%, transparent);
+}
+
+.operacao-diario-toast {
+  background: var(--normal-bg) !important;
+  color: var(--normal-text) !important;
+  border: 1px solid var(--normal-border) !important;
+  font-family:
+    var(--font-zen-sans, "Instrument Sans"),
+    ui-sans-serif,
+    system-ui,
+    sans-serif !important;
+}
+
+.operacao-diario-toast [data-icon] svg {
+  color: #8DB596 !important;
+}
+
+.operacao-diario-toast[data-type="error"] [data-icon] svg {
+  color: #F07A62 !important;
+}
+
+.operacao-diario-toast [data-description] {
+  color: color-mix(in oklch, var(--normal-text) 78%, transparent) !important;
+}
+
+[data-theme="light"] .operacao-diario-toast [data-icon] svg {
+  color: #3D6B47 !important;
+}
+
+[data-theme="light"]
+  .operacao-diario-toast[data-type="error"]
+  [data-icon]
+  svg {
+  color: #B3321C !important;
+}
+
+/* ───────── Skeleton (loading.tsx + overlay ao anexar base) ─────────
+ * Mesmos tons do skeleton de /s/reports/consolidado — bg-card sozinho é
+ * branco puro na Vercel clara e os blocos sumiam. */
+.diario-skeleton .bg-card {
+  background-color: color-mix(in oklab, var(--muted-foreground) 14%, transparent);
+}
+.diario-skeleton .bg-card\/70 {
+  background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
+}
+.diario-skeleton :is(.bg-card\/60, .bg-card\/40) {
+  background-color: color-mix(in oklab, var(--muted-foreground) 7%, transparent);
+}

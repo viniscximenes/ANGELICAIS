@@ -94,9 +94,9 @@ export function textoTempoLogado(
   justificativa: string,
 ): string {
   const j = justificativa.trim() || PLACEHOLDER_JUSTIFICATIVA;
-  // Sem pontuação final automática — o texto termina onde a justificativa
-  // termina; se quiser um ponto, o gestor digita.
-  return `No dia ${r.dia} o operador ${r.op} registrou ${r.tempoLogado} de tempo logado devido a ${j}`;
+  // Frase fecha com ponto e a justificativa vem em seguida, sem pontuação
+  // final automática — se quiser um ponto no fim, o gestor digita.
+  return `No dia ${r.dia} o operador ${r.op} registrou ${r.tempoLogado} de tempo logado. ${j}`;
 }
 
 type Grupo = {

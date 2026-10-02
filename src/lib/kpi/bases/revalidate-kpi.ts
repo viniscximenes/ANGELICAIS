@@ -17,7 +17,7 @@ const ROTAS_KPI = [
   "/s/kpi/gestor",
   "/s/kpi/detalhado-polo",
   "/operacao/analise-operadores",
-  "/operacao/diario",
+  "/s/operacao/diario",
 ] as const;
 
 export function revalidateKpiSnapshots(): void {

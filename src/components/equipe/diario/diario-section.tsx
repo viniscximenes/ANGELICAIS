@@ -8,22 +8,35 @@ import {
 } from "react";
 import { toast } from "sonner";
 
+import { DiarioSkeleton } from "@/app/(dashboard)/s/operacao/diario/loading";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 import { SegmentedControl } from "@/app/(dashboard)/s/kpi/operadores/_components/segmented-control";
-import { StyledCard } from "@/components/gestor/styled-card";
 import {
   gerarReportsDiario,
   PLACEHOLDER_JUSTIFICATIVA,
   textoTempoLogado,
   type ReportDiario,
 } from "@/lib/equipe/diario/gerar-reports-diario";
-import type { JustificativaPadrao } from "@/lib/equipe/diario/get-justificativas-padrao";
 import { parseDiarioCsv } from "@/lib/equipe/diario/parse-diario-csv";
 
 import { CopyTextoButton } from "./copy-texto-button";
 import { DiarioCsvDropzone } from "./diario-csv-dropzone";
-import { PresetsJustificativaButton } from "./presets-justificativa-button";
+import { DownloadReportButton } from "./download-report-button";
 
 const TODOS_TEMAS = "__todos__";
+
+// Piso mínimo do skeleton ao anexar uma base — mesmo valor do F5
+// (MIN_LOADING_MS em page.tsx).
+const MIN_LOADING_MS = 3_000;
+
+// Linhas em branco da tabela vazia (antes de anexar uma base ou quando a
+// base não gera nenhum report).
+const LINHAS_VAZIAS = 12;
+
+// Cabeçalho no mesmo padrão da EquipeTable de /s/reports/consolidado
+// (ds-body, negrito, text-foreground, borda inferior em var(--border)).
+const TH_CLASS =
+  "whitespace-nowrap border-b border-r border-b-border border-r-border/50 px-2 py-2.5 text-center";
 
 function celulaDeColuna(
   node: Node | null,
@@ -68,7 +81,6 @@ function handleColunaCopy(e: ReactClipboardEvent<HTMLElement>) {
 interface DiarioSectionProps {
   operadoresValidos: string[];
   rosterErro?: string | null;
-  justificativasPadrao: JustificativaPadrao[];
   fontVariableClassName: string;
 }
 
@@ -80,7 +92,6 @@ type Resultado = {
 export function DiarioSection({
   operadoresValidos,
   rosterErro,
-  justificativasPadrao,
   fontVariableClassName,
 }: DiarioSectionProps) {
   const [resultado, setResultado] = useState<Resultado | null>(null);
@@ -90,27 +101,34 @@ export function DiarioSection({
   );
   const [resetKey, setResetKey] = useState(0);
   const [temaSelecionado, setTemaSelecionado] = useState(TODOS_TEMAS);
+  const [processando, setProcessando] = useState(false);
 
   const justRef = useRef(justificativas);
   justRef.current = justificativas;
-  const editableRefs = useRef(new Map<string, HTMLSpanElement | null>());
-
-  function aplicarPreset(id: string, texto: string) {
-    const el = editableRefs.current.get(id);
-    if (el) el.innerText = texto;
-    setJustificativas((prev) => ({ ...prev, [id]: texto }));
-  }
 
   const validosSet = useMemo(
     () => new Set(operadoresValidos),
     [operadoresValidos],
   );
 
-  function handleCsv(csvText: string, fileName: string) {
+  async function handleCsv(csvText: string, fileName: string) {
+    const inicio = Date.now();
+    setProcessando(true);
+
+    const parsed = parseDiarioCsv(csvText);
+    const reports = parsed.erro
+      ? []
+      : gerarReportsDiario(parsed.linhas, validosSet);
+
+    const faltam = MIN_LOADING_MS - (Date.now() - inicio);
+    if (faltam > 0) {
+      await new Promise((resolve) => setTimeout(resolve, faltam));
+    }
+    setProcessando(false);
+
     setErro(null);
     setResetKey((key) => key + 1);
 
-    const parsed = parseDiarioCsv(csvText);
     if (parsed.erro) {
       setResultado(null);
       setJustificativas({});
@@ -122,8 +140,13 @@ export function DiarioSection({
       return;
     }
 
-    const reports = gerarReportsDiario(parsed.linhas, validosSet);
-    setTemaSelecionado(reports[0]?.tema ?? TODOS_TEMAS);
+    // Toda base nova abre fixa no filtro "Pausas"; se a base não tiver
+    // nenhuma pausa, cai no primeiro tema existente (ou "Todos").
+    setTemaSelecionado(
+      reports.some((report) => report.tema === "Pausas")
+        ? "Pausas"
+        : (reports[0]?.tema ?? TODOS_TEMAS),
+    );
     setJustificativas({});
     setResultado({
       reports,
@@ -132,13 +155,6 @@ export function DiarioSection({
         puladas: parsed.puladas,
         fileName,
       },
-    });
-    toast.success("Base processada", {
-      description:
-        reports.length === 1
-          ? "1 report gerado."
-          : `${reports.length} reports gerados.`,
-      className: "operacao-diario-toast",
     });
   }
 
@@ -200,203 +216,208 @@ export function DiarioSection({
 
   return (
     <section className="space-y-8">
-      <div className="min-h-[90px] w-full">
-        <StyledCard withGradient className="flex h-full flex-col p-3">
-          <span className="mb-3 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Anexar base
-          </span>
-          <div className="min-h-0 flex-1">
-            <DiarioCsvDropzone
-              onCsv={handleCsv}
-              fontVariableClassName={fontVariableClassName}
-            />
-          </div>
+      {/*
+        Skeleton ao anexar uma base — o MESMO do F5 (loading.tsx), fixo por
+        cima só da área de conteúdo (abaixo do header de 60px, à direita da
+        sidebar de 240px em lg+), mesmo padrão do overlay de refresh de
+        /s/reports/consolidado.
+      */}
+      {processando && (
+        <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] !mt-0 overflow-hidden lg:left-[240px]">
+          <DiarioSkeleton comFiltro />
+        </div>
+      )}
 
-          {rosterErro && (
-            <p className="mt-3 text-sm text-destructive">
-              Não foi possível carregar a equipe: {rosterErro}
-            </p>
-          )}
+      <div className="w-full">
+        <div className="grid min-h-[180px] min-w-0">
+          <DiarioCsvDropzone onCsv={handleCsv} />
+        </div>
 
-          {erro && (
-            <p
-              role="alert"
-              className="status-danger mt-3 rounded-md px-3 py-2 text-sm"
-            >
-              {erro}
-            </p>
-          )}
-        </StyledCard>
+        {rosterErro && (
+          <p className="mt-3 text-sm text-destructive">
+            Não foi possível carregar a equipe: {rosterErro}
+          </p>
+        )}
+
+        {erro && (
+          <p
+            role="alert"
+            className="status-danger mt-3 rounded-md px-3 py-2 text-sm"
+          >
+            {erro}
+          </p>
+        )}
       </div>
 
-      {resultado && (
-        <section aria-labelledby="diario-reports-title" className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2
-              id="diario-reports-title"
-              className="text-xl font-semibold tracking-[-0.025em] text-foreground"
-            >
-              Reports gerados
-            </h2>
-            {itensTema.length > 0 && (
-              <SegmentedControl
-                items={itensTema}
-                value={temaSelecionado}
-                onChange={setTemaSelecionado}
-                ariaLabel="Filtrar reports por tema"
-                layoutId="operacao-diario-tema"
-                className="self-start sm:self-auto"
-              />
-            )}
+      <section aria-label="Reports gerados" className="space-y-4">
+        {itensTema.length > 0 && (
+          <div className="flex justify-start sm:justify-end">
+            <SegmentedControl
+              items={itensTema}
+              value={temaSelecionado}
+              onChange={setTemaSelecionado}
+              ariaLabel="Filtrar reports por tema"
+              layoutId="operacao-diario-tema"
+            />
           </div>
+        )}
 
-          <StyledCard withGradient className="p-3">
-            {resultado.reports.length === 0 ? (
-              <p className="px-3 py-10 text-center text-sm text-muted-foreground">
-                Nenhuma divergência a reportar nesta base.
-              </p>
-            ) : (
-              <div
-                className="overflow-x-auto scrollbar-tema"
-                onCopy={handleColunaCopy}
-              >
-                <table
-                  data-diario-table
-                  className="w-full min-w-[900px] table-auto border-collapse"
-                >
-                  <thead>
-                    <tr className="bg-muted/40 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      <th className="w-px whitespace-nowrap border-b border-r border-border/50 px-3 py-2.5 text-center">
-                        Dia
-                      </th>
-                      <th className="w-px whitespace-nowrap border-b border-r border-border/50 px-3 py-2.5 text-center">
-                        Operador
-                        <span
-                          aria-hidden="true"
-                          className="invisible block h-0 whitespace-nowrap text-sm font-normal normal-case tracking-normal"
-                        >
-                          {operadorMaisLongo}
-                        </span>
-                      </th>
-                      <th className="w-px whitespace-nowrap border-b border-r border-border/50 px-3 py-2.5 text-center">
-                        Tema
-                      </th>
-                      <th className="w-full min-w-[28rem] border-b border-border/50 px-3 py-2.5 text-center">
-                        Report
-                      </th>
-                      <th
-                        aria-label="Ações"
-                        className="w-px border-b border-border/50 px-3 py-2.5"
-                      />
+        <KpiFrame>
+          <div
+            className="overflow-x-auto scrollbar-tema"
+            onCopy={handleColunaCopy}
+          >
+            <table
+              data-diario-table
+              className="w-full min-w-[900px] table-auto border-collapse"
+            >
+              <thead>
+                <tr className="ds-body bg-muted/40 font-bold uppercase tracking-wide text-foreground">
+                  <th className={`w-px ${TH_CLASS}`}>Dia</th>
+                  <th className={`w-px ${TH_CLASS}`}>
+                    Operador
+                    <span
+                      aria-hidden="true"
+                      className="invisible block h-0 whitespace-nowrap text-sm font-normal normal-case tracking-normal"
+                    >
+                      {operadorMaisLongo}
+                    </span>
+                  </th>
+                  <th className={`w-px ${TH_CLASS}`}>Tema</th>
+                  <th className="w-full min-w-[28rem] border-b border-border px-2 py-2.5 text-center">
+                    Report
+                  </th>
+                  <th
+                    aria-label="Ações"
+                    className="w-px border-b border-border px-2 py-2.5"
+                  />
+                </tr>
+              </thead>
+              <tbody>
+                {reportsVisiveis.length === 0 &&
+                  Array.from({ length: LINHAS_VAZIAS }, (_, i) => (
+                    <tr
+                      key={`vazia-${i}`}
+                      aria-hidden="true"
+                      className="h-12 border-b border-border/30 last:border-b-0"
+                    >
+                      <td className="w-px border-r border-border/30 px-3 py-2 text-sm">
+                        &nbsp;
+                      </td>
+                      <td className="w-px border-r border-border/30 px-3 py-2 text-sm" />
+                      <td className="w-px border-r border-border/30 px-3 py-2 text-sm" />
+                      <td className="w-full px-3 py-2 text-sm" />
+                      <td className="w-px px-3 py-2" />
                     </tr>
-                  </thead>
-                  <tbody>
-                    {reportsVisiveis.map((report) => (
-                      <tr
-                        key={report.id}
-                        data-diario-row
-                        className="border-b border-border/30 transition-colors last:border-b-0 hover:bg-accent"
-                      >
-                        <td
-                          data-column="dia"
-                          className="w-px whitespace-nowrap border-r border-border/30 px-3 py-2 text-center text-sm tabular-nums"
-                        >
-                          {report.dia}
-                        </td>
-                        <td
-                          data-column="op"
-                          className="w-px whitespace-nowrap border-r border-border/30 px-3 py-2 text-center text-sm"
-                        >
-                          {report.op}@alloha.com
-                        </td>
-                        <td
-                          data-column="tema"
-                          className="w-px whitespace-nowrap border-r border-border/30 px-3 py-2 text-center text-sm"
-                        >
-                          {report.tema}
-                        </td>
-                        <td
-                          data-column="report"
-                          className="w-full min-w-[28rem] whitespace-normal px-3 py-2 text-sm leading-relaxed"
-                        >
-                          {report.tipo === "pausa" ? (
-                            report.texto
-                          ) : (
-                            <>
-                              No dia {report.dia} o operador {report.op} registrou{" "}
-                              {report.tempoLogado} de tempo logado devido a{" "}
-                              <span
-                                key={`${report.id}__${resetKey}`}
-                                role="textbox"
-                                aria-label={`Justificativa de ${report.op} em ${report.dia}`}
-                                contentEditable
-                                suppressContentEditableWarning
-                                data-just-editable
-                                data-placeholder={PLACEHOLDER_JUSTIFICATIVA}
-                                ref={(element) => {
-                                  editableRefs.current.set(report.id, element);
-                                  const textoSalvo =
-                                    justRef.current[report.id] ?? "";
-                                  if (
-                                    element &&
-                                    textoSalvo &&
-                                    element.innerText !== textoSalvo
-                                  ) {
-                                    element.innerText = textoSalvo;
-                                  }
-                                }}
-                                onInput={(event) => {
-                                  const element = event.currentTarget;
-                                  const text = element.innerText ?? "";
-                                  if (
-                                    text.trim() === "" &&
-                                    element.innerHTML !== ""
-                                  ) {
-                                    element.innerHTML = "";
-                                  }
-                                  setJustificativas((prev) => ({
-                                    ...prev,
-                                    [report.id]: text,
-                                  }));
-                                }}
-                                className="mx-0.5 border-b border-dashed border-border/70 whitespace-pre-wrap outline-none transition-colors focus:border-ring"
-                              />
-                            </>
-                          )}
-                        </td>
-                        <td className="w-px whitespace-nowrap px-3 py-2 align-top">
-                          <div className="flex items-start justify-end gap-2">
-                            {report.tipo === "tempo_logado" && (
-                              <PresetsJustificativaButton
-                                opcoes={justificativasPadrao}
-                                fontVariableClassName={fontVariableClassName}
-                                onEscolher={(texto) =>
-                                  aplicarPreset(report.id, texto)
-                                }
-                              />
-                            )}
-                            <CopyTextoButton
-                              fontVariableClassName={fontVariableClassName}
-                              getTexto={() =>
-                                report.tipo === "pausa"
-                                  ? report.texto
-                                  : textoTempoLogado(
-                                      report,
-                                      justRef.current[report.id] ?? "",
-                                    )
+                  ))}
+                {reportsVisiveis.map((report) => (
+                  <tr
+                    key={report.id}
+                    data-diario-row
+                    className="border-b border-border/30 last:border-b-0"
+                  >
+                    <td
+                      data-column="dia"
+                      className="w-px whitespace-nowrap border-r border-border/30 px-3 py-2 text-center text-sm tabular-nums"
+                    >
+                      {report.dia}
+                    </td>
+                    <td
+                      data-column="op"
+                      className="w-px whitespace-nowrap border-r border-border/30 px-3 py-2 text-center text-sm"
+                    >
+                      {report.op}@alloha.com
+                    </td>
+                    <td
+                      data-column="tema"
+                      className="w-px whitespace-nowrap border-r border-border/30 px-3 py-2 text-center text-sm"
+                    >
+                      {report.tema}
+                    </td>
+                    <td
+                      data-column="report"
+                      className="w-full min-w-[28rem] whitespace-normal px-3 py-2 text-sm leading-relaxed"
+                    >
+                      {report.tipo === "pausa" ? (
+                        report.texto
+                      ) : (
+                        <>
+                          No dia {report.dia} o operador {report.op} registrou{" "}
+                          {report.tempoLogado} de tempo logado.{" "}
+                          <span
+                            key={`${report.id}__${resetKey}`}
+                            role="textbox"
+                            aria-label={`Justificativa de ${report.op} em ${report.dia}`}
+                            contentEditable
+                            suppressContentEditableWarning
+                            data-just-editable
+                            data-placeholder={PLACEHOLDER_JUSTIFICATIVA}
+                            ref={(element) => {
+                              const textoSalvo =
+                                justRef.current[report.id] ?? "";
+                              if (
+                                element &&
+                                textoSalvo &&
+                                element.innerText !== textoSalvo
+                              ) {
+                                element.innerText = textoSalvo;
                               }
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </StyledCard>
-        </section>
-      )}
+                            }}
+                            onInput={(event) => {
+                              const element = event.currentTarget;
+                              const text = element.innerText ?? "";
+                              if (
+                                text.trim() === "" &&
+                                element.innerHTML !== ""
+                              ) {
+                                element.innerHTML = "";
+                              }
+                              setJustificativas((prev) => ({
+                                ...prev,
+                                [report.id]: text,
+                              }));
+                            }}
+                            className="mx-0.5 border-b border-dashed border-border/70 whitespace-pre-wrap outline-none transition-colors focus:border-ring"
+                          />
+                        </>
+                      )}
+                    </td>
+                    <td className="w-px whitespace-nowrap px-3 py-2 align-top">
+                      <div className="flex items-start justify-end gap-2">
+                        <CopyTextoButton
+                          fontVariableClassName={fontVariableClassName}
+                          getTexto={() =>
+                            report.tipo === "pausa"
+                              ? report.texto
+                              : textoTempoLogado(
+                                  report,
+                                  justRef.current[report.id] ?? "",
+                                )
+                          }
+                        />
+                        <DownloadReportButton
+                          dia={report.dia}
+                          operador={`${report.op}@alloha.com`}
+                          tema={report.tema}
+                          fontVariableClassName={fontVariableClassName}
+                          getTexto={() =>
+                            report.tipo === "pausa"
+                              ? report.texto
+                              : textoTempoLogado(
+                                  report,
+                                  justRef.current[report.id] ?? "",
+                                )
+                          }
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </KpiFrame>
+      </section>
     </section>
   );
 }

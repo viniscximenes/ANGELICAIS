@@ -6,7 +6,6 @@ import "./operacao-diario.css";
 import { DiarioSection } from "@/components/equipe/diario/diario-section";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
-import { getJustificativasPadrao } from "@/lib/equipe/diario/get-justificativas-padrao";
 import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getEquipeAction } from "@/lib/gestor/equipe/actions";
 
@@ -22,7 +21,20 @@ const zenSans = Instrument_Sans({
 
 export const dynamic = "force-dynamic";
 
+// Piso mínimo do loading.tsx (skeleton) — mesmo padrão de
+// /s/reports/consolidado: se os dados voltarem rápido, o skeleton não pisca.
+const MIN_LOADING_MS = 3_000;
+
+async function aguardarPisoMinimo(desde: number) {
+  const faltam = MIN_LOADING_MS - (Date.now() - desde);
+  if (faltam > 0) {
+    await new Promise((resolve) => setTimeout(resolve, faltam));
+  }
+}
+
 export default async function OperacaoDiarioPage() {
+  const inicioCarregamento = Date.now();
+
   const user = await getCurrentUser();
 
   if (!user) {
@@ -38,14 +50,13 @@ export default async function OperacaoDiarioPage() {
   // Única leitura no Supabase: o roster do gestor (mesma fonte de
   // /configuracoes/equipe). Só serve para filtrar quais operadores podem
   // aparecer no relatório — nada é gravado.
-  const [roster, justificativasPadrao] = await Promise.all([
-    getEquipeAction(),
-    getJustificativasPadrao(),
-  ]);
+  const roster = await getEquipeAction();
   const operadoresValidos = roster.ok
     ? roster.data.operadores.map((o) => o.email.split("@")[0])
     : [];
   const nomeGestor = formatNomeProprio(user.profile.fullName);
+
+  await aguardarPisoMinimo(inicioCarregamento);
 
   return (
     <div
@@ -57,15 +68,12 @@ export default async function OperacaoDiarioPage() {
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-foreground sm:text-4xl">
             Diário
           </h1>
-          <p className="mt-3 text-sm text-muted-foreground">
-            {nomeGestor}
-          </p>
+          <p className="mt-3 text-sm text-muted-foreground">{nomeGestor}</p>
         </header>
 
         <DiarioSection
           operadoresValidos={operadoresValidos}
           rosterErro={roster.ok ? null : roster.error}
-          justificativasPadrao={justificativasPadrao}
           fontVariableClassName={zenSans.variable}
         />
       </div>

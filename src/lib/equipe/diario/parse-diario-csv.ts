@@ -1,7 +1,7 @@
 import Papa from "papaparse";
 
 /**
- * Parser do CSV de login/logout/pausas da página /operacao/diario.
+ * Parser do CSV de login/logout/pausas da página /s/operacao/diario.
  *
  * DELIBERADAMENTE independente de parse-tempo-logado-csv.ts — nenhuma lógica,
  * tipo ou estado é compartilhado entre as duas telas. Se o formato de uma

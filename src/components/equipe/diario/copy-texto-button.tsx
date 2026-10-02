@@ -41,10 +41,6 @@ export function CopyTextoButton({
       }
 
       setCopiado(true);
-      toast.success("Report copiado", {
-        duration: 1800,
-        className: "operacao-diario-toast",
-      });
       window.setTimeout(() => setCopiado(false), 1500);
     } catch {
       toast.error("Não foi possível copiar o report", {
