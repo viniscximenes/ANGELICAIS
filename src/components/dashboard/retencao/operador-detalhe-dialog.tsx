@@ -210,6 +210,12 @@ export function OperadorDetalheDialog({
 
   stopsGradiente.sort((a, b) => a.offset - b.offset);
 
+  // Cor sólida de fallback da linha (ver comentário no <Line>): a do 1º ponto.
+  const corFallbackLinha =
+    primeiroIdx !== undefined && chartData[primeiroIdx].txDisplay! >= meta
+      ? corAcimaMeta
+      : corAbaixoMeta;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/*
@@ -434,12 +440,19 @@ export function OperadorDetalheDialog({
                         de cor exatamente no ponto de cruzamento com a meta.
                         Fallback sólido depois do url() pro caso raro do
                         gradiente não estar pronto no primeiro frame (SVG
-                        aceita cor de fallback após a referência ao gradiente). */}
+                        aceita cor de fallback após a referência ao gradiente).
+                        Linha RETA (todas as horas com a mesma taxa, ex.:
+                        100% o dia todo) tem caixa de altura zero — o
+                        gradiente (objectBoundingBox) não é aplicado e o SVG
+                        usa o fallback. Por isso o fallback é a cor do 1º
+                        ponto, não vermelho fixo: linha reta nunca cruza a
+                        meta, então a cor do 1º ponto é a da linha toda
+                        (antes saía vermelha mesmo acima da meta). */}
                     <Line
                       yAxisId="left"
                       type="linear"
                       dataKey="txDisplay"
-                      stroke={`url(#${META_GRADIENT_ID}) ${corAbaixoMeta}`}
+                      stroke={`url(#${META_GRADIENT_ID}) ${corFallbackLinha}`}
                       strokeWidth={2.5}
                       animationDuration={350}
                       animationEasing="ease-out"

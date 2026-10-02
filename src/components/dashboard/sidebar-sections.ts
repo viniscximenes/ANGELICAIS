@@ -56,8 +56,8 @@ const ALL_SECTIONS: SidebarSection[] = [
     // respiro extra de início de grupo (ver sidebar.tsx).
     onlyRoles: ["GESTOR"],
     items: [
+      { label: "Comparativo", href: "/s/operacao/comparativo" },
       { label: "Diário", href: "/s/operacao/diario" },
-      { label: "Comparativo Consolidado", href: "/operacao/comparativo-consolidado" },
       { label: "Quartil", href: "/operacao/quartil" },
     ],
   },

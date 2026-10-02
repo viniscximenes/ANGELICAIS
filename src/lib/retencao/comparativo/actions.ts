@@ -62,6 +62,7 @@ export async function fetchComparativoConsolidadoAction(): Promise<ComparativoRe
         : {
             id: user.profile.id,
             nome: formatNomeProprio(user.profile.fullName),
+            username: user.profile.username ?? null,
             tx: null,
             pedidos: 0,
             retidos: 0,

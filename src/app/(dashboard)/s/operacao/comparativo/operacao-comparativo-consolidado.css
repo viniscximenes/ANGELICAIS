@@ -1,0 +1,340 @@
+/*
+ * Ajustes visuais específicos de /operacao/comparativo-consolidado.
+ * As cores (tokens) vêm da paleta global em src/app/palettes/ (paleta ativa) —
+ * não redefina --background/--card/--primary/... aqui, senão a troca de
+ * paleta deixa de valer nesta página.
+ */
+
+[data-page="operacao-comparativo-consolidado"] {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letter-spacing);
+}
+
+/* ───────── Barra de rolagem (fina, no tema da página) ─────────
+ * Mesmo padrão de reports-consolidado.css: containers internos via
+ * descendente; a barra da PÁGINA (html/body, ancestrais do atributo) via
+ * :has(), com as mesmas cores hardcoded de lá.
+ */
+[data-page="operacao-comparativo-consolidado"] {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--border) transparent;
+}
+
+[data-page="operacao-comparativo-consolidado"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-page="operacao-comparativo-consolidado"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-page="operacao-comparativo-consolidado"] ::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+[data-page="operacao-comparativo-consolidado"] ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+  background-clip: padding-box;
+}
+[data-page="operacao-comparativo-consolidado"] ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+html:has([data-page="operacao-comparativo-consolidado"]),
+body:has([data-page="operacao-comparativo-consolidado"]) {
+  scrollbar-width: thin;
+  scrollbar-color: #2C2C2C transparent;
+}
+[data-theme="light"]:has([data-page="operacao-comparativo-consolidado"]),
+[data-theme="light"] body:has([data-page="operacao-comparativo-consolidado"]) {
+  scrollbar-color: #D2CBBB transparent;
+}
+
+html:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar,
+body:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar-track,
+body:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar-track {
+  background: transparent;
+}
+html:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar-thumb,
+body:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar-thumb {
+  background-color: #2C2C2C;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+[data-theme="light"]:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar-thumb,
+[data-theme="light"] body:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar-thumb {
+  background-color: #D2CBBB;
+}
+html:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar-thumb:hover,
+body:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar-thumb:hover {
+  background-color: #8E8A83;
+  background-clip: padding-box;
+}
+[data-theme="light"]:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar-thumb:hover,
+[data-theme="light"] body:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar-thumb:hover {
+  background-color: #5E5A52;
+}
+html:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar-corner,
+body:has([data-page="operacao-comparativo-consolidado"])::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ───────── Toasts desta página (sonner) ─────────
+ * O <Toaster/> global monta em document.body, fora de
+ * [data-page="operacao-comparativo-consolidado"] — por isso a classe
+ * .operacao-comparativo-consolidado-toast (passada só nos toasts desta
+ * rota, ver comparativo-consolidado-section.tsx) em vez do seletor de
+ * atributo. Mesmo padrão de reports-consolidado.css.
+ */
+.operacao-comparativo-consolidado-toast {
+  background: var(--normal-bg) !important;
+  color: var(--normal-text) !important;
+  border: 1px solid var(--normal-border) !important;
+  font-family: var(--font-zen-sans), "Instrument Sans", ui-sans-serif, system-ui, sans-serif !important;
+}
+.operacao-comparativo-consolidado-toast [data-icon] svg {
+  color: #8DB596 !important;
+}
+.operacao-comparativo-consolidado-toast[data-type="error"] [data-icon] svg {
+  color: #F07A62 !important;
+}
+.operacao-comparativo-consolidado-toast[data-type="warning"] [data-icon] svg {
+  color: #D9A74A !important;
+}
+.operacao-comparativo-consolidado-toast[data-type="info"] [data-icon] svg,
+.operacao-comparativo-consolidado-toast[data-type="loading"] [data-icon] svg {
+  color: #D1CFC0 !important;
+}
+.operacao-comparativo-consolidado-toast [data-description] {
+  color: color-mix(in oklch, var(--normal-text) 78%, transparent) !important;
+}
+.operacao-comparativo-consolidado-toast [data-close-button] {
+  border-color: var(--normal-border) !important;
+}
+
+[data-theme="light"] .operacao-comparativo-consolidado-toast {
+  background: var(--normal-bg) !important;
+  color: var(--normal-text) !important;
+  border: 1px solid var(--normal-border) !important;
+}
+[data-theme="light"] .operacao-comparativo-consolidado-toast [data-icon] svg {
+  color: #3D6B47 !important;
+}
+[data-theme="light"] .operacao-comparativo-consolidado-toast[data-type="error"] [data-icon] svg {
+  color: #B3321C !important;
+}
+[data-theme="light"] .operacao-comparativo-consolidado-toast[data-type="warning"] [data-icon] svg {
+  color: #93600F !important;
+}
+[data-theme="light"] .operacao-comparativo-consolidado-toast[data-type="info"] [data-icon] svg,
+[data-theme="light"] .operacao-comparativo-consolidado-toast[data-type="loading"] [data-icon] svg {
+  color: #5B5647 !important;
+}
+
+/* ───────── Foco das linhas de gestor (LinhaGestorComparativo, botão que
+ * expande o detalhe) e de qualquer outro botão com aria-expanded — sem
+ * borda branca/azul de foco do navegador, anel na cor do tema. ───────── */
+[data-page="operacao-comparativo-consolidado"] button[aria-expanded]:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+  border-radius: var(--radius);
+}
+
+/* ───────── Hover das linhas de gestor e das linhas da tabela de operadores
+ * (tema claro) ─────────
+ * hover:bg-muted/10 (classe do JSX) fica quase imperceptível sobre --card no
+ * claro — troca por um tom "bege mais escuro" mais perceptível (mesmo
+ * princípio do hover da EquipeTable em reports-consolidado.css), mantendo a
+ * classe original no dark (já funciona bem lá).
+ */
+[data-theme="light"] [data-page="operacao-comparativo-consolidado"] .hover\:bg-muted\/10:hover {
+  background-color: color-mix(in srgb, var(--muted) 55%, var(--card) 45%) !important;
+}
+
+/* ───────── Fonte única: Instrument Sans em tudo ─────────
+ * Mesma troca de reports-consolidado.css: ds-mono/ds-mono-sm/ds-display/
+ * font-mono (Geist Mono) viram a sans da página, com tabular-nums.
+ */
+[data-page="operacao-comparativo-consolidado"] :is(.ds-mono, .ds-mono-sm, .ds-display, .font-mono) {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ───────── Fundo dos cards de Visão Geral (tema claro) ───────── */
+[data-theme="light"] [data-page="operacao-comparativo-consolidado"] [data-visao-geral-cards] .bg-card\/70 {
+  background-color: color-mix(in srgb, var(--background) 82%, var(--muted) 18%) !important;
+}
+
+/* ───────── Barra lateral do card "Taxa de Retenção" ─────────
+ * Verde dentro da meta, vermelho abaixo — igual ao Consolidado.
+ */
+[data-page="operacao-comparativo-consolidado"] [data-visao-geral-cards] [data-status-meta="dentro"] {
+  background: var(--success) !important;
+}
+[data-page="operacao-comparativo-consolidado"] [data-visao-geral-cards] [data-status-meta="abaixo"] {
+  background: var(--danger) !important;
+}
+
+/* ───────── Gráfico "Evolução da equipe" — sem contorno de foco ao clicar ───────── */
+[data-page="operacao-comparativo-consolidado"] .grafico-evolucao-chart :is(.recharts-wrapper, .recharts-surface, svg, div):is(:focus, :focus-visible) {
+  outline: none;
+}
+
+/* ───────── Cabeçalho da tabela de temas = cabeçalho da tabela principal do Consolidado ─────────
+ * Fundo bg-muted/40 no escuro e var(--muted) no claro; linha inferior 1px
+ * no escuro e 2px no claro; 14px, negrito, 0.025em, caixa alta.
+ */
+[data-page="operacao-comparativo-consolidado"] :is([data-tabela-temas]) thead tr {
+  background-color: color-mix(in oklab, var(--muted) 40%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+[data-page="operacao-comparativo-consolidado"] :is([data-tabela-temas]) thead th {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  line-height: var(--leading-normal);
+  color: var(--foreground);
+}
+[data-theme="light"] [data-page="operacao-comparativo-consolidado"] :is([data-tabela-temas]) thead tr {
+  background-color: var(--muted);
+  border-bottom-width: 2px;
+}
+[data-theme="light"] [data-page="operacao-comparativo-consolidado"] :is([data-tabela-temas]) thead th {
+  color: var(--muted-foreground);
+}
+
+/* ───────── Submotivos da "Taxa de retenção por tema" ───────── */
+[data-page="operacao-comparativo-consolidado"] [data-tabela-temas] tr[data-submotivo]:not(:hover) {
+  background-color: color-mix(in oklab, var(--muted) 15%, transparent);
+}
+[data-theme="light"] [data-page="operacao-comparativo-consolidado"] [data-tabela-temas] tr[data-submotivo]:not(:hover) {
+  background-color: color-mix(in oklab, var(--muted) 45%, transparent);
+}
+[data-page="operacao-comparativo-consolidado"] [data-tabela-temas] [data-status-meta="dentro"] {
+  background-color: var(--success);
+}
+[data-page="operacao-comparativo-consolidado"] [data-tabela-temas] [data-status-meta="abaixo"] {
+  background-color: var(--danger);
+}
+
+/* ───────── Gráfico do detalhe do gestor: só o gráfico ─────────
+ * GraficoEvolucao é compartilhado — sem editar o componente, esconde aqui o
+ * título/descrição e a legenda, deixando só o wrapper do gráfico.
+ */
+[data-page="operacao-comparativo-consolidado"] [data-grafico-comparativo] > div > :not(.grafico-evolucao-chart) {
+  display: none;
+}
+[data-page="operacao-comparativo-consolidado"] [data-grafico-comparativo] .grafico-evolucao-chart {
+  margin: 0;
+}
+
+/* ───────── Tabela de temas do detalhe do gestor: sem título/descrição ───────── */
+[data-page="operacao-comparativo-consolidado"] [data-temas-comparativo] > div > :first-child {
+  display: none;
+}
+[data-page="operacao-comparativo-consolidado"] [data-temas-comparativo] > div > :last-child {
+  margin: 0;
+}
+
+/* ───────── Tabela de operadores (EquipeTable) — mesmas regras de reports-consolidado.css ─────────
+ * Hover das linhas, cabeçalho e linha de totais (EQUIPE) nos dois temas,
+ * copiados de lá (seção "Hover das linhas da EquipeTable" até a tipografia
+ * do cabeçalho/totais), só com o escopo trocado pra esta página.
+ */
+[data-theme="light"] [data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
+  background-color: var(--muted) !important;
+}
+[data-theme="light"] [data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div.hover\:border-l-\[var\(--danger\)\]:not([data-sem-dados="true"]):hover {
+  background-color: color-mix(in srgb, var(--danger) 16%, var(--muted) 84%) !important;
+}
+
+[data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div.hover\:border-l-\[var\(--danger\)\]:not([data-sem-dados="true"]):hover {
+  background-color: color-mix(in oklch, var(--danger) 14%, transparent) !important;
+}
+
+[data-theme] [data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div.hover\:border-l-\[var\(--danger\)\]:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
+  background-color: color-mix(in oklch, var(--danger) 10%, transparent) !important;
+}
+[data-theme] [data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div.hover\:border-l-\[var\(--success\)\]:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
+  background-color: color-mix(in oklch, var(--success) 7%, transparent) !important;
+}
+
+[data-theme="light"] [data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div:first-child {
+  color: var(--muted-foreground) !important;
+}
+[data-theme="light"] [data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div:last-child > div:first-child {
+  color: var(--muted-foreground) !important;
+}
+
+[data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div.font-bold:last-child:not(:first-child) {
+  background-color: color-mix(in oklab, var(--muted) 40%, transparent);
+  color: var(--foreground);
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+[data-theme="light"] [data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div.font-bold:last-child:not(:first-child) {
+  background-color: var(--muted) !important;
+  color: var(--muted-foreground) !important;
+}
+
+[data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div.font-bold:last-child:not(:first-child) {
+  border-bottom: none !important;
+  
+  border-top-width: 1px !important;
+}
+[data-theme="light"] [data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div.font-bold:last-child:not(:first-child) {
+  border-top-width: 2px !important;
+}
+[data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div.font-bold:last-child:not(:first-child) > div {
+  border-right-color: color-mix(in oklab, var(--border) 50%, transparent);
+}
+
+[data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div:first-child > div,
+[data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div.font-bold:last-child:not(:first-child) > div {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 700;
+  line-height: var(--leading-normal);
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+[data-theme="light"] [data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div:first-child > div,
+[data-theme="light"] [data-page="operacao-comparativo-consolidado"] [data-equipe-table] > div.font-bold:last-child:not(:first-child) > div {
+  color: var(--muted-foreground) !important;
+}
+
+/* ───────── Tabela de operadores ocupando a largura toda ─────────
+ * A EquipeTable fixa as colunas em px via style inline (190/127/127/126/190
+ * + RV 0px, oculta aqui). !important pra vencer o inline: a coluna Operador
+ * vira 1fr (mínimo 190px) e absorve o espaço que sobra; as demais mantêm a
+ * largura do Consolidado. Vale pro cabeçalho, linhas e totais (todos são
+ * filhos diretos de [data-equipe-table]).
+ */
+[data-page="operacao-comparativo-consolidado"] [data-operadores-comparativo] [data-equipe-table] > div {
+  grid-template-columns: minmax(190px, 1fr) 127px 127px 126px 190px 0px !important;
+}
+
+/* ───────── Instrument Sans em TODA a página, inclusive números ─────────
+ * Reforço da regra "Fonte única" acima: qualquer elemento (texto, números
+ * dos cards/tabelas, rótulos e eixos SVG dos gráficos, tooltips) usa
+ * var(--font-sans) = Instrument Sans (--font-zen-sans, carregada no
+ * page.tsx), mesmo que algum componente compartilhado defina outra família
+ * (ds-display/ds-mono = Geist Mono). tabular-nums mantém os números
+ * alinhados nas colunas, como o mono garantia.
+ */
+[data-page="operacao-comparativo-consolidado"],
+[data-page="operacao-comparativo-consolidado"] *,
+[data-page="operacao-comparativo-consolidado"] svg text {
+  font-family: var(--font-sans) !important;
+  font-variant-numeric: tabular-nums;
+}

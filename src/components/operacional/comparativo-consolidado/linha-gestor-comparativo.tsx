@@ -4,12 +4,13 @@ import type { ReactNode } from "react";
 import { IconChevronDown, IconChevronRight, IconLoader2 } from "@tabler/icons-react";
 
 import { StyledCard } from "@/components/gestor/styled-card";
+import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import type { IndicadoresGestor } from "@/lib/retencao/comparativo/get-gestores-comparativo";
 
 interface LinhaGestorComparativoProps {
   indicadores: Pick<
     IndicadoresGestor,
-    "nome" | "tx" | "pedidos" | "retidos" | "cancelados"
+    "nome" | "username" | "tx" | "pedidos" | "retidos" | "cancelados"
   >;
   /** Meta de tx (0-100) para colorir a taxa. */
   meta: number;
@@ -32,7 +33,14 @@ export function LinhaGestorComparativo({
   onToggle,
   children,
 }: LinhaGestorComparativoProps) {
-  const { nome, tx, pedidos, retidos, cancelados } = indicadores;
+  const { nome, username, tx, pedidos, retidos, cancelados } = indicadores;
+
+  // Nome de exibição a partir do user ("ana.angelica" ou
+  // "ana.angelica@alloha.com" → "Ana Angelica"), mesmo padrão do nome do
+  // supervisor nos reports (resolveNomeSupervisorReportExibicao). Sem
+  // username, mantém o nome completo.
+  const usuario = username?.split("@")[0]?.trim();
+  const nomeCurto = usuario ? formatNomeProprio(usuario.replace(/[._-]+/g, " ")) : nome;
 
   const txClasse =
     tx === null
@@ -76,7 +84,7 @@ export function LinhaGestorComparativo({
 
         <span className="flex min-w-0 flex-col">
           <span className="ds-body text-foreground text-sm font-semibold truncate">
-            {nome}
+            {nomeCurto}
           </span>
           {destaque && (
             <span className="ds-small text-primary text-[10px] font-semibold uppercase tracking-wider">

@@ -14,6 +14,8 @@ export type GestorComRoster = {
   id: string;
   /** profiles.full_name já formatado (Title Case). */
   nome: string;
+  /** profiles.username ("nome.sobrenome") — usado pelo comparativo pra exibir "Nome Sobrenome". */
+  username: string | null;
   /** Emails do roster (d1_operadores_gestor.operador_email), lower-case. */
   emails: string[];
 };
@@ -23,6 +25,8 @@ export type IndicadoresGestor = {
   /** profiles.id */
   id: string;
   nome: string;
+  /** profiles.username ("nome.sobrenome"), ver GestorComRoster. */
+  username: string | null;
   /** Taxa de retenção 0-1 (null quando não há pedidos). */
   tx: number | null;
   /** PEDIDOS = RETIDOS + CANCELADOS. */
@@ -57,6 +61,7 @@ export async function listarGestoresComRoster(): Promise<GestorComRoster[]> {
     gestores.map(async (g) => ({
       id: g.id as string,
       nome: g.full_name ? formatNomeProprio(g.full_name) : (g.username ?? "Gestor"),
+      username: (g.username as string | null) ?? null,
       emails: await getRosterOperadoresGestor(g.id as string),
     })),
   );
@@ -75,6 +80,7 @@ export async function getIndicadoresGestor(
   return {
     id: gestor.id,
     nome: gestor.nome,
+    username: gestor.username,
     tx: visao.tx,
     pedidos: visao.total,
     retidos: visao.retidos,

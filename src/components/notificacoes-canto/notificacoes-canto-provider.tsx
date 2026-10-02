@@ -193,7 +193,7 @@ function ComparativoCard({ onFechar }: { onFechar: () => void }) {
         </Button>
         <Button
           size="sm"
-          onClick={() => router.push("/operacao/comparativo-consolidado")}
+          onClick={() => router.push("/s/operacao/comparativo")}
         >
           Ver comparativo
         </Button>
