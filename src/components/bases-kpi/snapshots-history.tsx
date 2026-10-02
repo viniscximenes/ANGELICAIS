@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { IconLoader2, IconTrash } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { StyledCard } from "@/components/gestor/styled-card";
-import { Button } from "@/components/ui/button";
+import { HoldButton } from "@/components/ui/hold-button";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 import {
   Table,
   TableBody,
@@ -29,7 +29,6 @@ interface SnapshotsHistoryProps {
 
 export function SnapshotsHistory({ snapshots, type = "operadores" }: SnapshotsHistoryProps) {
   const router = useRouter();
-  const [deletingMonth, setDeletingMonth] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // Cada histórico apaga só a SUA base — o de operadores não encosta em
@@ -38,20 +37,8 @@ export function SnapshotsHistory({ snapshots, type = "operadores" }: SnapshotsHi
   const baseLabel = type === "gestores" ? "GESTORES" : "OPERADORES";
 
   function handleDelete(mesRef: string) {
-    if (
-      !confirm(
-        `Apagar os dados de ${baseLabel} de ${formatMonthLabel(mesRef)}?\n\n` +
-          `Só a base de ${baseLabel.toLowerCase()} é afetada. Esta ação não pode ser desfeita.`,
-      )
-    ) {
-      return;
-    }
-
-    setDeletingMonth(mesRef);
-
     startTransition(async () => {
       const result = await deleteMonthAction(mesRef, scope);
-      setDeletingMonth(null);
 
       if (!result.success) {
         toast.error("Não foi possível apagar", { description: result.error });
@@ -73,34 +60,33 @@ export function SnapshotsHistory({ snapshots, type = "operadores" }: SnapshotsHi
 
   return (
     <section className="space-y-4 pt-4">
-      <div className="flex items-center gap-3 pt-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-            Histórico
+      <div className="flex items-center gap-2 pt-2">
+        <h2 className="font-sans text-xl font-semibold tracking-tight text-foreground">
+          Histórico
+        </h2>
+        {snapshots.length > 0 && (
+          <span className="font-sans rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
+            {snapshots.length}
           </span>
-          {snapshots.length > 0 && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted text-muted-foreground font-medium">
-              {snapshots.length}
-            </span>
-          )}
-        </div>
-        <div className="h-px flex-1 bg-border/40" aria-hidden="true" />
+        )}
       </div>
 
-      <StyledCard withGradient className="p-6 gap-0">
-        <Table>
+      {/* Só as cantoneiras, igual à tabela de operadores do Consolidado. */}
+      <KpiFrame>
+        {/* data-tabela-historico: cabeçalho no padrão do Consolidado (bases-kpi.css). */}
+        <Table data-tabela-historico>
           <TableHeader>
-            <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
-              <TableHead className="ds-mono-sm text-muted-foreground px-3 py-3.5 font-semibold tracking-wider uppercase align-middle leading-none">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="px-3 py-3 align-middle">
                 Mês
               </TableHead>
-              <TableHead className="ds-mono-sm text-muted-foreground hidden px-3 py-3.5 font-semibold tracking-wider uppercase align-middle leading-none sm:table-cell">
+              <TableHead className="hidden px-3 py-3 align-middle sm:table-cell">
                 Atualizado em
               </TableHead>
-              <TableHead className="ds-mono-sm text-muted-foreground px-3 py-3.5 font-semibold tracking-wider uppercase align-middle leading-none">
+              <TableHead className="px-3 py-3 align-middle">
                 {type === "gestores" ? "Gestores" : "Operadores"}
               </TableHead>
-              <TableHead className="px-3 py-3.5 text-right align-middle" aria-label="Ações" />
+              <TableHead className="px-3 py-3 text-right align-middle" aria-label="Ações" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -117,21 +103,19 @@ export function SnapshotsHistory({ snapshots, type = "operadores" }: SnapshotsHi
               </TableRow>
             ) : (
               snapshots.map((s) => {
-                const isDeleting = deletingMonth === s.mesRef;
-
                 return (
-                  <TableRow key={s.mesRef} className="hover:bg-muted/10">
-                    <TableCell className="px-3 py-2 align-middle">
-                      <span className="ds-body font-medium">
+                  <TableRow key={s.mesRef} className="hover:bg-transparent">
+                    <TableCell className="px-3 py-2.5 align-middle">
+                      <span className="font-medium">
                         {formatMonthLabel(s.mesRef)}
                       </span>
                     </TableCell>
 
-                    <TableCell className="ds-mono-sm text-muted-foreground hidden px-3 py-2 align-middle sm:table-cell">
+                    <TableCell className="text-muted-foreground hidden px-3 py-2.5 align-middle sm:table-cell">
                       {formatDateTimeBR(s.updatedAt)}
                     </TableCell>
 
-                    <TableCell className="ds-mono-sm text-muted-foreground px-3 py-2 align-middle">
+                    <TableCell className="text-muted-foreground px-3 py-2.5 tabular-nums align-middle">
                       {type === "gestores" ? (
                         <>
                           {s.totalOperators} gestor{s.totalOperators === 1 ? "" : "es"}
@@ -144,26 +128,31 @@ export function SnapshotsHistory({ snapshots, type = "operadores" }: SnapshotsHi
                     </TableCell>
 
                     <TableCell className="px-3 py-1.5 text-right align-middle">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={isPending}
-                        onClick={() => handleDelete(s.mesRef)}
-                        aria-label={`Apagar ${formatMonthLabel(s.mesRef)}`}
-                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5"
-                      >
-                        {isDeleting ? (
-                          <IconLoader2
-                            size={14}
-                            className="animate-spin"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <IconTrash size={14} aria-hidden="true" />
-                        )}
-                        Apagar
-                      </Button>
+                      {/* Mesmo Hold Button do "Limpar Base" do Consolidado:
+                          segurar expande, revela o texto e só apaga ao
+                          completar a pressão (substitui o confirm()). */}
+                      <div className="inline-flex justify-end">
+                        <HoldButton
+                          disabled={isPending}
+                          ariaLabel={`Segure para apagar ${formatMonthLabel(s.mesRef)}`}
+                          icon={<IconTrash size={15} aria-hidden="true" />}
+                          doneIcon={
+                            <IconLoader2 size={15} className="animate-spin" aria-hidden="true" />
+                          }
+                          doneLabel="Apagando..."
+                          fillColor="var(--seg-thumb)"
+                          fillTextColor="var(--seg-text-active)"
+                          textColor="var(--muted-foreground)"
+                          holdTime={1600}
+                          releaseTime={200}
+                          resetAfter={1200}
+                          expandedWidth={116}
+                          onHold={() => handleDelete(s.mesRef)}
+                          className="bases-kpi-apagar font-sans border border-border"
+                        >
+                          Apagar
+                        </HoldButton>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -171,7 +160,7 @@ export function SnapshotsHistory({ snapshots, type = "operadores" }: SnapshotsHi
             )}
           </TableBody>
         </Table>
-      </StyledCard>
+      </KpiFrame>
     </section>
   );
 }

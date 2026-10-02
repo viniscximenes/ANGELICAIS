@@ -80,7 +80,7 @@ const ALL_SECTIONS: SidebarSection[] = [
     permission: "manage_base",
     divider: "PAINEL ADM",
     items: [
-      { label: "KPI", href: "/bases/kpi" },
+      { label: "KPI", href: "/s/bases/kpi" },
       { label: "Pausas", href: "/bases/pausas" },
     ],
   },

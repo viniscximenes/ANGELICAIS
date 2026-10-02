@@ -24,6 +24,13 @@ const nextConfig: NextConfig = {
         destination: "/s/kpi/evolucao",
         permanent: false,
       },
+      // /bases/kpi migrou pra /s/bases/kpi. Mantém o link/favorito antigo
+      // funcionando — o gate de acesso roda na rota nova (page.tsx).
+      {
+        source: "/bases/kpi",
+        destination: "/s/bases/kpi",
+        permanent: false,
+      },
     ];
   },
 };

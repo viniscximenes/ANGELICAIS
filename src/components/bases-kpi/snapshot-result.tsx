@@ -7,7 +7,6 @@ import {
 } from "@tabler/icons-react";
 import { motion } from "motion/react";
 
-import { StyledCard } from "@/components/gestor/styled-card";
 import { formatMonthLabel } from "@/lib/kpi/bases/format-date";
 import type { ProcessSnapshotResult } from "@/lib/kpi/bases/process-snapshot-action";
 
@@ -26,7 +25,7 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
         transition={{ duration: 0.2, ease: EASE_OUT_EXPO }}
         role="alert"
       >
-        <StyledCard withGradient className="gap-0">
+        <div>
           <div className="flex items-start gap-3">
             <IconAlertCircle
               size={20}
@@ -40,7 +39,7 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
               </p>
             </div>
           </div>
-        </StyledCard>
+        </div>
       </motion.div>
     );
   }
@@ -52,7 +51,7 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
       transition={{ duration: 0.2, ease: EASE_OUT_EXPO }}
       className="space-y-4"
     >
-      <StyledCard withGradient className="gap-0">
+      <div>
         <div className="flex items-start gap-3">
           <IconCheck
             size={20}
@@ -82,10 +81,10 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
             )}
           </div>
         </div>
-      </StyledCard>
+      </div>
 
       {result.missingKpis.length > 0 && (
-        <StyledCard withGradient className="gap-0">
+        <div>
           <div className="flex items-start gap-3">
             <IconAlertCircle
               size={20}
@@ -160,11 +159,11 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
               </details>
             </div>
           </div>
-        </StyledCard>
+        </div>
       )}
 
       {result.missingMetadata.length > 0 && (
-        <StyledCard withGradient className="gap-0">
+        <div>
           <div className="flex items-start gap-3">
             <IconAlertCircle
               size={20}
@@ -188,11 +187,11 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
               </ul>
             </div>
           </div>
-        </StyledCard>
+        </div>
       )}
 
       {result.naoCadastrados.length > 0 && (
-        <StyledCard withGradient className="gap-0">
+        <div>
           <details>
             <summary className="flex cursor-pointer items-center gap-3">
               <IconUserOff
@@ -216,11 +215,11 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
               ))}
             </ul>
           </details>
-        </StyledCard>
+        </div>
       )}
 
       {result.warnings.length > 0 && (
-        <StyledCard withGradient className="gap-0">
+        <div>
           <p className="ds-body mb-2 font-medium">Avisos</p>
           <ul className="space-y-0.5">
             {result.warnings.map((w, idx) => (
@@ -229,7 +228,7 @@ export function SnapshotResult({ result }: SnapshotResultProps) {
               </li>
             ))}
           </ul>
-        </StyledCard>
+        </div>
       )}
     </motion.div>
   );

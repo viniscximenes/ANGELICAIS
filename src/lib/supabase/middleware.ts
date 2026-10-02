@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // Destino do redirect quando um ADM tenta sair dos prefixos administrativos.
 // É uma rota administrativa qualquer dentro de ADMIN_ALLOWED_PREFIXES; não
 // precisa coincidir com a landing pós-login (getPostLoginPath manda o ADM
-// puro pra /bases/kpi). Path completo (não só prefixo) porque é o alvo do
+// puro pra /s/bases/kpi). Path completo (não só prefixo) porque é o alvo do
 // redirect, não um filtro de entrada.
 const ADMIN_DEFAULT_PATH = "/configuracoes/usuarios";
 
@@ -13,7 +13,8 @@ const ADMIN_DEFAULT_PATH = "/configuracoes/usuarios";
 // e permissions.ts). ADM só pode navegar dentro destes dois prefixos —
 // qualquer outra rota (incluindo novas rotas futuras que alguém esqueça de
 // checar na própria página) é bloqueada por padrão aqui.
-const ADMIN_ALLOWED_PREFIXES = ["/bases", "/configuracoes"];
+// "/s/bases": /s/bases/kpi (antes /bases/kpi) continua liberada pro ADM.
+const ADMIN_ALLOWED_PREFIXES = ["/bases", "/s/bases", "/configuracoes"];
 
 // COORDENADOR só navega dentro de /c (visão do polo). Qualquer outra rota
 // volta pra landing dele.

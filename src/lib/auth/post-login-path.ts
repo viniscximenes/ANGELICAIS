@@ -6,7 +6,7 @@ import { can } from "./permissions";
  * da role — não hardcoda roles específicas, então funciona para qualquer role
  * futuro. Centralizado aqui para que login-action, a página raiz e a página de
  * login compartilhem exatamente a mesma lógica.
- * - é ADM puro    → /bases/kpi (role ADM é exclusivamente administrativa;
+ * - é ADM puro    → /s/bases/kpi (role ADM é exclusivamente administrativa;
  *                   a landing dela é a primeira tela do Painel Adm, não mais
  *                   /configuracoes/usuarios)
  * - coordenador   → /c/reports/consolidado (visão do polo)
@@ -16,7 +16,7 @@ import { can } from "./permissions";
  */
 export function getPostLoginPath(role: UserRole): string {
   if (can(role, "view_coordenador_panel")) return "/c/reports/consolidado";
-  if (can(role, "manage_system")) return "/bases/kpi";
+  if (can(role, "manage_system")) return "/s/bases/kpi";
   if (can(role, "view_gestor_panel")) return "/s/reports/consolidado";
   return "/s/reports/consolidado";
 }

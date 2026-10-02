@@ -8,11 +8,11 @@ import { revalidatePath } from "next/cache";
  * `force-dynamic`, então o render do servidor já é fresco; o revalidatePath
  * aqui é o que limpa o Router Cache do cliente — sem ele, navegar via
  * sidebar (soft nav) logo após a mutação ainda mostra o payload RSC antigo
- * até um hard refresh. `/bases/kpi` é estática, então pra ela é
+ * até um hard refresh. `/s/bases/kpi` é estática, então pra ela é
  * obrigatório mesmo.
  */
 const ROTAS_KPI = [
-  "/bases/kpi",
+  "/s/bases/kpi",
   "/s/kpi/operadores",
   "/s/kpi/gestor",
   "/s/kpi/detalhado-polo",

@@ -1,0 +1,123 @@
+/*
+ * Ajustes visuais específicos de /bases/kpi, seguindo o padrão de
+ * /s/reports/consolidado (reports-consolidado.css): fonte única, cabeçalho
+ * de tabela e barra de rolagem. As cores vêm da paleta global — não
+ * redefina tokens aqui.
+ */
+
+[data-page="bases-kpi"] {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letter-spacing);
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--border) transparent;
+}
+
+[data-page="bases-kpi"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-page="bases-kpi"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-page="bases-kpi"] ::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+[data-page="bases-kpi"] ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+  background-clip: padding-box;
+}
+
+/* ───────── Fonte única: Instrument Sans em tudo ─────────
+ * Mesmo ajuste do Consolidado: ds-mono / ds-mono-sm / font-mono passam a
+ * usar a fonte sans da página, com números de largura fixa. */
+[data-page="bases-kpi"] :is(.ds-mono, .ds-mono-sm, .ds-display, .font-mono) {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ───────── Cabeçalho da tabela de histórico = cabeçalho das tabelas do Consolidado ─────────
+ * - fundo: --muted a 40% no escuro, --muted no claro;
+ * - linha inferior: 1px no escuro, 2px no claro;
+ * - texto: 14px, negrito, 0.025em, caixa alta; --foreground no escuro e
+ *   --muted-foreground no claro.
+ */
+[data-page="bases-kpi"] [data-tabela-historico] thead tr {
+  background-color: color-mix(in oklab, var(--muted) 40%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+[data-page="bases-kpi"] [data-tabela-historico] thead th {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  line-height: var(--leading-normal);
+  color: var(--foreground);
+}
+[data-theme="light"] [data-page="bases-kpi"] [data-tabela-historico] thead tr {
+  background-color: var(--muted);
+  border-bottom-width: 2px;
+}
+[data-theme="light"] [data-page="bases-kpi"] [data-tabela-historico] thead th {
+  color: var(--muted-foreground);
+}
+
+/* Células do corpo no mesmo tamanho de texto das tabelas do Consolidado. */
+[data-page="bases-kpi"] [data-tabela-historico] tbody td {
+  font-size: var(--text-body);
+}
+
+/* ───────── Campo de colar a base ─────────
+ * Sem a borda/contorno de foco global (globals.css textarea/input
+ * :focus-visible) ao clicar — o campo mantém a mesma borda de repouso. */
+[data-page="bases-kpi"] .bases-kpi-colar,
+[data-page="bases-kpi"] .bases-kpi-colar:focus,
+[data-page="bases-kpi"] .bases-kpi-colar:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+[data-page="bases-kpi"] .bases-kpi-colar:focus,
+[data-page="bases-kpi"] .bases-kpi-colar:focus-visible {
+  border-color: color-mix(in oklab, var(--border) 80%, transparent);
+}
+
+/* ───────── Botão "Apagar" do Histórico (HoldButton) ─────────
+ * Mesma correção do "Limpar Base" em reports-consolidado.css: ao cancelar a
+ * pressão, a largura, o texto e o gap só recolhem depois do retorno do
+ * preenchimento (--hb-release), em vez de cortar a animação. */
+[data-page="bases-kpi"] button.bases-kpi-apagar[data-phase="idle"] {
+  transition-delay: var(--hb-release), 0ms, 0ms, 0ms !important;
+}
+[data-page="bases-kpi"] button.bases-kpi-apagar span:has(> span > svg) {
+  transition:
+    gap 220ms var(--hb-ease-out),
+    opacity 180ms ease,
+    filter 180ms ease;
+}
+[data-page="bases-kpi"] button.bases-kpi-apagar[data-phase="idle"] span:has(> span > svg) {
+  transition-delay: var(--hb-release), 0ms, 0ms;
+}
+[data-page="bases-kpi"] button.bases-kpi-apagar[data-phase="idle"] span:has(> svg) + span {
+  transition:
+    max-width 220ms var(--hb-ease-out) var(--hb-release),
+    opacity 160ms ease var(--hb-release),
+    transform 220ms var(--hb-ease-out) var(--hb-release);
+}
+
+/* ───────── Skeleton (loading.tsx + troca Operadores ↔ Gestores) ─────────
+ * Mesmos tons do .consolidado-skeleton: bg-card puro some na Vercel clara,
+ * então os blocos usam --muted-foreground em degraus de opacidade. */
+.bases-kpi-skeleton .bg-card {
+  background-color: color-mix(in oklab, var(--muted-foreground) 14%, transparent);
+}
+.bases-kpi-skeleton .bg-card\/70 {
+  background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
+}
+.bases-kpi-skeleton :is(.bg-card\/60, .bg-card\/40) {
+  background-color: color-mix(in oklab, var(--muted-foreground) 7%, transparent);
+}
