@@ -32,7 +32,7 @@ import { getLenisInstance } from "@/lib/lenis/lenis-instance";
 import { fetchOperadorDetalheAction } from "@/lib/retencao/actions";
 import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
 import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
-import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog";
+import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog-lazy";
 import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
 import { ConsolidadoSkeleton } from "@/app/(dashboard)/s/reports/consolidado/loading";
 

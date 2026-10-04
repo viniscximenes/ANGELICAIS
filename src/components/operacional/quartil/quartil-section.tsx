@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog";
+import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog-lazy";
 import { VisaoGeralCards } from "@/components/dashboard/retencao/visao-geral-cards";
 import type { IndicadoresGestor } from "@/lib/retencao/comparativo/get-gestores-comparativo";
 import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";

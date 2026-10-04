@@ -19,7 +19,7 @@ import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import type { AtendimentoTma } from "@/lib/tma/get-gestor-tma-atendimentos";
 import type { OperadorTma } from "@/lib/tma/get-gestor-tma";
 import type { TmaThresholdConfig } from "@/lib/tma/tma-status";
-import { TmaDetalheDialog } from "./tma-detalhe-dialog";
+import { TmaDetalheDialog } from "./tma-detalhe-dialog-lazy";
 
 export type TmaLinha = OperadorTma & {
   nomeExibicao: string;

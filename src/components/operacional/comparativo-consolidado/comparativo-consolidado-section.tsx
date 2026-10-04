@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { GraficoEvolucao } from "@/components/dashboard/retencao/grafico-evolucao";
-import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog";
+import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog-lazy";
 import { TabelaTemas } from "@/components/dashboard/retencao/tabela-temas";
 import { VisaoGeralCards } from "@/components/dashboard/retencao/visao-geral-cards";
 import {

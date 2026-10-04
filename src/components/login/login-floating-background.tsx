@@ -1,14 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useRef, type ComponentType } from "react";
 
-import TopographyComponent from "@/components/Topography";
 import { useTheme } from "@/components/dashboard/theme-provider";
 import type { PaletteId } from "@/lib/theme/palettes";
 
 // Topography é um componente .jsx sem tipos próprios (React Bits, variante
 // JS + CSS); tipamos aqui só as props que este arquivo usa.
-const Topography = TopographyComponent as ComponentType<{
+//
+// Carregado sob demanda (ssr: false): o canvas WebGL só existe no navegador,
+// então o SSR nunca desenhava nada aqui. Assim a lib `ogl` sai do bundle
+// inicial do login e o formulário fica interativo antes do fundo carregar.
+// O encaminhamento de mouse abaixo já procura o <canvas> de forma
+// preguiçosa (getCanvas), então funciona mesmo com o canvas chegando depois.
+const Topography = dynamic(() => import("@/components/Topography"), {
+  ssr: false,
+}) as ComponentType<{
   lowColor?: string;
   midColor?: string;
   highColor?: string;

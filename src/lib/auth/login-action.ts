@@ -3,18 +3,34 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { isValidUsernameFormat } from "@/lib/users/validate-username";
 import type { UserRole } from "./get-current-user";
+import { limparFalhasLogin, loginBloqueado, registrarFalhaLogin } from "./login-rate-limit";
 import { getPostLoginPath } from "./post-login-path";
 
 type LoginResult = {
   success: false;
-  error: "credenciais" | "conexao" | "inativo";
+  error: "credenciais" | "conexao" | "inativo" | "bloqueado";
 };
 
 export async function loginAction(
-  username: string,
+  usernameBruto: string,
   password: string,
 ): Promise<LoginResult | void> {
+  // Server action é um endpoint público: os argumentos podem chegar com
+  // qualquer tipo/tamanho, não só o que o login-form manda.
+  if (typeof usernameBruto !== "string" || typeof password !== "string") {
+    return { success: false, error: "credenciais" };
+  }
+  const username = usernameBruto.trim().toLowerCase();
+  if (!isValidUsernameFormat(username) || password.length === 0 || password.length > 200) {
+    return { success: false, error: "credenciais" };
+  }
+
+  if (await loginBloqueado(username)) {
+    return { success: false, error: "bloqueado" };
+  }
+
   const email = `${username}@interno.angelicais.app`;
 
   let redirectPath = "/s/reports/consolidado";
@@ -27,6 +43,7 @@ export async function loginAction(
     });
 
     if (error) {
+      await registrarFalhaLogin(username);
       return { success: false, error: "credenciais" };
     }
 
@@ -45,6 +62,8 @@ export async function loginAction(
       if (profile?.role) {
         redirectPath = getPostLoginPath(profile.role as UserRole);
       }
+
+      await limparFalhasLogin(username);
     }
   } catch (err) {
     console.error("[login] exception", err);

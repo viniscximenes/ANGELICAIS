@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { createClient } from "@/lib/supabase/server";
 
 export type UserRole = "ADM" | "GESTOR" | "COORDENADOR";
@@ -27,8 +29,12 @@ type CurrentUser = {
 /**
  * Retorna o usuário autenticado + seu profile completo.
  * Retorna null se não houver sessão ou se o profile não for encontrado.
+ *
+ * Memoizado com React cache(): layout, página e componentes do MESMO request
+ * compartilham uma única ida ao Supabase (auth.getUser + select do profile).
+ * O cache morre no fim do request — não vaza entre usuários.
  */
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const supabase = await createClient();
 
   const {
@@ -74,4 +80,4 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       themePreference: profile.theme_preference as "dark" | "light",
     },
   };
-}
+});

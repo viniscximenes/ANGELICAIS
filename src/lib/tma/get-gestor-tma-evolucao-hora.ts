@@ -1,4 +1,4 @@
-import { BUCKETS, bucketDe } from "@/lib/retencao/get-evolucao-hora";
+import { BUCKETS, bucketDe } from "@/lib/retencao/buckets-hora";
 import { statusTmaDe, type TmaStatus, type TmaThresholdConfig } from "./tma-status-pure";
 
 export type OperadorAbaixoDaMeta = {

@@ -1,5 +1,3 @@
-import { domToPng } from "modern-screenshot";
-
 import { resolverTokenCss } from "./resolver-token-css";
 
 const PADDING_PADRAO_PX = 28;
@@ -50,6 +48,10 @@ export async function capturarComoPng(
     "#ffffff",
     corDeFundoDoAlvo ? alvo : undefined,
   );
+
+  // Import dinâmico: modern-screenshot só é baixado no primeiro clique de
+  // copiar/exportar, em vez de pesar no bundle de toda página com o botão.
+  const { domToPng } = await import("modern-screenshot");
 
   return domToPng(alvo, {
     scale,

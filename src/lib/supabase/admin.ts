@@ -1,3 +1,7 @@
+// Quebra o build se este módulo for importado por um componente client —
+// a SERVICE_ROLE_KEY nunca pode chegar ao bundle do navegador.
+import "server-only";
+
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 /**

@@ -103,7 +103,9 @@ export function LoginForm() {
             ? "Não foi possível conectar. Tente novamente."
             : result.error === "inativo"
               ? "Conta desativada. Contate o administrador."
-              : "Usuário ou senha incorretos.",
+              : result.error === "bloqueado"
+                ? "Muitas tentativas. Aguarde 15 minutos e tente novamente."
+                : "Usuário ou senha incorretos.",
         );
         if (next >= MAX_ATTEMPTS) {
           setLockSeconds(LOCK_DURATION);
