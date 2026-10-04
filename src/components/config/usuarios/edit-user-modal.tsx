@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition } from "react";
 import {
   IconLoader2,
-  IconLock,
   IconShieldCheck,
   IconX,
 } from "@tabler/icons-react";
@@ -11,12 +10,17 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { Segmentado } from "@/components/dashboard/retencao/segmentado";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { updateAdminSkillAction } from "@/lib/users/actions/update-admin-skill-action";
 import { updateUserAction } from "@/lib/users/actions/update-user-action";
 import { updateUserRoleAction } from "@/lib/users/actions/update-user-role-action";
 import type { UserProfile } from "@/lib/users/types";
+
+// Mesmo visual dos campos do Novo usuário / campo de colar de /s/bases.
+const CAMPO =
+  "font-sans w-full rounded-xl border border-border/80 bg-muted/30 px-3.5 py-2.5 text-sm text-foreground disabled:opacity-60";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
@@ -37,31 +41,6 @@ const ROLE_LABEL: Record<UserProfile["role"], string> = {
   GESTOR: "Gestor",
   COORDENADOR: "Coordenador",
 };
-
-/** Campo travado (nome/email da gestora) — visual de "informação", não de input. */
-function ReadOnlyField({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div>
-      <div className="ds-mono-sm text-muted-foreground mb-1 flex items-center gap-1.5">
-        <IconLock size={12} aria-hidden="true" />
-        {label}
-      </div>
-      <p className="ds-body text-foreground truncate">{value}</p>
-      <p
-        className="ds-mono-sm text-muted-foreground mt-0.5"
-        style={{ fontSize: "10.5px" }}
-      >
-        Não editável pelo painel
-      </p>
-    </div>
-  );
-}
 
 export function EditUserModal({ open, onClose, user }: Props) {
   const router = useRouter();
@@ -94,7 +73,9 @@ export function EditUserModal({ open, onClose, user }: Props) {
     (fullName.trim() !== user.fullName ||
       emailLocal !== extractLocal(user.emailCorporativo));
   const roleChanged = canChangeRole && role !== user.role;
-  const adminSkillChanged = canToggleAdminSkill && isAdminSkill !== user.isAdminSkill;
+  // A skill só faz sentido enquanto a role continuar GESTOR.
+  const adminSkillChanged =
+    canToggleAdminSkill && role === "GESTOR" && isAdminSkill !== user.isAdminSkill;
   const hasChanges = identityChanged || roleChanged || adminSkillChanged;
 
   function handleSubmit() {
@@ -171,32 +152,44 @@ export function EditUserModal({ open, onClose, user }: Props) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.2, ease: EASE_OUT_EXPO }}
-            className="elevation-3 w-full max-w-xl rounded-xl p-6 whitespace-normal"
+            // text-left/whitespace-normal: o modal é renderizado dentro da
+            // célula "Ações" (text-right + nowrap) e herdava esse alinhamento.
+            className="elevation-3 w-full max-w-lg rounded-xl p-6 text-left whitespace-normal"
             style={{ border: "1px solid var(--border)" }}
             role="dialog"
             aria-modal="true"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <h2 className="ds-h2 truncate" style={{ fontSize: "1.25rem" }}>
-                Editar: {user.fullName}
-              </h2>
+            {/* Cabeçalho: título + identidade (nome e email aparecem só aqui,
+                uma vez — antes repetiam no título e num card travado). */}
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="font-sans text-xl font-semibold tracking-tight text-foreground">
+                  Editar usuário
+                </h2>
+                {!canEditIdentity && (
+                  <p className="font-sans mt-1.5 truncate text-sm text-muted-foreground">
+                    {user.fullName}
+                    <span className="text-muted-foreground/60"> · {user.emailCorporativo}</span>
+                  </p>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={isPending}
-                className="text-muted-foreground hover:text-foreground shrink-0 rounded-md p-1"
+                className="text-muted-foreground hover:text-foreground shrink-0 rounded-md p-1 transition-colors cursor-pointer"
                 aria-label="Fechar"
               >
-                <IconX size={20} aria-hidden="true" />
+                <IconX size={18} aria-hidden="true" />
               </button>
             </div>
 
             <div className="space-y-5">
-              {canEditIdentity ? (
+              {canEditIdentity && (
                 <div className="space-y-4">
                   <div>
-                    <label className="ds-mono-sm text-muted-foreground mb-1 block">
+                    <label className="font-sans mb-1.5 block text-xs text-muted-foreground">
                       Nome completo
                     </label>
                     <input
@@ -204,16 +197,15 @@ export function EditUserModal({ open, onClose, user }: Props) {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       disabled={isPending}
-                      className="elevation-2 ds-body w-full rounded-md px-3 py-2"
-                      style={{ border: "1px solid var(--border)" }}
+                      className={CAMPO}
                     />
                   </div>
 
                   <div>
-                    <label className="ds-mono-sm text-muted-foreground mb-1 block">
+                    <label className="font-sans mb-1.5 block text-xs text-muted-foreground">
                       Email corporativo
                     </label>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       <input
                         type="text"
                         value={emailLocal}
@@ -225,128 +217,70 @@ export function EditUserModal({ open, onClose, user }: Props) {
                           )
                         }
                         disabled={isPending}
-                        className="elevation-2 ds-mono w-full rounded-md px-3 py-2"
-                        style={{ border: "1px solid var(--border)" }}
+                        className={CAMPO}
                       />
-                      <span className="ds-mono-sm text-muted-foreground shrink-0">
+                      <span className="font-sans shrink-0 text-sm text-muted-foreground">
                         @alloha.com
                       </span>
                     </div>
                   </div>
                 </div>
-              ) : (
-                // Card de "informações" — visual deliberadamente discreto
-                // (fundo --muted, sem borda de input) pra não parecer editável.
-                <div
-                  className="space-y-3 rounded-lg p-3"
-                  style={{ background: "var(--muted)" }}
-                >
-                  <ReadOnlyField label="Nome completo" value={user.fullName} />
-                  <div
-                    className="border-t"
-                    style={{ borderColor: "var(--border)" }}
-                  />
-                  <ReadOnlyField
-                    label="Email corporativo"
-                    value={user.emailCorporativo}
-                  />
-                </div>
               )}
 
-              {canToggleAdminSkill && (
-                // Card de "ação" — o motivo real do modal existir pra uma
-                // gestora, por isso é o elemento com mais peso visual aqui.
-                <div
-                  className="rounded-xl p-4"
-                  style={{
-                    border:
-                      "1px solid color-mix(in oklch, var(--primary) 35%, var(--border))",
-                    background:
-                      "color-mix(in oklch, var(--primary) 7%, transparent)",
-                  }}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-2.5">
-                      <IconShieldCheck
-                        size={22}
-                        style={{ color: "var(--primary)" }}
-                        className="mt-0.5 shrink-0"
-                        aria-hidden="true"
-                      />
-                      <div>
-                        <label
-                          className="ds-h2 block"
-                          style={{ fontSize: "1.05rem" }}
-                        >
-                          Também é Administrador
-                        </label>
-                        <p className="ds-small text-foreground mt-1">
-                          Acumula o Painel Adm além do que já tem como
-                          gestora.
-                        </p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={isAdminSkill}
-                      onCheckedChange={setIsAdminSkill}
-                      disabled={isPending}
-                      aria-label="Também é Administrador"
-                      className="mt-1 shrink-0"
+              <div>
+                <label className="font-sans mb-1.5 block text-xs text-muted-foreground">
+                  Role
+                </label>
+                {/* Mesmo toggle segmentado do Consolidado / Novo usuário. */}
+                <Segmentado
+                  ariaLabel="Role"
+                  grupo={`editar-usuario-role-${user.id}`}
+                  opcoes={(["ADM", "GESTOR", "COORDENADOR"] as const).map((r) => ({
+                    valor: r,
+                    rotulo: ROLE_LABEL[r],
+                  }))}
+                  valor={role}
+                  onChange={(r) => !isPending && setRole(r)}
+                />
+                {roleChanged && (
+                  <p className="font-sans mt-2 text-xs text-muted-foreground">
+                    {role === "ADM"
+                      ? "Vai perder o Painel do Gestor e ganhar o Painel Administrativo (Usuários, Bases)."
+                      : "Vai perder o Painel Administrativo e ganhar o Painel do Gestor (Equipe, KPI, D-1)."}
+                  </p>
+                )}
+              </div>
+
+              {/* Skill de admin: modificador da role Gestor, por isso vem logo
+                  abaixo dela e só aparece enquanto Gestor estiver selecionado. */}
+              {canToggleAdminSkill && role === "GESTOR" && (
+                <div className="border-border/60 flex items-center justify-between gap-4 rounded-lg border bg-muted/20 px-3.5 py-3">
+                  <div className="flex min-w-0 items-start gap-2.5">
+                    <IconShieldCheck
+                      size={18}
+                      className="mt-0.5 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
                     />
+                    <div className="min-w-0">
+                      <p className="font-sans text-sm font-medium text-foreground">
+                        Também é Administrador
+                      </p>
+                      <p className="font-sans mt-0.5 text-xs text-muted-foreground">
+                        {adminSkillChanged
+                          ? isAdminSkill
+                            ? "Vai liberar o Painel Adm na sidebar."
+                            : "Vai remover o Painel Adm da sidebar."
+                          : "Acumula o Painel Adm além do Painel do Gestor."}
+                      </p>
+                    </div>
                   </div>
-                  {adminSkillChanged && (
-                    <p
-                      className="ds-mono-sm mt-3 pt-3"
-                      style={{
-                        color: "var(--primary)",
-                        borderTop:
-                          "1px dashed color-mix(in oklch, var(--primary) 30%, var(--border))",
-                      }}
-                    >
-                      {isAdminSkill
-                        ? "Sidebar vai mostrar GESTOR / ADMINISTRADOR e liberar o Painel Adm."
-                        : "Sidebar volta a mostrar só GESTOR, sem o Painel Adm."}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {canChangeRole && (
-                <div>
-                  <label className="ds-mono-sm text-muted-foreground mb-1 block">
-                    Role
-                  </label>
-                  <div className="flex gap-2">
-                    {(["ADM", "GESTOR", "COORDENADOR"] as const).map((option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() => setRole(option)}
-                        disabled={isPending}
-                        className="ds-mono-sm flex-1 rounded-md px-3 py-2 transition-colors"
-                        style={{
-                          border: `1px solid ${role === option ? "var(--primary)" : "var(--border)"}`,
-                          background:
-                            role === option
-                              ? "color-mix(in oklch, var(--primary) 12%, transparent)"
-                              : "var(--elevation-2-bg)",
-                          color:
-                            role === option
-                              ? "var(--primary)"
-                              : "var(--muted-foreground)",
-                        }}
-                      >
-                        {ROLE_LABEL[option]}
-                      </button>
-                    ))}
-                  </div>
-                  {roleChanged && (
-                    <p className="ds-mono-sm text-muted-foreground mt-1.5">
-                      {role === "ADM"
-                        ? "Vai perder o Painel do Gestor e ganhar o Painel Administrativo (Usuários, Bases)."
-                        : "Vai perder o Painel Administrativo e ganhar o Painel do Gestor (Equipe, KPI, D-1)."}
-                    </p>
-                  )}
+                  <Switch
+                    checked={isAdminSkill}
+                    onCheckedChange={setIsAdminSkill}
+                    disabled={isPending}
+                    aria-label="Também é Administrador"
+                    className="shrink-0"
+                  />
                 </div>
               )}
             </div>

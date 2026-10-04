@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { IconLoader2, IconTrash, IconUserPlus } from "@tabler/icons-react";
 import { toast } from "sonner";
 
-import { ConfigFrame } from "@/app/(dashboard)/configuracoes/equipe/_components/config-frame";
+import { ConfigFrame } from "@/app/(dashboard)/s/configuracoes/equipe/_components/config-frame";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";

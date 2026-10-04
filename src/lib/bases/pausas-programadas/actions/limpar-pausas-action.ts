@@ -29,7 +29,7 @@ export async function limparPausasAction(): Promise<LimparPausasResult> {
     return { success: false, error: "Erro ao limpar a base" };
   }
 
-  revalidatePath("/bases/pausas");
+  revalidatePath("/s/bases/pausas");
 
   return { success: true };
 }

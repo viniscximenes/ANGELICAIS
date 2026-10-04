@@ -31,6 +31,23 @@ const nextConfig: NextConfig = {
         destination: "/s/bases/kpi",
         permanent: false,
       },
+      // /bases/pausas migrou pra /s/bases/pausas (mesmo motivo acima).
+      {
+        source: "/bases/pausas",
+        destination: "/s/bases/pausas",
+        permanent: false,
+      },
+      // /configuracoes/{usuarios,equipe} migraram pra /s/configuracoes.
+      {
+        source: "/configuracoes/usuarios",
+        destination: "/s/configuracoes/usuarios",
+        permanent: false,
+      },
+      {
+        source: "/configuracoes/equipe",
+        destination: "/s/configuracoes/equipe",
+        permanent: false,
+      },
     ];
   },
 };

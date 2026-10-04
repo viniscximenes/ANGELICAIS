@@ -66,6 +66,6 @@ export async function deleteUserAction(
     return { success: false, error: `Erro ao excluir: ${error.message}` };
   }
 
-  revalidatePath("/configuracoes/usuarios");
+  revalidatePath("/s/configuracoes/usuarios");
   return { success: true };
 }

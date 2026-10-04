@@ -5,6 +5,7 @@ import { IconLoader2, IconPlayerPlay } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { HoldButton } from "@/components/ui/hold-button";
 import { toggleUserActiveAction } from "@/lib/users/actions/toggle-user-active-action";
 import type { UserProfile } from "@/lib/users/types";
 
@@ -22,10 +23,6 @@ export function ToggleActiveButton({ user }: Props) {
   const [isPending, startTransition] = useTransition();
 
   function handleClick() {
-    if (!confirm(`Ativar ${user.fullName}?\n\nEle voltará a conseguir fazer login normalmente.`)) {
-      return;
-    }
-
     startTransition(async () => {
       const r = await toggleUserActiveAction({
         id: user.id,
@@ -41,28 +38,26 @@ export function ToggleActiveButton({ user }: Props) {
     });
   }
 
+  // Mesmo Hold Button do "Limpar Base" do Consolidado no lugar do confirm():
+  // segurar expande, revela "Ativar" e só ativa ao completar a pressão.
   return (
-    <button
-      type="button"
-      onClick={handleClick}
+    <HoldButton
       disabled={isPending}
-      className="elevation-2 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 transition-colors"
-      style={{
-        border: "1px solid var(--border)",
-        fontSize: "12px",
-        color: "var(--success)",
-      }}
+      ariaLabel={`Segure para ativar ${user.fullName}`}
+      icon={<IconPlayerPlay size={15} aria-hidden="true" />}
+      doneIcon={<IconLoader2 size={15} className="animate-spin" aria-hidden="true" />}
+      doneLabel="Ativando..."
+      fillColor="var(--seg-thumb)"
+      fillTextColor="var(--seg-text-active)"
+      textColor="var(--success)"
+      holdTime={1600}
+      releaseTime={200}
+      resetAfter={1200}
+      expandedWidth={104}
+      onHold={handleClick}
+      className="config-usuarios-ativar font-sans border border-border"
     >
-      {isPending ? (
-        <IconLoader2
-          size={14}
-          className="shrink-0 animate-spin"
-          aria-hidden="true"
-        />
-      ) : (
-        <IconPlayerPlay size={14} className="shrink-0" aria-hidden="true" />
-      )}
-      <span className="ds-mono-sm">Ativar</span>
-    </button>
+      Ativar
+    </HoldButton>
   );
 }

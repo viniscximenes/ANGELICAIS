@@ -51,7 +51,7 @@ export async function salvarPausasAction(
     return { success: false, error: "Erro ao salvar no banco" };
   }
 
-  revalidatePath("/bases/pausas");
+  revalidatePath("/s/bases/pausas");
 
   return { success: true, total: upsertRows.length };
 }

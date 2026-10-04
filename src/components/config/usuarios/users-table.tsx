@@ -1,4 +1,4 @@
-import { StyledCard } from "@/components/gestor/styled-card";
+import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 import {
   Table,
   TableBody,
@@ -18,88 +18,70 @@ interface Props {
 }
 
 export function UsersTable({ users, currentUserId }: Props) {
-  if (users.length === 0) {
-    return (
-      <StyledCard withGradient className="p-8 text-center">
-        <p className="ds-body text-muted-foreground">
-          Nenhum usuário cadastrado
-        </p>
-      </StyledCard>
-    );
-  }
-
   return (
-    <StyledCard withGradient={false} className="p-0 overflow-hidden">
-      <Table className="table-fixed">
+    // Só as cantoneiras, igual à tabela de operadores do Consolidado.
+    <KpiFrame>
+      {/* data-tabela-usuarios: cabeçalho no padrão do Consolidado
+          (configuracoes-usuarios.css). */}
+      <Table data-tabela-usuarios>
         <TableHeader>
-          <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
-            <TableHead className="ds-mono-sm text-foreground/90 w-[30%] px-4 py-3.5 font-bold tracking-wider uppercase align-middle leading-none">
-              Login
-            </TableHead>
-            <TableHead className="ds-mono-sm text-foreground/90 w-[20%] px-4 py-3.5 font-bold tracking-wider uppercase align-middle leading-none">
-              Role
-            </TableHead>
-            <TableHead className="ds-mono-sm text-foreground/90 w-[15%] px-4 py-3.5 font-bold tracking-wider uppercase align-middle leading-none">
-              Status
-            </TableHead>
-            <TableHead className="w-[35%] px-4 py-3.5 text-right align-middle font-bold uppercase ds-mono-sm text-foreground/90 leading-none">
-              Ações
-            </TableHead>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="px-3 py-3 align-middle">Login</TableHead>
+            <TableHead className="px-3 py-3 align-middle">Role</TableHead>
+            {/* w-px + nowrap: a coluna de ações encolhe até o tamanho exato dos
+                botões (sem quebrar linha) e o resto da largura fica com as
+                outras colunas. */}
+            <TableHead className="w-px px-3 py-3 text-right align-middle whitespace-nowrap">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.map((u) => {
-            const isMe = u.id === currentUserId;
+          {users.length === 0 ? (
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={3} className="py-10 text-center">
+                <p className="font-sans text-sm text-muted-foreground">
+                  Nenhum usuário cadastrado
+                </p>
+              </TableCell>
+            </TableRow>
+          ) : (
+            users.map((u) => {
+              const isMe = u.id === currentUserId;
 
-            return (
-              <TableRow
-                key={u.id}
-                className="hover:bg-muted/10 border-b border-border/40 last:border-b-0"
-                style={{
-                  opacity: u.isActive ? 1 : 0.6,
-                }}
-              >
-                <TableCell className="overflow-hidden truncate px-4 py-2 align-middle">
-                  <span
-                    className="ds-mono-sm font-medium"
-                    style={{
-                      textDecoration: u.isActive ? "none" : "line-through",
-                    }}
-                  >
-                    {u.username}
-                  </span>
-
-                </TableCell>
-                <TableCell className="px-4 py-2 align-middle">
-                  <div className="flex items-center gap-1">
-                    <RoleBadge role={u.role} />
-                    {u.role === "GESTOR" && u.isAdminSkill && (
-                      <RoleBadge role="ADM" />
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="px-4 py-2 align-middle">
-                  <span
-                    className="ds-mono-sm"
-                    style={{
-                      color: u.isActive
-                        ? "var(--success)"
-                        : "var(--muted-foreground)",
-                    }}
-                  >
-                    {u.isActive ? "Ativo" : "Inativo"}
-                  </span>
-                </TableCell>
-                <TableCell className="px-4 py-1.5 text-right align-middle">
-                  <div className="flex justify-end">
-                    <UserActionsMenu user={u} isSelf={isMe} />
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
+              return (
+                <TableRow
+                  key={u.id}
+                  className="hover:bg-transparent"
+                  style={{ opacity: u.isActive ? 1 : 0.6 }}
+                >
+                  <TableCell className="overflow-hidden truncate px-3 py-2.5 align-middle">
+                    <span
+                      className="font-medium"
+                      style={{
+                        textDecoration: u.isActive ? "none" : "line-through",
+                      }}
+                    >
+                      {u.username}
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 align-middle">
+                    <div className="flex items-center gap-1">
+                      <RoleBadge role={u.role} />
+                      {u.role === "GESTOR" && u.isAdminSkill && (
+                        <RoleBadge role="ADM" />
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="w-px px-3 py-2 text-right align-middle whitespace-nowrap">
+                    <div className="flex justify-end">
+                      <UserActionsMenu user={u} isSelf={isMe} />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          )}
         </TableBody>
       </Table>
-    </StyledCard>
+    </KpiFrame>
   );
 }

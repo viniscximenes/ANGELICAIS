@@ -65,32 +65,32 @@ const ALL_SECTIONS: SidebarSection[] = [
     id: "configuracoes-gestor",
     label: "Configurações",
     iconName: "settings",
-    basePath: "/configuracoes",
+    basePath: "/s/configuracoes",
     permission: "view_gestor_panel",
     onlyRoles: ["GESTOR"],
     items: [
-      { label: "Equipe", href: "/configuracoes/equipe" },
+      { label: "Equipe", href: "/s/configuracoes/equipe" },
     ],
   },
   {
     id: "bases",
     label: "Bases",
     iconName: "database",
-    basePath: "/bases",
+    basePath: "/s/bases",
     permission: "manage_base",
     divider: "PAINEL ADM",
     items: [
       { label: "KPI", href: "/s/bases/kpi" },
-      { label: "Pausas", href: "/bases/pausas" },
+      { label: "Pausas", href: "/s/bases/pausas" },
     ],
   },
   {
     id: "config",
     label: "Configurações",
     iconName: "settings",
-    basePath: "/configuracoes",
+    basePath: "/s/configuracoes",
     permission: "manage_system",
-    items: [{ label: "Usuários", href: "/configuracoes/usuarios" }],
+    items: [{ label: "Usuários", href: "/s/configuracoes/usuarios" }],
   },
 ];
 

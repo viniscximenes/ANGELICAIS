@@ -35,7 +35,11 @@ const ROTAS_SEM_BARRA = [
   "/s/kpi/gestor",
   "/s/kpi/detalhado-polo",
   "/s/kpi/evolucao",
-  "/configuracoes/equipe",
+  "/s/configuracoes/equipe",
+  // Skeleton próprio (loading.tsx) — mesma regra das demais.
+  "/s/configuracoes/usuarios",
+  "/s/bases/kpi",
+  "/s/bases/pausas",
   "/s/reports/consolidado",
   "/s/reports/tempo-indisponibilidade",
   "/s/reports/tma-peso",

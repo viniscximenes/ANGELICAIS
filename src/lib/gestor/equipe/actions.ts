@@ -133,7 +133,7 @@ export async function adicionarOperadorAction(email: string): Promise<VoidResult
     return { ok: false, error: "Erro ao salvar. Tente novamente." };
   }
 
-  revalidatePath("/configuracoes/equipe");
+  revalidatePath("/s/configuracoes/equipe");
   return { ok: true };
 }
 
@@ -174,7 +174,7 @@ export async function removerOperadorAction(email: string): Promise<VoidResult> 
     console.error("[removerOperadorAction] apelido:", apelidoErr.message);
   }
 
-  revalidatePath("/configuracoes/equipe");
+  revalidatePath("/s/configuracoes/equipe");
   return { ok: true };
 }
 
@@ -206,7 +206,7 @@ export async function salvarApelidoAction(
       return { ok: false, error: "Erro ao limpar o apelido." };
     }
 
-    revalidatePath("/configuracoes/equipe");
+    revalidatePath("/s/configuracoes/equipe");
     return { ok: true };
   }
 
@@ -224,7 +224,7 @@ export async function salvarApelidoAction(
     return { ok: false, error: "Erro ao salvar o apelido." };
   }
 
-  revalidatePath("/configuracoes/equipe");
+  revalidatePath("/s/configuracoes/equipe");
   return { ok: true };
 }
 
@@ -246,6 +246,6 @@ export async function toggleApelidosAction(ativo: boolean): Promise<VoidResult> 
     return { ok: false, error: "Erro ao salvar a configuração." };
   }
 
-  revalidatePath("/configuracoes/equipe");
+  revalidatePath("/s/configuracoes/equipe");
   return { ok: true };
 }

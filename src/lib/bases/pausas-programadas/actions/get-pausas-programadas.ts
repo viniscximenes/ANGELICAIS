@@ -16,7 +16,7 @@ import type { PausaProgramadaDb } from "../types";
  * (expandindo por variantes de domínio, mesmo padrão de get-gestor-*.ts) —
  * usado pelo painel do gestor (Tempo Logado & Indisponibilidade), que só
  * precisa da própria equipe. Omitido, busca a base inteira — usado pela tela
- * administrativa (/bases/pausas), que precisa ver/editar todo mundo.
+ * administrativa (/s/bases/pausas), que precisa ver/editar todo mundo.
  */
 export async function getPausasProgramadas(
   rosterEmails?: string[],

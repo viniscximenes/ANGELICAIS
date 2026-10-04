@@ -22,29 +22,27 @@ export function UserActionsMenu({ user, isSelf = false }: Props) {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-end gap-1.5">
+      <div className="flex flex-nowrap items-center justify-end gap-2">
         {!isSelf && (
           <button
             type="button"
             onClick={() => setEditOpen(true)}
-            className="text-muted-foreground hover:text-foreground elevation-2 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 transition-colors"
-            style={{ border: "1px solid var(--border)", fontSize: "12px" }}
+            className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 items-center gap-1.5 rounded-md border bg-transparent px-2.5 text-xs transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             aria-label="Editar usuário"
           >
             <IconPencil size={14} aria-hidden="true" />
-            <span className="ds-mono-sm">Editar</span>
+            Editar
           </button>
         )}
 
         <button
           type="button"
           onClick={() => setPasswordOpen(true)}
-          className="text-muted-foreground hover:text-foreground elevation-2 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 transition-colors"
-          style={{ border: "1px solid var(--border)", fontSize: "12px" }}
+          className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 items-center gap-1.5 rounded-md border bg-transparent px-2.5 text-xs transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           aria-label="Definir nova senha"
         >
           <IconKey size={14} aria-hidden="true" />
-          <span className="ds-mono-sm">Senha</span>
+          Senha
         </button>
 
         {!isSelf && !user.isActive && <ToggleActiveButton user={user} />}
@@ -53,16 +51,11 @@ export function UserActionsMenu({ user, isSelf = false }: Props) {
           <button
             type="button"
             onClick={() => setDeleteOpen(true)}
-            className="hover:bg-destructive/10 elevation-2 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 transition-colors"
-            style={{
-              border: "1px solid var(--border)",
-              fontSize: "12px",
-              color: "var(--destructive)",
-            }}
+            className="font-sans border-border text-[var(--destructive)] hover:bg-destructive/10 inline-flex h-8 items-center gap-1.5 rounded-md border bg-transparent px-2.5 text-xs transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             aria-label="Excluir usuário"
           >
             <IconTrash size={14} aria-hidden="true" />
-            <span className="ds-mono-sm">Deletar</span>
+            Deletar
           </button>
         )}
       </div>

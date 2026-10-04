@@ -14,7 +14,6 @@ import { isValidUsernameFormat } from "../validate-username";
 type CreateUserInput = {
   fullName: string;
   username: string;
-  emailCorporativoLocal: string;
   role: UserRole;
   password: string;
 };
@@ -48,10 +47,9 @@ export async function createUserAction(
         "Username inválido (apenas letras, números, ponto e hífen; 3-32 caracteres)",
     };
   }
-  if (!input.emailCorporativoLocal.trim()) {
-    return { success: false, error: "Email corporativo obrigatório" };
-  }
-  const sanitizedLocal = sanitizeEmailLocal(input.emailCorporativoLocal);
+  // Email corporativo não é mais digitado: é sempre o próprio username
+  // @alloha.com (definido só aqui no backend).
+  const sanitizedLocal = sanitizeEmailLocal(input.username);
   if (!sanitizedLocal) {
     return {
       success: false,
@@ -124,7 +122,7 @@ export async function createUserAction(
     };
   }
 
-  revalidatePath("/configuracoes/usuarios");
+  revalidatePath("/s/configuracoes/usuarios");
   return {
     success: true,
     userId: authUser.user.id,

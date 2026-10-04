@@ -72,6 +72,6 @@ export async function updateUserRoleAction(
     return { success: false, error: "Erro ao alterar role" };
   }
 
-  revalidatePath("/configuracoes/usuarios");
+  revalidatePath("/s/configuracoes/usuarios");
   return { success: true };
 }

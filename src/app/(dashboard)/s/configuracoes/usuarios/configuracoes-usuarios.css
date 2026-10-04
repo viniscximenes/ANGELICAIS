@@ -1,0 +1,132 @@
+/*
+ * Ajustes visuais específicos de /s/configuracoes/usuarios — mesmo conjunto de
+ * /s/bases/kpi, /s/bases/pausas e /configuracoes/equipe, seguindo o padrão
+ * de /s/reports/consolidado: fonte única, cabeçalho de tabela, foco sem
+ * contorno global e barra de rolagem. As cores vêm da paleta global — não
+ * redefina tokens aqui.
+ */
+
+[data-page="config-usuarios"] {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letter-spacing);
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--border) transparent;
+}
+
+[data-page="config-usuarios"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-page="config-usuarios"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-page="config-usuarios"] ::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+[data-page="config-usuarios"] ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+  background-clip: padding-box;
+}
+
+/* ───────── Fonte única: Instrument Sans em tudo ─────────
+ * Vale também dentro dos modais (Novo/Editar/Senha/Deletar), que são
+ * position:fixed dentro da própria árvore da página, não portais. */
+[data-page="config-usuarios"] :is(.ds-mono, .ds-mono-sm, .ds-display, .font-mono, .ds-h2, .ds-body) {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ───────── Cabeçalho da tabela = cabeçalho das tabelas do Consolidado ─────────
+ * - fundo: --muted a 40% no escuro, --muted no claro;
+ * - linha inferior: 1px no escuro, 2px no claro;
+ * - texto: 14px, negrito, 0.025em, caixa alta; --foreground no escuro e
+ *   --muted-foreground no claro.
+ */
+[data-page="config-usuarios"] [data-tabela-usuarios] thead tr {
+  background-color: color-mix(in oklab, var(--muted) 40%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+[data-page="config-usuarios"] [data-tabela-usuarios] thead th {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  line-height: var(--leading-normal);
+  color: var(--foreground);
+}
+[data-theme="light"] [data-page="config-usuarios"] [data-tabela-usuarios] thead tr {
+  background-color: var(--muted);
+  border-bottom-width: 2px;
+}
+[data-theme="light"] [data-page="config-usuarios"] [data-tabela-usuarios] thead th {
+  color: var(--muted-foreground);
+}
+[data-page="config-usuarios"] [data-tabela-usuarios] tbody td {
+  font-size: var(--text-body);
+}
+
+/* ───────── Foco sem o contorno global ─────────
+ * Mesmo ajuste de /configuracoes/equipe e do campo de colar de /s/bases: o
+ * outline de 2px do globals.css (input/button :focus-visible) lia como borda
+ * branca ao clicar. Nos campos dos modais a borda continua a mesma do
+ * repouso ao digitar; nos botões fica o ring temático (focus-visible:ring). */
+[data-page="config-usuarios"] button:focus-visible,
+[data-page="config-usuarios"] :is(input, textarea, select),
+[data-page="config-usuarios"] :is(input, textarea, select):focus,
+[data-page="config-usuarios"] :is(input, textarea, select):focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+[data-page="config-usuarios"] :is(input, textarea, select):focus {
+  border-color: var(--border) !important;
+}
+
+/* ───────── Botão "Ativar" (HoldButton) ─────────
+ * Mesma correção do "Limpar Base" em reports-consolidado.css: ao cancelar a
+ * pressão, largura, texto e gap só recolhem depois do retorno do
+ * preenchimento (--hb-release). */
+[data-page="config-usuarios"] button.config-usuarios-ativar[data-phase="idle"] {
+  transition-delay: var(--hb-release), 0ms, 0ms, 0ms !important;
+}
+[data-page="config-usuarios"] button.config-usuarios-ativar span:has(> span > svg) {
+  transition:
+    gap 220ms var(--hb-ease-out),
+    opacity 180ms ease,
+    filter 180ms ease;
+}
+[data-page="config-usuarios"] button.config-usuarios-ativar[data-phase="idle"] span:has(> span > svg) {
+  transition-delay: var(--hb-release), 0ms, 0ms;
+}
+[data-page="config-usuarios"] button.config-usuarios-ativar[data-phase="idle"] span:has(> svg) + span {
+  transition:
+    max-width 220ms var(--hb-ease-out) var(--hb-release),
+    opacity 160ms ease var(--hb-release),
+    transform 220ms var(--hb-ease-out) var(--hb-release);
+}
+
+/* ───────── Skeleton (loading.tsx) ─────────
+ * Mesmos tons do .consolidado-skeleton. */
+.config-usuarios-skeleton .bg-card {
+  background-color: color-mix(in oklab, var(--muted-foreground) 14%, transparent);
+}
+.config-usuarios-skeleton .bg-card\/70 {
+  background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
+}
+.config-usuarios-skeleton :is(.bg-card\/60, .bg-card\/40) {
+  background-color: color-mix(in oklab, var(--muted-foreground) 7%, transparent);
+}
+
+/* ───────── "Deletar" no tema claro ─────────
+ * globals.css pinta qualquer button.border-border no hover (claro) com
+ * --muted + --foreground (!important) — o vermelho do "Deletar" sumia no
+ * hover. Aqui ele mantém o tom destrutivo. */
+[data-theme="light"] [data-page="config-usuarios"] button.border-border[aria-label="Excluir usuário"]:hover {
+  background-color: color-mix(in oklch, var(--destructive) 10%, transparent) !important;
+  color: var(--destructive) !important;
+}

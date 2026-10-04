@@ -64,6 +64,6 @@ export async function toggleUserActiveAction(
     return { success: false, error: "Erro ao atualizar status" };
   }
 
-  revalidatePath("/configuracoes/usuarios");
+  revalidatePath("/s/configuracoes/usuarios");
   return { success: true };
 }

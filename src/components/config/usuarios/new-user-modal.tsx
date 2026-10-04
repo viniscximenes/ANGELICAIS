@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { Segmentado } from "@/components/dashboard/retencao/segmentado";
 import { Button } from "@/components/ui/button";
 import { createUserAction } from "@/lib/users/actions/create-user-action";
 import { generateRandomPassword } from "@/lib/users/generate-password";
@@ -13,6 +14,12 @@ import { ALL_ROLES_FOR_CREATION } from "@/lib/users/types";
 import type { UserRole } from "@/lib/users/types";
 
 import { PasswordRevealCard } from "./password-reveal-card";
+
+const ROLE_LABEL: Record<UserRole, string> = {
+  ADM: "Administrador",
+  GESTOR: "Gestor",
+  COORDENADOR: "Coordenador",
+};
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
@@ -26,7 +33,6 @@ export function NewUserModal({ open, onClose }: Props) {
 
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
-  const [emailLocal, setEmailLocal] = useState("");
   const [role, setRole] = useState<UserRole>("GESTOR");
   const [password, setPassword] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -37,7 +43,6 @@ export function NewUserModal({ open, onClose }: Props) {
   function reset() {
     setFullName("");
     setUsername("");
-    setEmailLocal("");
     setRole("GESTOR");
     setPassword("");
     setCreatedPassword(null);
@@ -59,7 +64,6 @@ export function NewUserModal({ open, onClose }: Props) {
   function handleSubmit() {
     if (!fullName.trim()) return toast.error("Nome completo obrigatório");
     if (!username.trim()) return toast.error("Username obrigatório");
-    if (!emailLocal.trim()) return toast.error("Email corporativo obrigatório");
     if (password.length < 8)
       return toast.error("Senha deve ter pelo menos 8 caracteres");
 
@@ -67,7 +71,6 @@ export function NewUserModal({ open, onClose }: Props) {
       const r = await createUserAction({
         fullName,
         username,
-        emailCorporativoLocal: emailLocal,
         role,
         password,
       });
@@ -148,7 +151,7 @@ export function NewUserModal({ open, onClose }: Props) {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       disabled={isPending}
-                      placeholder="Sara Secundo Batista da Silva"
+                      placeholder="Caio Vinicius Ximenes da Silva"
                       className="elevation-2 ds-body w-full rounded-md px-3 py-2"
                       style={{ border: "1px solid var(--border)" }}
                     />
@@ -170,36 +173,13 @@ export function NewUserModal({ open, onClose }: Props) {
                           )
                         }
                         disabled={isPending}
-                        placeholder="sara.secundo"
+                        placeholder="caio.vsilva"
                         className="elevation-2 ds-mono w-full rounded-md px-3 py-2"
                         style={{ border: "1px solid var(--border)" }}
                       />
-                      <span className="ds-mono-sm text-muted-foreground shrink-0">
-                        @interno.angelicais.app
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="ds-mono-sm text-muted-foreground mb-1 block">
-                      Email corporativo
-                    </label>
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="text"
-                        value={emailLocal}
-                        onChange={(e) =>
-                          setEmailLocal(
-                            e.target.value
-                              .toLowerCase()
-                              .replace(/@alloha\.com$/i, ""),
-                          )
-                        }
-                        disabled={isPending}
-                        placeholder="sara.secundo"
-                        className="elevation-2 ds-mono w-full rounded-md px-3 py-2"
-                        style={{ border: "1px solid var(--border)" }}
-                      />
+                      {/* O email interno (@interno.angelicais.app) é só do
+                          backend; aqui aparece o corporativo, que é o mesmo
+                          username. */}
                       <span className="ds-mono-sm text-muted-foreground shrink-0">
                         @alloha.com
                       </span>
@@ -210,22 +190,18 @@ export function NewUserModal({ open, onClose }: Props) {
                     <label className="ds-mono-sm text-muted-foreground mb-1 block">
                       Role inicial
                     </label>
-                    <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value as UserRole)}
-                      disabled={isPending}
-                      className="elevation-2 ds-mono w-full rounded-md px-3 py-2"
-                      style={{
-                        border: "1px solid var(--border)",
-                        colorScheme: "dark",
-                      }}
-                    >
-                      {ALL_ROLES_FOR_CREATION.map((r) => (
-                        <option key={r} value={r}>
-                          {r === "ADM" ? "Administrador" : "Gestor"}
-                        </option>
-                      ))}
-                    </select>
+                    {/* Mesmo toggle segmentado do Consolidado / Bases, no lugar
+                        do <select> nativo. */}
+                    <Segmentado
+                      ariaLabel="Role inicial"
+                      grupo="novo-usuario-role"
+                      opcoes={ALL_ROLES_FOR_CREATION.map((r) => ({
+                        valor: r,
+                        rotulo: ROLE_LABEL[r],
+                      }))}
+                      valor={role}
+                      onChange={(r) => !isPending && setRole(r)}
+                    />
                   </div>
 
                   <div>
