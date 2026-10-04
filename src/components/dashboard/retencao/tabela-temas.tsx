@@ -23,6 +23,8 @@ interface TabelaTemasProps {
   titulo?: string;
   /** Subtítulo do card. Default = texto de sempre (comparativo). */
   descricao?: string;
+  /** Cabeçalho da 1ª coluna. Default "Motivo" (uso de sempre). */
+  rotuloColuna?: string;
 }
 
 export function TabelaTemas({
@@ -32,6 +34,7 @@ export function TabelaTemas({
   scrollInterno = false,
   titulo = "Retenção por Tema",
   descricao = "Clique num motivo para ver os submotivos.",
+  rotuloColuna = "Motivo",
 }: TabelaTemasProps) {
   const [expandedMotivos, setExpandedMotivos] = useState<Record<string, boolean>>({});
 
@@ -97,7 +100,7 @@ export function TabelaTemas({
               <tr className="ds-body text-muted-foreground uppercase tracking-wider text-[11px] font-bold select-none border-b border-border/40 bg-muted/40">
                 <th className="py-2.5 px-4 text-center w-[40px] whitespace-nowrap"></th>
                 <th className="py-2.5 px-4 whitespace-nowrap">
-                  Motivo
+                  {rotuloColuna}
                 </th>
                 <th className="py-2.5 px-4 text-center w-[110px] whitespace-nowrap">
                   Total

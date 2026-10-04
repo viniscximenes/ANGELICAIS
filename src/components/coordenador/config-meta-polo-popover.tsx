@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { saveMetaPoloAction } from "@/lib/coordenador/save-meta-polo-action";
+import { TEMAS_META, metaDoTema, type MetasTemas } from "@/lib/coordenador/types";
 import { DEFAULT_META_TX_RETENCAO } from "@/lib/gestor/config-tabela/types";
 import { cn } from "@/lib/utils";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
@@ -24,32 +25,40 @@ import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 /**
  * Engrenagem de meta do polo — mesmo visual do ConfigTabelaPopover de
  * /s/reports/consolidado (botão outline h-8/w-8, overlay com blur, popover
- * rounded-2xl), só com o campo de meta. Ao salvar, recarrega os dados do
+ * rounded-2xl), com a meta do polo e as metas por tema (mesma lista do
+ * "Metas por Tema" do /s). Ao salvar, recarrega os dados do
  * Server Component (cores e lista de baixo rendimento dependem da meta).
  */
 export function ConfigMetaPoloPopover({
   metaInicial,
-  metaFinanceiroInicial,
+  metasTemasIniciais,
   onOpenChange,
 }: {
   metaInicial: number;
-  metaFinanceiroInicial: number;
+  /** Metas por tema salvas; tema sem valor aparece com a meta do polo. */
+  metasTemasIniciais: MetasTemas;
   /** Avisa o pai ao abrir/fechar — usado pra elevar os cards de taxa acima do desfoque. */
   onOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [meta, setMeta] = useState(String(metaInicial));
-  const [metaFinanceiro, setMetaFinanceiro] = useState(String(metaFinanceiroInicial));
+  const [metasTemas, setMetasTemas] = useState<Record<string, string>>(() => temasComoTexto());
   const [isPending, startTransition] = useTransition();
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  function temasComoTexto(): Record<string, string> {
+    return Object.fromEntries(
+      TEMAS_META.map((tema) => [tema, String(metaDoTema(tema, metasTemasIniciais, metaInicial))]),
+    );
+  }
+
   function handleOpenChange(next: boolean) {
     if (next) {
       setMeta(String(metaInicial));
-      setMetaFinanceiro(String(metaFinanceiroInicial));
+      setMetasTemas(temasComoTexto());
     }
     setOpen(next);
     onOpenChange?.(next);
@@ -57,9 +66,11 @@ export function ConfigMetaPoloPopover({
 
   function handleSave() {
     const valor = Number(meta.replace(",", "."));
-    const valorFinanceiro = Number(metaFinanceiro.replace(",", "."));
+    const valoresTemas: MetasTemas = Object.fromEntries(
+      TEMAS_META.map((tema) => [tema, Number((metasTemas[tema] ?? "").replace(",", "."))]),
+    );
 
-    if ([valor, valorFinanceiro].some((v) => Number.isNaN(v) || v < 0 || v > 100)) {
+    if ([valor, ...Object.values(valoresTemas)].some((v) => Number.isNaN(v) || v < 0 || v > 100)) {
       toast.error("Meta inválida", {
         description: "Informe um valor entre 0 e 100.",
         className: "reports-consolidado-toast",
@@ -69,7 +80,7 @@ export function ConfigMetaPoloPopover({
 
     startTransition(async () => {
       try {
-        const result = await saveMetaPoloAction(valor, valorFinanceiro);
+        const result = await saveMetaPoloAction(valor, valoresTemas);
         if (result.success) {
           toast.success("Configurações salvas", { className: "reports-consolidado-toast" });
           setOpen(false);
@@ -131,12 +142,12 @@ export function ConfigMetaPoloPopover({
 
           <div className="space-y-4 pt-3">
             <div className="space-y-1.5">
-              <Label htmlFor="config-meta-polo" className="text-foreground text-xs font-medium">
+              <Label htmlFor="meta-polo" className="text-foreground text-xs font-medium">
                 Meta Taxa Retenção - Padrão {DEFAULT_META_TX_RETENCAO}%
               </Label>
               <div className="relative flex items-center">
                 <Input
-                  id="config-meta-polo"
+                  id="meta-polo"
                   type="number"
                   inputMode="decimal"
                   min={0}
@@ -151,24 +162,42 @@ export function ConfigMetaPoloPopover({
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="config-meta-financeiro" className="text-foreground text-xs font-medium">
-                Meta Taxa Financeiro
-              </Label>
-              <div className="relative flex items-center">
-                <Input
-                  id="config-meta-financeiro"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  value={metaFinanceiro}
-                  onChange={(e) => setMetaFinanceiro(e.target.value)}
-                  disabled={isPending}
-                  className="pr-8 text-sm font-semibold focus-visible:border-input focus-visible:ring-0"
-                />
-                <span className="text-muted-foreground pointer-events-none absolute right-3 text-xs font-bold">%</span>
+            {/* Metas por tema — mesmo grid do "Metas por Tema" do /s
+                (config-metas-popover.tsx). id="meta-<tema>" pega a regra sem
+                contorno de foco de reports-consolidado.css. */}
+            <div className="space-y-2">
+              <span className="text-muted-foreground block text-[10px] font-bold tracking-wider uppercase">
+                Metas por Tema
+              </span>
+              <div className="max-h-64 space-y-1 overflow-y-auto overscroll-contain pr-1 scrollbar-tema">
+                {TEMAS_META.map((tema) => (
+                  <div key={tema} className="grid grid-cols-[1fr_84px] items-center gap-2 rounded-md px-1 py-1">
+                    <Label
+                      htmlFor={`meta-${tema}`}
+                      className="text-foreground truncate text-xs font-normal"
+                      title={tema}
+                    >
+                      {tema}
+                    </Label>
+                    <div className="relative flex items-center">
+                      <Input
+                        id={`meta-${tema}`}
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        value={metasTemas[tema] ?? ""}
+                        onChange={(e) => setMetasTemas((prev) => ({ ...prev, [tema]: e.target.value }))}
+                        disabled={isPending}
+                        className="h-7 pr-6 text-center text-xs font-semibold focus-visible:border-input focus-visible:ring-0"
+                      />
+                      <span className="text-muted-foreground pointer-events-none absolute right-2 text-[10px] font-bold">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

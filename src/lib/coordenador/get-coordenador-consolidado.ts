@@ -6,6 +6,7 @@ import { classificarAtendimento } from "@/lib/retencao/classificar-atendimento";
 import { dedupePorContrato } from "@/lib/retencao/dedupe-por-contrato";
 import { BUCKETS, bucketDe } from "@/lib/retencao/get-evolucao-hora";
 import { normalizarTema } from "@/lib/retencao/normalizar-tema";
+import { NOME_ESTADO, ufDaUnidade } from "@/lib/retencao/uf-por-unidade";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
 
 import {
@@ -16,6 +17,7 @@ import {
   type ContagemTipoRetencao,
   type CoordenadorConsolidado,
   type RecorteTaxa,
+  type RegionalTaxa,
   type TipoRetencao,
   type HoraPolo,
   type OperadorLinha,
@@ -581,9 +583,28 @@ export async function getCoordenadorConsolidado(metaTx: number): Promise<Coorden
   );
 
   const marcas = paraRecortes(marcasMap).sort((a, b) => b.pedidos - a.pedidos);
-  const unidades = paraRecortes(unidadesMap)
+  const todasUnidades = paraRecortes(unidadesMap);
+  const unidades = [...todasUnidades]
     .sort((a, b) => b.cancelados - a.cancelados || b.pedidos - a.pedidos)
     .slice(0, 15);
+
+  // Taxa por regional: TODAS as unidades agrupadas pelo estado (mapa de
+  // uf-por-unidade.ts, o mesmo do /s); unidade não mapeada vai pra "Não
+  // identificado" (nunca some do total). Taxa = retidos ÷ pedidos somados.
+  const regionaisMap = new Map<string, RegionalTaxa>();
+  for (const u of todasUnidades) {
+    const uf = ufDaUnidade(u.detalhe ?? "", u.chave) ?? "—";
+    const reg =
+      regionaisMap.get(uf) ??
+      { uf, nome: uf === "—" ? "Não identificado" : (NOME_ESTADO[uf] ?? uf), ...resumoVazio(), cidades: [] };
+    somar(reg, u.retidos, u.cancelados);
+    reg.cidades.push({ ...u, chave: u.detalhe ? formatNomeProprio(u.detalhe) : u.chave });
+    regionaisMap.set(uf, reg);
+  }
+  const regionais = [...regionaisMap.values()].map((r) => ({
+    ...r,
+    cidades: r.cidades.sort((a, b) => b.pedidos - a.pedidos || b.cancelados - a.cancelados),
+  }));
   const tentativas = polo.pedidos + totalAbortados;
 
   return {
@@ -599,6 +620,7 @@ export async function getCoordenadorConsolidado(metaTx: number): Promise<Coorden
     },
     marcas,
     unidades,
+    regionais,
     polo,
     manha,
     tarde,

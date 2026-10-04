@@ -4,11 +4,13 @@ import {
   TIPOS_RETENCAO,
   type ContagemTipoRetencao,
   type FaceIdResumo,
-  type JornadaAborto,
   type RecorteTaxa,
+  type ResumoTaxa,
   type SupervisorLinha,
   type TemaPolo,
   type TipoRetencao,
+  type MetasTemas,
+  metaDoTema,
 } from "@/lib/coordenador/types";
 
 import { cn } from "@/lib/utils";
@@ -19,8 +21,9 @@ import {
   TABELA_VALOR_CELL_CLASS,
 } from "@/components/gestor/tabela-padrao";
 
-import { abaixoDaMeta, formatMarca } from "./format";
+import { abaixoDaMeta, formatMarca, formatTx } from "./format";
 import { Cabecalho, CelulaTx } from "./tabela-supervisores";
+import { MatrizTaxaSupervisor, MIN_PEDIDOS_MATRIZ } from "./matriz-taxa-supervisor";
 
 function SubTitulo({ titulo, texto }: { titulo: string; texto: string }) {
   return (
@@ -31,42 +34,10 @@ function SubTitulo({ titulo, texto }: { titulo: string; texto: string }) {
   );
 }
 
-/* ───────── Custo das retenções ───────── */
-
-const COR_TIPO: Record<TipoRetencao, string> = {
-  "Sem concessão": "var(--success)",
-  Desconto: "var(--warning)",
-  "Troca de plano": "color-mix(in oklab, var(--primary) 70%, transparent)",
-  "Troca de plano + desconto": "var(--danger)",
-  Negociação: "color-mix(in oklab, var(--warning) 55%, transparent)",
-  Outros: "var(--muted-foreground)",
-};
+/* ───────── Motivo da retenção ───────── */
 
 function totalTipos(c: ContagemTipoRetencao) {
   return TIPOS_RETENCAO.reduce((acc, t) => acc + c[t], 0);
-}
-
-/** Barra fina de composição (mesma altura da barra de taxa da EquipeTable). */
-function BarraTipos({ contagem }: { contagem: ContagemTipoRetencao }) {
-  const total = totalTipos(contagem);
-  if (total === 0)
-    return <div className="bg-muted/40 h-1.5 w-full rounded-full" />;
-  return (
-    <div className="flex h-1.5 w-full overflow-hidden rounded-full">
-      {TIPOS_RETENCAO.map((t) =>
-        contagem[t] > 0 ? (
-          <div
-            key={t}
-            style={{
-              width: `${(contagem[t] / total) * 100}%`,
-              background: COR_TIPO[t],
-            }}
-            title={`${t}: ${contagem[t]} (${((contagem[t] / total) * 100).toFixed(0)}%)`}
-          />
-        ) : null,
-      )}
-    </div>
-  );
 }
 
 /** Colunas da tabela: Negociação + Outros juntos em "Outros" (volume baixo). */
@@ -78,93 +49,14 @@ const COLUNAS_TIPO: { label: string; tipos: TipoRetencao[] }[] = [
   { label: "Outros", tipos: ["Negociação", "Outros"] },
 ];
 
-const GRID_CUSTO = {
-  gridTemplateColumns: "1.6fr 0.8fr 1.1fr 0.9fr 1fr 1.1fr 0.8fr 1.6fr",
-};
-
-function LinhaCusto({
-  nome,
-  contagem,
-  refSemConcessao,
-  total = false,
-}: {
-  nome: string;
-  contagem: ContagemTipoRetencao;
-  /** % sem concessão do polo — referência de cor da coluna "Sem concessão". */
-  refSemConcessao: number | null;
-  total?: boolean;
-}) {
-  const retidos = totalTipos(contagem);
-  const pct = (tipos: TipoRetencao[]) => {
-    const q = tipos.reduce((acc, t) => acc + contagem[t], 0);
-    return { q, p: retidos > 0 ? q / retidos : null };
-  };
-  const cell = cn(
-    "min-w-0 px-3 text-center border-r border-border/30",
-    total ? "py-2.5" : "ds-mono-sm py-2",
-  );
-  return (
-    <div
-      className={cn(
-        total
-          ? "ds-body grid items-center gap-0 bg-muted/20 font-bold"
-          : cn(TABELA_LINHA_CLASS, "border-t border-border/40"),
-      )}
-      style={{
-        ...GRID_CUSTO,
-        ...(total
-          ? {
-              borderTop: "2px solid var(--border)",
-              borderBottom: "2px double var(--border)",
-            }
-          : {}),
-      }}
-    >
-      <div
-        className={cn(
-          total ? cell : TABELA_NOME_CELL_CLASS,
-          "text-foreground truncate",
-        )}
-      >
-        {nome}
-      </div>
-      <div className={cell} style={{ fontVariantNumeric: "tabular-nums" }}>
-        {retidos}
-      </div>
-      {COLUNAS_TIPO.map((c, i) => {
-        const { q, p } = pct(c.tipos);
-        // "Sem concessão": verde se igual/acima do polo, vermelho se abaixo.
-        const cor =
-          i === 0 && p !== null && refSemConcessao !== null
-            ? p + 0.0005 >= refSemConcessao
-              ? "var(--success)"
-              : "var(--danger)"
-            : undefined;
-        return (
-          <div
-            key={c.label}
-            className={cell}
-            title={`${q} de ${retidos} retidos`}
-          >
-            <span
-              style={{
-                color: cor,
-                fontWeight: i === 0 ? 600 : undefined,
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {p === null ? "—" : `${Math.round(p * 100)}%`}
-            </span>
-          </div>
-        );
-      })}
-      <div className="flex min-w-0 items-center px-3 py-2">
-        <BarraTipos contagem={contagem} />
-      </div>
-    </div>
-  );
-}
-
+/**
+ * "Motivo da retenção" — % dos retidos de cada equipe por tipo de retenção.
+ * Mesmo visual da "Taxa por marca" / "Taxa por tema" (tabela [data-tabela-temas],
+ * título ds-h3, linhas py-3, divisórias border/30), sem hover (não expande) e
+ * sem as colunas "Retidos" e "Composição" (a quantidade aparece no tooltip de
+ * cada %). "Sem concessão" verde/vermelho vs. o polo; linha
+ * POLO no fim no visual do cabeçalho.
+ */
 export function QualidadeRetencao({
   polo,
   supervisores,
@@ -173,228 +65,204 @@ export function QualidadeRetencao({
   supervisores: SupervisorLinha[];
 }) {
   const totalPolo = totalTipos(polo);
-  const refSemConcessao =
-    totalPolo > 0 ? polo["Sem concessão"] / totalPolo : null;
+  const refSemConcessao = totalPolo > 0 ? polo["Sem concessão"] / totalPolo : null;
+  const num = { fontVariantNumeric: "tabular-nums" as const };
+
+  const linha = (chave: string, nome: string, contagem: ContagemTipoRetencao, total = false) => {
+    const retidos = totalTipos(contagem);
+    const celula = cn(
+      "px-4 py-3 text-center align-middle text-xs",
+      total ? "font-bold text-foreground" : "ds-mono-sm font-medium text-foreground",
+    );
+    return (
+      <tr
+        key={chave}
+        className={cn("align-middle", total && "bg-muted/40 border-t border-border")}
+      >
+        <td
+          className={cn(
+            "px-4 py-3 align-middle text-xs whitespace-nowrap text-foreground",
+            total ? "ds-body font-bold uppercase tracking-wide" : "ds-body font-semibold",
+          )}
+        >
+          {nome}
+        </td>
+        {COLUNAS_TIPO.map((c, i) => {
+          const q = c.tipos.reduce((acc, t) => acc + contagem[t], 0);
+          const pct = retidos > 0 ? q / retidos : null;
+          // "Sem concessão": verde se igual/acima do polo, vermelho se abaixo.
+          const cor =
+            i === 0 && !total && pct !== null && refSemConcessao !== null
+              ? pct + 0.0005 >= refSemConcessao
+                ? "text-success font-semibold"
+                : "text-danger font-semibold"
+              : "";
+          return (
+            <td key={c.label} className={cn(celula, cor)} style={num} title={`${q} de ${retidos} retidos`}>
+              {pct === null ? "—" : `${Math.round(pct * 100)}%`}
+            </td>
+          );
+        })}
+      </tr>
+    );
+  };
 
   return (
     <div className="space-y-3">
-      <SubTitulo
-        titulo="Custo das retenções"
-        texto="Como cada equipe retém o cliente. Sem concessão não custa nada; desconto e troca de plano reduzem receita. Valores em % dos clientes retidos — verde/vermelho em “Sem concessão” compara com o polo."
-      />
-      <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-        {TIPOS_RETENCAO.map((t) => (
-          <span key={t} className="inline-flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className="inline-block h-2 w-2 rounded-[2px]"
-              style={{ background: COR_TIPO[t] }}
-            />
-            {t}
-          </span>
-        ))}
+      <div>
+        <h3 className="ds-h3 text-foreground font-semibold">Motivo da retenção</h3>
+        <p className="ds-small text-muted-foreground mt-1">
+          Como cada equipe retém o cliente, em % dos retidos. Sem concessão não reduz receita; desconto e troca de
+          plano reduzem. Em “Sem concessão”, verde = igual ou acima do polo, vermelho = abaixo.
+        </p>
       </div>
       <div className="overflow-x-auto">
-        <div className="min-w-[860px]">
-          <Cabecalho
-            grid={GRID_CUSTO}
-            colunas={[
-              "Supervisor",
-              "Retidos",
-              ...COLUNAS_TIPO.map((c) => c.label),
-              "Composição",
-            ]}
-          />
-          {supervisores.map((s) => (
-            <LinhaCusto
-              key={s.gestorId}
-              nome={s.nome}
-              contagem={s.tiposRetencao}
-              refSemConcessao={refSemConcessao}
-            />
-          ))}
-          <LinhaCusto
-            nome="POLO"
-            contagem={polo}
-            refSemConcessao={refSemConcessao}
-            total
-          />
-        </div>
+        <table data-tabela-temas className="w-full min-w-[760px] border-collapse text-left">
+          <thead>
+            <tr className="ds-body text-muted-foreground border-border/40 bg-muted/40 border-b text-[11px] font-bold tracking-wider uppercase select-none">
+              <th className="px-4 py-2.5 whitespace-nowrap">Supervisor</th>
+              {COLUNAS_TIPO.map((c) => (
+                <th key={c.label} className="w-[130px] px-4 py-2.5 text-center whitespace-nowrap">
+                  {c.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-border/30 divide-y">
+            {supervisores.map((s) => linha(s.gestorId, s.nome, s.tiposRetencao))}
+            {linha("polo", "Polo", polo, true)}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
 
-/* ───────── Atendimentos abortados (Face ID) ───────── */
+/* ───────── Impacto do FaceID ───────── */
 
-const GRID_ABORTADOS = {
-  gridTemplateColumns: "1.6fr 1fr 1fr 1.1fr 1fr 1fr 1fr",
-};
-
-function LinhaAbortados({
-  nome,
-  contratos,
-  j,
-  refPct,
-  total = false,
-}: {
-  nome: string;
-  /** Contratos atendidos no dia (desfecho final: retido, cancelado ou abortado). */
-  contratos: number;
-  j: JornadaAborto;
-  /** % de contratos com aborto no polo — referência de cor. */
-  refPct: number | null;
-  total?: boolean;
-}) {
-  const pct = contratos > 0 ? j.contratosComAborto / contratos : null;
-  const acima = pct !== null && refPct !== null && pct > refPct + 0.0005;
-  const cell = cn(
-    "min-w-0 px-3 text-center border-r border-border/30",
-    total ? "py-2.5" : "ds-mono-sm py-2",
-  );
-  const num = { fontVariantNumeric: "tabular-nums" as const };
-  return (
-    <div
-      className={
-        total
-          ? "ds-body grid items-center gap-0 bg-muted/20 font-bold"
-          : cn(TABELA_LINHA_CLASS, "border-t border-border/40")
-      }
-      style={{
-        ...GRID_ABORTADOS,
-        ...(total
-          ? {
-              borderTop: "2px solid var(--border)",
-              borderBottom: "2px double var(--border)",
-            }
-          : {}),
-      }}
-    >
-      <div
-        className={cn(
-          total ? cell : TABELA_NOME_CELL_CLASS,
-          "text-foreground truncate",
-        )}
-      >
-        {nome}
-      </div>
-      <div className={cell} style={num}>
-        {j.tentativasAbortadas}
-      </div>
-      <div className={cell} style={num}>
-        {j.contratosComAborto}
-      </div>
-      <div className={cell}>
-        <span
-          style={{
-            ...num,
-            color: total
-              ? undefined
-              : acima
-                ? "var(--danger)"
-                : "var(--success)",
-            fontWeight: 600,
-          }}
-        >
-          {pct === null ? "—" : `${(pct * 100).toFixed(1)}%`}
-        </span>
-      </div>
-      <div className={cell} style={num}>
-        {j.terminaramAbortados}
-      </div>
-      <div className={cell} style={num}>
-        {j.viraramCancelamento}
-      </div>
-      <div className={cn(cell, "!border-r-0")} style={num}>
-        {j.viraramRetencao}
-      </div>
-    </div>
-  );
+/** Taxa atual × taxa se os abortados no FaceID contassem como retidos. */
+function taxasFaceId(retidos: number, cancelados: number, abortados: number) {
+  const pedidos = retidos + cancelados;
+  const atual = pedidos > 0 ? retidos / pedidos : null;
+  const comFaceId = pedidos + abortados > 0 ? (retidos + abortados) / (pedidos + abortados) : null;
+  const diferenca = atual !== null && comFaceId !== null ? comFaceId - atual : null;
+  return { atual, comFaceId, diferenca };
 }
 
+/** Diferença em pontos percentuais: "+2,3 p.p." */
+function formatPp(d: number | null): string {
+  if (d === null) return "—";
+  const v = (d * 100).toFixed(1).replace(".", ",");
+  return `${d > 0 ? "+" : ""}${v} p.p.`;
+}
+
+/**
+ * "Impacto do FaceID": quanto a taxa de retenção mudaria se os atendimentos
+ * que terminaram ABORTADOS no FaceID (fora da taxa hoje) contassem como
+ * retidos. Taxa com FaceID = (retidos + abortados) ÷ (pedidos + abortados).
+ * Resumo do polo em cards (mesmo visual dos cards de taxa do topo) + tabela
+ * por equipe no visual das demais (data-tabela-temas, sem hover), maior
+ * ganho primeiro, linha POLO no fim.
+ */
 export function FaceIdBloco({
   faceId,
+  polo,
   supervisores,
+  meta,
 }: {
   faceId: FaceIdResumo;
+  polo: ResumoTaxa;
   supervisores: SupervisorLinha[];
+  meta: number;
 }) {
-  const contratosDe = (s: SupervisorLinha) => s.pedidos + s.abortados;
-  const contratosPolo = supervisores.reduce(
-    (acc, s) => acc + contratosDe(s),
-    0,
-  );
-  const refPct =
-    contratosPolo > 0
-      ? faceId.jornada.contratosComAborto / contratosPolo
-      : null;
-  const j = faceId.jornada;
+  const totalPolo = taxasFaceId(polo.retidos, polo.cancelados, faceId.abortados);
+  const corTx = (tx: number | null) =>
+    tx === null ? "text-muted-foreground" : tx < meta / 100 ? "text-danger" : "text-success";
+  const num = { fontVariantNumeric: "tabular-nums" as const };
+
+  const linhas = supervisores
+    .map((s) => ({ s, ...taxasFaceId(s.retidos, s.cancelados, s.abortados) }))
+    .sort((a, b) => (b.diferenca ?? -1) - (a.diferenca ?? -1) || b.s.abortados - a.s.abortados);
+
+  const resumo = [
+    { label: "Taxa atual", valor: formatTx(totalPolo.atual), classe: corTx(totalPolo.atual) },
+    { label: "Taxa com FaceID", valor: formatTx(totalPolo.comFaceId), classe: corTx(totalPolo.comFaceId) },
+    { label: "Diferença", valor: formatPp(totalPolo.diferenca), classe: "text-foreground" },
+    { label: "Abortados no FaceID", valor: faceId.abortados.toLocaleString("pt-BR"), classe: "text-foreground" },
+  ];
+
+  const linha = (
+    chave: string,
+    nome: string,
+    abortados: number,
+    t: ReturnType<typeof taxasFaceId>,
+    total = false,
+  ) => {
+    const celula = cn("px-4 py-3 text-center align-middle text-xs", total ? "font-bold" : "ds-mono-sm font-medium");
+    return (
+      <tr key={chave} className={cn("align-middle", total && "bg-muted/40 border-t border-border")}>
+        <td
+          className={cn(
+            "text-foreground px-4 py-3 align-middle text-xs whitespace-nowrap",
+            total ? "ds-body font-bold tracking-wide uppercase" : "ds-body font-semibold",
+          )}
+        >
+          {nome}
+        </td>
+        <td className={cn(celula, "text-foreground")} style={num}>
+          {abortados.toLocaleString("pt-BR")}
+        </td>
+        <td className={cn(celula, "font-semibold", corTx(t.atual))} style={num}>
+          {formatTx(t.atual)}
+        </td>
+        <td className={cn(celula, "font-semibold", corTx(t.comFaceId))} style={num}>
+          {formatTx(t.comFaceId)}
+        </td>
+        <td className={cn(celula, "text-foreground")} style={num}>
+          {formatPp(t.diferenca)}
+        </td>
+      </tr>
+    );
+  };
 
   return (
     <div className="space-y-3">
       <SubTitulo
-        titulo="Atendimentos abortados"
-        texto="Abortos = tentativas abortadas no dia (Face ID não realizado ou reprovado, etapa não concluída). Contratos = clientes que tiveram pelo menos um aborto; depois, o contrato Abortou de vez, Cancelou ou foi Retido numa nova tentativa. Vermelho em % contratos = equipe com mais abortos que o polo."
+        titulo="Impacto do FaceID"
+        texto="Quanto a taxa de retenção subiria se os atendimentos abortados no FaceID contassem como retidos — taxa com FaceID = (retidos + abortados) ÷ (pedidos + abortados). Equipes com maior ganho primeiro."
       />
-      <p className="text-muted-foreground text-xs">
-        No polo:{" "}
-        <span className="text-foreground">{j.tentativasAbortadas}</span>{" "}
-        tentativas abortadas em{" "}
-        <span className="text-foreground">{j.contratosComAborto}</span>{" "}
-        contratos
-        {faceId.porStatus.length > 0 && (
-          <>
-            {" "}
-            (
-            {faceId.porStatus.map((s, i) => (
-              <span key={s.status}>
-                {i > 0 && " · "}
-                <span className="text-foreground">{s.quantidade}</span>{" "}
-                {s.status.replace(/^Abortado\s*-\s*/i, "")}
-              </span>
-            ))}
-            )
-          </>
-        )}
-        . Depois:{" "}
-        <span className="text-foreground">{j.viraramCancelamento}</span> viraram
-        cancelamento,{" "}
-        <span className="text-foreground">{j.viraramRetencao}</span> foram
-        retidos e{" "}
-        <span className="text-foreground">{j.terminaramAbortados}</span>{" "}
-        terminaram abortados.
-      </p>
+
+      <div data-coord-faceid-resumo className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {resumo.map((r) => (
+          <div
+            key={r.label}
+            data-coord-stat
+            className="rounded-lg border border-border bg-card/70 px-4 py-3 shadow-[var(--shadow-sm)]"
+          >
+            <p className="ds-small text-muted-foreground tracking-wider uppercase">{r.label}</p>
+            <p className={cn("mt-1 text-2xl font-semibold tracking-tight", r.classe)} style={num}>
+              {r.valor}
+            </p>
+          </div>
+        ))}
+      </div>
+
       <div className="overflow-x-auto">
-        <div className="min-w-[860px]">
-          <Cabecalho
-            grid={GRID_ABORTADOS}
-            colunas={[
-              "Supervisor",
-              "Abortos",
-              "Contratos",
-              "% contratos",
-              "Abortou",
-              "Cancelou",
-              "Reteve",
-            ]}
-          />
-          {supervisores.map((s) => (
-            <LinhaAbortados
-              key={s.gestorId}
-              nome={s.nome}
-              contratos={contratosDe(s)}
-              j={s.jornadaAborto}
-              refPct={refPct}
-            />
-          ))}
-          <LinhaAbortados
-            nome="POLO"
-            contratos={contratosPolo}
-            j={j}
-            refPct={refPct}
-            total
-          />
-        </div>
+        <table data-tabela-temas className="w-full min-w-[680px] border-collapse text-left">
+          <thead>
+            <tr className="ds-body text-muted-foreground border-border/40 bg-muted/40 border-b text-[11px] font-bold tracking-wider uppercase select-none">
+              <th className="px-4 py-2.5 whitespace-nowrap">Supervisor</th>
+              <th className="w-[130px] px-4 py-2.5 text-center whitespace-nowrap">Abortados</th>
+              <th className="w-[130px] px-4 py-2.5 text-center whitespace-nowrap">Taxa atual</th>
+              <th className="w-[150px] px-4 py-2.5 text-center whitespace-nowrap">Taxa com FaceID</th>
+              <th className="w-[130px] px-4 py-2.5 text-center whitespace-nowrap">Diferença</th>
+            </tr>
+          </thead>
+          <tbody className="divide-border/30 divide-y">
+            {linhas.map((l) => linha(l.s.gestorId, l.s.nome, l.s.abortados, l))}
+            {linha("polo", "Polo", faceId.abortados, totalPolo, true)}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -402,101 +270,118 @@ export function FaceIdBloco({
 
 /* ───────── Tema × supervisor ───────── */
 
-/** Abaixo disso a célula fica apagada (amostra pequena). */
-const MIN_PEDIDOS_TEMA = 3;
+/** Ordem fixa das colunas de tema (pedido do coordenador); tema fora da lista vai pro fim. */
+const ORDEM_TEMAS = [
+  "Mot. Financeiro",
+  "Ins. Atendimento",
+  "Ins. Serviço",
+  "Mud. Provedora",
+  "Mud. Endereço",
+  "Outros",
+];
+
+function posicaoTema(tema: string): number {
+  const i = ORDEM_TEMAS.indexOf(tema);
+  return i === -1 ? ORDEM_TEMAS.length : i;
+}
 
 /**
- * Taxa de retenção de cada tema em cada equipe — mesmo visual da "Tabela de
- * taxa por hora" (sem bordas/linhas, colunas iguais, cabeçalho do
- * Consolidado). Célula: taxa colorida pela meta + cancelados embaixo.
- * Sem título próprio: vive dentro do bloco "Resultado por tema".
+ * Taxa de cada tema em cada equipe — mesma matriz do "Taxa por hora -
+ * Supervisor" (MatrizTaxaSupervisor). Cada coluna é colorida pela meta do
+ * próprio tema (engrenagem), como a "Taxa por tema - Polo".
  */
 export function TemaPorSupervisor({
   temas,
   supervisores,
   meta,
+  metasTemas,
 }: {
   temas: TemaPolo[];
   supervisores: SupervisorLinha[];
   meta: number;
+  metasTemas: MetasTemas;
 }) {
-  const colunas = temas.filter((t) => t.pedidos > 0).map((t) => t.tema);
+  return (
+    <MatrizTaxaSupervisor
+      titulo="Taxa por tema - Supervisores"
+      descricao={`Taxa de retenção de cada equipe em cada tema. Passe o mouse sobre uma taxa para ver pedidos, retidos e cancelados. Células esmaecidas têm menos de ${MIN_PEDIDOS_MATRIZ} pedidos.`}
+      supervisores={supervisores}
+      colunas={temas
+        .filter((t) => t.pedidos > 0)
+        .sort((a, b) => posicaoTema(a.tema) - posicaoTema(b.tema))
+        .map((t) => ({ chave: t.tema, rotulo: t.tema, meta: metaDoTema(t.tema, metasTemas, meta) }))}
+      celula={(s, chave) => s.temas[chave] ?? null}
+      meta={meta}
+    />
+  );
+}
+
+/* ───────── Taxa por marca ───────── */
+
+/**
+ * Taxa por marca no MESMO visual da "Taxa por tema - Polo" / "Taxa por
+ * regional" (TabelaTemas: título ds-h3, cabeçalho via [data-tabela-temas] em
+ * reports-consolidado.css, linhas py-3, divisórias border/30, taxa colorida
+ * pela meta), mas sem a coluna "% dos canc." e SEM expansão — então sem
+ * chevron, sem cursor de clique e sem cor no hover. Maior taxa primeiro.
+ */
+export function TaxaPorMarca({ marcas, meta }: { marcas: RecorteTaxa[]; meta: number }) {
+  const linhas = [...marcas].sort((a, b) => {
+    if (a.txRetencao === null && b.txRetencao === null) return b.pedidos - a.pedidos;
+    if (a.txRetencao === null) return 1;
+    if (b.txRetencao === null) return -1;
+    return b.txRetencao - a.txRetencao;
+  });
+  const num = { fontVariantNumeric: "tabular-nums" as const };
+  const corTx = (tx: number | null) =>
+    tx === null ? "text-muted-foreground" : abaixoDaMeta(tx, meta) ? "text-danger" : "text-success";
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[720px] table-fixed border-collapse text-xs">
-        <colgroup>
-          <col style={{ width: "10.5rem" }} />
-          {colunas.map((t) => (
-            <col key={t} />
-          ))}
-        </colgroup>
-        <thead>
-          <tr className="ds-body bg-muted/40 text-foreground font-bold tracking-wide uppercase">
-            <th className="px-2 py-2.5 text-center align-middle whitespace-nowrap">
-              Supervisor
-            </th>
-            {colunas.map((t) => (
-              <th
-                key={t}
-                className="truncate px-1 py-2.5 text-center align-middle whitespace-nowrap"
-              >
-                {t}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {supervisores.map((s) => (
-            <tr key={s.gestorId}>
-              <td className="ds-body text-foreground truncate px-3 py-1.5 text-center font-medium">
-                {s.nome}
-              </td>
-              {colunas.map((t) => {
-                const cel = s.temas[t];
-                const pedidos = cel ? cel.retidos + cel.cancelados : 0;
-                if (!cel || pedidos === 0) {
-                  return (
-                    <td
-                      key={t}
-                      className="text-muted-foreground/50 p-1 text-center"
-                    >
-                      ·
-                    </td>
-                  );
-                }
-                const tx = cel.retidos / pedidos;
-                const ruim = abaixoDaMeta(tx, meta);
-                const pequena = pedidos < MIN_PEDIDOS_TEMA;
-                return (
-                  <td key={t} className="p-1 text-center">
-                    <div
-                      className="rounded px-1 py-1"
-                      style={{
-                        background: `color-mix(in oklab, ${ruim ? "var(--danger)" : "var(--success)"} ${pequena ? 8 : 18}%, transparent)`,
-                        opacity: pequena ? 0.6 : 1,
-                      }}
-                      title={`${s.nome} · ${t}: ${cel.retidos} retidos, ${cel.cancelados} cancelados`}
-                    >
-                      <div
-                        className={cn(
-                          "font-semibold",
-                          ruim ? "text-danger" : "text-success",
-                        )}
-                      >
-                        {Math.round(tx * 100)}%
-                      </div>
-                      <div className="text-muted-foreground text-[10px]">
-                        {pedidos} {pedidos === 1 ? "pedido" : "pedidos"}
-                      </div>
-                    </div>
+    <div className="space-y-3">
+      <div>
+        <h3 className="ds-h3 text-foreground font-semibold">Taxa por marca</h3>
+        <p className="ds-small text-muted-foreground mt-1">
+          Retenção de cada marca no polo, da maior para a menor taxa.
+        </p>
+      </div>
+      {linhas.length === 0 ? (
+        <p className="text-muted-foreground px-2 py-6 text-center text-sm">Sem atendimentos na base do dia.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table data-tabela-temas className="w-full border-collapse text-left">
+            <thead>
+              <tr className="ds-body text-muted-foreground border-border/40 bg-muted/40 border-b text-[11px] font-bold tracking-wider uppercase select-none">
+                <th className="px-4 py-2.5 whitespace-nowrap">Marca</th>
+                <th className="w-[110px] px-4 py-2.5 text-center whitespace-nowrap">Total</th>
+                <th className="w-[110px] px-4 py-2.5 text-center whitespace-nowrap">Retidos</th>
+                <th className="w-[110px] px-4 py-2.5 text-center whitespace-nowrap">Cancelados</th>
+                <th className="w-[130px] px-4 py-2.5 text-center whitespace-nowrap">Tx Retenção</th>
+              </tr>
+            </thead>
+            <tbody className="divide-border/30 divide-y">
+              {linhas.map((m) => (
+                <tr key={m.chave} className="align-middle">
+                  <td className="ds-body text-foreground px-4 py-3 align-middle text-xs font-semibold whitespace-nowrap">
+                    {formatMarca(m.chave)}
                   </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  <td className="ds-mono-sm text-foreground px-4 py-3 text-center align-middle text-xs font-medium" style={num}>
+                    {m.pedidos.toLocaleString("pt-BR")}
+                  </td>
+                  <td className="ds-mono-sm text-foreground px-4 py-3 text-center align-middle text-xs font-medium" style={num}>
+                    {m.retidos.toLocaleString("pt-BR")}
+                  </td>
+                  <td className="ds-mono-sm text-foreground px-4 py-3 text-center align-middle text-xs font-medium" style={num}>
+                    {m.cancelados.toLocaleString("pt-BR")}
+                  </td>
+                  <td className={`ds-mono-sm px-4 py-3 text-center align-middle text-xs font-semibold ${corTx(m.txRetencao)}`} style={num}>
+                    {m.txRetencao !== null ? `${(m.txRetencao * 100).toFixed(1)}%` : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

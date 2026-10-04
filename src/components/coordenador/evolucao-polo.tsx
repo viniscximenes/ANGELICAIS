@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Bar,
-  CartesianGrid,
   ComposedChart,
+  LabelList,
   Line,
   ReferenceLine,
   ResponsiveContainer,
@@ -14,20 +14,9 @@ import {
 } from "recharts";
 
 import type { HoraPolo, SupervisorLinha } from "@/lib/coordenador/types";
-import { cn } from "@/lib/utils";
 
-import {
-  TABELA_LINHA_CLASS,
-  TABELA_VALOR_CELL_CLASS,
-} from "@/components/gestor/tabela-padrao";
-
-import { abaixoDaMeta, classeTx, formatImpacto, formatTx } from "./format";
-import { Cabecalho, CelulaTx } from "./tabela-supervisores";
-
-const GRID_HORA = { gridTemplateColumns: "2.4fr 1fr 1fr 1fr 1.2fr 1.1fr" };
-
-/** Abaixo disso a taxa da hora de um supervisor é "amostra pequena" (esmaecida). */
-const MIN_PEDIDOS_CELULA = 3;
+import { classeTx, formatImpacto, formatTx } from "./format";
+import { MatrizTaxaSupervisor, MIN_PEDIDOS_MATRIZ } from "./matriz-taxa-supervisor";
 
 function formatEixo(label: string) {
   if (label === "< 08") return "Até 08h";
@@ -51,60 +40,78 @@ function recortarHoras(evolucao: HoraPolo[]): HoraPolo[] {
   return evolucao.slice(primeiro, ultimo + 1);
 }
 
+/** Cores das séries (tokens do tema, mesma convenção dos cards: pedidos neutro, retidos verde, cancelados vermelho). */
+const COR_PEDIDOS = "color-mix(in oklab, var(--foreground) 78%, transparent)";
+const COR_RETIDOS = "var(--success)";
+const COR_CANCELADOS = "var(--danger)";
+
+/** Categoria extra no fim do eixo, no formato da planilha do coordenador. */
+const LABEL_TOTAL = "Total";
+
 function Legenda({ meta }: { meta: number }) {
+  const quadrado = (cor: string, texto: string) => (
+    <span className="inline-flex items-center gap-1.5">
+      <span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-[2px]" style={{ background: cor }} />
+      {texto}
+    </span>
+  );
   return (
     <div className="text-muted-foreground flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs">
+      {quadrado(COR_PEDIDOS, "Pedidos")}
+      {quadrado(COR_RETIDOS, "Retidos")}
+      {quadrado(COR_CANCELADOS, "Cancelados")}
       <span className="inline-flex items-center gap-1.5">
         <svg width="18" height="8" aria-hidden="true">
-          <line
-            x1="1"
-            y1="4"
-            x2="9"
-            y2="4"
-            stroke="var(--success)"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
-          <line
-            x1="9"
-            y1="4"
-            x2="17"
-            y2="4"
-            stroke="var(--danger)"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
+          <line x1="1" y1="4" x2="9" y2="4" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="9" y1="4" x2="17" y2="4" stroke="var(--danger)" strokeWidth="2.5" strokeLinecap="round" />
         </svg>
-        Taxa de retenção
+        % Retenção
       </span>
       <span className="inline-flex items-center gap-1.5">
         <svg width="18" height="8" aria-hidden="true">
-          <line
-            x1="1"
-            y1="4"
-            x2="17"
-            y2="4"
-            stroke="var(--muted-foreground)"
-            strokeWidth="1.5"
-            strokeDasharray="3 3"
-          />
+          <line x1="1" y1="4" x2="17" y2="4" stroke="var(--muted-foreground)" strokeWidth="1.5" strokeDasharray="3 3" />
         </svg>
         Meta {meta}%
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span
-          aria-hidden="true"
-          className="inline-block h-2.5 w-2.5 rounded-[2px]"
-          style={{
-            background:
-              "color-mix(in oklab, var(--muted-foreground) 14%, transparent)",
-          }}
-        />
-        Volume de pedidos (eixo da direita)
       </span>
     </div>
   );
 }
+
+/** Etiqueta da taxa em caixa (estilo da planilha): borda na cor do veredito, texto na tinta do tema. */
+function EtiquetaTaxa({ x, y, valor, meta }: { x: number; y: number; valor: number; meta: number }) {
+  const texto = `${valor.toFixed(1).replace(".", ",")}%`;
+  const largura = texto.length * 6.6 + 12;
+  const cor = valor < meta ? "var(--danger)" : "var(--success)";
+  return (
+    <g pointerEvents="none">
+      <rect
+        x={x - largura / 2}
+        y={y - 30}
+        width={largura}
+        height={19}
+        rx={4}
+        fill="var(--background)"
+        stroke={cor}
+        strokeWidth={1.5}
+      />
+      <text
+        x={x}
+        y={y - 16.5}
+        textAnchor="middle"
+        fontSize={11}
+        fontWeight={700}
+        fill="var(--foreground)"
+        style={{ fontVariantNumeric: "tabular-nums" }}
+      >
+        {texto}
+      </text>
+    </g>
+  );
+}
+
+type PontoGrafico = HoraPolo & { total: boolean; txHora: number | null; txTotal: number | null };
+
+type PropsPonto = { cx?: number; cy?: number; payload?: PontoGrafico; index?: number };
 
 export function EvolucaoPolo({
   evolucao,
@@ -120,7 +127,6 @@ export function EvolucaoPolo({
     () => new Map(supervisores.map((s) => [s.gestorId, s.nome])),
     [supervisores],
   );
-  const [horaSelecionada, setHoraSelecionada] = useState<number | null>(null);
 
   if (horas.length === 0) {
     return (
@@ -133,41 +139,85 @@ export function EvolucaoPolo({
     );
   }
 
-  const chartData = horas.map((h) => ({
-    ...h,
-    txHora: h.txRetencao !== null ? +(h.txRetencao * 100).toFixed(1) : null,
-  }));
+  // Formato da planilha do coordenador: barras Pedidos/Retidos/Cancelados por
+  // hora + coluna "Total geral" no fim, e a linha da taxa com etiqueta em cada
+  // hora. O ponto do Total fica numa série própria (txTotal), sem ligar com a
+  // última hora — senão a linha sugeriria uma evolução que não existe.
+  const totalRetidos = horas.reduce((acc, h) => acc + h.retidos, 0);
+  const totalCancelados = horas.reduce((acc, h) => acc + h.cancelados, 0);
+  const totalPedidos = totalRetidos + totalCancelados;
+  const txTotal = totalPedidos > 0 ? +((totalRetidos / totalPedidos) * 100).toFixed(1) : null;
 
-  const valores = chartData
-    .map((d) => d.txHora)
-    .filter((v): v is number => v !== null);
+  const chartData: PontoGrafico[] = [
+    ...horas.map((h) => ({
+      ...h,
+      total: false,
+      txHora: h.txRetencao !== null ? +(h.txRetencao * 100).toFixed(1) : null,
+      txTotal: null,
+    })),
+    {
+      hora: -1,
+      label: LABEL_TOTAL,
+      pedidos: totalPedidos,
+      retidos: totalRetidos,
+      cancelados: totalCancelados,
+      txRetencao: totalPedidos > 0 ? totalRetidos / totalPedidos : null,
+      txAcumulada: null,
+      supervisores: [],
+      total: true,
+      txHora: null,
+      txTotal,
+    },
+  ];
 
-  // Gradiente da linha — mesma técnica do GraficoEvolucao (Consolidado do
-  // gestor): verde acima da meta, vermelho abaixo, com a troca exatamente na
-  // altura da meta (offset relativo à faixa de valores da própria linha).
+  const valores = [...chartData.map((d) => d.txHora), txTotal].filter(
+    (v): v is number => v !== null,
+  );
+
+  // Gradiente da linha: verde acima da meta, vermelho abaixo, troca na altura da meta.
   const dataMax = valores.length > 0 ? Math.max(...valores) : 100;
   const dataMin = valores.length > 0 ? Math.min(...valores) : 0;
   const gradientOffset =
-    dataMax <= meta
-      ? 0
-      : dataMin >= meta
-        ? 1
-        : (dataMax - meta) / (dataMax - dataMin);
+    dataMax <= meta ? 0 : dataMin >= meta ? 1 : (dataMax - meta) / (dataMax - dataMin);
+
+  // Duas faixas sem sobreposição (como na planilha): a linha da taxa ocupa a
+  // metade de cima e as barras a metade de baixo. Eixos Y ocultos — todo valor
+  // já vem escrito no gráfico (etiquetas da taxa e números das barras).
   const minTx = Math.min(meta, ...valores);
   const maxTx = Math.max(meta, ...valores);
-  const base = Math.max(0, Math.floor((minTx - 10) / 10) * 10);
-  const topo = Math.min(100, Math.ceil((maxTx + 5) / 10) * 10);
+  const faixaTx = Math.max(maxTx - minTx, 5);
+  const dominioTx: [number, number] = [minTx - faixaTx * 1.3, maxTx + faixaTx * 0.25];
+  const maxQtd = Math.max(...chartData.map((d) => d.pedidos), 1);
+  const dominioQtd: [number, number] = [0, maxQtd * 2.1];
 
-  const horaDetalhe = horas.find((h) => h.hora === horaSelecionada) ?? null;
-
-  /** Hora (com pedidos) sob o cursor num evento do gráfico. */
-  const horaDoEvento = (e: unknown) => {
-    const idx = (e as { activeTooltipIndex?: number | string } | null)
-      ?.activeTooltipIndex;
-    const h =
-      idx !== undefined && idx !== null ? chartData[Number(idx)] : undefined;
-    return h && h.pedidos > 0 ? h : null;
+  const rotuloBarra = {
+    position: "top" as const,
+    fill: "var(--muted-foreground)",
+    fontSize: 10,
+    offset: 4,
   };
+
+  const pontoTaxa = (chave: "txHora" | "txTotal") =>
+    function Ponto(props: PropsPonto) {
+      const { cx, cy, payload, index } = props;
+      const valor = payload?.[chave] ?? null;
+      if (cx === undefined || cy === undefined || !payload || valor === null) {
+        return <g key={`${chave}-${index}`} />;
+      }
+      return (
+        <g key={`${chave}-${index}`}>
+          <circle
+            cx={cx}
+            cy={cy}
+            r={4}
+            fill={valor < meta ? "var(--danger)" : "var(--success)"}
+            stroke="var(--background)"
+            strokeWidth={2}
+          />
+          <EtiquetaTaxa x={cx} y={cy} valor={valor} meta={meta} />
+        </g>
+      );
+    };
 
   return (
     <div className="space-y-6">
@@ -176,9 +226,7 @@ export function EvolucaoPolo({
         {/* grafico-evolucao-chart: reaproveita a regra de reports-consolidado.css
             que tira o contorno branco de foco do navegador ao clicar no gráfico. */}
         <div
-          className="grafico-evolucao-chart h-[320px] w-full [&_*:focus]:outline-none [&_*:focus-visible]:outline-none"
-          // Tabela da hora só vive enquanto o mouse está no gráfico.
-          onMouseLeave={() => setHoraSelecionada(null)}
+          className="grafico-evolucao-chart h-[380px] w-full [&_*:focus]:outline-none [&_*:focus-visible]:outline-none"
         >
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
@@ -187,76 +235,38 @@ export function EvolucaoPolo({
               // branco ao clicar.
               accessibilityLayer={false}
               data={chartData}
-              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-              // Clique abre a tabela da hora; com ela aberta, a hora acompanha
-              // o mouse (sem precisar clicar de novo). Fecha ao sair do gráfico.
-              onClick={(e) => {
-                const h = horaDoEvento(e);
-                if (h) setHoraSelecionada(h.hora);
-              }}
-              onMouseMove={(e) => {
-                if (horaSelecionada === null) return;
-                const h = horaDoEvento(e);
-                if (h && h.hora !== horaSelecionada) setHoraSelecionada(h.hora);
-              }}
+              margin={{ top: 16, right: 8, left: 8, bottom: 0 }}
+              barGap={2}
+              barCategoryGap="22%"
             >
               <defs>
-                <linearGradient
-                  id="coord-tx-line-grad"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
+                <linearGradient id="coord-tx-line-grad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset={0} stopColor="var(--success)" />
                   <stop offset={gradientOffset} stopColor="var(--success)" />
                   <stop offset={gradientOffset} stopColor="var(--danger)" />
                   <stop offset={1} stopColor="var(--danger)" />
                 </linearGradient>
               </defs>
-              <CartesianGrid
-                vertical={false}
-                stroke="var(--border)"
-                strokeOpacity={0.4}
-                strokeDasharray="4 4"
-              />
               <XAxis
                 dataKey="label"
-                tickFormatter={formatEixo}
+                tickFormatter={(l: string) => (l === LABEL_TOTAL ? "Total geral" : formatEixo(l))}
                 tickLine={false}
-                axisLine={false}
-                tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                axisLine={{ stroke: "var(--border)" }}
+                tick={{ fill: "var(--foreground)", fontSize: 11, fontWeight: 600 }}
               />
-              <YAxis
-                yAxisId="tx"
-                domain={[base, topo]}
-                tickFormatter={(v) => `${v}%`}
-                tickLine={false}
-                axisLine={false}
-                tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-              />
-              <YAxis
-                yAxisId="qtd"
-                orientation="right"
-                allowDecimals={false}
-                tickLine={false}
-                axisLine={false}
-                tick={{
-                  fill: "var(--muted-foreground)",
-                  fontSize: 11,
-                  opacity: 0.6,
-                }}
-              />
-              <Bar
-                yAxisId="qtd"
-                dataKey="pedidos"
-                fill="var(--muted-foreground)"
-                fillOpacity={0.14}
-                radius={[4, 4, 0, 0]}
-                maxBarSize={30}
-                cursor="pointer"
-                isAnimationActive={false}
-              />
+              <YAxis yAxisId="tx" domain={dominioTx} hide />
+              <YAxis yAxisId="qtd" domain={dominioQtd} hide />
+
+              <Bar yAxisId="qtd" dataKey="pedidos" name="Pedidos" fill={COR_PEDIDOS} radius={[3, 3, 0, 0]} maxBarSize={16} isAnimationActive={false}>
+                <LabelList dataKey="pedidos" {...rotuloBarra} />
+              </Bar>
+              <Bar yAxisId="qtd" dataKey="retidos" name="Retidos" fill={COR_RETIDOS} fillOpacity={0.85} radius={[3, 3, 0, 0]} maxBarSize={16} isAnimationActive={false}>
+                <LabelList dataKey="retidos" {...rotuloBarra} />
+              </Bar>
+              <Bar yAxisId="qtd" dataKey="cancelados" name="Cancelados" fill={COR_CANCELADOS} fillOpacity={0.85} radius={[3, 3, 0, 0]} maxBarSize={16} isAnimationActive={false}>
+                <LabelList dataKey="cancelados" {...rotuloBarra} />
+              </Bar>
+
               <ReferenceLine
                 yAxisId="tx"
                 y={meta}
@@ -269,77 +279,31 @@ export function EvolucaoPolo({
                 yAxisId="tx"
                 type="linear"
                 dataKey="txHora"
+                name="% Retenção"
                 stroke="url(#coord-tx-line-grad)"
-                strokeWidth={3}
-                connectNulls
+                strokeWidth={2.5}
+                connectNulls={false}
                 isAnimationActive={false}
-                dot={(props: {
-                  cx?: number;
-                  cy?: number;
-                  payload?: (typeof chartData)[number];
-                  index?: number;
-                }) => {
-                  const { cx, cy, payload, index } = props;
-                  if (
-                    cx === undefined ||
-                    cy === undefined ||
-                    !payload ||
-                    payload.txHora === null
-                  ) {
-                    return <g key={`d-${index}`} />;
-                  }
-                  const ruim = payload.txHora < meta;
-                  return (
-                    <circle
-                      key={`d-${index}`}
-                      cx={cx}
-                      cy={cy}
-                      r={payload.hora === horaSelecionada ? 7 : 5}
-                      fill={ruim ? "var(--danger)" : "var(--success)"}
-                      stroke="var(--background)"
-                      strokeWidth={2}
-                    />
-                  );
-                }}
-                // Bolinha de hover pintada pela taxa da HORA (sem isto o
-                // Recharts herdava o gradiente da linha e a cor não batia).
-                activeDot={(props: {
-                  cx?: number;
-                  cy?: number;
-                  payload?: (typeof chartData)[number];
-                  index?: number;
-                }) => {
-                  const { cx, cy, payload, index } = props;
-                  if (
-                    cx === undefined ||
-                    cy === undefined ||
-                    !payload ||
-                    payload.txHora === null
-                  ) {
-                    return <g key={`a-${index}`} />;
-                  }
-                  return (
-                    <circle
-                      key={`a-${index}`}
-                      cx={cx}
-                      cy={cy}
-                      r={7}
-                      fill={
-                        payload.txHora < meta
-                          ? "var(--danger)"
-                          : "var(--success)"
-                      }
-                      stroke="var(--background)"
-                      strokeWidth={2}
-                    />
-                  );
-                }}
+                dot={pontoTaxa("txHora")}
+                activeDot={false}
               />
+              {/* Ponto do Total: série própria, sem linha ligando à última hora. */}
+              <Line
+                yAxisId="tx"
+                dataKey="txTotal"
+                name="% Retenção (total)"
+                stroke="none"
+                isAnimationActive={false}
+                dot={pontoTaxa("txTotal")}
+                activeDot={false}
+              />
+              {/* Sem a animação de posição do Recharts: aparece direto, como os demais tooltips. */}
               <Tooltip
-                cursor={{ stroke: "var(--border)" }}
+                isAnimationActive={false}
+                cursor={{ fill: "color-mix(in oklab, var(--muted-foreground) 8%, transparent)" }}
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null;
-                  const info = payload[0].payload as (typeof chartData)[number];
+                  const info = payload[0].payload as PontoGrafico;
                   if (info.pedidos === 0) return null;
                   const detratores = info.supervisores
                     .filter((s) => (s.impacto ?? 0) > 0.0005)
@@ -347,17 +311,17 @@ export function EvolucaoPolo({
                   return (
                     <div className="bg-popover border-border/80 w-72 rounded-lg border p-3 font-sans shadow-md">
                       <p className="text-muted-foreground text-[11px] tracking-wider uppercase">
-                        {formatFaixa(info.label)}
+                        {info.total ? "Total geral do dia" : formatFaixa(info.label)}
                       </p>
                       <p className="mt-1 text-sm">
-                        <span
-                          className={`font-semibold ${classeTx(info.txRetencao, meta)}`}
-                        >
+                        <span className={`font-semibold ${classeTx(info.txRetencao, meta)}`}>
                           {formatTx(info.txRetencao)}
                         </span>
                       </p>
                       <p className="text-muted-foreground mt-0.5 text-xs">
-                        {info.pedidos} pedidos · {info.retidos} retidos ·{" "}
+                        {/* mx-2 no separador ≈ um espaço a mais de cada lado do "·". */}
+                        {info.pedidos} pedidos<span className="mx-2">·</span>
+                        {info.retidos} retidos<span className="mx-2">·</span>
                         {info.cancelados} cancelados
                       </p>
                       {detratores.length > 0 && (
@@ -368,26 +332,15 @@ export function EvolucaoPolo({
                           </p>
                           <ul className="space-y-0.5">
                             {detratores.map((s) => (
-                              <li
-                                key={s.gestorId}
-                                className="flex items-baseline justify-between gap-3 text-xs"
-                              >
+                              <li key={s.gestorId} className="flex items-baseline justify-between gap-3 text-xs">
                                 <span className="text-foreground truncate">
-                                  {nomePorId.get(s.gestorId) ??
-                                    "Sem supervisor"}
+                                  {nomePorId.get(s.gestorId) ?? "Sem supervisor"}
                                 </span>
-                                <span className="text-danger shrink-0">
-                                  {formatImpacto(s.impacto).texto}
-                                </span>
+                                <span className="text-danger shrink-0">{formatImpacto(s.impacto).texto}</span>
                               </li>
                             ))}
                           </ul>
                         </>
-                      )}
-                      {horaSelecionada === null && (
-                        <p className="text-muted-foreground mt-2 text-[11px]">
-                          Clique para abrir a tabela de hora em hora.
-                        </p>
                       )}
                     </div>
                   );
@@ -398,66 +351,11 @@ export function EvolucaoPolo({
         </div>
       </div>
 
-      {horaDetalhe && (
-        <div className="space-y-2">
-          <p className="ds-small text-muted-foreground tracking-wider uppercase">
-            Supervisores em {formatFaixa(horaDetalhe.label)} · polo{" "}
-            <span className={classeTx(horaDetalhe.txRetencao, meta)}>
-              {formatTx(horaDetalhe.txRetencao)}
-            </span>
-          </p>
-          <div>
-            <div className="overflow-x-auto">
-              <div className="min-w-[640px]">
-                <Cabecalho
-                  grid={GRID_HORA}
-                  colunas={[
-                    "Supervisor",
-                    "Pedidos",
-                    "Retidos",
-                    "Cancelados",
-                    "Impacto no polo",
-                    "Tx Retenção",
-                  ]}
-                />
-                {horaDetalhe.supervisores.map((s) => {
-                  const pedidos = s.retidos + s.cancelados;
-                  const tx = pedidos > 0 ? s.retidos / pedidos : null;
-                  const impacto = formatImpacto(s.impacto);
-                  return (
-                    <div
-                      key={s.gestorId}
-                      className={`${TABELA_LINHA_CLASS} border-t border-border/40`}
-                      style={GRID_HORA}
-                    >
-                      <div className="ds-body text-foreground min-w-0 truncate border-r border-border/30 px-3 py-2 font-medium">
-                        {nomePorId.get(s.gestorId) ?? "Sem supervisor"}
-                      </div>
-                      <div className={TABELA_VALOR_CELL_CLASS}>{pedidos}</div>
-                      <div className={TABELA_VALOR_CELL_CLASS}>{s.retidos}</div>
-                      <div className={TABELA_VALOR_CELL_CLASS}>
-                        {s.cancelados}
-                      </div>
-                      <div className={TABELA_VALOR_CELL_CLASS}>
-                        <span className={impacto.classe}>{impacto.texto}</span>
-                      </div>
-                      <CelulaTx tx={tx} meta={meta} />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-/**
- * Tabela de taxa por hora (supervisor × hora) — separada do gráfico para
- * virar um slide próprio do trilho horizontal da página.
- */
+/** Taxa de cada supervisor em cada hora — slide/bloco "Taxa por hora - Supervisor". */
 export function TabelaTaxaPorHora({
   evolucao,
   supervisores,
@@ -469,96 +367,20 @@ export function TabelaTaxaPorHora({
 }) {
   const horas = useMemo(() => recortarHoras(evolucao), [evolucao]);
   return (
-    <div className="space-y-3">
-      <div>
-        <h3 className="ds-h3 text-foreground font-semibold">
-          Tabela de taxa por hora
-        </h3>
-        <p className="ds-small text-muted-foreground mt-1">
-          Cada célula é a taxa da equipe naquela hora (pedidos embaixo). Apagada
-          = menos de {MIN_PEDIDOS_CELULA} pedidos.
-        </p>
-      </div>
-      <div className="overflow-x-auto">
-        {/* table-fixed + colgroup: coluna do supervisor com largura fixa e
-                todas as horas com a MESMA largura — células do mesmo tamanho. */}
-        <table className="w-full min-w-[720px] table-fixed border-collapse text-xs">
-          <colgroup>
-            <col style={{ width: "10.5rem" }} />
-            {horas.map((h) => (
-              <col key={h.hora} />
-            ))}
-          </colgroup>
-          <thead>
-            {/* Mesmo visual do cabeçalho da EquipeTable (/s/reports/consolidado). */}
-            <tr className="ds-body bg-muted/40 text-foreground font-bold tracking-wide uppercase">
-              <th className="px-2 py-2.5 text-center align-middle whitespace-nowrap">
-                Supervisor
-              </th>
-              {horas.map((h) => (
-                <th
-                  key={h.hora}
-                  className="px-1 py-2.5 text-center align-middle whitespace-nowrap"
-                >
-                  {formatEixo(h.label)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {supervisores.map((s) => (
-              <tr key={s.gestorId}>
-                <td className="ds-body text-foreground truncate px-3 py-1.5 text-center font-medium">
-                  {s.nome}
-                </td>
-                {horas.map((h) => {
-                  const cel = h.supervisores.find(
-                    (x) => x.gestorId === s.gestorId,
-                  );
-                  const pedidos = cel ? cel.retidos + cel.cancelados : 0;
-                  if (!cel || pedidos === 0) {
-                    return (
-                      <td
-                        key={h.hora}
-                        className="text-muted-foreground/50 p-1 text-center"
-                      >
-                        ·
-                      </td>
-                    );
-                  }
-                  const tx = cel.retidos / pedidos;
-                  const ruim = abaixoDaMeta(tx, meta);
-                  const pequena = pedidos < MIN_PEDIDOS_CELULA;
-                  return (
-                    <td key={h.hora} className="p-1 text-center">
-                      <div
-                        className="rounded px-1 py-1"
-                        style={{
-                          background: `color-mix(in oklab, ${ruim ? "var(--danger)" : "var(--success)"} ${pequena ? 8 : 18}%, transparent)`,
-                          opacity: pequena ? 0.6 : 1,
-                        }}
-                        title={`${s.nome} · ${formatFaixa(h.label)}: ${cel.retidos} retidos, ${cel.cancelados} cancelados`}
-                      >
-                        <div
-                          className={cn(
-                            "font-semibold",
-                            ruim ? "text-danger" : "text-success",
-                          )}
-                        >
-                          {Math.round(tx * 100)}%
-                        </div>
-                        <div className="text-muted-foreground text-[10px]">
-                          {pedidos}
-                        </div>
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <MatrizTaxaSupervisor
+      titulo="Taxa por hora - Supervisor"
+      descricao={`Taxa de retenção de cada equipe, hora a hora. Passe o mouse sobre uma taxa para ver pedidos, retidos e cancelados. Células esmaecidas têm menos de ${MIN_PEDIDOS_MATRIZ} pedidos.`}
+      supervisores={supervisores}
+      colunas={horas.map((h) => ({
+        chave: String(h.hora),
+        rotulo: formatEixo(h.label),
+        rotuloTooltip: formatFaixa(h.label),
+      }))}
+      celula={(s, chave) => {
+        const hora = horas.find((h) => String(h.hora) === chave);
+        return hora?.supervisores.find((x) => x.gestorId === s.gestorId) ?? null;
+      }}
+      meta={meta}
+    />
   );
 }

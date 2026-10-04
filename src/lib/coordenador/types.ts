@@ -3,6 +3,25 @@
 /** Mínimo de pedidos pra entrar na lista de baixo rendimento — evita taxa de 0/1 pedido. */
 export const MIN_PEDIDOS_BAIXO_RENDIMENTO = 3;
 
+/** Temas com meta própria (mesma lista do "Metas por Tema" do /s). Tema fora da lista usa a meta do polo. */
+export const TEMAS_META = [
+  "Mot. Financeiro",
+  "Ins. Atendimento",
+  "Ins. Serviço",
+  "Mud. Endereço",
+  "Mud. Provedora",
+  "Outros",
+] as const;
+
+/** Meta de TX Retenção (0–100) de cada tema; tema sem valor salvo = meta do polo. */
+export type MetasTemas = Record<string, number>;
+
+/** Meta do tema, caindo na meta do polo quando não há valor salvo. */
+export function metaDoTema(tema: string, metasTemas: MetasTemas, metaPolo: number): number {
+  const valor = metasTemas[tema];
+  return typeof valor === "number" && !Number.isNaN(valor) ? valor : metaPolo;
+}
+
 export type Turno = "manha" | "tarde";
 
 export type ResumoTaxa = {
@@ -112,6 +131,14 @@ export type JornadaAborto = {
 
 export type RecorteTaxa = ResumoTaxa & { chave: string; detalhe?: string };
 
+/** Taxa por estado (UF) com as cidades/unidades dentro — bloco "Taxa por regional". */
+export type RegionalTaxa = ResumoTaxa & {
+  uf: string;
+  /** Nome do estado ("Não identificado" quando a unidade não está mapeada). */
+  nome: string;
+  cidades: RecorteTaxa[];
+};
+
 export type FaceIdResumo = {
   abortados: number;
   /** Só os abortados com status "FaceID não realizado". */
@@ -167,6 +194,8 @@ export type CoordenadorConsolidado = {
   marcas: RecorteTaxa[];
   /** Unidades com mais cancelamentos (top 15). */
   unidades: RecorteTaxa[];
+  /** Todas as unidades agrupadas por estado (uf-por-unidade.ts). */
+  regionais: RegionalTaxa[];
   reportHora: string | null;
   /** Quem fez o último report (upload da base), já formatado pra exibição. */
   reportNomeSupervisor: string | null;

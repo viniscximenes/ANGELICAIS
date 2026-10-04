@@ -4,7 +4,7 @@ import { Fragment, useState } from "react";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
 
 import { TABELA_LINHA_CLASS, TABELA_VALOR_CELL_CLASS } from "@/components/gestor/tabela-padrao";
-import type { TemaPolo } from "@/lib/coordenador/types";
+import { metaDoTema, type MetasTemas, type TemaPolo } from "@/lib/coordenador/types";
 import { cn } from "@/lib/utils";
 
 import { Cabecalho, CelulaTx } from "./tabela-supervisores";
@@ -14,9 +14,18 @@ const GRID_TEMAS = { gridTemplateColumns: "2.2fr 1.2fr 1fr 1fr 1fr 1fr" };
 /**
  * Resultado do polo por tema — tabela no padrão do Consolidado (mesmo
  * cabeçalho/células da tabela de supervisores). Clique no tema abre os
- * submotivos, com as mesmas colunas em tom mais discreto.
+ * submotivos, com as mesmas colunas em tom mais discreto. Cada tema (e seus
+ * submotivos) é colorido pela meta do próprio tema; sem meta salva, a do polo.
  */
-export function CancelamentoTema({ temas, meta }: { temas: TemaPolo[]; meta: number }) {
+export function CancelamentoTema({
+  temas,
+  meta,
+  metasTemas,
+}: {
+  temas: TemaPolo[];
+  meta: number;
+  metasTemas: MetasTemas;
+}) {
   const [aberto, setAberto] = useState<string | null>(null);
 
   if (temas.length === 0) {
@@ -42,6 +51,7 @@ export function CancelamentoTema({ temas, meta }: { temas: TemaPolo[]; meta: num
         />
         {temas.map((t) => {
           const estaAberto = aberto === t.tema;
+          const metaTema = metaDoTema(t.tema, metasTemas, meta);
           return (
             <Fragment key={t.tema}>
               <button
@@ -61,7 +71,7 @@ export function CancelamentoTema({ temas, meta }: { temas: TemaPolo[]; meta: num
                   </span>
                   <span className="truncate">{t.tema}</span>
                 </div>
-                <CelulaTx tx={t.txRetencao} meta={meta} className="border-r border-border/30" />
+                <CelulaTx tx={t.txRetencao} meta={metaTema} className="border-r border-border/30" />
                 <div className={TABELA_VALOR_CELL_CLASS}>{t.pedidos}</div>
                 <div className={TABELA_VALOR_CELL_CLASS}>{t.retidos}</div>
                 <div className={TABELA_VALOR_CELL_CLASS}>{t.cancelados}</div>
@@ -81,7 +91,7 @@ export function CancelamentoTema({ temas, meta }: { temas: TemaPolo[]; meta: num
                       <div className="text-muted-foreground min-w-0 truncate border-r border-border/30 px-3 py-1.5 text-center">
                         {s.submotivo}
                       </div>
-                      <CelulaTx tx={tx} meta={meta} className="border-r border-border/30 py-1.5" />
+                      <CelulaTx tx={tx} meta={metaTema} className="border-r border-border/30 py-1.5" />
                       <div className={cn(TABELA_VALOR_CELL_CLASS, "text-muted-foreground py-1.5")}>{pedidos}</div>
                       <div className={cn(TABELA_VALOR_CELL_CLASS, "text-muted-foreground py-1.5")}>{s.retidos}</div>
                       <div className={cn(TABELA_VALOR_CELL_CLASS, "text-muted-foreground py-1.5")}>{s.cancelados}</div>

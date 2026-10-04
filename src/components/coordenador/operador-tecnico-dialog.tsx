@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, type CSSProperties, type ReactNode } from "react";
+import { useMemo, useRef, type CSSProperties, type ReactNode } from "react";
 
+import { ExportPopupPngButton } from "@/components/dashboard/export-popup-png-button";
+import { getDataPngHoje } from "@/components/dashboard/export-popup-png-theme";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TABELA_LINHA_CLASS, TABELA_NOME_CELL_CLASS, TABELA_VALOR_CELL_CLASS } from "@/components/gestor/tabela-padrao";
 import {
@@ -64,7 +66,7 @@ function Secao({ titulo, subtitulo, children }: { titulo: string; subtitulo?: st
 
 function Stat({ label, valor, classe }: { label: string; valor: ReactNode; classe?: string }) {
   return (
-    <div className="rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)]">
+    <div data-coord-stat className="rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)]">
       <p className="ds-small text-muted-foreground tracking-wider uppercase">{label}</p>
       <p
         className={cn("mt-1 text-2xl font-normal tracking-tight", classe ?? "text-foreground")}
@@ -81,7 +83,7 @@ function TabelaAgregado({ primeira, linhas, meta }: { primeira: string; linhas: 
   const grid: CSSProperties = { gridTemplateColumns: "2.4fr 1.2fr 1fr 1fr 1fr" };
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[560px]">
+      <div data-coord-op-tabela className="min-w-[560px]">
         <Cabecalho grid={grid} colunas={[primeira, "Tx Retenção", "Pedidos", "Retidos", "Cancelados"]} />
         {linhas.map((l) => (
           <div key={l.chave} className={cn(TABELA_LINHA_CLASS, "border-t border-border/40")} style={grid}>
@@ -178,22 +180,39 @@ export function OperadorTecnicoDialog({
       : null;
   const fontFamily = elementoEscopo ? getComputedStyle(elementoEscopo).fontFamily : undefined;
 
+  // PNG: mesmo botão/captura do card do operador do /s (OperadorDetalheDialog).
+  const pngRef = useRef<HTMLDivElement>(null);
+
   return (
     <Dialog open={operador !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         data-page="reports-consolidado"
+        // Gancho dos ajustes de tema claro em coordenador-consolidado.css.
+        data-coord-operador
         className="max-h-[90vh] overflow-y-auto scrollbar-tema sm:max-w-6xl bg-background border-border/80 p-6 shadow-2xl"
         style={fontFamily ? { fontFamily } : undefined}
       >
         {operador && (
-          <div className="space-y-5">
+          <ExportPopupPngButton
+            contentRef={pngRef}
+            filename={`${operador.login.split("@")[0] || operador.login}_${getDataPngHoje().file}.png`}
+            className="absolute top-2 right-10"
+            corDeFundoDoAlvo
+            toastClassName="reports-consolidado-toast"
+            showSuccessToast={false}
+          />
+        )}
+        {operador && (
+          // Wrapper capturado no PNG — fundo explícito porque o do
+          // DialogContent fica no ancestral, fora do que é capturado.
+          <div ref={pngRef} className="space-y-5" style={{ backgroundColor: "var(--background)" }}>
             {/* Cabeçalho: quem é + contexto (equipe, polo, meta) */}
             <DialogHeader className="space-y-1">
               <DialogTitle className="text-foreground text-2xl font-semibold tracking-tight">{operador.login}</DialogTitle>
               <p className="text-muted-foreground text-sm">Gestor responsável: {operador.supervisor}</p>
               <p className="text-muted-foreground text-sm">
-                {/* Layout do Figma: só a taxa da equipe colorida; separadores com respiro. */}
-                Equipe <span className={classeTx(txEquipe, meta)}>{formatTx(txEquipe)}</span>
+                {/* Separadores com respiro; tudo no mesmo cinza (taxa da equipe sem cor, a pedido). */}
+                Equipe {formatTx(txEquipe)}
                 <span className="mx-3">·</span>Polo {formatTx(txPolo)}
                 <span className="mx-3">·</span>Meta {meta}%
               </p>
@@ -220,7 +239,6 @@ export function OperadorTecnicoDialog({
                     {porHora.map((h) => {
                       const tx = txDe(h);
                       const ruim = abaixoDaMeta(tx, meta);
-                      const pedidos = h.retidos + h.cancelados;
                       return (
                         <div key={h.hora} className="text-center">
                           <p className="ds-body text-foreground pb-1 text-xs font-bold uppercase">{rotuloHora(h.label)}</p>
@@ -233,14 +251,15 @@ export function OperadorTecnicoDialog({
                             <div
                               className="rounded px-1 py-1 text-xs"
                               style={{
-                                background: `color-mix(in oklab, ${ruim ? "var(--danger)" : "var(--success)"} 18%, transparent)`,
+                                // --coord-hora-mix: 18% no escuro; o tema claro baixa em coordenador-consolidado.css.
+                                background: `color-mix(in oklab, ${ruim ? "var(--danger)" : "var(--success)"} var(--coord-hora-mix, 18%), transparent)`,
                               }}
-                              title={`${h.retidos} retidos · ${h.cancelados} cancelados`}
+                              // Só a taxa no bloco; o volume fica no tooltip.
+                              title={`${h.retidos + h.cancelados} pedidos · ${h.retidos} retidos · ${h.cancelados} cancelados`}
                             >
                               <span className={cn("font-semibold", ruim ? "text-danger" : "text-success")}>
                                 {Math.round(tx * 100)}%
                               </span>
-                              <span className="text-foreground/70"> · {pedidos}</span>
                             </div>
                           )}
                         </div>
@@ -285,7 +304,7 @@ export function OperadorTecnicoDialog({
                 {motivosCancelados.length > 0 && (
                   <Secao titulo="Motivos dos cancelamentos">
                     <div className="overflow-x-auto">
-                      <div className="min-w-[480px]">
+                      <div data-coord-op-tabela className="min-w-[480px]">
                         <Cabecalho grid={GRID_MOTIVOS} colunas={["Motivo / Submotivo", "Cancelados"]} />
                         {motivosCancelados.map((m) => (
                           <div key={m.chave} className={cn(TABELA_LINHA_CLASS, "border-t border-border/40")} style={GRID_MOTIVOS}>
@@ -304,7 +323,7 @@ export function OperadorTecnicoDialog({
 
                 <Secao titulo={`Atendimentos do dia (${atendimentos.length})`}>
                   <div className="overflow-x-auto">
-                    <div className="min-w-[900px]">
+                    <div data-coord-op-tabela className="min-w-[900px]">
                       <Cabecalho
                         grid={GRID_ATENDIMENTOS}
                         colunas={["Hora", "Contrato", "Resultado", "Motivo / Submotivo", "Como reteve", "Marca / Unidade"]}
