@@ -16,6 +16,19 @@ export type TemaHoraData = {
   tx: number | null; // null se total = 0
 };
 
+/**
+ * Peso de um operador na taxa da equipe dentro de uma hora — mesmo conceito
+ * do "Quem derrubou nesta hora" do /c (impactoSemEquipe em
+ * get-coordenador-consolidado.ts), trocando supervisor por operador.
+ */
+export type OperadorHoraData = {
+  login: string;
+  retidos: number;
+  cancelados: number;
+  /** Quanto a taxa da hora subiria sem este operador (positivo = derrubou). */
+  impacto: number | null;
+};
+
 export type HoraEvolucaoData = {
   /** Chave do bucket. 7 = "< 08", 8..19 = a própria hora, 20 = "≥ 20". */
   hora: number;
@@ -31,7 +44,23 @@ export type HoraEvolucaoData = {
    * `HoraEvolucaoData[]` (breakdown por operador) sem essa dimensão.
    */
   porTema?: TemaHoraData[];
+  /**
+   * Operadores com atendimento na hora, quem mais derrubou primeiro. Só
+   * preenchido com `{ porOperador: true }` (/s/reports/consolidado).
+   */
+  operadores?: OperadorHoraData[];
 };
+
+function impactoSemOperador(
+  total: { retidos: number; cancelados: number },
+  op: { retidos: number; cancelados: number },
+): number | null {
+  const pedidosTotal = total.retidos + total.cancelados;
+  const pedidosOp = op.retidos + op.cancelados;
+  const pedidosSem = pedidosTotal - pedidosOp;
+  if (pedidosTotal === 0 || pedidosOp === 0 || pedidosSem === 0) return null;
+  return (total.retidos - op.retidos) / pedidosSem - total.retidos / pedidosTotal;
+}
 
 /**
  * Evolução da taxa de retenção e volume por bucket de hora, no dia inteiro,
@@ -39,6 +68,7 @@ export type HoraEvolucaoData = {
  */
 export async function getEvolucaoHora(
   emailsEquipe: string[],
+  opcoes: { porOperador?: boolean } = {},
 ): Promise<HoraEvolucaoData[]> {
   const supabase = createAdminClient();
 
@@ -93,10 +123,11 @@ export async function getEvolucaoHora(
       retidos: number;
       cancelados: number;
       temas: Map<string, { total: number; retidos: number; cancelados: number }>;
+      operadores: Map<string, { retidos: number; cancelados: number }>;
     }
   >();
   for (const b of BUCKETS) {
-    map.set(b.hora, { total: 0, retidos: 0, cancelados: 0, temas: new Map() });
+    map.set(b.hora, { total: 0, retidos: 0, cancelados: 0, temas: new Map(), operadores: new Map() });
   }
 
   const linhasFinais = dedupePorContrato(allData);
@@ -133,6 +164,14 @@ export async function getEvolucaoHora(
       temaAgg.retidos++;
     }
     alvo.temas.set(tema, temaAgg);
+
+    if (opcoes.porOperador && item.usuario_login) {
+      const login = item.usuario_login.trim().toLowerCase();
+      const opAgg = alvo.operadores.get(login) ?? { retidos: 0, cancelados: 0 };
+      if (isCancelado) opAgg.cancelados++;
+      else opAgg.retidos++;
+      alvo.operadores.set(login, opAgg);
+    }
   }
 
   return BUCKETS.map((b) => {
@@ -153,6 +192,16 @@ export async function getEvolucaoHora(
       cancelados: agg.cancelados,
       tx: agg.total > 0 ? agg.retidos / agg.total : null,
       porTema,
+      ...(opcoes.porOperador && {
+        operadores: [...agg.operadores.entries()]
+          .map(([login, o]) => ({
+            login,
+            retidos: o.retidos,
+            cancelados: o.cancelados,
+            impacto: impactoSemOperador(agg, o),
+          }))
+          .sort((a, b) => (b.impacto ?? -Infinity) - (a.impacto ?? -Infinity)),
+      }),
     };
   });
 }

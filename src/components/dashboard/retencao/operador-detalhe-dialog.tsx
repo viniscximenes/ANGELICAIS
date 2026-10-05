@@ -25,6 +25,7 @@ import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individ
 import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
 import { resolverTokenCss } from "@/lib/utils/resolver-token-css";
 import { formatDistanciaMeta, formatFaixaHora } from "./grafico-evolucao";
+import { EvolucaoEquipe } from "./evolucao-equipe";
 
 interface Props {
   operador: OperadorIndividual | null;
@@ -34,6 +35,19 @@ interface Props {
   meta?: number;
   /** Quartil do operador nos dois escopos. null quando indisponível. */
   quartil?: QuartilOperador | null;
+  /**
+   * Visual neumórfico (card #212121 + fundo #212121 sem blur, mesmo da tela
+   * "Atualizando base") — só /s/reports/consolidado liga. Estilos em
+   * reports-consolidado.css ([data-operador-neumorfico]).
+   */
+  visualNeumorfico?: boolean;
+  /**
+   * Gráfico "Evolução por hora" no visual novo do Analítico (EvolucaoEquipe:
+   * barras pedidos/retidos/cancelados + linha da taxa com etiquetas + Total
+   * geral) — só /s/reports/consolidado liga; as outras páginas seguem com o
+   * gráfico antigo.
+   */
+  graficoNovo?: boolean;
 }
 
 function formatTx(tx: number | null): string {
@@ -74,6 +88,7 @@ function ChipQuartil({
   const estilo = ESTILO_CHIP_QUARTIL;
   return (
     <div
+      data-neu-chip
       className="ds-small inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-muted-foreground"
       style={{ backgroundColor: estilo.bg, borderColor: estilo.bd }}
     >
@@ -94,6 +109,8 @@ export function OperadorDetalheDialog({
   onOpenChange,
   meta = 65,
   quartil = null,
+  visualNeumorfico = false,
+  graficoNovo = false,
 }: Props) {
   const pngRef = useRef<HTMLDivElement>(null);
 
@@ -227,6 +244,7 @@ export function OperadorDetalheDialog({
       */}
       <DialogContent
         data-page="reports-consolidado"
+        data-operador-neumorfico={visualNeumorfico || undefined}
         className="max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-4xl bg-background border-border/80 p-6 shadow-2xl"
         style={fontFamilyEscopo ? { fontFamily: fontFamilyEscopo } : undefined}
       >
@@ -289,6 +307,9 @@ export function OperadorDetalheDialog({
                 // o espaçamento interno do texto.
                 <div
                   key={c.label}
+                  // data-neu-tile: gancho do visual neumórfico (só no
+                  // Consolidado, ver [data-operador-neumorfico] no CSS).
+                  data-neu-tile
                   className="flex flex-col justify-center gap-1 px-4 py-3.5"
                 >
                   <p className="ds-small text-muted-foreground mb-1 font-bold tracking-wider uppercase">
@@ -313,6 +334,9 @@ export function OperadorDetalheDialog({
             {/* grafico-evolucao-chart: mesma regra dos gráficos "Evolução da
                 equipe" (reports-consolidado.css) — sem a borda de foco que
                 "marcava" o gráfico ao clicar nele. */}
+            {graficoNovo ? (
+              <EvolucaoEquipe evolucao={operador.porHora} meta={meta} altura={300} />
+            ) : (
             <div className="grafico-evolucao-chart w-full h-[220px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
@@ -495,6 +519,7 @@ export function OperadorDetalheDialog({
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
+            )}
           </div>
 
           {/* ── Retenção por tema ──────────────────────────────── */}

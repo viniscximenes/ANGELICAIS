@@ -87,10 +87,13 @@ export function ImpactoFaceIdCard({ data, scrollInterno = false }: ImpactoFaceId
       <div
         className={scrollInterno ? "min-h-0 flex-1 overflow-y-auto scrollbar-tema" : "overflow-hidden scrollbar-tema"}
       >
-        <div className="overflow-x-auto">
+        {/* scrollInterno: sem o overflow-x-auto interno — ele viraria o
+            container de rolagem do cabeçalho fixo (sticky) e ele não fixaria. */}
+        <div className={scrollInterno ? undefined : "overflow-x-auto"}>
           {/* data-tabela-faceid: cabeçalho no visual da tabela principal
-              (reports-consolidado.css, junto com as demais tabelas). */}
-          <table data-tabela-faceid className="w-full text-left border-collapse">
+              (reports-consolidado.css, junto com as demais tabelas).
+              data-cabecalho-fixo: cabeçalho sticky ao rolar. */}
+          <table data-tabela-faceid data-cabecalho-fixo className="w-full text-left border-collapse">
             <thead>
               <tr className="ds-body text-muted-foreground uppercase tracking-wide font-bold select-none border-b border-border/40 bg-muted/40">
                 <th className="py-2.5 px-4 font-bold whitespace-nowrap">Operador</th>
@@ -113,17 +116,17 @@ export function ImpactoFaceIdCard({ data, scrollInterno = false }: ImpactoFaceId
                 porOperador.map((op) => (
                   // Sem hover: a linha não é clicável.
                   <tr key={op.nomeSobrenome}>
-                    <td className="py-3 px-4 ds-body text-xs font-semibold text-foreground whitespace-nowrap">
+                    <td className="py-3 px-4 ds-body text-sm font-medium text-foreground whitespace-nowrap">
                       {op.nomeSobrenome}
                     </td>
                     <td
-                      className="py-3 px-4 text-center ds-mono-sm text-xs font-medium text-foreground"
+                      className="py-3 px-4 text-center ds-mono-sm text-sm !font-normal text-foreground"
                       style={{ fontVariantNumeric: "tabular-nums" }}
                     >
                       {op.naoRealizado.toLocaleString("pt-BR")}
                     </td>
                     <td
-                      className="py-3 px-4 text-center ds-mono-sm text-xs font-medium text-foreground"
+                      className="py-3 px-4 text-center ds-mono-sm text-sm !font-normal text-foreground"
                       style={{ fontVariantNumeric: "tabular-nums" }}
                     >
                       {op.reprovado.toLocaleString("pt-BR")}

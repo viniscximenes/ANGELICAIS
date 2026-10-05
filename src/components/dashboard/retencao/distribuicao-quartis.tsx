@@ -30,12 +30,13 @@ export function DistribuicaoQuartis({
 
   const metaFracao = meta / 100;
 
-  // Filtra e ordena operadores (da menor taxa para a maior) por quartil
+  // Filtra e ordena operadores (da menor taxa para a maior) por quartil;
+  // empate de taxa → quem tem mais pedidos primeiro (pesa mais na equipe).
   const effectiveMode = toggleMode;
   const activeList = effectiveMode === "equipe" ? operadores : operadoresPolo;
   const list = activeList
     .filter((op) => op.quartil === selectedQuartil)
-    .sort((a, b) => (a.tx ?? 0) - (b.tx ?? 0));
+    .sort((a, b) => (a.tx ?? 0) - (b.tx ?? 0) || b.total - a.total);
 
   return (
     <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
@@ -74,6 +75,7 @@ export function DistribuicaoQuartis({
             ]}
             valor={toggleMode}
             onChange={setToggleMode}
+            tamanho="grande"
           />
           <Segmentado
             ariaLabel="Quartil selecionado"
@@ -81,17 +83,18 @@ export function DistribuicaoQuartis({
             opcoes={([1, 2, 3, 4] as const).map((q) => ({ valor: q, rotulo: `Q${q}` }))}
             valor={selectedQuartil}
             onChange={setSelectedQuartil}
+            tamanho="grande"
           />
         </div>
 
         <div className={scrollInterno ? "min-h-0 flex-1 overflow-auto scrollbar-tema" : "overflow-x-auto"}>
           {/* data-tabela-quartis: cabeçalho no visual da tabela principal
-              (reports-consolidado.css, junto com data-tabela-temas). */}
-          <table data-tabela-quartis className="w-full text-left border-collapse">
+              (reports-consolidado.css, junto com data-tabela-temas).
+              data-cabecalho-fixo: cabeçalho sticky ao rolar (mesmo CSS). */}
+          <table data-tabela-quartis data-cabecalho-fixo className="w-full text-left border-collapse">
             <thead>
               <tr className="ds-body text-muted-foreground uppercase tracking-wide font-bold select-none border-b border-border/40 bg-muted/40">
                 <th className="py-2.5 px-4 whitespace-nowrap">Operador</th>
-                <th className="py-2.5 px-4 text-center w-[90px] whitespace-nowrap">Quartil</th>
                 <th className="py-2.5 px-4 text-center w-[90px] whitespace-nowrap">Pedidos</th>
                 <th className="py-2.5 px-4 text-center w-[90px] whitespace-nowrap">Retidos</th>
                 <th className="py-2.5 px-4 text-center w-[90px] whitespace-nowrap">Cancelados</th>
@@ -101,7 +104,7 @@ export function DistribuicaoQuartis({
             <tbody className="divide-y divide-border/20">
               {list.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center ds-body text-xs text-muted-foreground italic">
+                  <td colSpan={5} className="py-8 text-center ds-body text-xs text-muted-foreground italic">
                     {toggleMode === "polo"
                       ? `Nenhum operador da equipe está no Q${selectedQuartil} do polo.`
                       : `Nenhum operador da equipe neste quartil.`}
@@ -114,26 +117,27 @@ export function DistribuicaoQuartis({
 
                   // Verde se bateu a meta, vermelho se não bateu
                   const abaixo = op.tx === null || op.tx < metaFracao;
-                  const txColor = abaixo ? "text-danger font-medium" : "text-success font-medium";
+                  const txColor = abaixo ? "text-danger" : "text-success";
 
                   return (
                     <tr key={op.login}>
-                      <td className="py-2.5 px-4 ds-body text-xs font-semibold text-foreground truncate max-w-[180px]">
+                      {/* Mesma hierarquia da "Taxa de retenção por tema":
+                          nome em text-sm medium, números em peso normal, só a
+                          taxa em destaque. Coluna "Quartil" removida — sempre
+                          repetia o Q selecionado no filtro acima. */}
+                      <td className="py-2.5 px-4 ds-body text-sm font-medium text-foreground truncate max-w-[220px]">
                         {displayName}
                       </td>
-                      <td className="py-2.5 px-4 text-center ds-mono-sm text-xs font-medium text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
-                        Q{selectedQuartil}
-                      </td>
-                      <td className="py-2.5 px-4 text-center ds-mono-sm text-xs text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                      <td className="py-2.5 px-4 text-center ds-mono-sm text-sm !font-normal text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                         {op.total.toLocaleString("pt-BR")}
                       </td>
-                      <td className="py-2.5 px-4 text-center ds-mono-sm text-xs text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                      <td className="py-2.5 px-4 text-center ds-mono-sm text-sm !font-normal text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                         {op.retidos.toLocaleString("pt-BR")}
                       </td>
-                      <td className="py-2.5 px-4 text-center ds-mono-sm text-xs text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                      <td className="py-2.5 px-4 text-center ds-mono-sm text-sm !font-normal text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                         {op.cancelados.toLocaleString("pt-BR")}
                       </td>
-                      <td className={`py-2.5 px-4 text-center ds-mono-sm text-xs ${txColor}`} style={{ fontVariantNumeric: "tabular-nums" }}>
+                      <td className={`py-2.5 px-4 text-center ds-mono-sm text-sm font-semibold ${txColor}`} style={{ fontVariantNumeric: "tabular-nums" }}>
                         {txFormatted}
                       </td>
                     </tr>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/hover-sidebar";
 
 interface FloatingNavLink {
@@ -29,6 +29,12 @@ interface FloatingNavSidebarProps {
    * principal (position: fixed), não dentro dela.
    */
   dataPage?: string;
+  /**
+   * Índices dos links DEPOIS dos quais entra uma divisória fina — aditivo,
+   * default nenhum (visual de sempre). ConsolidadoNavSidebar separa a
+   * tabela de operadores (topo) dos slides do Analítico.
+   */
+  divisoriasApos?: number[];
 }
 
 /**
@@ -40,7 +46,12 @@ interface FloatingNavSidebarProps {
  * (ex.: tempo-indisponibilidade) monta sua própria lista de itens e reusa
  * este mesmo componente, sem duplicar a lógica de posicionamento/hover.
  */
-export function FloatingNavSidebar({ links, wrapperClassName, dataPage }: FloatingNavSidebarProps) {
+export function FloatingNavSidebar({
+  links,
+  wrapperClassName,
+  dataPage,
+  divisoriasApos = [],
+}: FloatingNavSidebarProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -54,8 +65,13 @@ export function FloatingNavSidebar({ links, wrapperClassName, dataPage }: Floati
     >
       <Sidebar open={open} setOpen={setOpen}>
         <SidebarBody className="border-border/60 h-auto justify-start gap-1 rounded-xl border py-4 shadow-lg">
-          {links.map((link) => (
-            <SidebarLink key={link.label} link={link} />
+          {links.map((link, i) => (
+            <Fragment key={link.label}>
+              <SidebarLink link={link} />
+              {divisoriasApos.includes(i) && (
+                <div aria-hidden="true" data-nav-divisoria className="bg-border my-1 h-px w-full shrink-0" />
+              )}
+            </Fragment>
           ))}
         </SidebarBody>
       </Sidebar>

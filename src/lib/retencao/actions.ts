@@ -4,7 +4,6 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getEmailsEquipe } from "./get-emails-equipe";
 import { getVisaoGeral, type VisaoGeralData } from "./get-visao-geral";
 import { getEvolucaoHora, type HoraEvolucaoData } from "./get-evolucao-hora";
-import { getEvolucaoAcumulada, type FaixaAcumuladaData } from "./get-evolucao-acumulada";
 import { getPorTema, type TemaData } from "./get-por-tema";
 import { getPorSegmento, type SegmentoResult } from "./get-por-segmento";
 import { getQuartilOperadores, type OperadorQuartilItem } from "./get-quartil-operadores";
@@ -93,7 +92,7 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
     ] = await Promise.all([
       getVisaoGeral(emailsEquipe),
       getPorTema(emailsEquipe),
-      getEvolucaoHora(emailsEquipe),
+      getEvolucaoHora(emailsEquipe, { porOperador: true }),
       getPorSegmento(emailsEquipe),
       getQuartilOperadores("equipe", emailsEquipe),
       getQuartilOperadores("empresa", []),
@@ -203,30 +202,6 @@ export async function fetchOperadorDetalheAction(login: string): Promise<Operado
   } catch (err) {
     console.error("[fetchOperadorDetalheAction] erro:", err);
     return { success: false, error: "Erro ao carregar detalhamento do operador." };
-  }
-}
-
-/**
- * Evolução acumulada da taxa em faixas de 30 min (toggle "Acumulada" do
- * gráfico "Evolução da equipe" em /s/reports/consolidado). Buscada SÓ quando o
- * toggle é ligado — fora do fetchDashboardRetencaoAction pra não somar uma
- * consulta a mais em todo carregamento da página.
- */
-export async function fetchEvolucaoAcumuladaAction(): Promise<
-  { success: true; data: FaixaAcumuladaData[] } | { success: false; error: string }
-> {
-  const user = await getCurrentUser();
-  if (!user || user.profile.role !== "GESTOR") {
-    return { success: false, error: "Acesso não autorizado." };
-  }
-
-  try {
-    const emailsEquipe = await getEmailsEquipe(user.profile.id);
-    const data = await getEvolucaoAcumulada(emailsEquipe);
-    return { success: true, data };
-  } catch (err) {
-    console.error("[fetchEvolucaoAcumuladaAction] erro:", err);
-    return { success: false, error: "Erro ao carregar a evolução acumulada." };
   }
 }
 

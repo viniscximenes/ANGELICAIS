@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Instrument_Sans } from "next/font/google";
 
 import "./reports-consolidado.css";
 import { GestorEquipeSection } from "@/components/gestor/gestor-equipe-section";
 import { RetencaoDetalheSection } from "@/components/dashboard/retencao/retencao-detalhe-section";
 import { ConsolidadoNavSidebar } from "@/components/gestor/consolidado-nav-sidebar";
+import { ConsolidadoScrollProgress } from "@/components/gestor/consolidado-scroll-progress";
+import { FonteConsolidado } from "./fonte";
+import { StyledCard } from "@/components/gestor/styled-card";
+import { UploadDropzone } from "@/components/d-1/upload-dropzone";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
@@ -23,19 +26,6 @@ export const metadata: Metadata = {
   title: "Reports - Consolidado",
 };
 
-// Fonte do tema Zen Linen — carregada só nesta rota (mesmo padrão de
-// /kpi/operadores, /kpi/gestor e /kpi/evolucao: next/font/google gera uma
-// variável escopada ao módulo que a importa, referenciada só dentro de
-// [data-page="reports-consolidado"] em reports-consolidado.css, então não
-// afeta nenhuma outra página).
-const zenSans = Instrument_Sans({
-  subsets: ["latin", "latin-ext"],
-  weight: "variable",
-  variable: "--font-zen-sans",
-});
-
-export const revalidate = 300;
-
 // Loading "fake" de piso mínimo: o loading.tsx (Suspense fallback, formato
 // "consolidado" do KpiLoadingScreen) foi desenhado pra replicar a posição
 // exata dos cards da página real — mas se os dados voltarem rápido (ex.:
@@ -46,7 +36,7 @@ export const revalidate = 300;
 // Server Component até completar MIN_LOADING_MS, contados desde a entrada
 // na função. Se a busca real já demorou mais que isso, `aguardarPisoMinimo`
 // não espera nada (Math.max trava em 0) — só estica quando sobrou tempo.
-const MIN_LOADING_MS = 3_000;
+const MIN_LOADING_MS = 1_000;
 
 async function aguardarPisoMinimo(desde: number) {
   const faltam = MIN_LOADING_MS - (Date.now() - desde);
@@ -74,7 +64,7 @@ export default async function ReportsConsolidadoPage() {
   // getGestorConsolidado roda UMA vez aqui: reportHora/reportNomeSupervisor
   // são passados como prop tanto pra GestorEquipeSection quanto pra
   // RetencaoDetalheSection, em vez de cada seção buscar de novo.
-  const [{ data, reportHora, reportNomeSupervisor }, nomeFantasiaConfig, configTabela, rvFaixas, emailsEquipe] =
+  const [{ data, reportHora, reportNomeSupervisor, reportDatasBase }, nomeFantasiaConfig, configTabela, rvFaixas, emailsEquipe] =
     await Promise.all([
       getGestorConsolidado(user.profile.id),
       getNomeFantasiaConfig(user.profile.id),
@@ -93,28 +83,52 @@ export default async function ReportsConsolidadoPage() {
   // da função), cobrindo os dois caminhos abaixo (vazio e com dados).
   await aguardarPisoMinimo(inicioCarregamento);
 
+  const showUpload = can(user.profile.role, "manage_d1_base");
+
+  // Sem dados: mesmo título e mesma linguagem visual da página (StyledCard,
+  // igual ao "Aguardando dados do dia" do Analítico) e, pra quem pode, o
+  // anexo da base — antes a área de upload sumia justo quando a solução era
+  // anexar a base. Após o upload, o UploadDropzone recarrega a página.
   if (data.operadores.length === 0) {
     return (
-      <div
-        data-page="reports-consolidado"
-        className={`flex min-h-[60vh] items-center justify-center px-6 ${zenSans.variable}`}
-      >
+      <>
+        <ConsolidadoScrollProgress />
+        <FonteConsolidado />
         <div
-          className="elevation-1 ds-body text-muted-foreground max-w-md rounded-xl px-6 py-10 text-center"
-          style={{ border: "1px solid var(--border)" }}
+          data-page="reports-consolidado"
+          className="min-h-screen px-6 py-8 lg:px-12 lg:py-12"
         >
-          Não foi possível carregar os dados da equipe.
-          <br />
-          <span className="ds-mono-sm" style={{ color: "var(--muted-foreground)" }}>
-            Verifique se há operadores cadastrados na sua equipe (Configurações
-            &rarr; Operadores do D-1) e se a base do dia já foi atualizada.
-          </span>
+        <div className="mx-auto max-w-7xl space-y-6">
+          <div className="pt-4">
+            <h1 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+              Consolidado
+            </h1>
+          </div>
+
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
+            <StyledCard
+              withGradient
+              className="flex min-h-[220px] flex-1 flex-col items-center justify-center gap-2 p-10 text-center"
+            >
+              <h3 className="ds-h3 text-foreground font-semibold">Ainda não há dados da equipe</h3>
+              <p className="ds-body text-muted-foreground max-w-md text-sm">
+                {showUpload
+                  ? "Anexe a base do dia ao lado. Se ela já foi anexada, confira se há operadores cadastrados na sua equipe (Configurações → Operadores do D-1)."
+                  : "Confira se há operadores cadastrados na sua equipe (Configurações → Operadores do D-1) e se a base do dia já foi atualizada."}
+              </p>
+            </StyledCard>
+
+            {showUpload && (
+              <div className="min-h-[220px] min-w-0 flex-1 self-stretch">
+                <UploadDropzone abrirEmDownloads recarregarComModalAberto />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
-
-  const showUpload = can(user.profile.role, "manage_d1_base");
 
   // Converte para o formato que a EquipeTable do D-1 já aceita.
   const operadoresSemRv: OperadorConsolidado[] = data.operadores.map((op) => ({
@@ -159,16 +173,18 @@ export default async function ReportsConsolidadoPage() {
   // GestorEquipeSection (initial={false} no motion.section).
   return (
     <>
+      <ConsolidadoScrollProgress />
       {/*
         Navegação lateral animada, EXCLUSIVA desta página (não é layout
         global) — ver comentário em consolidado-nav-sidebar.tsx. position:
         fixed, então fica fora do fluxo do container centralizado abaixo.
       */}
       <ConsolidadoNavSidebar />
+      <FonteConsolidado />
 
       <div
         data-page="reports-consolidado"
-        className={`min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
+        className="min-h-screen px-6 py-8 lg:px-12 lg:py-12"
       >
         <div className="mx-auto max-w-7xl">
           {/*
@@ -180,6 +196,7 @@ export default async function ReportsConsolidadoPage() {
           */}
           <div className="space-y-10">
             <GestorEquipeSection
+              gestorId={user.profile.id}
               operadores={operadores}
               equipe={equipe}
               gestora={gestora}
@@ -187,6 +204,7 @@ export default async function ReportsConsolidadoPage() {
               nomeFantasia={nomeFantasia}
               olhoInicial={nomeFantasiaConfig.olhoConsolidado}
               nomeSupervisorReport={reportNomeSupervisor}
+              datasBaseReport={reportDatasBase}
               metaTxInicial={configTabela.metaTxRetencao}
               ordemTabelaInicial={configTabela.ordemTabela}
               showRvDiarioInicial={configTabela.showRvDiario}
@@ -195,6 +213,7 @@ export default async function ReportsConsolidadoPage() {
             <RetencaoDetalheSection
               emailsEquipeIniciais={emailsEquipe}
               gestorId={user.profile.id}
+              metaInicial={configTabela.metaTxRetencao}
               gestora={gestora}
               reportHoraInicial={reportHora}
             />

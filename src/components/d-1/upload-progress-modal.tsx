@@ -129,6 +129,9 @@ export function UploadProgressModal({
           exit={{ opacity: 0 }}
           transition={fadeTransition}
           data-page={themedConfig?.dataPage}
+          // Gancho pra uma rota sobrescrever o fundo (ex.: preto sólido sem
+          // blur em reports-consolidado.css) sem mexer nas outras variantes.
+          data-upload-backdrop
           className="fixed inset-0 z-50 flex items-center justify-center"
           style={{
             background:

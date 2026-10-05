@@ -430,6 +430,9 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
               role={clicavel ? "button" : undefined}
               tabIndex={clicavel ? 0 : undefined}
               data-sem-dados={semAtendimentos ? "true" : undefined}
+              // Gancho de estilo por página (ex.: hover verde/vermelho em
+              // reports-consolidado.css) — sem estilo próprio aqui.
+              data-meta-linha={semAtendimentos ? undefined : belowMeta ? "abaixo" : "dentro"}
               className={cn(
                 TABELA_LINHA_HOVER_CLASS,
                 "group border-l-2 border-l-transparent transition-[background-color,border-color,transform] duration-200 ease-out",
@@ -501,6 +504,7 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                     */}
                     <div
                       aria-hidden="true"
+                      data-tx-barra
                       className="h-1 w-12 overflow-hidden rounded-full bg-muted/20"
                     />
                   </>
@@ -525,6 +529,7 @@ const ScreenTable = forwardRef<HTMLDivElement, EquipeTableProps>(
                     {/* Barra fina de progresso da tx — dado já existe na linha, sem query nova. */}
                     <div
                       aria-hidden="true"
+                      data-tx-barra
                       className="h-1 w-12 overflow-hidden rounded-full bg-muted/50"
                     >
                       <div

@@ -2,7 +2,6 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { IconEye, IconEyeOff } from "@tabler/icons-react";
-import { motion } from "motion/react";
 import { toast } from "sonner";
 
 import { CopyTableButton } from "@/components/d-1/copy-table-button";
@@ -33,8 +32,18 @@ import { fetchOperadorDetalheAction } from "@/lib/retencao/actions";
 import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
 import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
 import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog-lazy";
-import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
-import { ConsolidadoSkeleton } from "@/app/(dashboard)/s/reports/consolidado/loading";
+import { notifyBaseAtualizada, onBaseAtualizada } from "@/lib/retencao/base-cleared-event";
+import {
+  DEFAULT_THEME_METAS,
+  lerThemeMetas,
+  notifyMetasAtualizadas,
+  salvarThemeMetas,
+} from "@/lib/retencao/metas-consolidado";
+import {
+  COOKIE_LINHAS,
+  ConsolidadoSkeleton,
+} from "@/app/(dashboard)/s/reports/consolidado/consolidado-skeleton";
+import { CursorCarregando } from "@/components/gestor/cursor-carregando";
 
 // Texto da 2ª linha do cabeçalho ("{nome} fez um report às {hora}") — mesma
 // checagem de "hora ausente/zerada" de formatReportLabel (@/lib/gestor/
@@ -47,17 +56,35 @@ import { ConsolidadoSkeleton } from "@/app/(dashboard)/s/reports/consolidado/loa
 // mesmo comportamento de antes (o `{formatReportLabel(...) && (...)}` já
 // escondia a linha nesse caso), só que agora não há mais fallback textual
 // tipo "-" ou "undefined" visível.
+// Dias da base colada no fim da linha — "(base do dia 03/10)" ou, com mais
+// de um dia, "(bases do dia 02/10 - 03/10)". Um gestor pode colar a base de
+// outra data e a atualização vale pra todos; sem isso ficava confuso.
+// Uploads anteriores à coluna report_datas_base vêm sem dias: o trecho some.
 function formatCabecalhoReport(
   hora: string | null | undefined,
   nomeSupervisor: string | null | undefined,
+  datasBase: string[] | null | undefined,
 ): string | null {
   if (!hora || hora === "—" || hora === "00:00" || hora === "00:00:00") return null;
   const horaCurta = hora.match(/^(\d{1,2}:\d{2})/)?.[1] ?? hora;
   const nome = nomeSupervisor?.trim();
-  if (nome) {
-    return `${nome} fez um report às ${horaCurta}`;
-  }
-  return `Atualizado às ${horaCurta}`;
+  const texto = nome ? `${nome} fez um report às ${horaCurta}` : `Atualizado às ${horaCurta}`;
+  return `${texto}${formatDiasBase(datasBase)}`;
+}
+
+/** ["2026-10-02", "2026-10-03"] → "  -   (bases do dia 02/10 - 03/10)". */
+function formatDiasBase(datasBase: string[] | null | undefined): string {
+  const dias = (datasBase ?? [])
+    .map((iso) => iso.match(/^\d{4}-(\d{2})-(\d{2})/))
+    .filter((m): m is RegExpMatchArray => m !== null)
+    .map((m) => `${m[2]}/${m[1]}`);
+  if (dias.length === 0) return "";
+  // Separador "  -   " com os espaços exatos pedidos (o <p> usa
+  // whitespace-pre-wrap pra não colapsar os espaços).
+  const separador = "  -   ";
+  return dias.length === 1
+    ? `${separador}(base do dia ${dias[0]})`
+    : `${separador}(bases do dia ${dias.join(" - ")})`;
 }
 
 // Intervalo do polling: reconsulta a base a cada 30s para refletir mudanças
@@ -70,6 +97,12 @@ function formatCabecalhoReport(
 // (analitico-tma-tabela.tsx/cards-resumo-tma.tsx) nunca teve polling.
 const POLL_INTERVAL_MS = 30_000;
 
+// Camadas que "donas" das setas do teclado (ver handleKeyDown).
+const SELETOR_CAMADA_ABERTA =
+  '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [role="combobox"], [data-radix-popper-content-wrapper]';
+const SELETOR_CAMADA_ABERTA_DOC =
+  '[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"], [data-radix-popper-content-wrapper]';
+
 // Piso mínimo (ms) da tela de loading exibida durante o refresh MANUAL
 // (botão "Limpar base") — mesma lógica/duração do piso mínimo do
 // carregamento inicial (ver MIN_LOADING_MS em page.tsx), só que client-side:
@@ -78,7 +111,15 @@ const POLL_INTERVAL_MS = 30_000;
 // MIN_REFRESH_LOADING_MS, pra não "piscar". Só cobre o refetch DISPARADO
 // PELO USUÁRIO (handleBaseCleared) — o polling silencioso de 30s continua
 // sem overlay nenhum, não faria sentido cobrir a tabela a cada meio minuto.
-const MIN_REFRESH_LOADING_MS = 3_000;
+const MIN_REFRESH_LOADING_MS = 1_000;
+
+/** Classe dos toasts desta rota (ver .reports-consolidado-toast no CSS). */
+const TOAST_CLASS = "reports-consolidado-toast";
+
+/** Mesmo rótulo da coluna Operador da EquipeTable (parte antes do "@"). */
+function rotuloOperador(email: string): string {
+  return email.split("@")[0] || email;
+}
 
 // CAUSA RAIZ HISTÓRICA da última coluna (Tx Retenção/RV Diário) cortada: o
 // wrapper VISÍVEL abaixo precisa de uma largura EXPLÍCITA (é uma `transition:
@@ -134,6 +175,8 @@ function useCardChromePx(cardWrapperRef: RefObject<HTMLDivElement | null>): numb
 }
 
 interface GestorEquipeSectionProps {
+  /** profiles.id do gestor — escopo das metas por tema no localStorage. */
+  gestorId: string;
   operadores: OperadorConsolidado[];
   equipe: ResumoEquipe;
   /** Nome da gestora — usado no texto do report copiado. */
@@ -144,6 +187,8 @@ interface GestorEquipeSectionProps {
   olhoInicial?: boolean;
   /** Nome do supervisor que fez o último report (BASE - 1!S2, junto com a hora). */
   nomeSupervisorReport?: string | null;
+  /** Dias (YYYY-MM-DD) da base do último upload — d1_consolidado.report_datas_base. */
+  datasBaseReport?: string[] | null;
   /** Meta de TX Retenção (%, escala 0-100) — config do gestor, `gestor_config_fantasia.meta_tx_retencao`. */
   metaTxInicial?: number;
   /** Ordenação salva da tabela — `gestor_config_fantasia.ordem_tabela`. */
@@ -153,6 +198,7 @@ interface GestorEquipeSectionProps {
 }
 
 export function GestorEquipeSection({
+  gestorId,
   operadores: operadoresIniciais,
   equipe: equipeInicial,
   gestora,
@@ -160,6 +206,7 @@ export function GestorEquipeSection({
   nomeFantasia,
   olhoInicial = false,
   nomeSupervisorReport: nomeSupervisorReportInicial = null,
+  datasBaseReport: datasBaseReportInicial = null,
   metaTxInicial = DEFAULT_META_TX_RETENCAO,
   ordemTabelaInicial = DEFAULT_ORDEM_TABELA,
   showRvDiarioInicial = DEFAULT_SHOW_RV_DIARIO,
@@ -170,8 +217,15 @@ export function GestorEquipeSection({
   const [nomeSupervisorReport, setNomeSupervisorReport] = useState(
     nomeSupervisorReportInicial,
   );
+  const [datasBaseReport, setDatasBaseReport] = useState(datasBaseReportInicial);
   const [metaTxRetencao, setMetaTxRetencao] = useState(metaTxInicial);
   const [ordemTabela, setOrdemTabela] = useState(ordemTabelaInicial);
+  // Metas por tema do Analítico — editadas no ConfigTabelaPopover, lidas do
+  // localStorage só depois do mount (no SSR não existe storage).
+  const [themeMetas, setThemeMetas] = useState<Record<string, number>>(DEFAULT_THEME_METAS);
+  useEffect(() => {
+    setThemeMetas(lerThemeMetas(gestorId));
+  }, [gestorId]);
   // Espelha o open/close do ConfigTabelaPopover só pra elevar a tabela acima
   // do overlay de blur (z-40) enquanto o popover está aberto.
   const [configPopoverOpen, setConfigPopoverOpen] = useState(false);
@@ -190,10 +244,14 @@ export function GestorEquipeSection({
   // "Operadores" do trilho horizontal; migrado pra cá quando esse card foi
   // removido (o dado já estava disponível ali, agora é buscado no clique).
   const [operadorSelecionado, setOperadorSelecionado] = useState<OperadorIndividual | null>(null);
+  const [operadorSelecionadoEmail, setOperadorSelecionadoEmail] = useState<string | null>(null);
   const [operadorQuartil, setOperadorQuartil] = useState<QuartilOperador | null>(null);
   const [operadorMeta, setOperadorMeta] = useState(DEFAULT_META_TX_RETENCAO);
   const [operadorDialogOpen, setOperadorDialogOpen] = useState(false);
   const [operadorDialogLoading, setOperadorDialogLoading] = useState(false);
+  // Onde o clique na linha aconteceu — ponto de partida do cursor de
+  // carregamento customizado (CursorCarregando), antes do 1º movimento.
+  const [posicaoClique, setPosicaoClique] = useState<{ x: number; y: number } | null>(null);
 
   // Prefetch no hover — a causa real da demora pra abrir o dialog é a
   // PRÓPRIA busca (fetchOperadorDetalheAction faz até 3 varreduras de
@@ -213,9 +271,26 @@ export function GestorEquipeSection({
     if (prefetchTimeoutRef.current) clearTimeout(prefetchTimeoutRef.current);
     if (prefetchCacheRef.current.has(emailOriginal)) return;
     prefetchTimeoutRef.current = setTimeout(() => {
-      prefetchCacheRef.current.set(emailOriginal, fetchOperadorDetalheAction(emailOriginal));
+      const busca = fetchOperadorDetalheAction(emailOriginal);
+      prefetchCacheRef.current.set(emailOriginal, busca);
+      // Falha não fica guardada: o próximo hover/clique busca de novo.
+      const descartar = () => {
+        if (prefetchCacheRef.current.get(emailOriginal) === busca) {
+          prefetchCacheRef.current.delete(emailOriginal);
+        }
+      };
+      busca.then((r) => {
+        if (!r.success) descartar();
+      }, descartar);
     }, PREFETCH_DEBOUNCE_MS);
   }
+
+  // Base nova (upload, "Limpar base" ou report de outro gestor) invalida
+  // todo detalhe já buscado — senão o dialog abriria com dados antigos.
+  useEffect(() => {
+    const cache = prefetchCacheRef.current;
+    return onBaseAtualizada(() => cache.clear());
+  }, []);
 
   function handleOperadorHoverEnd() {
     if (prefetchTimeoutRef.current) {
@@ -235,17 +310,18 @@ export function GestorEquipeSection({
       const result = await (emVoo ?? fetchOperadorDetalheAction(emailOriginal));
       if (result.success) {
         setOperadorSelecionado(result.data.operador);
+        setOperadorSelecionadoEmail(emailOriginal);
         setOperadorQuartil(result.data.quartil);
         setOperadorMeta(result.data.meta);
         setOperadorDialogOpen(true);
       } else {
-        toast.error(result.error, { className: "reports-consolidado-toast" });
+        toast.error(result.error, { className: TOAST_CLASS });
       }
     } catch (err) {
       if (!handleStaleActionError(err)) {
         console.error("[GestorEquipeSection] erro ao buscar detalhamento do operador:", err);
         toast.error("Erro ao carregar detalhamento do operador.", {
-          className: "reports-consolidado-toast",
+          className: TOAST_CLASS,
         });
       }
     } finally {
@@ -253,9 +329,6 @@ export function GestorEquipeSection({
     }
   }
 
-  function resolverNomeOperador(op: OperadorIndividual): string {
-    return op.login.split("@")[0] || op.login;
-  }
 
   function handleToggleOlho() {
     const novoValor = !olhoAberto;
@@ -281,6 +354,9 @@ export function GestorEquipeSection({
   }
 
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Build antigo detectado (handleStaleActionError): não volta a consultar
+  // nem quando a aba volta a ficar visível.
+  const pararPollingRef = useRef(false);
 
   // Carimbo do último report conhecido (hora + nome do supervisor), pra
   // detectar barato — sem query pesada nenhuma — quando outro gestor subiu
@@ -292,15 +368,30 @@ export function GestorEquipeSection({
     `${equipeInicial.horaReport}|${nomeSupervisorReportInicial ?? ""}`,
   );
 
+  // Evita duas buscas sobrepostas (polling + volta da aba + "Limpar base").
+  const refetchEmVooRef = useRef<Promise<boolean> | null>(null);
+
   // Refetch usado tanto pelo polling quanto (imediatamente, sem esperar os
   // 30s) pelo ClearBaseButton — mesma fonte, dois gatilhos.
-  async function refetchConsolidado() {
+  // Retorna true quando já avisou o Analítico (report mudou), pra quem chamou
+  // não avisar de novo.
+  function refetchConsolidado(): Promise<boolean> {
+    if (!refetchEmVooRef.current) {
+      refetchEmVooRef.current = buscarConsolidado().finally(() => {
+        refetchEmVooRef.current = null;
+      });
+    }
+    return refetchEmVooRef.current;
+  }
+
+  async function buscarConsolidado(): Promise<boolean> {
     try {
       const result = await refreshConsolidadoAction();
       if (result.success) {
         setOperadores(result.operadores);
         setEquipe(result.equipe);
         setNomeSupervisorReport(result.nomeSupervisorReport);
+        setDatasBaseReport(result.datasBaseReport);
 
         // Base nova detectada (report mudou) — avisa a árvore irmã
         // (RetencaoDetalheSection, bloco Analítico) pra refazer sua busca
@@ -311,17 +402,21 @@ export function GestorEquipeSection({
         if (signature !== lastReportSignatureRef.current) {
           lastReportSignatureRef.current = signature;
           notifyBaseAtualizada();
+          return true;
         }
       }
+      return false;
     } catch (err) {
       // Server Action de um build anterior (hot reload em dev, ou deploy
       // novo em produção com a aba aberta): avisa o usuário uma única vez e
       // para o polling, em vez de repetir a mesma falha a cada 30s pra sempre.
       if (handleStaleActionError(err)) {
+        pararPollingRef.current = true;
         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-        return;
+        return false;
       }
       console.error("[GestorEquipeSection] erro ao atualizar consolidado (polling):", err);
+      return false;
     }
   }
 
@@ -335,8 +430,10 @@ export function GestorEquipeSection({
     const inicio = Date.now();
     setIsRefreshing(true);
     try {
-      await refetchConsolidado();
-      notifyBaseAtualizada();
+      // Só avisa o Analítico se o refetch ainda não avisou (report mudou) —
+      // antes avisava sempre, e o Analítico recarregava duas vezes.
+      const jaAvisou = await refetchConsolidado();
+      if (!jaAvisou) notifyBaseAtualizada();
     } finally {
       const faltam = MIN_REFRESH_LOADING_MS - (Date.now() - inicio);
       if (faltam > 0) {
@@ -348,10 +445,19 @@ export function GestorEquipeSection({
 
   // Polling: reconsulta a base a cada 30s (sem F5) e atualiza operadores +
   // hora/nome do report se houver mudança.
+  // Com a aba em segundo plano não consulta; ao voltar, atualiza na hora.
   useEffect(() => {
-    pollIntervalRef.current = setInterval(refetchConsolidado, POLL_INTERVAL_MS);
+    function atualizarSeVisivel() {
+      if (document.visibilityState === "visible" && !pararPollingRef.current) {
+        void refetchConsolidado();
+      }
+    }
+    pollIntervalRef.current = setInterval(atualizarSeVisivel, POLL_INTERVAL_MS);
+    document.addEventListener("visibilitychange", atualizarSeVisivel);
+
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      document.removeEventListener("visibilitychange", atualizarSeVisivel);
     };
   }, []);
 
@@ -368,13 +474,25 @@ export function GestorEquipeSection({
   // pinado por ScrollTrigger, que também lê a posição real do scroll).
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      const active = document.activeElement;
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      // Outro componente já tratou a tecla, ou é atalho com modificador.
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+
+      const active = document.activeElement as HTMLElement | null;
       const isInput =
         active &&
         (active.tagName === "INPUT" ||
           active.tagName === "TEXTAREA" ||
-          (active as HTMLElement).isContentEditable);
+          active.tagName === "SELECT" ||
+          active.isContentEditable);
       if (isInput) return;
+
+      // Foco dentro de popover/dialog/menu/lista: as setas são deles. E com
+      // um dialog/popover aberto (foco pode ter ficado no body), também não
+      // rola a página por baixo dele.
+      if (active?.closest(SELETOR_CAMADA_ABERTA) || document.querySelector(SELETOR_CAMADA_ABERTA_DOC)) {
+        return;
+      }
 
       const lenis = getLenisInstance();
 
@@ -412,6 +530,17 @@ export function GestorEquipeSection({
   // Ordenação escolhida pelo gestor (config-tabela-popover). Aplicada tanto
   // na tabela visível (operadoresParaTela) quanto na variante PNG oculta
   // (operadores puro), pra exportação refletir a mesma ordem da tela.
+  // Nome do dialog = o MESMO da linha clicada na tabela da tela (respeita o
+  // olho: fantasia com ele fechado, nome real com ele aberto). A imagem do
+  // "Copiar imagem" continua sempre com o nome fantasia (operadoresPngOrdenados).
+  const nomeOperadorSelecionado = useMemo(() => {
+    if (!operadorSelecionado) return "";
+    const linha = operadoresParaTela.find(
+      (op) => (op.emailOriginal ?? op.email) === operadorSelecionadoEmail,
+    );
+    return rotuloOperador(linha?.email ?? operadorSelecionado.login);
+  }, [operadorSelecionado, operadorSelecionadoEmail, operadoresParaTela]);
+
   const operadoresOrdenados = useMemo(
     () => ordenarOperadores(operadoresParaTela, ordemTabela),
     [operadoresParaTela, ordemTabela],
@@ -429,6 +558,14 @@ export function GestorEquipeSection({
   // comentário em useCardChromePx, acima.
   const cardVisivelWrapperRef = useRef<HTMLDivElement>(null);
   const cardChromePx = useCardChromePx(cardVisivelWrapperRef);
+
+  // Guarda o nº de operadores pro esqueleto do próximo carregamento
+  // (loading.tsx lê no servidor) ter a mesma altura da tabela real.
+  useEffect(() => {
+    document.cookie = `${COOKIE_LINHAS}=${operadores.length}; path=/; max-age=31536000; samesite=lax`;
+  }, [operadores.length]);
+
+  const textoReport = formatCabecalhoReport(equipe.horaReport, nomeSupervisorReport, datasBaseReport);
 
   return (
     <>
@@ -452,27 +589,14 @@ export function GestorEquipeSection({
         // essa margem encurtava o overlay e os últimos 40px da tela mostravam
         // a tabela real por baixo do skeleton.
         <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] !mb-0 overflow-hidden lg:left-[240px]">
-          <ConsolidadoSkeleton />
+          <ConsolidadoSkeleton linhas={operadores.length} />
         </div>
       )}
 
-    {/* initial={false}: esta seção já vem pronta via SSR (props, sem fetch
-        client próprio) — animar de opacity:0 com delay de 150ms fazia o
-        conteúdo real ficar invisível por um intervalo perceptível logo
-        depois do loading.tsx sumir (motion renderiza o estado `initial` no
-        SSR; só anima pra `animate` depois que o JS hidrata), causando a
-        sequência "loading → tela vazia → dados" reportada em
-        /s/reports/consolidado. `initial={false}` faz o motion.section montar
-        direto no estado final (opacity:1), sem essa janela vazia — mantém
-        motion.section (em vez de trocar por <section>) só pra não precisar
-        tocar em mais nada da árvore/props que dependam do elemento ser um
-        motion component. */}
-    <motion.section
-      id="equipe-section"
-      initial={false}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
-    >
+    {/* <section> simples (antes motion.section com initial={false}, que não
+        animava nada): o conteúdo já vem pronto via SSR, sem fade de entrada
+        — ver a sequência "loading → tela vazia → dados" em page.tsx. */}
+    <section id="equipe-section" className="space-y-4">
       <div>
         {/*
           Cabeçalho da página inteira (título "Consolidado" + linha de report)
@@ -487,9 +611,9 @@ export function GestorEquipeSection({
             Consolidado
           </h1>
 
-          {formatCabecalhoReport(equipe.horaReport, nomeSupervisorReport) && (
-            <p className="font-sans text-muted-foreground pt-3 text-sm font-normal">
-              {formatCabecalhoReport(equipe.horaReport, nomeSupervisorReport)}
+          {textoReport && (
+            <p className="font-sans text-muted-foreground pt-3 text-sm font-normal whitespace-pre-wrap">
+              {textoReport}
             </p>
           )}
         </div>
@@ -508,9 +632,14 @@ export function GestorEquipeSection({
           <ConfigTabelaPopover
             metaTxInicial={metaTxRetencao}
             ordemInicial={ordemTabela}
-            onSaved={(metaTx, ordem) => {
+            themeMetasInicial={themeMetas}
+            onSaved={(metaTx, ordem, novasThemeMetas) => {
               setMetaTxRetencao(metaTx);
               setOrdemTabela(ordem);
+              setThemeMetas(novasThemeMetas);
+              salvarThemeMetas(gestorId, novasThemeMetas);
+              // A meta geral agora é a mesma na tabela e no Analítico.
+              notifyMetasAtualizadas({ metaGlobal: metaTx, themeMetas: novasThemeMetas });
             }}
             onOpenChange={setConfigPopoverOpen}
           />
@@ -519,9 +648,9 @@ export function GestorEquipeSection({
             <ClearBaseButton
               action={clearConsolidadoAction}
               onCleared={handleBaseCleared}
-              variant="icon-danger"
-              holdToConfirm
-              toastClassName="reports-consolidado-toast"
+              variant="expand-danger"
+              atualizarRota={false}
+              toastClassName={TOAST_CLASS}
               showSuccessToast={false}
             />
           )}
@@ -599,6 +728,10 @@ export function GestorEquipeSection({
               // por trás delas.
               configPopoverOpen && "z-[45] bg-background",
             )}
+            // Busca do detalhe do operador em andamento: no lugar do cursor
+            // de espera do sistema (bolinha azul), o CursorCarregando abaixo.
+            aria-busy={operadorDialogLoading || undefined}
+            onPointerDownCapture={(e) => setPosicaoClique({ x: e.clientX, y: e.clientY })}
             style={{
               // Largura-base da EquipeTable (760/920px, BASE_COLUMN_WIDTHS_PX
               // em equipe-table.tsx) + o espaçamento REAL do KpiFrame,
@@ -655,21 +788,25 @@ export function GestorEquipeSection({
 
           {showUpload && (
             <div className="min-h-[180px] min-w-0 flex-1 self-stretch">
-              <UploadDropzone abrirEmDownloads />
+              <UploadDropzone abrirEmDownloads recarregarComModalAberto />
             </div>
           )}
         </div>
       </div>
 
+      {operadorDialogLoading && <CursorCarregando inicial={posicaoClique} />}
+
       <OperadorDetalheDialog
         operador={operadorSelecionado}
-        nomeExibido={operadorSelecionado ? resolverNomeOperador(operadorSelecionado) : ""}
+        nomeExibido={nomeOperadorSelecionado}
         open={operadorDialogOpen}
         onOpenChange={setOperadorDialogOpen}
         meta={operadorMeta}
         quartil={operadorQuartil}
+        visualNeumorfico
+        graficoNovo
       />
-    </motion.section>
+    </section>
     </>
   );
 }

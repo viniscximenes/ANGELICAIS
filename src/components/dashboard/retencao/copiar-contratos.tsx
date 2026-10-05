@@ -105,11 +105,11 @@ function CustomSelect({
       {/* Rótulo e campo no padrão do seletor "Ordenação Dos Operadores"
           (config-tabela-popover.tsx): rótulo text-xs medium sem caixa alta,
           campo com borda fina, sem hover e 32px de altura. */}
-      <label className="text-foreground block text-xs font-medium">{label}</label>
+      <label className="text-foreground block text-sm font-medium">{label}</label>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="border-border text-foreground flex h-8 w-full cursor-pointer items-center justify-between rounded-lg border bg-transparent px-3 text-left text-xs font-medium outline-none select-none"
+        className="border-border text-foreground flex h-9 w-full cursor-pointer items-center justify-between rounded-lg border bg-transparent px-3 text-left text-sm font-medium outline-none select-none"
         style={{ outline: "none", boxShadow: "none" }}
       >
         <span className="truncate">{selectedOption ? selectedOption.label : placeholder || "Selecione..."}</span>
@@ -321,8 +321,8 @@ export function CopiarContratos({
           Copiar contratos do AIR
         </h3>
         <p className="ds-small text-muted-foreground mt-1">
-          Filtre os atendimentos da equipe por operador, status e motivo e copie a lista de
-          contratos do AIR, uma linha por contrato, pronta para colar.
+          Escolha operador, motivo e status para listar os contratos da equipe. Depois é só
+          copiar e colar: sai um contrato por linha.
         </p>
       </div>
 
@@ -360,13 +360,14 @@ export function CopiarContratos({
 
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-1.5">
-              <span className="text-foreground block text-xs font-medium">Status</span>
+              <span className="text-foreground block text-sm font-medium">Status</span>
               <Segmentado
                 ariaLabel="Status do contrato"
                 grupo="copiar-contratos-status"
                 opcoes={statusOptions}
                 valor={status}
                 onChange={setStatus}
+                tamanho="grande"
               />
             </div>
 
@@ -374,7 +375,7 @@ export function CopiarContratos({
             <button
               onClick={handleGerar}
               disabled={loading}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
             >
               {loading ? <IconLoader2 size={14} className="animate-spin" /> : <IconFilter size={14} />}
               {loading ? "Buscando..." : "Filtrar Contratos"}
@@ -400,7 +401,7 @@ export function CopiarContratos({
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleLimparFiltros}
-                  className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 items-center justify-center gap-1.5 rounded-md border bg-transparent px-3 text-xs font-medium outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
+                  className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-9 items-center justify-center gap-1.5 rounded-md border bg-transparent px-3 text-sm font-medium outline-none transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
                 >
                   <IconTrash size={14} />
                   Limpar Filtro
@@ -409,7 +410,7 @@ export function CopiarContratos({
                 <button
                   onClick={handleCopy}
                   disabled={contratos.length === 0}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground flex h-8 cursor-pointer items-center gap-2 rounded-lg px-4 text-xs font-semibold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground flex h-9 cursor-pointer items-center gap-2 rounded-lg px-4 text-sm font-semibold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
                 >
                   {copied ? (
                     <>
@@ -453,15 +454,15 @@ export function CopiarContratos({
                   {contratos.map((c) => (
                     <tr key={`${c.usuarioLogin}-${c.codAir}`} className="align-middle">
                       <td
-                        className="text-foreground py-2.5 px-4 text-xs font-medium"
+                        className="text-foreground py-2.5 px-4 text-sm font-medium"
                         style={{ fontVariantNumeric: "tabular-nums" }}
                       >
                         {c.codAir}
                       </td>
                       <td aria-hidden="true" />
-                      <td className="text-foreground py-2.5 px-4 text-xs">{c.nomeSobrenome}</td>
-                      <td className="text-foreground py-2.5 px-4 text-xs font-medium">{c.status}</td>
-                      <td className="text-muted-foreground py-2.5 px-4 text-xs whitespace-nowrap">{c.motivo}</td>
+                      <td className="text-foreground py-2.5 px-4 text-sm">{c.nomeSobrenome}</td>
+                      <td className="text-foreground py-2.5 px-4 text-sm">{c.status}</td>
+                      <td className="text-muted-foreground py-2.5 px-4 text-[13px] whitespace-nowrap">{c.motivo}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -26,158 +26,10 @@
 // Trocada por um placeholder mudo (SkeletonNavSidebar, abaixo) na MESMA
 // posição/tamanho (fixed, top-24 right-4, 60px colapsado) — mesmo tratamento
 // dos outros blocos desta tela.
-import { Instrument_Sans } from "next/font/google";
 
-import "./reports-consolidado.css";
-import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
+import { cookies } from "next/headers";
 
-// MESMA fonte/variável de page.tsx (zenSans) — precisa ser importada aqui de
-// novo (loading.tsx é o fallback, monta ANTES de page.tsx resolver), senão o
-// título/subtítulo do skeleton renderizam com a fonte padrão do sistema e
-// medem largura diferente da versão real, quebrando a promessa de "mesma
-// posição exata".
-const zenSans = Instrument_Sans({
-  subsets: ["latin", "latin-ext"],
-  weight: "variable",
-  variable: "--font-zen-sans",
-});
-
-// Larguras reais das colunas da EquipeTable (BASE_COLUMN_WIDTHS_PX, ver
-// equipe-table.tsx) — Operador / Retidos / Cancelados / Pedidos / Tx Retenção.
-// Soma = 760px, igual à largura-base usada em gestor-equipe-section.tsx
-// (width: `${760 + cardChromePx}px` quando a coluna RV Diário está fechada —
-// o padrão inicial mais comum, por isso o skeleton assume esse estado).
-const TABLE_COLUMN_WIDTHS_PX = [190, 127, 127, 126, 190] as const;
-const TABLE_GRID_TEMPLATE = TABLE_COLUMN_WIDTHS_PX.map((w) => `${w}px`).join(" ");
-const TABLE_ROWS = 13;
-
-function SkeletonBloco({ className }: { className: string }) {
-  return <div className={`rounded-md bg-card ${className}`} aria-hidden="true" />;
-}
-
-/** Linha de botões — MESMAS classes/ordem/tamanhos de gestor-equipe-section.tsx:
- * [config] [limpar base] [copiar imagem] [exibir RV + toggle], todos h-8. */
-function SkeletonBarraDeAcoes() {
-  return (
-    <div className="flex flex-wrap items-center gap-2 pt-4 pb-2">
-      <SkeletonBloco className="h-8 w-8 shrink-0" />
-      <SkeletonBloco className="h-8 w-8 shrink-0" />
-      <SkeletonBloco className="h-8 w-[148px] shrink-0" />
-      <div className="inline-flex h-8 items-center gap-2">
-        <SkeletonBloco className="h-3.5 w-[60px]" />
-        <SkeletonBloco className="h-[18px] w-8 rounded-full" />
-      </div>
-    </div>
-  );
-}
-
-/** Tabela — dentro do MESMO KpiFrame real (cantoneiras verdadeiras, não
- * desenhadas de novo), header com as 5 colunas nas proporções reais e ~13
- * linhas de corpo (h-[42px], igual à altura real de cada linha). */
-function SkeletonTabelaEquipe() {
-  return (
-    <KpiFrame className="h-full">
-      <div className="overflow-hidden">
-        <div
-          className="grid gap-0 bg-muted/40"
-          style={{ gridTemplateColumns: TABLE_GRID_TEMPLATE }}
-        >
-          {TABLE_COLUMN_WIDTHS_PX.map((_, i) => (
-            <div key={i} className="flex h-9 items-center justify-center border-r border-border/40 px-3 last:border-r-0">
-              <SkeletonBloco className="h-3 w-[70%] bg-muted-foreground/20" />
-            </div>
-          ))}
-        </div>
-
-        {Array.from({ length: TABLE_ROWS }).map((_, row) => (
-          <div
-            key={row}
-            className="grid h-[42px] gap-0 border-t border-border/40"
-            style={{ gridTemplateColumns: TABLE_GRID_TEMPLATE }}
-          >
-            {/* Operador — bloco de texto alinhado à esquerda, como o nome real. */}
-            <div className="flex items-center border-r border-border/40 px-3">
-              <SkeletonBloco className="h-3 w-[75%]" />
-            </div>
-            {/* Retidos / Cancelados / Pedidos — bloco pequeno centralizado. */}
-            {[0, 1, 2].map((col) => (
-              <div key={col} className="flex items-center justify-center border-r border-border/40 px-3">
-                <SkeletonBloco className="h-3 w-8" />
-              </div>
-            ))}
-            {/* Tx Retenção — número pequeno + barrinha fina embaixo (progress bar real). */}
-            <div className="flex flex-col items-center justify-center gap-1 px-3">
-              <SkeletonBloco className="h-3 w-9" />
-              <SkeletonBloco className="h-1 w-12 rounded-full bg-muted-foreground/20" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </KpiFrame>
-  );
-}
-
-/** Painel da direita (Anexar Base) — mesmas dimensões de UploadDropzone
- * (min-h-[180px], flex-1, borda tracejada). */
-function SkeletonPainelAnexo() {
-  return (
-    <div className="min-h-[180px] min-w-0 flex-1 self-stretch">
-      <div className="flex h-full min-h-[180px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card/40 p-6">
-        <SkeletonBloco className="h-8 w-8 rounded-full bg-muted-foreground/15" />
-        <SkeletonBloco className="h-3 w-32 bg-muted-foreground/15" />
-      </div>
-    </div>
-  );
-}
-
-/** Visão Geral — MESMO grid/proporções de VisaoGeralCards.tsx (1 card
- * primário col-span-2 + 3 secundários col-span-3, sm:items-end). */
-function SkeletonVisaoGeral() {
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end">
-      <div className="h-[118px] rounded-lg border border-border bg-card/70 sm:col-span-2" />
-      <div className="grid grid-cols-3 gap-4 sm:col-span-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-[86px] rounded-lg border border-border bg-card/70" />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** Evolução de Taxa — título fora do card (real: sem container próprio,
- * StyledCard removido) + altura real do gráfico (280px, grafico-evolucao.tsx). */
-function SkeletonEvolucao() {
-  return (
-    <div className="space-y-3">
-      <div>
-        <SkeletonBloco className="h-5 w-72" />
-        <SkeletonBloco className="mt-2 h-3 w-[85%] max-w-md bg-card/70" />
-      </div>
-      <div className="h-[280px] w-full rounded-lg bg-card/60" />
-    </div>
-  );
-}
-
-/** Placeholder mudo da barra lateral flutuante (ConsolidadoNavSidebar) —
- * mesma casca visual (FloatingNavSidebar: fixed top-24 right-4, hidden
- * abaixo de lg, 60px colapsado, border-border/60 + rounded-xl + shadow-lg)
- * com 8 círculos no lugar dos 8 ícones reais, sem nenhuma interatividade. */
-function SkeletonNavSidebar() {
-  return (
-    <div
-      aria-hidden="true"
-      data-page="reports-consolidado"
-      className="fixed top-24 right-4 z-40 hidden lg:block"
-    >
-      <div className="border-border/60 flex w-[60px] flex-col items-center gap-3 rounded-xl border py-4 shadow-lg">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <SkeletonBloco key={i} className="h-5 w-5 rounded-full bg-muted-foreground/15" />
-        ))}
-      </div>
-    </div>
-  );
-}
+import { COOKIE_LINHAS, ConsolidadoSkeleton } from "./consolidado-skeleton";
 
 // Script inline, síncrono — roda no PARSE do HTML deste fallback, antes de
 // qualquer hidratação React. A guarda em JS (useLayoutEffect, ver
@@ -196,77 +48,17 @@ try {
 } catch (e) {}
 `;
 
-export default function LoadingReportsConsolidado() {
+export default async function LoadingReportsConsolidado() {
+  // Nº de operadores da última tabela vista neste navegador (gravado por
+  // GestorEquipeSection) — esqueleto com a mesma altura da tabela real.
+  const salvo = Number((await cookies()).get(COOKIE_LINHAS)?.value);
+  const linhas = Number.isInteger(salvo) && salvo > 0 && salvo <= 200 ? salvo : undefined;
+
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: DESLIGAR_SCROLL_RESTORATION_SCRIPT }} />
-      <ConsolidadoSkeleton />
+      <ConsolidadoSkeleton linhas={linhas} />
     </>
   );
 }
 
-/**
- * Esqueleto do F5 (sem o script de scroll) — exportado pra ser reaproveitado
- * TAMBÉM no overlay de refresh manual do "Limpar base" (GestorEquipeSection),
- * que antes usava o KpiLoadingScreen antigo: as duas telas de carregamento
- * ficam idênticas.
- */
-export function ConsolidadoSkeleton() {
-  return (
-    <>
-      <SkeletonNavSidebar />
-
-      {/* consolidado-skeleton: tom dos blocos (reports-consolidado.css) —
-          bg-card sozinho é branco puro na Vercel clara e os blocos sumiam. */}
-      <div
-        data-page="reports-consolidado"
-        className={`consolidado-skeleton relative min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
-      >
-        <div
-          aria-hidden="true"
-          className={`mx-auto max-w-7xl animate-in fade-in duration-300 motion-reduce:animate-none`}
-        >
-          <div className="space-y-10">
-            {/* ── Bloco Equipe (título + subtítulo + botões + tabela/anexo) ── */}
-            <div className="space-y-4">
-              <div>
-                <div className="pt-4">
-                  <SkeletonBloco className="h-9 w-[210px] md:h-10" />
-                  <div className="pt-3">
-                    <SkeletonBloco className="h-3.5 w-[235px] bg-card/70" />
-                  </div>
-                </div>
-
-                <SkeletonBarraDeAcoes />
-
-                <div className="flex flex-col gap-4 pt-2 lg:flex-row lg:items-stretch">
-                  <div className="shrink-0" style={{ width: "784px", maxWidth: "100%" }}>
-                    <SkeletonTabelaEquipe />
-                  </div>
-                  <SkeletonPainelAnexo />
-                </div>
-              </div>
-            </div>
-
-            {/* ── Bloco Analítico (título + Visão Geral + Evolução) ── */}
-            <section>
-              <header className="pt-2 pb-4 mb-6">
-                <SkeletonBloco className="h-9 w-48 md:h-10" />
-              </header>
-              <div className="space-y-6">
-                <SkeletonVisaoGeral />
-                <SkeletonEvolucao />
-              </div>
-            </section>
-          </div>
-        </div>
-
-        {/* Sem indicador girando (removido a pedido): o carregamento é só o
-            skeleton. Fica apenas o aviso para leitor de tela. */}
-        <div role="status" aria-live="polite" className="sr-only">
-          Carregando Consolidado, aguarde.
-        </div>
-      </div>
-    </>
-  );
-}

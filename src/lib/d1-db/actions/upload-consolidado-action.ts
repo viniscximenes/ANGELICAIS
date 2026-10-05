@@ -174,6 +174,17 @@ export async function uploadConsolidadoAction(
   // conhecido em d1_operadores_gestor).
   const dataRef = dataRefHojeBR();
   const reportHora = horaAtualBR();
+  // Dias da base colada (status_hora já vem como "YYYY-MM-DDTHH:mm:ss-03:00",
+  // ou seja, a data no fuso de Brasília são os 10 primeiros caracteres) —
+  // mostrados no cabeçalho do report, porque um gestor pode colar a base de
+  // outra data e a atualização vale pra todos.
+  const reportDatasBase = Array.from(
+    new Set(
+      parseResult.linhas
+        .map((linha) => linha.status_hora?.slice(0, 10))
+        .filter((dia): dia is string => Boolean(dia)),
+    ),
+  ).sort();
   const rows: Record<string, unknown>[] = [];
   let operadoresSemGestor = 0;
 
@@ -206,6 +217,7 @@ export async function uploadConsolidadoAction(
       contratos_cancelados: agg.contratosCancelados,
       report_hora: reportHora,
       report_nome_supervisor: user.profile.fullName,
+      report_datas_base: reportDatasBase,
     });
   }
 

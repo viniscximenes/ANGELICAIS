@@ -59,15 +59,17 @@ function nomeUnidade(nome: string): string {
 }
 
 const TH = "py-2.5 px-4 whitespace-nowrap";
-const TD_NUM = "py-3 px-4 text-center align-middle text-xs font-medium text-foreground";
-const TD_NUM_SUB = "py-2.5 px-4 text-center align-middle text-xs text-muted-foreground";
+// Mesma hierarquia da "Taxa de retenção por tema" (refinado): números em
+// peso normal na linha principal, só a taxa em destaque; subitens menores.
+const TD_NUM = "py-3 px-4 text-center align-middle text-sm font-normal text-foreground";
+const TD_NUM_SUB = "py-2.5 px-4 text-center align-middle text-[13px] text-muted-foreground";
 /**
  * Célula da TX RETENÇÃO: sem cor própria — a cor vem só de corTx
  * (verde/vermelho). Com text-foreground/text-muted-foreground junto, a cor
  * neutra vencia no CSS gerado e a taxa fora da meta ficava preta.
  */
-const TD_TX = "py-3 px-4 text-center align-middle text-xs font-semibold";
-const TD_TX_SUB = "py-2.5 px-4 text-center align-middle text-xs";
+const TD_TX = "py-3 px-4 text-center align-middle text-sm font-semibold";
+const TD_TX_SUB = "py-2.5 px-4 text-center align-middle text-[13px]";
 
 export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: TabelaSegmentosProps) {
   const [aba, setAba] = useState<Aba>("marca");
@@ -84,10 +86,10 @@ export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: Tabe
   return (
     <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
       <div className={scrollInterno ? "shrink-0" : undefined}>
-        <h3 className="ds-h3 font-semibold text-foreground">Desempenho por marca e unidade</h3>
+        <h3 className="ds-h3 font-semibold text-foreground">Taxa por marca e regional</h3>
         <p className="ds-small text-muted-foreground mt-1">
-          Taxa de retenção de cada marca e de cada unidade. Em Unidade, as cidades ficam
-          agrupadas por estado — clique num estado para ver as unidades.
+          Veja em quais marcas e regiões a equipe retém mais. Em Regional, clique num estado
+          para abrir as unidades dele.
         </p>
       </div>
 
@@ -99,10 +101,11 @@ export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: Tabe
             grupo="segmento-aba"
             opcoes={[
               { valor: "marca", rotulo: "Marca" },
-              { valor: "unidade", rotulo: "Unidade" },
+              { valor: "unidade", rotulo: "Regional" },
             ]}
             valor={aba}
             onChange={setAba}
+            tamanho="grande"
           />
         </div>
 
@@ -110,7 +113,7 @@ export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: Tabe
           {/* data-tabela-segmentos: cabeçalho, fundo dos subitens e bolinhas
               no mesmo visual da "Taxa de retenção por tema"
               (reports-consolidado.css). */}
-          <table data-tabela-segmentos className="w-full border-collapse text-left">
+          <table data-tabela-segmentos data-cabecalho-fixo className="w-full border-collapse text-left">
             <thead>
               <tr className="select-none">
                 {aba === "unidade" && <th className={`${TH} w-[40px]`} />}
@@ -131,7 +134,7 @@ export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: Tabe
               ) : aba === "marca" ? (
                 ordenar(segmentos.porMarca).map((m) => (
                   <tr key={m.nome} className="align-middle">
-                    <td className="text-foreground py-3 px-4 text-xs font-semibold whitespace-nowrap" title={m.nome}>
+                    <td className="text-foreground py-3 px-4 text-sm font-semibold whitespace-nowrap" title={m.nome}>
                       {nomeMarca(m.nome)}
                     </td>
                     <td className={TD_NUM} style={{ fontVariantNumeric: "tabular-nums" }}>{m.total}</td>
@@ -159,7 +162,7 @@ export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: Tabe
                             />
                           </div>
                         </td>
-                        <td className="text-foreground py-3 px-4 text-xs font-semibold whitespace-nowrap">
+                        <td className="text-foreground py-3 px-4 text-sm font-semibold whitespace-nowrap">
                           {estado.nome}
                           {estado.uf !== "??" && (
                             <span className="text-muted-foreground ml-1.5 font-normal">{estado.uf}</span>
@@ -176,11 +179,15 @@ export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: Tabe
                         </td>
                       </tr>
 
+                      {/* Unidades por volume (mais pedidos primeiro), como os
+                          submotivos da "Taxa de retenção por tema". */}
                       {aberto &&
-                        ordenar(estado.unidades).map((u) => (
+                        [...estado.unidades]
+                          .sort((a, b) => b.total - a.total || b.cancelados - a.cancelados)
+                          .map((u) => (
                           <tr key={u.nome} data-submotivo className="align-middle">
                             <td className="py-2.5 px-4" />
-                            <td className="text-muted-foreground py-2.5 px-4 pl-10 text-sm">
+                            <td className="text-muted-foreground py-2.5 px-4 pl-10 text-[13px]">
                               <div className="flex items-center gap-2">
                                 <span
                                   data-status-meta={statusMeta(u.tx)}

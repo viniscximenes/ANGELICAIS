@@ -29,6 +29,7 @@ type Row = {
   contratos_cancelados: ContratoItem[] | null;
   report_hora: string | null;
   report_nome_supervisor: string | null;
+  report_datas_base: string[] | null;
 };
 
 const ZERO_BREAKDOWN: MotivosBreakdown = {
@@ -56,6 +57,8 @@ type GestorConsolidadoResult = {
   data: GestorData;
   reportHora: string | null;
   reportNomeSupervisor: string | null;
+  /** Dias (YYYY-MM-DD, em ordem) da base do último upload — null em uploads antigos. */
+  reportDatasBase: string[] | null;
 };
 
 const EMPTY_RESULT: GestorConsolidadoResult = {
@@ -76,6 +79,7 @@ const EMPTY_RESULT: GestorConsolidadoResult = {
   },
   reportHora: null,
   reportNomeSupervisor: null,
+  reportDatasBase: null,
 };
 
 /**
@@ -108,7 +112,7 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
     admin
       .from("d1_consolidado")
       .select(
-        "operator_email, supervisor, retidos, cancelados, pedidos, tx_retencao, motivos_retidos, motivos_cancelados, contratos_retidos, contratos_cancelados, report_hora, report_nome_supervisor",
+        "operator_email, supervisor, retidos, cancelados, pedidos, tx_retencao, motivos_retidos, motivos_cancelados, contratos_retidos, contratos_cancelados, report_hora, report_nome_supervisor, report_datas_base",
       )
       .in("operator_email", emailsComVariantes)
       .eq("data_ref", dataRefHojeBR()),
@@ -218,6 +222,7 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
       txPorMotivo,
     },
     reportHora: rows[0]?.report_hora ?? null,
+    reportDatasBase: rows[0]?.report_datas_base ?? null,
     // Só formatação de exibição ("GABRIEL HENRIQUE XIMENES DA SILVA" →
     // "Gabriel Ximenes") — ver resolveNomeSupervisorReportExibicao.
     reportNomeSupervisor: await resolveNomeSupervisorReportExibicao(

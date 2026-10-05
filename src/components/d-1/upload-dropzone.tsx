@@ -9,8 +9,6 @@ import { toast } from "sonner";
 import { uploadConsolidadoAction } from "@/lib/d1-db/actions/upload-consolidado-action";
 import { useFaviconLoading } from "@/lib/favicon/use-favicon-loading";
 import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
-import { registrarExibicaoPopupComparativoAction } from "@/lib/retencao/comparativo/registrar-exibicao-popup-action";
-import { ComparativoPopupDialog } from "@/components/operacional/comparativo-consolidado/comparativo-popup-dialog";
 import { ReactBitsFolder } from "@/components/ui/react-bits-folder";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 import { UploadProgressModal } from "./upload-progress-modal";
@@ -27,7 +25,7 @@ interface UploadDropzoneProps {
    * Variante enxuta (usada em /s/reports/consolidado/analitico): sem o ícone
    * central e com a área de drop bem mais baixa. Default false — o
    * /s/reports/consolidado continua com o card cheio. Só muda o visual; drag &
-   * drop, parse, action de upload, modal de progresso e popup do comparativo
+   * drop, parse, action de upload e modal de progresso
    * seguem idênticos.
    */
   compact?: boolean;
@@ -45,6 +43,14 @@ interface UploadDropzoneProps {
    * só /s/reports/consolidado (GestorEquipeSection) ativa.
    */
   abrirEmDownloads?: boolean;
+  /**
+   * Ao concluir, recarrega a página com o modal de progresso AINDA aberto,
+   * em vez de fechar o modal e depois recarregar. Sem isso, o fechamento
+   * era pintado antes da recarga e a tabela antiga aparecia por um instante
+   * entre o modal e o skeleton do loading.tsx. Default false — só
+   * /s/reports/consolidado ativa (fluxo: modal → skeleton → tabela).
+   */
+  recarregarComModalAberto?: boolean;
 }
 
 // Tipagem mínima da File System Access API (não está no lib.dom do TS).
@@ -59,6 +65,7 @@ export function UploadDropzone({
   compact = false,
   variante = "card",
   abrirEmDownloads = false,
+  recarregarComModalAberto = false,
 }: UploadDropzoneProps = {}) {
   const vertical = variante === "vertical";
   // Detectado só no client (evita divergência de hidratação com o SSR).
@@ -70,7 +77,6 @@ export function UploadDropzone({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [rowsWritten, setRowsWritten] = useState<number>(0);
   const [isHovering, setIsHovering] = useState(false);
-  const [showComparativoPopup, setShowComparativoPopup] = useState(false);
 
   // Executa o upload de fato (etapas + action + reload).
   const processUpload = useCallback(async (csvText: string) => {
@@ -117,24 +123,13 @@ export function UploadDropzone({
     // Server Component, não um fetch client-side feito à mão). Ver base-cleared-event.ts.
     notifyBaseAtualizada();
 
-    // Efeito posterior ao report, nunca bloqueante: no PRIMEIRO report do dia
-    // civil, convida o gestor a ver o comparativo entre equipes. A action é
-    // fail-safe (qualquer erro → mostrar:false), então isso nunca trava o
-    // fluxo de geração do report.
-    const { mostrar } = await registrarExibicaoPopupComparativoAction();
-    if (mostrar) {
-      // Sem o reload automático: a página é mantida para o popup sobreviver.
-      // O refresh dos dados passa a ser feito ao fechar o popup.
-      setStep(null);
-      setShowComparativoPopup(true);
-      return;
-    }
-
+    // Sem o popup de convite pro Comparativo (removido a pedido — as
+    // equipes já conhecem a página): todo upload segue direto pro reload.
     setTimeout(() => {
-      setStep(null);
+      if (!recarregarComModalAberto) setStep(null);
       window.location.reload();
     }, 3000);
-  }, []);
+  }, [recarregarComModalAberto]);
 
   const handleFile = useCallback(async (file: File) => {
     setErrorMessage(null);
@@ -367,16 +362,6 @@ export function UploadDropzone({
       </div>
 
       <UploadProgressModal step={step} rowsWritten={rowsWritten} variant="reports-consolidado" />
-
-      <ComparativoPopupDialog
-        open={showComparativoPopup}
-        onOpenChange={(open) => {
-          setShowComparativoPopup(open);
-          // Fechar sem navegar ("Agora não" ou clique fora): recarrega para
-          // refletir o report recém-gerado, como fazia o fluxo original.
-          if (!open) window.location.reload();
-        }}
-      />
     </>
   );
 }

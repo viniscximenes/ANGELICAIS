@@ -45,10 +45,13 @@ export function EfetividadeArgumentoCard({
       <div
         className={scrollInterno ? "max-h-full overflow-y-auto scrollbar-tema" : "overflow-hidden"}
       >
-        <div className="overflow-x-auto">
+        {/* scrollInterno: sem o overflow-x-auto interno — senão o cabeçalho
+            fixo (sticky) prende nele e não acompanha a rolagem do card. */}
+        <div className={scrollInterno ? undefined : "overflow-x-auto"}>
           {/* data-tabela-perfilacao: cabeçalho no visual da tabela principal
-              (reports-consolidado.css, junto com as demais tabelas). */}
-          <table data-tabela-perfilacao className="w-full text-left border-collapse">
+              (reports-consolidado.css, junto com as demais tabelas).
+              data-cabecalho-fixo: cabeçalho sticky ao rolar. */}
+          <table data-tabela-perfilacao data-cabecalho-fixo className="w-full text-left border-collapse">
             <thead>
               <tr className="ds-body text-muted-foreground uppercase tracking-wide font-bold select-none border-b border-border/40 bg-muted/40">
                 <th className="py-2.5 px-4 whitespace-nowrap">Técnica</th>
@@ -71,13 +74,15 @@ export function EfetividadeArgumentoCard({
                 argumentos.map((item) => (
                   // Sem hover: a linha não é clicável.
                   <tr key={item.categoria}>
-                    <td className="py-3 px-4 align-middle ds-body text-xs font-semibold text-foreground whitespace-nowrap">
+                    {/* Mesma hierarquia das demais tabelas do Analítico:
+                        nome text-sm medium, números em peso normal. */}
+                    <td className="py-3 px-4 align-middle ds-body text-sm font-medium text-foreground whitespace-nowrap">
                       {formatCategoria(item.categoria)}
                     </td>
-                    <td className="py-3 px-4 text-center align-middle ds-mono-sm text-xs font-medium text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                    <td className="py-3 px-4 text-center align-middle ds-mono-sm text-sm !font-normal text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                       {item.quantidade.toLocaleString("pt-BR")}
                     </td>
-                    <td className="py-3 px-4 text-center align-middle ds-mono-sm text-xs font-medium text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                    <td className="py-3 px-4 text-center align-middle ds-mono-sm text-sm !font-normal text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
                       {(item.percentualDoTotal * 100).toFixed(1)}%
                     </td>
                   </tr>

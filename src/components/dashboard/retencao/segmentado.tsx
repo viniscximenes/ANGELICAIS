@@ -18,6 +18,7 @@ export function Segmentado<T extends string | number>({
   opcoes,
   valor,
   onChange,
+  tamanho = "padrao",
 }: {
   ariaLabel: string;
   /** Id único do grupo — separa a animação do destaque entre os dois toggles. */
@@ -25,12 +26,20 @@ export function Segmentado<T extends string | number>({
   opcoes: { valor: T; rotulo: string }[];
   valor: T;
   onChange: (v: T) => void;
+  /**
+   * "grande": 36px de altura, texto 14px semibold e mais respiro — mais
+   * presença nos cards do Analítico (36px = altura única dos controles do
+   * Analítico; o topo da página segue com 32px). Default "padrao" =
+   * os 32px compactos de sempre (demais usos não mudam).
+   */
+  tamanho?: "padrao" | "grande";
 }) {
+  const grande = tamanho === "grande";
   return (
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className="inline-flex h-8 items-center gap-0.5 rounded-md border border-[var(--seg-track-border)] bg-[var(--seg-track)] p-0.5"
+      className={`inline-flex items-center gap-0.5 rounded-md border border-[var(--seg-track-border)] bg-[var(--seg-track)] ${grande ? "h-9 p-0.5" : "h-8 p-0.5"}`}
     >
       {opcoes.map((op) => {
         const ativo = op.valor === valor;
@@ -41,7 +50,9 @@ export function Segmentado<T extends string | number>({
             role="radio"
             aria-checked={ativo}
             onClick={() => onChange(op.valor)}
-            className={`relative h-full min-w-10 cursor-pointer rounded-[var(--seg-thumb-radius,5px)] px-3 text-xs font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${
+            className={`relative h-full cursor-pointer rounded-[var(--seg-thumb-radius,5px)] outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${
+              grande ? "min-w-12 px-4 text-sm font-semibold" : "min-w-10 px-3 text-xs font-medium"
+            } ${
               ativo ? "text-[var(--seg-text-active)]" : "text-[var(--seg-text)] hover:text-foreground"
             }`}
           >

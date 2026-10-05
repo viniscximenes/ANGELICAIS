@@ -20,14 +20,17 @@ import {
   ORDEM_TABELA_OPTIONS,
   type OrdemTabela,
 } from "@/lib/gestor/config-tabela/types";
+import { TEMAS_META } from "@/lib/retencao/metas-consolidado";
 import { cn } from "@/lib/utils";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 
 interface ConfigTabelaPopoverProps {
   metaTxInicial: number;
   ordemInicial: OrdemTabela;
+  /** Metas por tema do Analítico (localStorage — o pai persiste no onSaved). */
+  themeMetasInicial: Record<string, number>;
   /** Atualiza o estado do pai (GestorEquipeSection) após salvar com sucesso. */
-  onSaved: (metaTx: number, ordem: OrdemTabela) => void;
+  onSaved: (metaTx: number, ordem: OrdemTabela, themeMetas: Record<string, number>) => void;
   /** Notifica o pai sempre que o popover abre/fecha — usado pra elevar o z-index da tabela acima do blur enquanto o popover está aberto. */
   onOpenChange?: (open: boolean) => void;
 }
@@ -35,12 +38,16 @@ interface ConfigTabelaPopoverProps {
 export function ConfigTabelaPopover({
   metaTxInicial,
   ordemInicial,
+  themeMetasInicial,
   onSaved,
   onOpenChange,
 }: ConfigTabelaPopoverProps) {
   const [open, setOpen] = useState(false);
   const [metaTx, setMetaTx] = useState(String(metaTxInicial));
   const [ordem, setOrdem] = useState<OrdemTabela>(ordemInicial);
+  // Texto cru de cada campo (aceita vazio/vírgula enquanto digita); convertido
+  // e validado só no salvar.
+  const [temas, setTemas] = useState<Record<string, string>>(() => metasParaTexto(themeMetasInicial));
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -57,6 +64,7 @@ export function ConfigTabelaPopover({
     if (next) {
       setMetaTx(String(metaTxInicial));
       setOrdem(ordemInicial);
+      setTemas(metasParaTexto(themeMetasInicial));
       setDropdownOpen(false);
     }
     setOpen(next);
@@ -74,12 +82,25 @@ export function ConfigTabelaPopover({
       return;
     }
 
+    const themeMetas: Record<string, number> = {};
+    for (const tema of TEMAS_META) {
+      const v = Number((temas[tema] ?? "").replace(",", "."));
+      if (temas[tema]?.trim() === "" || Number.isNaN(v) || v < 0 || v > 100) {
+        toast.error("Meta inválida", {
+          description: `${tema}: informe um valor entre 0 e 100.`,
+          className: "reports-consolidado-toast",
+        });
+        return;
+      }
+      themeMetas[tema] = v;
+    }
+
     startTransition(async () => {
       try {
         const result = await saveConfigTabelaAction(valor, ordem);
         if (result.success) {
           toast.success("Configurações salvas", { className: "reports-consolidado-toast" });
-          onSaved(valor, ordem);
+          onSaved(valor, ordem, themeMetas);
           setOpen(false);
           onOpenChange?.(false);
         } else {
@@ -134,7 +155,7 @@ export function ConfigTabelaPopover({
           onOpenAutoFocus={(e) => e.preventDefault()}
           // gap-0 + pt-3: remove o gap-2.5 padrão do PopoverContent (somado
           // ao pt do bloco de campos) e o respiro extra acima do título.
-          className="bg-popover text-popover-foreground border-border w-72 gap-0 rounded-2xl border p-4 pt-3 shadow-2xl"
+          className="bg-popover text-popover-foreground border-border w-80 gap-0 rounded-2xl border p-4 pt-3 shadow-2xl"
         >
           {/* Cabeçalho enxuto — só o título (subtítulo explicativo removido a
               pedido: card menor, só com o que é útil). Fonte trocada de
@@ -224,6 +245,42 @@ export function ConfigTabelaPopover({
               </div>
             </div>
 
+            {/* Metas por tema — antes no "Configurações de Metas" do
+                Analítico (engrenagem removida); a meta geral é a de cima. */}
+            <div className="space-y-1.5">
+              <span className="text-foreground block text-xs font-medium">Metas por Tema</span>
+              <div className="max-h-56 space-y-1 overflow-y-auto overscroll-contain pr-1 scrollbar-tema">
+                {TEMAS_META.map((tema) => (
+                  <div key={tema} className="grid grid-cols-[1fr_84px] items-center gap-2 px-1 py-0.5">
+                    <Label
+                      htmlFor={`meta-${tema}`}
+                      className="text-muted-foreground truncate text-xs font-normal"
+                      title={tema}
+                    >
+                      {tema}
+                    </Label>
+                    <div className="relative flex items-center">
+                      <Input
+                        id={`meta-${tema}`}
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        value={temas[tema] ?? ""}
+                        onChange={(e) => setTemas((prev) => ({ ...prev, [tema]: e.target.value }))}
+                        disabled={isPending}
+                        className="h-7 pr-6 text-center text-xs font-semibold focus-visible:border-input focus-visible:ring-0"
+                      />
+                      <span className="text-muted-foreground pointer-events-none absolute right-2 text-[10px] font-bold">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <Button
               type="button"
               onClick={handleSave}
@@ -247,4 +304,8 @@ export function ConfigTabelaPopover({
       </Popover>
     </>
   );
+}
+
+function metasParaTexto(metas: Record<string, number>): Record<string, string> {
+  return Object.fromEntries(TEMAS_META.map((tema) => [tema, String(metas[tema] ?? 60)]));
 }

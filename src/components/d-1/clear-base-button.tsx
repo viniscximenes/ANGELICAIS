@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { IconLoader2, IconTrash } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { HoldButton } from "@/components/ui/hold-button";
+import { LimparBaseExpandButton } from "./limpar-base-expand-button";
 import { cn } from "@/lib/utils";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 
@@ -42,9 +43,11 @@ interface Props {
    * visual compacto do botão de engrenagem quando ocioso. Com
    * `holdToConfirm`, usa o Hold Button do React Bits: expande
    * horizontalmente, revela "Limpar Base" e só executa a ação após a
-   * pressão contínua completar.
+   * pressão contínua completar. "expand-danger" (só /s/reports/consolidado)
+   * = animação do Uiverse (botão → pílula com "Limpar Base"), um clique
+   * limpa — ver limpar-base-expand-button.tsx.
    */
-  variant?: "default" | "compact" | "icon-danger";
+  variant?: "default" | "compact" | "icon-danger" | "expand-danger";
   /** Ativa a confirmação por pressão contínua somente onde for solicitado. */
   holdToConfirm?: boolean;
   /**
@@ -62,6 +65,14 @@ interface Props {
    * toast era redundante/pedido pra sair só ali.
    */
   showSuccessToast?: boolean;
+  /**
+   * Chama router.refresh() depois do onCleared. Default true (comportamento
+   * de sempre). /s/reports/consolidado passa false: o onCleared já recarrega
+   * tabela e Analítico, e o refresh re-renderizava a página inteira no
+   * servidor (com o piso mínimo de loading) — o botão seguia em "Limpando..."
+   * por mais um tempo DEPOIS do esqueleto sumir.
+   */
+  atualizarRota?: boolean;
 }
 
 export function ClearBaseButton({
@@ -71,20 +82,28 @@ export function ClearBaseButton({
   holdToConfirm = false,
   toastClassName,
   showSuccessToast = true,
+  atualizarRota = true,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  // "Limpando..." da variante expand-danger: só enquanto a action roda no
+  // servidor. O isPending da transição também espera o Next aplicar a
+  // re-renderização disparada pelo revalidatePath da action, e isso termina
+  // DEPOIS do esqueleto do Consolidado — a animação seguia após ele sumir.
+  // Dali em diante, quem mostra o carregamento é o esqueleto (onCleared).
+  const [limpando, setLimpando] = useState(false);
 
   function handleClick() {
+    setLimpando(true);
     startTransition(async () => {
       try {
-        const r = await action();
+        const r = await action().finally(() => setLimpando(false));
         if (r.success) {
           if (showSuccessToast) {
             toast.success("Base limpa", { className: toastClassName });
           }
           await onCleared?.();
-          router.refresh();
+          if (atualizarRota) router.refresh();
         } else {
           toast.error(r.error, { className: toastClassName });
         }
@@ -94,6 +113,10 @@ export function ClearBaseButton({
         console.error("[ClearBaseButton] erro:", err);
       }
     });
+  }
+
+  if (variant === "expand-danger") {
+    return <LimparBaseExpandButton onConfirm={handleClick} pending={limpando} />;
   }
 
   if (variant === "icon-danger" && holdToConfirm) {

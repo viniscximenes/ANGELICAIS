@@ -14,6 +14,7 @@ type RefreshConsolidadoResult =
       operadores: OperadorConsolidado[];
       equipe: ResumoEquipe;
       nomeSupervisorReport: string | null;
+      datasBaseReport: string[] | null;
     }
   | { success: false };
 
@@ -25,7 +26,7 @@ export async function refreshConsolidadoAction(): Promise<RefreshConsolidadoResu
   const user = await getCurrentUser();
   if (!user || user.profile.role !== "GESTOR") return { success: false };
 
-  const [{ data, reportHora, reportNomeSupervisor }, nomeFantasiaConfig, rvFaixas] = await Promise.all([
+  const [{ data, reportHora, reportNomeSupervisor, reportDatasBase }, nomeFantasiaConfig, rvFaixas] = await Promise.all([
     getGestorConsolidado(user.profile.id),
     getNomeFantasiaConfig(user.profile.id),
     getCurrentPerUnitFaixas(),
@@ -59,5 +60,11 @@ export async function refreshConsolidadoAction(): Promise<RefreshConsolidadoResu
     rvDiario: rvDiarioEquipe,
   };
 
-  return { success: true, operadores, equipe, nomeSupervisorReport: reportNomeSupervisor };
+  return {
+    success: true,
+    operadores,
+    equipe,
+    nomeSupervisorReport: reportNomeSupervisor,
+    datasBaseReport: reportDatasBase,
+  };
 }

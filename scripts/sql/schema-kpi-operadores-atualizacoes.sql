@@ -5,7 +5,7 @@
 -- única vez por atualização — ao vivo (polling no layout autenticado) ou na
 -- primeira tela após o próximo login.
 --
--- Convenção de RLS (igual a comparativo_popup_exibicoes,
+-- Convenção de RLS (igual a
 -- d1_operadores_gestor, gestor_config_fantasia, db_pausas_diario): RLS
 -- habilitado, ZERO policies. Todo acesso é via service role nas server
 -- actions, que fazem o gate por role (ADM sobe; só GESTOR enxerga o popup).
