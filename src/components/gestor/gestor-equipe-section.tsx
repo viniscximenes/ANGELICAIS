@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { CopyTableButton } from "@/components/d-1/copy-table-button";
 import { EquipeTable } from "@/components/d-1/equipe-table";
 import { UploadDropzone } from "@/components/d-1/upload-dropzone";
-import { ClearBaseButton } from "@/components/d-1/clear-base-button";
+import { LimparBaseExpandButton } from "@/components/d-1/limpar-base-expand-button";
 import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 import { ConfigTabelaPopover } from "@/components/gestor/config-tabela-popover";
 import { LabeledSwitch } from "@/components/gestor/labeled-switch";
@@ -32,7 +32,7 @@ import { fetchOperadorDetalheAction } from "@/lib/retencao/actions";
 import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
 import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
 import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-detalhe-dialog-lazy";
-import { notifyBaseAtualizada, onBaseAtualizada } from "@/lib/retencao/base-cleared-event";
+import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
 import {
   DEFAULT_THEME_METAS,
   lerThemeMetas,
@@ -236,6 +236,9 @@ export function GestorEquipeSection({
 
   // Overlay de loading do refresh manual (ver MIN_REFRESH_LOADING_MS acima).
   const [isRefreshing, setIsRefreshing] = useState(false);
+  // "Limpando..." do botão Limpar Base: só enquanto a action roda no
+  // servidor — dali em diante quem mostra o carregamento é o esqueleto.
+  const [limpandoBase, setLimpandoBase] = useState(false);
 
   // Detalhamento individual do operador (clique no nome da EquipeTable) —
   // busca sob demanda via fetchOperadorDetalheAction (retencao_atendimentos),
@@ -253,61 +256,11 @@ export function GestorEquipeSection({
   // carregamento customizado (CursorCarregando), antes do 1º movimento.
   const [posicaoClique, setPosicaoClique] = useState<{ x: number; y: number } | null>(null);
 
-  // Prefetch no hover — a causa real da demora pra abrir o dialog é a
-  // PRÓPRIA busca (fetchOperadorDetalheAction faz até 3 varreduras de
-  // retencao_atendimentos, uma delas — o ranking de quartil da empresa —
-  // sem filtro nenhum, escaneando a base inteira), não o dialog em si (que
-  // já anima em 100ms). Prefetch não resolve o custo da query, mas esconde
-  // a latência: se o mouse ficar parado numa linha por ~180ms, já dispara
-  // a mesma busca; se o usuário clicar depois, reaproveita essa promise em
-  // vez de disparar outra.
-  const PREFETCH_DEBOUNCE_MS = 180;
-  const prefetchCacheRef = useRef<Map<string, ReturnType<typeof fetchOperadorDetalheAction>>>(
-    new Map(),
-  );
-  const prefetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function handleOperadorHoverStart(emailOriginal: string) {
-    if (prefetchTimeoutRef.current) clearTimeout(prefetchTimeoutRef.current);
-    if (prefetchCacheRef.current.has(emailOriginal)) return;
-    prefetchTimeoutRef.current = setTimeout(() => {
-      const busca = fetchOperadorDetalheAction(emailOriginal);
-      prefetchCacheRef.current.set(emailOriginal, busca);
-      // Falha não fica guardada: o próximo hover/clique busca de novo.
-      const descartar = () => {
-        if (prefetchCacheRef.current.get(emailOriginal) === busca) {
-          prefetchCacheRef.current.delete(emailOriginal);
-        }
-      };
-      busca.then((r) => {
-        if (!r.success) descartar();
-      }, descartar);
-    }, PREFETCH_DEBOUNCE_MS);
-  }
-
-  // Base nova (upload, "Limpar base" ou report de outro gestor) invalida
-  // todo detalhe já buscado — senão o dialog abriria com dados antigos.
-  useEffect(() => {
-    const cache = prefetchCacheRef.current;
-    return onBaseAtualizada(() => cache.clear());
-  }, []);
-
-  function handleOperadorHoverEnd() {
-    if (prefetchTimeoutRef.current) {
-      clearTimeout(prefetchTimeoutRef.current);
-      prefetchTimeoutRef.current = null;
-    }
-  }
-
   async function handleOperadorClick(emailOriginal: string) {
     if (operadorDialogLoading) return;
     setOperadorDialogLoading(true);
     try {
-      // Reaproveita a promise já em voo (ou já resolvida) do prefetch de
-      // hover, se existir, em vez de refazer a mesma busca do zero.
-      const emVoo = prefetchCacheRef.current.get(emailOriginal);
-      prefetchCacheRef.current.delete(emailOriginal);
-      const result = await (emVoo ?? fetchOperadorDetalheAction(emailOriginal));
+      const result = await fetchOperadorDetalheAction(emailOriginal);
       if (result.success) {
         setOperadorSelecionado(result.data.operador);
         setOperadorSelecionadoEmail(emailOriginal);
@@ -372,7 +325,7 @@ export function GestorEquipeSection({
   const refetchEmVooRef = useRef<Promise<boolean> | null>(null);
 
   // Refetch usado tanto pelo polling quanto (imediatamente, sem esperar os
-  // 30s) pelo ClearBaseButton — mesma fonte, dois gatilhos.
+  // 30s) pelo "Limpar Base" — mesma fonte, dois gatilhos.
   // Retorna true quando já avisou o Analítico (report mudou), pra quem chamou
   // não avisar de novo.
   function refetchConsolidado(): Promise<boolean> {
@@ -426,6 +379,26 @@ export function GestorEquipeSection({
   // retencao_atendimentos também foi esvaziada — clearConsolidadoAction já
   // limpa as duas tabelas no mesmo clique, mas cada seção busca seus dados
   // de forma independente, então cada lado precisa do próprio refetch.
+  // Botão "Limpar Base" direto aqui (antes via ClearBaseButton, que trazia
+  // junto HoldButton/Tooltip das variantes de outras páginas). Sem toast de
+  // sucesso e sem router.refresh(): o esqueleto já comunica a ação e
+  // handleBaseCleared recarrega tabela e Analítico.
+  async function handleLimparBase() {
+    setLimpandoBase(true);
+    try {
+      const r = await clearConsolidadoAction().finally(() => setLimpandoBase(false));
+      if (r.success) {
+        await handleBaseCleared();
+      } else {
+        toast.error(r.error, { className: TOAST_CLASS });
+      }
+    } catch (err) {
+      if (handleStaleActionError(err)) return;
+      toast.error("Erro inesperado ao limpar a base", { className: TOAST_CLASS });
+      console.error("[GestorEquipeSection] erro ao limpar a base:", err);
+    }
+  }
+
   async function handleBaseCleared() {
     const inicio = Date.now();
     setIsRefreshing(true);
@@ -624,9 +597,9 @@ export function GestorEquipeSection({
           (pt-4). Sem justify-between/ml-auto, para o grupo começar alinhado
           ao texto do report em vez de ficar na extrema direita da tabela.
           Ordem dos controles: [⚙ Config] [🗑 Limpar base] [Copiar imagem]
-          [Exibir RV] — "Limpar base" virou ícone-only (variant="icon-danger"
-          do ClearBaseButton) com o MESMO visual neutro/outline do botão de
-          engrenagem, posicionado logo ao lado dela.
+          [Exibir RV] — "Limpar base" (LimparBaseExpandButton) em repouso tem
+          o MESMO visual neutro/outline do botão de engrenagem, logo ao lado
+          dela.
         */}
         <div className="flex flex-wrap items-center gap-2 pt-4 pb-2">
           <ConfigTabelaPopover
@@ -645,14 +618,7 @@ export function GestorEquipeSection({
           />
 
           {showUpload && (
-            <ClearBaseButton
-              action={clearConsolidadoAction}
-              onCleared={handleBaseCleared}
-              variant="expand-danger"
-              atualizarRota={false}
-              toastClassName={TOAST_CLASS}
-              showSuccessToast={false}
-            />
+            <LimparBaseExpandButton onConfirm={handleLimparBase} pending={limpandoBase} />
           )}
 
           <CopyTableButton
@@ -759,8 +725,6 @@ export function GestorEquipeSection({
                   metaTx={metaTxFracao}
                   showRvDiario={showRvDiario}
                   onOperadorClick={handleOperadorClick}
-                  onOperadorHoverStart={handleOperadorHoverStart}
-                  onOperadorHoverEnd={handleOperadorHoverEnd}
                   headerButton={
                     nomeFantasia?.ativo && (
                       <button

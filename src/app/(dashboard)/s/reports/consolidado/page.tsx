@@ -20,7 +20,6 @@ import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { aplicarRvDiarioNaEquipe } from "@/lib/rv/calculate-rv-diario";
 import { getCurrentPerUnitFaixas } from "@/lib/rv/get-current-per-unit-faixas";
-import { getEmailsEquipe } from "@/lib/retencao/get-emails-equipe";
 
 export const metadata: Metadata = {
   title: "Reports - Consolidado",
@@ -62,15 +61,14 @@ export default async function ReportsConsolidadoPage() {
   }
 
   // getGestorConsolidado roda UMA vez aqui: reportHora/reportNomeSupervisor
-  // são passados como prop tanto pra GestorEquipeSection quanto pra
-  // RetencaoDetalheSection, em vez de cada seção buscar de novo.
-  const [{ data, reportHora, reportNomeSupervisor, reportDatasBase }, nomeFantasiaConfig, configTabela, rvFaixas, emailsEquipe] =
+  // vão como prop pra GestorEquipeSection. Os e-mails da equipe NÃO são
+  // buscados aqui — o Analítico já os recebe da própria action.
+  const [{ data, reportHora, reportNomeSupervisor, reportDatasBase }, nomeFantasiaConfig, configTabela, rvFaixas] =
     await Promise.all([
       getGestorConsolidado(user.profile.id),
       getNomeFantasiaConfig(user.profile.id),
       getConfigTabela(user.profile.id),
       getCurrentPerUnitFaixas(),
-      getEmailsEquipe(user.profile.id),
     ]);
 
   const nomeFantasia = {
@@ -211,11 +209,8 @@ export default async function ReportsConsolidadoPage() {
             />
 
             <RetencaoDetalheSection
-              emailsEquipeIniciais={emailsEquipe}
               gestorId={user.profile.id}
               metaInicial={configTabela.metaTxRetencao}
-              gestora={gestora}
-              reportHoraInicial={reportHora}
             />
             {/* SignatureFooter agora é renderizada dentro de RetencaoDetalheSection
                 (no desktop, logo abaixo do último card do trilho). */}

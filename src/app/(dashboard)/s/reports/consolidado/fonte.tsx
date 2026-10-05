@@ -5,8 +5,10 @@ import { Inter } from "next/font/google";
  * tabular-nums — ver "Fonte única" em reports-consolidado.css). Usada por
  * page.tsx e loading.tsx, pra o esqueleto medir igual à página real.
  */
+// Só "latin": cobre todo o português (ç, ã, é...); "latin-ext" baixava um
+// arquivo de fonte a mais sem uso.
 const inter = Inter({
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin"],
   display: "swap",
 });
 

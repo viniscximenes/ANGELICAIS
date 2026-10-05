@@ -4,8 +4,6 @@ import type { ArgumentoItem } from "@/lib/retencao/get-efetividade-argumento";
 
 interface EfetividadeArgumentoCardProps {
   argumentos: ArgumentoItem[];
-  /** Ver comentário equivalente em tabela-temas.tsx — mesmo padrão de dimensionamento no trilho. */
-  scrollInterno?: boolean;
 }
 
 /**
@@ -28,11 +26,10 @@ function formatCategoria(categoria: string): string {
  */
 export function EfetividadeArgumentoCard({
   argumentos,
-  scrollInterno = false,
 }: EfetividadeArgumentoCardProps) {
   return (
-    <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
-      <div className={scrollInterno ? "shrink-0" : undefined}>
+    <div className="flex h-full flex-col space-y-3">
+      <div className="shrink-0">
         <h3 className="ds-h3 font-semibold text-foreground">
           Taxa por cada perfilação
         </h3>
@@ -43,11 +40,11 @@ export function EfetividadeArgumentoCard({
       </div>
 
       <div
-        className={scrollInterno ? "max-h-full overflow-y-auto scrollbar-tema" : "overflow-hidden"}
+        className="max-h-full overflow-y-auto scrollbar-tema"
       >
-        {/* scrollInterno: sem o overflow-x-auto interno — senão o cabeçalho
+        {/* Sem o overflow-x-auto interno — senão o cabeçalho
             fixo (sticky) prende nele e não acompanha a rolagem do card. */}
-        <div className={scrollInterno ? undefined : "overflow-x-auto"}>
+        <div>
           {/* data-tabela-perfilacao: cabeçalho no visual da tabela principal
               (reports-consolidado.css, junto com as demais tabelas).
               data-cabecalho-fixo: cabeçalho sticky ao rolar. */}

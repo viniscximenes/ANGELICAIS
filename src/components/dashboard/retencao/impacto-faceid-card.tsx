@@ -5,8 +5,6 @@ import type { ImpactoFaceIdData } from "@/lib/retencao/get-impacto-faceid";
 
 interface ImpactoFaceIdCardProps {
   data: ImpactoFaceIdData;
-  /** Ver comentário equivalente em tabela-temas.tsx — mesmo padrão de dimensionamento no trilho. */
-  scrollInterno?: boolean;
 }
 
 /**
@@ -19,12 +17,12 @@ interface ImpactoFaceIdCardProps {
  * operadores da equipe com pelo menos 1 ocorrência (mesmo padrão visual de
  * tabela-temas.tsx).
  */
-export function ImpactoFaceIdCard({ data, scrollInterno = false }: ImpactoFaceIdCardProps) {
+export function ImpactoFaceIdCard({ data }: ImpactoFaceIdCardProps) {
   const { total, naoRealizado, reprovado, porOperador } = data;
 
   return (
-    <div className={scrollInterno ? "flex h-full flex-col gap-6" : "flex flex-col gap-6"}>
-      <div className={scrollInterno ? "shrink-0" : undefined}>
+    <div className="flex h-full flex-col gap-6">
+      <div className="shrink-0">
         <h3 className="ds-h3 font-semibold text-foreground">
           Impacto do face ID no resultado
         </h3>
@@ -42,7 +40,7 @@ export function ImpactoFaceIdCard({ data, scrollInterno = false }: ImpactoFaceId
       */}
       <div
         data-visao-geral-cards
-        className={scrollInterno ? "shrink-0 grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end" : "grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end"}
+        className="shrink-0 grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end"
       >
         <div className="sm:col-span-2">
           <div className="relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 p-6 shadow-[var(--shadow-sm)] backdrop-blur-md">
@@ -81,15 +79,14 @@ export function ImpactoFaceIdCard({ data, scrollInterno = false }: ImpactoFaceId
       {/*
         Tabela de operadores — mesmo padrão visual/dimensionamento de
         tabela-temas.tsx, sem container próprio (StyledCard removido a
-        pedido), overflow-y-auto quando scrollInterno (dentro do trilho),
-        fit-content fora dele.
+        pedido), com rolagem vertical própria dentro do trilho.
       */}
       <div
-        className={scrollInterno ? "min-h-0 flex-1 overflow-y-auto scrollbar-tema" : "overflow-hidden scrollbar-tema"}
+        className="min-h-0 flex-1 overflow-y-auto scrollbar-tema"
       >
-        {/* scrollInterno: sem o overflow-x-auto interno — ele viraria o
+        {/* Sem o overflow-x-auto interno — ele viraria o
             container de rolagem do cabeçalho fixo (sticky) e ele não fixaria. */}
-        <div className={scrollInterno ? undefined : "overflow-x-auto"}>
+        <div>
           {/* data-tabela-faceid: cabeçalho no visual da tabela principal
               (reports-consolidado.css, junto com as demais tabelas).
               data-cabecalho-fixo: cabeçalho sticky ao rolar. */}

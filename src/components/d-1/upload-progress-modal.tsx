@@ -199,6 +199,9 @@ export function UploadProgressModal({
                   <div key={s.id} className="flex gap-3.5">
                     <div className="flex flex-col items-center">
                       <motion.div
+                        // Gancho de estilo por variante (ex.: bolinha pendente
+                        // no tema claro do Consolidado, reports-consolidado.css).
+                        data-etapa-status={status}
                         className="relative flex shrink-0 items-center justify-center rounded-full"
                         initial={false}
                         animate={{ scale: prefersReducedMotion ? 1 : status === "active" ? 1.06 : 1 }}

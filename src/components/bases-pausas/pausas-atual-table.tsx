@@ -34,8 +34,6 @@ export function PausasAtualTable({ operadores }: PausasAtualTableProps) {
         {operadores.length > 0 && (
           <ClearBaseButton
             action={limparPausasAction}
-            variant="icon-danger"
-            holdToConfirm
           />
         )}
       </div>

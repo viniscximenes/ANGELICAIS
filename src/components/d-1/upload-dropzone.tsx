@@ -22,20 +22,6 @@ export type UploadStep =
 
 interface UploadDropzoneProps {
   /**
-   * Variante enxuta (usada em /s/reports/consolidado/analitico): sem o ícone
-   * central e com a área de drop bem mais baixa. Default false — o
-   * /s/reports/consolidado continua com o card cheio. Só muda o visual; drag &
-   * drop, parse, action de upload e modal de progresso
-   * seguem idênticos.
-   */
-  compact?: boolean;
-  /**
-   * "vertical": mesmo card de anexo de /s/reports/tempo-indisponibilidade
-   * (largura cheia, abaixo do cabeçalho, 140px de altura) — usado em
-   * /c/reports/consolidado. Default "card" mantém o visual de sempre.
-   */
-  variante?: "card" | "vertical";
-  /**
    * Clique/teclado abre o seletor de arquivos já na pasta Downloads e só com
    * .csv (sem a opção "Todos os arquivos"), via File System Access API
    * (showOpenFilePicker — Chrome/Edge). Navegadores sem a API seguem com o
@@ -62,12 +48,9 @@ type ShowOpenFilePicker = (options: {
 }) => Promise<{ getFile: () => Promise<File> }[]>;
 
 export function UploadDropzone({
-  compact = false,
-  variante = "card",
   abrirEmDownloads = false,
   recarregarComModalAberto = false,
 }: UploadDropzoneProps = {}) {
-  const vertical = variante === "vertical";
   // Detectado só no client (evita divergência de hidratação com o SSR).
   const [pickerNativo, setPickerNativo] = useState(false);
   useEffect(() => {
@@ -310,11 +293,11 @@ export function UploadDropzone({
                 boxShadow: isDragActive
                   ? "0 0 40px var(--glow-accent)"
                   : "var(--shadow-sm, none)",
-                padding: compact ? "0.875rem 1.25rem" : vertical ? "1rem 1.25rem" : "2.5rem 1.5rem",
+                padding: "2.5rem 1.5rem",
                 opacity: isProcessing ? 0.5 : 1,
                 pointerEvents: isProcessing ? "none" : "auto",
                 cursor: isProcessing ? "not-allowed" : "pointer",
-                minHeight: compact ? "auto" : vertical ? "140px" : "100%",
+                minHeight: "100%",
         }}
       >
         <input {...getInputProps()} />
@@ -323,12 +306,12 @@ export function UploadDropzone({
           <div className="relative flex min-h-16 min-w-24 items-center justify-center" aria-hidden="true">
             {isProcessing ? (
               <IconLoader2
-                size={compact ? 20 : 26}
+                size={26}
                 className="animate-spin text-muted-foreground"
               />
             ) : (
               <ReactBitsFolder
-                size={compact ? 0.42 : 0.68}
+                size={0.68}
                 open={isHovering || isDragActive}
                 color={isDragReject ? "var(--danger)" : "var(--primary)"}
                 backColor={

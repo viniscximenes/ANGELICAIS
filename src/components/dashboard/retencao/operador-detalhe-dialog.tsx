@@ -163,12 +163,9 @@ export function OperadorDetalheDialog({
     typeof document !== "undefined"
       ? document.querySelector<HTMLElement>('[data-page="reports-consolidado"]')
       : null;
-  const corAbaixoMeta = resolverTokenCss("--danger", "#dc2626", elementoEscopoTema);
-  const corAcimaMeta = resolverTokenCss("--success", "#16a34a", elementoEscopoTema);
 
-  // Fonte do tema (Instrument Sans / --font-zen-sans): a variável é gerada
-  // por next/font e só existe como classe (`zenSans.variable`) no elemento
-  // raiz da página real — este Dialog é renderizado em portal (fora dessa
+  // Fonte da rota: a variável de next/font só existe no elemento raiz da
+  // página real (ex.: `zenSans.variable` em comparativo/quartil) — este Dialog é renderizado em portal (fora dessa
   // árvore), então `var(--font-zen-sans)` fica indefinida ali e invalida
   // TODA a declaração `font-family` (uma var() não resolvida invalida a
   // propriedade inteira em vez de só pular pro próximo nome da lista de
@@ -181,57 +178,64 @@ export function OperadorDetalheDialog({
     : undefined;
   const META_GRADIENT_ID = "linha-retencao-meta-gradient";
 
-  const indicesComDado = chartData
-    .map((d, idx) => (d.txDisplay !== null ? idx : null))
-    .filter((idx): idx is number => idx !== null);
-
-  const primeiroIdx = indicesComDado[0];
-  const ultimoIdx = indicesComDado[indicesComDado.length - 1];
-  const spanIdx = primeiroIdx !== undefined && ultimoIdx !== undefined ? ultimoIdx - primeiroIdx : 0;
-
-  function offsetDoIndice(idxFracionario: number): number {
-    if (spanIdx <= 0 || primeiroIdx === undefined) return 0;
-    return (idxFracionario - primeiroIdx) / spanIdx;
-  }
-
+  // Gradiente/cores do gráfico ANTIGO — só calculados quando ele é exibido
+  // (graficoNovo usa EvolucaoEquipe, que não precisa de nada disto).
   const stopsGradiente: { offset: number; cor: string }[] = [];
+  let corFallbackLinha = "";
+  if (!graficoNovo) {
+    const corAbaixoMeta = resolverTokenCss("--danger", "#dc2626", elementoEscopoTema);
+    const corAcimaMeta = resolverTokenCss("--success", "#16a34a", elementoEscopoTema);
 
-  // Um stop na cor do próprio ponto, pra cada ponto com dado — cobre os
-  // trechos que NÃO cruzam a meta (as duas pontas na mesma cor).
-  indicesComDado.forEach((idx) => {
-    const abaixo = chartData[idx].txDisplay! < meta;
-    stopsGradiente.push({ offset: offsetDoIndice(idx), cor: abaixo ? corAbaixoMeta : corAcimaMeta });
-  });
+    const indicesComDado = chartData
+      .map((d, idx) => (d.txDisplay !== null ? idx : null))
+      .filter((idx): idx is number => idx !== null);
 
-  // Pra cada trecho que CRUZA a meta, insere dois stops bem próximos no
-  // ponto exato de cruzamento — troca "seca" de cor, sem gradiente suave.
-  indicesComDado.slice(0, -1).forEach((idx, i) => {
-    const proxIdx = indicesComDado[i + 1];
-    const valorInicial = chartData[idx].txDisplay!;
-    const valorFinal = chartData[proxIdx].txDisplay!;
-    const inicioAbaixo = valorInicial < meta;
-    const fimAbaixo = valorFinal < meta;
-    if (inicioAbaixo === fimAbaixo) return;
+    const primeiroIdx = indicesComDado[0];
+    const ultimoIdx = indicesComDado[indicesComDado.length - 1];
+    const spanIdx = primeiroIdx !== undefined && ultimoIdx !== undefined ? ultimoIdx - primeiroIdx : 0;
 
-    const fracaoCruzamento = (meta - valorInicial) / (valorFinal - valorInicial);
-    const idxCruzamento = idx + fracaoCruzamento * (proxIdx - idx);
-    const offsetCruzamento = offsetDoIndice(idxCruzamento);
-    const offsetSegmento = offsetDoIndice(proxIdx) - offsetDoIndice(idx);
-    const epsilon = Math.max(0.0008, offsetSegmento * 0.01);
+    const offsetDoIndice = (idxFracionario: number): number => {
+      if (spanIdx <= 0 || primeiroIdx === undefined) return 0;
+      return (idxFracionario - primeiroIdx) / spanIdx;
+    };
 
-    stopsGradiente.push(
-      { offset: Math.max(0, offsetCruzamento - epsilon), cor: inicioAbaixo ? corAbaixoMeta : corAcimaMeta },
-      { offset: Math.min(1, offsetCruzamento + epsilon), cor: fimAbaixo ? corAbaixoMeta : corAcimaMeta },
-    );
-  });
+    // Um stop na cor do próprio ponto, pra cada ponto com dado — cobre os
+    // trechos que NÃO cruzam a meta (as duas pontas na mesma cor).
+    indicesComDado.forEach((idx) => {
+      const abaixo = chartData[idx].txDisplay! < meta;
+      stopsGradiente.push({ offset: offsetDoIndice(idx), cor: abaixo ? corAbaixoMeta : corAcimaMeta });
+    });
 
-  stopsGradiente.sort((a, b) => a.offset - b.offset);
+    // Pra cada trecho que CRUZA a meta, insere dois stops bem próximos no
+    // ponto exato de cruzamento — troca "seca" de cor, sem gradiente suave.
+    indicesComDado.slice(0, -1).forEach((idx, i) => {
+      const proxIdx = indicesComDado[i + 1];
+      const valorInicial = chartData[idx].txDisplay!;
+      const valorFinal = chartData[proxIdx].txDisplay!;
+      const inicioAbaixo = valorInicial < meta;
+      const fimAbaixo = valorFinal < meta;
+      if (inicioAbaixo === fimAbaixo) return;
 
-  // Cor sólida de fallback da linha (ver comentário no <Line>): a do 1º ponto.
-  const corFallbackLinha =
-    primeiroIdx !== undefined && chartData[primeiroIdx].txDisplay! >= meta
-      ? corAcimaMeta
-      : corAbaixoMeta;
+      const fracaoCruzamento = (meta - valorInicial) / (valorFinal - valorInicial);
+      const idxCruzamento = idx + fracaoCruzamento * (proxIdx - idx);
+      const offsetCruzamento = offsetDoIndice(idxCruzamento);
+      const offsetSegmento = offsetDoIndice(proxIdx) - offsetDoIndice(idx);
+      const epsilon = Math.max(0.0008, offsetSegmento * 0.01);
+
+      stopsGradiente.push(
+        { offset: Math.max(0, offsetCruzamento - epsilon), cor: inicioAbaixo ? corAbaixoMeta : corAcimaMeta },
+        { offset: Math.min(1, offsetCruzamento + epsilon), cor: fimAbaixo ? corAbaixoMeta : corAcimaMeta },
+      );
+    });
+
+    stopsGradiente.sort((a, b) => a.offset - b.offset);
+
+    // Cor sólida de fallback da linha (ver comentário no <Line>): a do 1º ponto.
+    corFallbackLinha =
+      primeiroIdx !== undefined && chartData[primeiroIdx].txDisplay! >= meta
+        ? corAcimaMeta
+        : corAbaixoMeta;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

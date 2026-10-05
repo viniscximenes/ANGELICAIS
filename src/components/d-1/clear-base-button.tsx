@@ -1,19 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { IconLoader2, IconTrash } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { HoldButton } from "@/components/ui/hold-button";
-import { LimparBaseExpandButton } from "./limpar-base-expand-button";
-import { cn } from "@/lib/utils";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 
 type ClearActionResult =
@@ -33,77 +25,41 @@ interface Props {
    */
   onCleared?: () => void | Promise<void>;
   /**
-   * "default" (padrão, usado por TMA/Pausas — NÃO alterado) = pílula
-   * compacta py-1.5/12px de sempre. "compact" (só usado pelo
-   * /s/reports/consolidado até a 4ª rodada) = mesma família visual (h-8,
-   * text-sm, rounded-md) dos demais controles outline daquela página,
-   * mantendo o preenchimento destructive sólido (cor de alerta) pra não se
-   * confundir com uma ação neutra. "icon-danger" (5ª rodada, /reports/
-   * consolidado e /s/reports/tempo-indisponibilidade) = ícone-only, MESMO
-   * visual compacto do botão de engrenagem quando ocioso. Com
-   * `holdToConfirm`, usa o Hold Button do React Bits: expande
-   * horizontalmente, revela "Limpar Base" e só executa a ação após a
-   * pressão contínua completar. "expand-danger" (só /s/reports/consolidado)
-   * = animação do Uiverse (botão → pílula com "Limpar Base"), um clique
-   * limpa — ver limpar-base-expand-button.tsx.
-   */
-  variant?: "default" | "compact" | "icon-danger" | "expand-danger";
-  /** Ativa a confirmação por pressão contínua somente onde for solicitado. */
-  holdToConfirm?: boolean;
-  /**
    * Classe extra aplicada aos toasts (sonner) desta ação — ex.
-   * "reports-consolidado-toast", pra herdar o tema Zen Linen só nos toasts
-   * disparados a partir do /s/reports/consolidado, sem tocar no <Toaster/>
-   * global nem nos toasts de TMA/Tempo Indisponibilidade (que não passam
-   * essa prop e continuam com o visual padrão). Default: undefined.
+   * "reports-tma-peso-toast", pra herdar o tema da rota sem tocar no
+   * <Toaster/> global. Default: undefined.
    */
   toastClassName?: string;
-  /**
-   * Toast "Base limpa" ao concluir. Default true (comportamento de sempre,
-   * usado por TMA/Pausas). "/s/reports/consolidado" passa false: o overlay de
-   * refresh (KpiLoadingScreen) já comunica visualmente que a ação rodou, o
-   * toast era redundante/pedido pra sair só ali.
-   */
+  /** Toast "Base limpa" ao concluir. Default true. */
   showSuccessToast?: boolean;
-  /**
-   * Chama router.refresh() depois do onCleared. Default true (comportamento
-   * de sempre). /s/reports/consolidado passa false: o onCleared já recarrega
-   * tabela e Analítico, e o refresh re-renderizava a página inteira no
-   * servidor (com o piso mínimo de loading) — o botão seguia em "Limpando..."
-   * por mais um tempo DEPOIS do esqueleto sumir.
-   */
-  atualizarRota?: boolean;
 }
 
+/**
+ * Botão "Limpar Base" com confirmação por pressão contínua (Hold Button do
+ * React Bits): ícone-only em repouso, expande horizontalmente revelando
+ * "Limpar Base" e só executa a ação após a pressão completar. Usado por
+ * TMA, Tempo/Indisponibilidade, Pausas e o Consolidado do coordenador.
+ * (/s/reports/consolidado usa LimparBaseExpandButton direto.)
+ */
 export function ClearBaseButton({
   action,
   onCleared,
-  variant = "default",
-  holdToConfirm = false,
   toastClassName,
   showSuccessToast = true,
-  atualizarRota = true,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  // "Limpando..." da variante expand-danger: só enquanto a action roda no
-  // servidor. O isPending da transição também espera o Next aplicar a
-  // re-renderização disparada pelo revalidatePath da action, e isso termina
-  // DEPOIS do esqueleto do Consolidado — a animação seguia após ele sumir.
-  // Dali em diante, quem mostra o carregamento é o esqueleto (onCleared).
-  const [limpando, setLimpando] = useState(false);
 
   function handleClick() {
-    setLimpando(true);
     startTransition(async () => {
       try {
-        const r = await action().finally(() => setLimpando(false));
+        const r = await action();
         if (r.success) {
           if (showSuccessToast) {
             toast.success("Base limpa", { className: toastClassName });
           }
           await onCleared?.();
-          if (atualizarRota) router.refresh();
+          router.refresh();
         } else {
           toast.error(r.error, { className: toastClassName });
         }
@@ -115,77 +71,24 @@ export function ClearBaseButton({
     });
   }
 
-  if (variant === "expand-danger") {
-    return <LimparBaseExpandButton onConfirm={handleClick} pending={limpando} />;
-  }
-
-  if (variant === "icon-danger" && holdToConfirm) {
-    return (
-      <HoldButton
-        disabled={isPending}
-        ariaLabel="Segure para limpar a base"
-        icon={<IconTrash size={15} aria-hidden="true" />}
-        doneIcon={<IconLoader2 size={15} className="animate-spin" aria-hidden="true" />}
-        doneLabel="Limpando..."
-        fillColor="var(--seg-thumb)"
-        fillTextColor="var(--seg-text-active)"
-        textColor="var(--muted-foreground)"
-        holdTime={1600}
-        releaseTime={200}
-        resetAfter={1200}
-        expandedWidth={116}
-        onHold={handleClick}
-        className="font-sans border border-border"
-      >
-        Limpar Base
-      </HoldButton>
-    );
-  }
-
-  if (variant === "icon-danger") {
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              onClick={handleClick}
-              disabled={isPending}
-              aria-label="Limpar base"
-              title="Limpar base"
-              className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border bg-transparent outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
-            >
-              {isPending ? (
-                <IconLoader2 size={15} className="animate-spin" aria-hidden="true" />
-              ) : (
-                <IconTrash size={15} aria-hidden="true" />
-              )}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top">Limpar base</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
-
   return (
-    <button
-      type="button"
-      onClick={handleClick}
+    <HoldButton
       disabled={isPending}
-      className={cn(
-        variant === "compact"
-          ? "font-sans inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-destructive px-3 text-sm font-medium text-destructive-foreground outline-none transition-opacity hover:opacity-90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
-          : "bg-destructive text-destructive-foreground hover:opacity-90 flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-opacity cursor-pointer shadow-sm disabled:opacity-50",
-      )}
-      style={variant === "compact" ? undefined : { fontSize: "12px" }}
+      ariaLabel="Segure para limpar a base"
+      icon={<IconTrash size={15} aria-hidden="true" />}
+      doneIcon={<IconLoader2 size={15} className="animate-spin" aria-hidden="true" />}
+      doneLabel="Limpando..."
+      fillColor="var(--seg-thumb)"
+      fillTextColor="var(--seg-text-active)"
+      textColor="var(--muted-foreground)"
+      holdTime={1600}
+      releaseTime={200}
+      resetAfter={1200}
+      expandedWidth={116}
+      onHold={handleClick}
+      className="font-sans border border-border"
     >
-      {isPending ? (
-        <IconLoader2 size={14} className="animate-spin" aria-hidden="true" />
-      ) : (
-        <IconTrash size={14} aria-hidden="true" />
-      )}
-      <span className={variant === "compact" ? undefined : "ds-mono-sm"}>Limpar base</span>
-    </button>
+      Limpar Base
+    </HoldButton>
   );
 }

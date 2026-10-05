@@ -298,8 +298,6 @@ export function CoordenadorConsolidadoView({
             <ClearBaseButton
               action={clearConsolidadoAction}
               onCleared={handleBaseCleared}
-              variant="icon-danger"
-              holdToConfirm
               toastClassName="reports-consolidado-toast"
             />
           </div>

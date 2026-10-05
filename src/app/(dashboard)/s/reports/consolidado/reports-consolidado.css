@@ -10,137 +10,26 @@
   color: var(--foreground);
   font-family: var(--font-sans);
   letter-spacing: var(--letter-spacing);
-
-  /* Visual ÚNICO de cabeçalho e linha de total de todas as tabelas da
-   * página (EquipeTable, temas, quartis, segmentos, contratos, face ID,
-   * perfilação, temas do modal). Escuro: --muted a 40% + texto
-   * --foreground + linha de 1px. Claro: redefinido abaixo. */
-  --th-bg: color-mix(in oklab, var(--muted) 40%, transparent);
-  --th-fg: var(--foreground);
-  --th-borda: 1px;
-}
-[data-theme="light"] [data-page="reports-consolidado"] {
-  --th-bg: var(--muted);
-  --th-fg: var(--muted-foreground);
-  --th-borda: 2px;
+  /* Cabeçalho/linha de total das tabelas: tokens --th-bg/--th-fg/--th-borda
+   * do padrão global (globals.css, seção 3). */
 }
 
 /* ───────── Barra de rolagem (fina, no tema da página) ─────────
- * Mesmo padrão discreto de `.scrollbar-tema` (globals.css): fina, trilho
- * invisível, thumb translúcido com respiro (border "recortando" o thumb via
- * background-clip).
- *
- * Vale nos containers internos ([data-page] ...) E na barra da PÁGINA, que é
- * do <html>/<body> — ancestrais do [data-page], por isso o `:has()`. Os
- * tokens (--border/--muted-foreground) vêm da paleta ativa no :root, então
- * a barra acompanha a paleta e o tema sem cor fixa nenhuma.
+ * Fina e com trilho invisível. Vale nos containers internos ([data-page]
+ * ...) E na barra da PÁGINA, que é do <html>/<body> — ancestrais do
+ * [data-page], por isso o `:has()`. Cor do thumb: --border nos containers
+ * (scrollbar-color é herdado); a da página e a dos cards (.scrollbar-tema)
+ * ficam nos blocos próprios mais abaixo.
+ * Só scrollbar-width/scrollbar-color: o Edge (único navegador da equipe)
+ * ignora ::-webkit-scrollbar quando essas propriedades estão definidas.
  */
 [data-page="reports-consolidado"],
 html:has([data-page="reports-consolidado"]),
 body:has([data-page="reports-consolidado"]) {
-  scrollbar-width: thin; /* Firefox */
+  scrollbar-width: thin;
+}
+[data-page="reports-consolidado"] {
   scrollbar-color: var(--border) transparent;
-}
-
-[data-page="reports-consolidado"] ::-webkit-scrollbar,
-html:has([data-page="reports-consolidado"])::-webkit-scrollbar,
-body:has([data-page="reports-consolidado"])::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-[data-page="reports-consolidado"] ::-webkit-scrollbar-track,
-html:has([data-page="reports-consolidado"])::-webkit-scrollbar-track,
-body:has([data-page="reports-consolidado"])::-webkit-scrollbar-track {
-  background: transparent;
-}
-[data-page="reports-consolidado"] ::-webkit-scrollbar-thumb,
-html:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb,
-body:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb {
-  background-color: var(--border);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-[data-page="reports-consolidado"] ::-webkit-scrollbar-thumb:hover,
-html:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb:hover,
-body:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb:hover {
-  background-color: var(--muted-foreground);
-  background-clip: padding-box;
-}
-[data-page="reports-consolidado"] ::-webkit-scrollbar-corner,
-html:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner,
-body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-/* ───────── Spinner de loading (Uiverse.io by abrahamcalsin, "dot-spinner") ─────────
- * https://uiverse.io/abrahamcalsin/serious-turkey-52 — substitui o círculo
- * genérico (border-spin) + texto "Carregando Consolidado..." nas telas de
- * loading desta rota (Suspense inicial e overlay de refresh manual).
- * ÚNICA adaptação ao original: --uib-color deixou de ser um hex fixo
- * (#183153) e passou a ler var(--foreground) — acompanha o tema Zen Linen
- * desta página (claro/escuro) automaticamente, igual ao spinner antigo.
- * --uib-size ajustado (pedido explícito de aumentar) — 3rem.
- */
-[data-page="reports-consolidado"] .dot-spinner {
-  --uib-size: 3rem;
-  --uib-speed: .9s;
-  --uib-color: var(--foreground);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  height: var(--uib-size);
-  width: var(--uib-size);
-}
-
-[data-page="reports-consolidado"] .dot-spinner__dot {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  height: 100%;
-  width: 100%;
-}
-
-[data-page="reports-consolidado"] .dot-spinner__dot::before {
-  content: '';
-  height: 20%;
-  width: 20%;
-  border-radius: 50%;
-  background-color: var(--uib-color);
-  transform: scale(0);
-  opacity: 0.5;
-  animation: reports-consolidado-dot-pulse calc(var(--uib-speed) * 1.111) ease-in-out infinite;
-  box-shadow: 0 0 20px color-mix(in srgb, var(--foreground) 30%, transparent);
-}
-
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(2) { transform: rotate(45deg); }
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(2)::before { animation-delay: calc(var(--uib-speed) * -0.875); }
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(3) { transform: rotate(90deg); }
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(3)::before { animation-delay: calc(var(--uib-speed) * -0.75); }
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(4) { transform: rotate(135deg); }
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(4)::before { animation-delay: calc(var(--uib-speed) * -0.625); }
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(5) { transform: rotate(180deg); }
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(5)::before { animation-delay: calc(var(--uib-speed) * -0.5); }
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(6) { transform: rotate(225deg); }
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(6)::before { animation-delay: calc(var(--uib-speed) * -0.375); }
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(7) { transform: rotate(270deg); }
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(7)::before { animation-delay: calc(var(--uib-speed) * -0.25); }
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(8) { transform: rotate(315deg); }
-[data-page="reports-consolidado"] .dot-spinner__dot:nth-child(8)::before { animation-delay: calc(var(--uib-speed) * -0.125); }
-
-@keyframes reports-consolidado-dot-pulse {
-  0%, 100% {
-    transform: scale(0);
-    opacity: 0.5;
-  }
-  50% {
-    transform: scale(1);
-    opacity: 1;
-  }
 }
 
 /* ───────── Toasts desta página (sonner) ─────────
@@ -177,8 +66,8 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
  * data-page (ver `dataPage` em FloatingNavSidebar) só pra herdar as CSS
  * custom properties do tema definidas acima, e uma classe própria
  * (.reports-consolidado-nav) usada aqui como gancho pra sobrescrever as
- * classes Tailwind hardcoded do hover-sidebar.tsx compartilhado (bg-sidebar,
- * text-neutral-700/dark:text-neutral-200) — SEM editar esse componente
+ * classes Tailwind do hover-sidebar.tsx compartilhado (bg-sidebar,
+ * border-border/60) — SEM editar esse componente
  * compartilhado (TempoIndispNavSidebar não passa wrapperClassName/dataPage,
  * então continua 100% com o visual de sempre).
  */
@@ -191,31 +80,18 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
 .reports-consolidado-nav .border-border\/60 {
   border-color: var(--elevation-1-border) !important;
 }
-/* Ícone já lê var(--muted-foreground) direto na classe (ICON_CLASS, ver
-   consolidado-nav-sidebar.tsx) — aqui só o rótulo de texto (span do
-   SidebarLink compartilhado), que continua hardcoded no componente base. */
-.reports-consolidado-nav .text-neutral-700 {
-  color: var(--muted-foreground) !important;
-}
-.reports-consolidado-nav a:hover .text-neutral-700 {
-  color: var(--foreground) !important;
-}
 /* Hover do item: SEM fundo cinza (removido a pedido) — a única animação é o
    título deslizando pro lado (group-hover:translate-x-1 do SidebarLink) +
-   a cor do texto indo pra --foreground (regra acima). */
+   a cor do texto indo pra --foreground (ver "Menu lateral: seção ativa"). */
 .reports-consolidado-nav a:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: 0.375rem;
 }
 
-/* ───────── Toggles (RV Diário, olho/nome fantasia) ─────────
- * Mesmo padrão de estado de /kpi/operadores (LabeledSwitch): sem borda
- * branca de foco (outline do navegador resetado e trocado por um anel na
- * cor do tema, --ring), disabled visualmente apagado. Selecionado já usa
- * bg-primary/text-primary-foreground (escuro no tema claro, claro no tema
- * escuro — automático via --primary do bloco acima), então só o foco
- * precisava de ajuste.
+/* ───────── Toggle do olho (nome fantasia) ─────────
+ * Botão com aria-pressed no cabeçalho da EquipeTable: sem a borda de foco
+ * do navegador, trocada por um anel na cor do tema (--ring).
  */
 [data-page="reports-consolidado"] button[aria-pressed] {
   outline: none;
@@ -223,10 +99,6 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
 [data-page="reports-consolidado"] button[aria-pressed]:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
-}
-[data-page="reports-consolidado"] button[aria-pressed]:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* ───────── Fundo dos cards de Visão Geral (Tx Retenção/Pedidos/Retidos/Churn) ─────────
@@ -252,52 +124,16 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
   background-color: color-mix(in srgb, var(--background) 82%, var(--muted) 18%) !important;
 }
 
-/* ───────── Hover das linhas da EquipeTable (tema claro) ─────────
- * globals.css tem uma regra GLOBAL (fora do escopo permitido pra edição):
- *   [data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover
- *   { background-color: var(--muted-hover-bg) !important; }
- * `--muted-hover-bg` (oklch(0.93 0.002 240), ~#ededf0) é resquício do tema
- * antigo — cinza quase branco fora da paleta Zen Linen, e não redefinido por
- * esta página. Com !important, essa regra vence QUALQUER classe Tailwind
- * (inclusive a troca pra hover:bg-accent feita em equipe-table.tsx), daí o
- * hover claro/esbranquiçado no tema claro.
- * Correção: seletor AINDA mais específico (mesmo padrão + o escopo
- * [data-page] a mais) escrevendo por cima — só nesta rota, sem tocar em
- * globals.css.
- *
- * Tom do hover: --accent (usado antes) fica perto demais de --card no claro
- * (#E6E4D7 vs #F4EFE4) — resultado pouco perceptível e, por contraste com o
- * bege quente ao redor, lido como "esverdeado/desbotado". Troca pra
- * --muted (#CFC8B8), já o tom "bege mais escuro" da própria paleta Zen
- * Linen desta rota (mesmo token usado no cabeçalho da tabela, bg-muted/40)
- * — bem mais escuro que --card/--background, sem cor nova fora do tema.
- * Tema escuro não precisa de override — não existe regra global equivalente
- * pra .dark/:root, a classe hover:bg-accent do componente já resolve (e
- * continua sem mudança nenhuma aqui).
- *
- * Na prática esta regra neutra só sobra pra linhas sem data-meta-linha —
- * as clicáveis recebem o hover verde/vermelho do bloco seguinte.
- *
- * `:not([data-sem-dados="true"])` em TODAS as regras abaixo: operador sem
- * nenhum atendimento no dia (pedidos=0 ou txRetencao null — mesmo critério
- * de opacidade da linha, ver `data-sem-dados` em equipe-table.tsx) não é
- * clicável e não deve reagir a hover NENHUM, nos dois temas — sem isso,
- * essa regra (com !important, criada pra vencer a regra global de
- * globals.css) também vencia o `hover:bg-transparent` que a própria linha
- * já usa pra ficar neutra, pintando ela por engano.
- */
-[data-theme="light"] [data-page="reports-consolidado"] [data-equipe-table] > div:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
-  background-color: var(--muted) !important;
-}
-
 /* ───────── Hover semântico das linhas (vermelho / verde, os dois temas) ─────────
  * Cada linha clicável mantém a própria cor no hover, só um pouco mais
  * intensa que o repouso: abaixo da meta = --danger (repouso 5% → hover 10%);
  * dentro da meta = --success (sem fundo em repouso → hover 7%).
  * Gancho: data-meta-linha (equipe-table.tsx), em vez das classes Tailwind
  * geradas (hover:border-l-[var(--danger)]), que quebravam com qualquer
- * mudança de classe. [data-theme] + :not() = especificidade maior que a
- * regra neutra do claro (acima), vence nos dois temas sem depender da ordem.
+ * mudança de classe. !important + especificidade maior: vence o hover
+ * cinza global do tema claro (globals.css, [data-equipe-table] ... :hover).
+ * Toda linha com atendimento tem data-meta-linha; as sem atendimento
+ * (data-sem-dados) ficam de fora.
  */
 [data-theme] [data-page="reports-consolidado"] [data-equipe-table] > div[data-meta-linha="abaixo"]:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
   background-color: color-mix(in oklch, var(--danger) 10%, transparent) !important;
@@ -307,7 +143,7 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
 }
 
 /* ───────── Cabeçalho e linha de totais (EQUIPE) da EquipeTable ─────────
- * As duas linhas com o MESMO visual (tokens --th-* no topo do arquivo):
+ * As duas linhas com o MESMO visual (tokens --th-* do globals.css):
  * fundo, cor do texto e espessura da linha divisória, por tema.
  * - Cabeçalho (:first-child): só a cor do texto vem daqui (fundo e borda
  *   vêm das classes do componente + globals.css). No claro fica
@@ -322,8 +158,6 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
 [data-page="reports-consolidado"] [data-equipe-table] > div.font-bold:last-child:not(:first-child) {
   background-color: var(--th-bg) !important;
   color: var(--th-fg) !important;
-  letter-spacing: 0.025em;
-  text-transform: uppercase;
   border-bottom: none !important;
   border-top-width: var(--th-borda) !important;
 }
@@ -342,9 +176,6 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
   line-height: var(--leading-normal);
   letter-spacing: 0.025em;
   text-transform: uppercase;
-  color: var(--th-fg) !important;
-}
-[data-page="reports-consolidado"] [data-equipe-table] > div:first-child {
   color: var(--th-fg) !important;
 }
 
@@ -415,15 +246,6 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
   border-color: color-mix(in oklch, var(--danger) 35%, transparent);
 }
 
-/* ───────── Imagem exportada da tabela ("Copiar imagem") ─────────
- * `copy-table-button.tsx` captura `[data-tabela-png]` — um clone da MESMA
- * EquipeTable da tela. Aqui havia um override (só tema claro) que fixava
- * --background/--card/--muted com os hex da paleta antiga Zen Linen
- * (#E9E4D8 / #F4EFE4 / #CFC8B8) — a imagem saía bege mesmo com a paleta
- * Vercel ativa no site. Removido: a imagem agora herda os MESMOS tokens do
- * tema/paleta ativos, igual à tabela na tela.
- */
-
 /* ───────── Modal de upload (UploadProgressModal) — variant="reports-consolidado" ─────────
  * upload-progress-modal.tsx é COMPARTILHADO com
  * upload-tempo-logado-dropzone.tsx (mesma lógica de etapas). Só
@@ -439,11 +261,10 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
  * permitir seletor CSS explícito aqui, sem depender de onde no DOM a árvore
  * do modal fica pendurada.
  */
+/* Fundo/borda/sombra vêm das versões neumórficas por tema (logo abaixo e
+ * no fim do arquivo); aqui só a cor do texto. */
 .reports-consolidado-upload-modal {
-  background: var(--card);
   color: var(--foreground);
-  border: 1px solid var(--border);
-  box-shadow: 0 20px 50px -12px color-mix(in oklch, var(--foreground) 25%, transparent);
 }
 
 /* Tema escuro: card do Uiverse.io (by Yaseen549), IDÊNTICO à referência —
@@ -469,16 +290,9 @@ body:has([data-page="reports-consolidado"])::-webkit-scrollbar-corner {
 [data-upload-backdrop][data-page="reports-consolidado"] {
   background: #e0e0e0 !important;
   backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 }
 :root:not([data-theme="light"]) [data-upload-backdrop][data-page="reports-consolidado"] {
   background: #212121 !important;
-}
-/* Claro com seletor explícito (mais específico que a regra base): vence
- * mesmo se o navegador ainda tiver uma versão antiga deste CSS carregada
- * (a anterior usava preto no claro). */
-html[data-theme="light"] [data-upload-backdrop][data-page="reports-consolidado"] {
-  background: #e0e0e0 !important;
 }
 
 /* ───────── Toasts desta página (sonner) — texto da descrição ─────────
@@ -504,14 +318,6 @@ html[data-theme="light"] [data-upload-backdrop][data-page="reports-consolidado"]
 .reports-consolidado-toast [data-description] {
   color: color-mix(in oklch, var(--normal-text) 78%, transparent) !important;
 }
-/* Botão de fechar (close-button, quando exibido): border hardcoded do
- * sonner (--gray4) não acompanha tema — alinhado ao --normal-border já
- * herdado (custom property, resolve certo por herança mesmo sem
- * !important, mas o valor de BORDER em si sonner define direto por fora da
- * var em alguns estados de hover — !important garante consistência). */
-.reports-consolidado-toast [data-close-button] {
-  border-color: var(--normal-border) !important;
-}
 
 /* ───────── Cabeçalho de colunas do card "Retenção por Tema" (TabelaTemas) ─────────
  * TabelaTemas.tsx é COMPARTILHADO com /operacao/comparativo-consolidado
@@ -530,7 +336,7 @@ html[data-theme="light"] [data-upload-backdrop][data-page="reports-consolidado"]
 }
 
 /* ───────── Fonte única: Inter em tudo (ver fonte.tsx) ─────────
- * ds-mono / ds-mono-sm / ds-display (globals.css) e o utilitário font-mono
+ * ds-mono / ds-mono-sm / ds-display (globals.css)
  * usam var(--font-mono) = Geist Mono. Esses componentes são COMPARTILHADOS
  * com outras rotas (EquipeTable, TabelaPadrao, TabelaTemas, VisaoGeralCards,
  * OperadorDetalheDialog, SignatureFooter, ClearBaseButton...), então a troca
@@ -539,7 +345,7 @@ html[data-theme="light"] [data-upload-backdrop][data-page="reports-consolidado"]
  * operador, popovers de config, nav lateral, loading). tabular-nums mantém
  * os números com largura fixa (alinhamento de colunas que o mono garantia).
  */
-[data-page="reports-consolidado"] :is(.ds-mono, .ds-mono-sm, .ds-display, .font-mono) {
+[data-page="reports-consolidado"] :is(.ds-mono, .ds-mono-sm, .ds-display) {
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
@@ -661,15 +467,6 @@ html[data-theme="light"] [data-upload-backdrop][data-page="reports-consolidado"]
   background-color: var(--danger);
 }
 
-/* ───────── Busca de operador do "Copiar contratos do AIR" ─────────
- * Mesma regra dos campos dos cards de configuração: sem o contorno preto do
- * foco global (globals.css input:focus-visible). O menu vive em portal com
- * data-page="reports-consolidado", então o escopo alcança o campo. */
-[data-page="reports-consolidado"] .copiar-contratos-busca:is(:focus, :focus-visible) {
-  outline: none;
-  box-shadow: none;
-}
-
 /* ───────── Linha inferior do cabeçalho da tabela do "Copiar contratos do AIR" ─────────
  * O cabeçalho desta tabela é sticky (fica no topo ao rolar a lista) e, em
  * tabela border-collapse, o navegador descarta a border-bottom do <tr>
@@ -728,14 +525,6 @@ html[data-theme="light"] [data-upload-backdrop][data-page="reports-consolidado"]
   background-color: color-mix(in oklab, var(--muted-foreground) 7%, transparent);
 }
 
-/* Sem indicador girando no overlay de refresh (KpiLoadingScreen,
- * compartilhado — daí o ajuste por CSS e só dentro de .consolidado-skeleton):
- * o carregamento é só o skeleton, como no loading.tsx. O texto sr-only do
- * status continua pra leitor de tela. */
-.consolidado-skeleton .dot-spinner {
-  display: none;
-}
-
 /* ───────── Fundo dos campos de meta no tema claro ─────────
  * No escuro, o Input compartilhado (ui/input.tsx) aplica dark:bg-input/30 —
  * o campo da meta fica com um fundo leve, diferente do seletor de
@@ -755,101 +544,6 @@ html[data-theme="light"] [data-upload-backdrop][data-page="reports-consolidado"]
  */
 [data-page="reports-consolidado"] [data-equipe-table] [data-tx-barra] {
   display: none;
-}
-
-/* ───────── Botão "Limpar Base" (LimparBaseExpandButton) ─────────
- * Animação do Uiverse.io (by vinodjangid07), adaptada à altura dos
- * controles da página (32px, era 50px) e aos tokens do tema:
- * - repouso: quadrado com a lixeira, MESMO visual dos botões vizinhos
- *   (engrenagem/Copiar imagem): cantos de 6px, fundo transparente, ícone
- *   --muted-foreground, sem sombra;
- * - hover/foco: alarga numa pílula (32 → 120px) — branca no tema escuro,
- *   preta no claro —, a lixeira cresce
- *   e desce pra fora de vista, o texto "Limpar Base" cai de cima pro centro
- *   (font-size 2px → 13px, como no original);
- * - um clique limpa (sem pressão contínua);
- * - limpando: fica aberto com "Limpando...".
- */
-[data-page="reports-consolidado"] .limpar-base-expand {
-  position: relative;
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  overflow: hidden;
-  border-radius: 0.375rem;
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--muted-foreground);
-  font-family: var(--font-sans);
-  font-weight: 600;
-  cursor: pointer;
-  user-select: none;
-  outline: none;
-  transition-property: width, background-color, border-color, color;
-  transition-duration: 0.3s;
-}
-[data-page="reports-consolidado"] .limpar-base-expand:focus-visible {
-  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
-}
-[data-page="reports-consolidado"] .limpar-base-expand:is(:hover, :focus-visible, [data-pending]) {
-  width: 120px;
-  border-color: #fff;
-  background-color: #fff;
-  color: #0a0a0a;
-}
-/* Claro: pílula preta (era --danger) — espelho da branca do escuro. */
-[data-theme="light"] [data-page="reports-consolidado"] .limpar-base-expand:is(:hover, :focus-visible, [data-pending]) {
-  border-color: #0a0a0a;
-  background-color: #0a0a0a;
-  color: #fff;
-}
-[data-page="reports-consolidado"] .limpar-base-expand[data-pending] {
-  cursor: default;
-}
-
-[data-page="reports-consolidado"] .limpar-base-expand__icone {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  transition-duration: 0.3s;
-}
-[data-page="reports-consolidado"] .limpar-base-expand:is(:hover, :focus-visible, [data-pending]) .limpar-base-expand__icone {
-  transform: translateY(150%) scale(2.6);
-}
-
-[data-page="reports-consolidado"] .limpar-base-expand__texto {
-  position: absolute;
-  top: -20px;
-  z-index: 1;
-  white-space: nowrap;
-  font-size: 2px;
-  line-height: 16px;
-  color: currentColor;
-  transition-duration: 0.3s;
-}
-[data-page="reports-consolidado"] .limpar-base-expand:is(:hover, :focus-visible, [data-pending]) .limpar-base-expand__texto {
-  font-size: 13px;
-  transform: translateY(27px);
-}
-
-/* ───────── Pulso discreto dos esqueletos de carregamento ─────────
- * No lugar do animate-pulse do Tailwind (opacidade 100% → 50%, bem
- * perceptível): oscila só entre 100% e 72%, num ciclo mais lento (2.4s).
- * Usado no esqueleto da página (consolidado-skeleton.tsx) e no do Analítico
- * (analitico-skeleton.tsx).
- */
-.skeleton-pulso {
-  animation: consolidado-skeleton-pulso 2.4s ease-in-out infinite;
-}
-@keyframes consolidado-skeleton-pulso {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.72; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .skeleton-pulso { animation: none; }
 }
 
 /* ───────── Dialog do operador: mesmo visual da tela "Atualizando base" ─────────
@@ -873,7 +567,6 @@ html[data-theme="light"] [data-upload-backdrop][data-page="reports-consolidado"]
 :root:not([data-theme="light"]):has([data-operador-neumorfico]) [data-slot="dialog-overlay"] {
   background: #212121;
   backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 
 /* Conteúdo do dialog neumórfico: os tokens do tema escuro foram pensados pro
@@ -916,20 +609,13 @@ html[data-theme="light"] [data-upload-backdrop][data-page="reports-consolidado"]
  * Os cards do trilho do Analítico (temas, quartis, segmentos, contratos,
  * face ID, perfilação) rolam por dentro (.scrollbar-tema). Mesmo visual da
  * lista de prioridades do /c (coordenador-consolidado.css): thumb branco a
- * 85% no escuro, --foreground a 70% no claro. scrollbar-color cobre Firefox
- * e Chrome 121+; ::-webkit-* cobre o resto.
+ * 85% no escuro, --foreground a 70% no claro.
  */
 [data-page="reports-consolidado"] .scrollbar-tema {
   scrollbar-color: color-mix(in oklab, #fff 85%, transparent) transparent;
 }
-[data-page="reports-consolidado"] .scrollbar-tema::-webkit-scrollbar-thumb {
-  background-color: color-mix(in oklab, #fff 85%, transparent);
-}
 [data-theme="light"] [data-page="reports-consolidado"] .scrollbar-tema {
   scrollbar-color: color-mix(in oklab, var(--foreground) 70%, transparent) transparent;
-}
-[data-theme="light"] [data-page="reports-consolidado"] .scrollbar-tema::-webkit-scrollbar-thumb {
-  background-color: color-mix(in oklab, var(--foreground) 70%, transparent);
 }
 
 /* ───────── Cabeçalho fixo ao rolar ("por tema" e "Divisor de Quartil") ─────────
@@ -967,6 +653,13 @@ html[data-theme="light"] [data-upload-backdrop][data-page="reports-consolidado"]
     15px 15px 30px #bebebe,
     -15px -15px 30px #ffffff;
 }
+/* Bolinha das etapas pendentes: o --elevation-1-bg do claro é branco puro e
+ * saltava sobre o card #e0e0e0. Espelha o escuro (bolinha um degrau mais
+ * escura que o card, borda discreta). !important: a cor vem inline. */
+[data-theme="light"] .reports-consolidado-upload-modal [data-etapa-status="pending"] {
+  background: #d2d2d2 !important;
+  border-color: rgb(0 0 0 / 0.1) !important;
+}
 
 [data-theme="light"] [data-operador-neumorfico] {
   /* Tokens recalibrados pro #e0e0e0 (mesmo motivo do escuro): borda e
@@ -985,7 +678,6 @@ html[data-theme="light"] [data-upload-backdrop][data-page="reports-consolidado"]
 [data-theme="light"]:has([data-operador-neumorfico]) [data-slot="dialog-overlay"] {
   background: #e0e0e0;
   backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 [data-theme="light"] [data-operador-neumorfico] [data-neu-tile] {
   border-radius: 18px;
@@ -1070,15 +762,7 @@ html:has([data-page="reports-consolidado"]),
 body:has([data-page="reports-consolidado"]) {
   scrollbar-color: color-mix(in oklab, #fff 85%, transparent) transparent;
 }
-html:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb,
-body:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb {
-  background-color: color-mix(in oklab, #fff 85%, transparent);
-}
 html[data-theme="light"]:has([data-page="reports-consolidado"]),
 html[data-theme="light"] body:has([data-page="reports-consolidado"]) {
   scrollbar-color: color-mix(in oklab, var(--foreground) 70%, transparent) transparent;
-}
-html[data-theme="light"]:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb,
-html[data-theme="light"] body:has([data-page="reports-consolidado"])::-webkit-scrollbar-thumb {
-  background-color: color-mix(in oklab, var(--foreground) 70%, transparent);
 }

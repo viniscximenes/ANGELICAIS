@@ -8,14 +8,6 @@ import { Segmentado } from "./segmentado";
 interface TabelaSegmentosProps {
   segmentos: SegmentoResult;
   meta: number; // Meta de 0 a 100
-  /**
-   * Quando true, ocupa 100% da altura do container pai (que precisa ter
-   * altura definida) e SÓ a tabela rola internamente — título e o toggle
-   * Marca/Unidade ficam fixos fora do scroll. Mesmo padrão de
-   * TabelaTemas/DistribuicaoQuartis, usado dentro do trilho horizontal de
-   * /s/reports/consolidado (retencao-horizontal-scroll.tsx).
-   */
-  scrollInterno?: boolean;
 }
 
 type Aba = "marca" | "unidade";
@@ -71,7 +63,7 @@ const TD_NUM_SUB = "py-2.5 px-4 text-center align-middle text-[13px] text-muted-
 const TD_TX = "py-3 px-4 text-center align-middle text-sm font-semibold";
 const TD_TX_SUB = "py-2.5 px-4 text-center align-middle text-[13px]";
 
-export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: TabelaSegmentosProps) {
+export function TabelaSegmentos({ segmentos, meta }: TabelaSegmentosProps) {
   const [aba, setAba] = useState<Aba>("marca");
   const [abertos, setAbertos] = useState<Record<string, boolean>>({});
   const metaFracao = meta / 100;
@@ -84,8 +76,8 @@ export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: Tabe
   const vazio = aba === "marca" ? segmentos.porMarca.length === 0 : segmentos.porEstado.length === 0;
 
   return (
-    <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
-      <div className={scrollInterno ? "shrink-0" : undefined}>
+    <div className="flex h-full flex-col space-y-3">
+      <div className="shrink-0">
         <h3 className="ds-h3 font-semibold text-foreground">Taxa por marca e regional</h3>
         <p className="ds-small text-muted-foreground mt-1">
           Veja em quais marcas e regiões a equipe retém mais. Em Regional, clique num estado
@@ -93,9 +85,9 @@ export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: Tabe
         </p>
       </div>
 
-      <div className={scrollInterno ? "flex max-h-full flex-col gap-4" : "space-y-4"}>
+      <div className="flex max-h-full flex-col gap-4">
         {/* Sem linha divisória abaixo do toggle (removida a pedido). */}
-        <div className={scrollInterno ? "shrink-0" : undefined}>
+        <div className="shrink-0">
           <Segmentado
             ariaLabel="Agrupamento do segmento"
             grupo="segmento-aba"
@@ -109,7 +101,7 @@ export function TabelaSegmentos({ segmentos, meta, scrollInterno = false }: Tabe
           />
         </div>
 
-        <div className={scrollInterno ? "min-h-0 flex-1 overflow-auto scrollbar-tema" : "overflow-x-auto"}>
+        <div className="min-h-0 flex-1 overflow-auto scrollbar-tema">
           {/* data-tabela-segmentos: cabeçalho, fundo dos subitens e bolinhas
               no mesmo visual da "Taxa de retenção por tema"
               (reports-consolidado.css). */}

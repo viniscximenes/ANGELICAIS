@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import { IconCopy, IconCheck, IconFilter, IconChevronDown, IconTrash, IconLoader2, IconSearch } from "@tabler/icons-react";
 import { fetchContratosFiltradosAction } from "@/lib/retencao/actions";
 import type { TemaData } from "@/lib/retencao/get-por-tema";
-import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
 import type { ContratoFiltradoItem } from "@/lib/retencao/get-contratos-filtrados";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
 import { toast } from "sonner";
@@ -14,14 +13,6 @@ import { Segmentado } from "./segmentado";
 interface CopiarContratosProps {
   emailsEquipe: string[];
   porTema: TemaData[];
-  operadoresIndividual?: OperadorIndividual[];
-  /**
-   * Quando true, ocupa 100% da altura do container pai (que precisa ter
-   * altura definida) e o card dimensiona pela altura real do conteúdo até
-   * o teto (max-h-full) — sem esticar nem estourar. Usado dentro do trilho
-   * horizontal de /s/reports/consolidado (retencao-horizontal-scroll.tsx).
-   */
-  scrollInterno?: boolean;
 }
 
 interface CustomSelectProps {
@@ -191,8 +182,6 @@ function CustomSelect({
 export function CopiarContratos({
   emailsEquipe,
   porTema,
-  operadoresIndividual,
-  scrollInterno = false,
 }: CopiarContratosProps) {
   const [selectedOperador, setSelectedOperador] = useState<string>("");
   const [status, setStatus] = useState<"todos" | "retido" | "cancelado">("todos");
@@ -208,32 +197,19 @@ export function CopiarContratos({
   // lista inteira sempre que a equipe toda estava com métricas zeradas
   // (ex: período sem atendimentos ainda), mesmo a equipe existindo — a
   // tabela Equipe do Consolidado não filtra assim, mostra todos com "0".
+  // Nome vem SEMPRE do e-mail do roster (mesma fonte da tabela Equipe).
   const operadoresOptions = useMemo(() => {
-    let list: { value: string; label: string }[] = [];
-
-    if (operadoresIndividual && operadoresIndividual.length > 0) {
-      list = operadoresIndividual.map((op) => {
-        const email = op.login;
-        // Nome vem SEMPRE do login (mesma fonte da tabela Equipe e de
-        // OperadoresLista) — op.nomeBanco é texto cru importado junto com
-        // os atendimentos, pode estar desatualizado/sujo (ex: "caio.silva"
-        // quando o login atual é "caio.vsilva"), ou até em branco.
-        const displayName = formatNomeDotSobrenome(email);
-        return { value: email, label: displayName };
-      });
-    } else {
-      list = emailsEquipe.map((email) => {
-        const displayName = formatNomeDotSobrenome(email);
-        return { value: email, label: displayName };
-      });
-    }
+    const list = emailsEquipe.map((email) => ({
+      value: email,
+      label: formatNomeDotSobrenome(email),
+    }));
 
     list.sort((a, b) => a.label.localeCompare(b.label));
 
     // Sempre "Todos da equipe" — com a opção selecionada marcada por ✓,
     // o rótulo "✕ Limpar seleção" deixou de ser necessário.
     return [{ value: "", label: "Todos da equipe" }, ...list];
-  }, [emailsEquipe, operadoresIndividual]);
+  }, [emailsEquipe]);
 
   const statusOptions: { valor: "todos" | "retido" | "cancelado"; rotulo: string }[] = [
     { valor: "todos", rotulo: "Todos" },
@@ -314,9 +290,9 @@ export function CopiarContratos({
   };
 
   return (
-    <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
+    <div className="flex h-full flex-col space-y-3">
       {/* ── Título e descrição fora do card ─────────────────────────── */}
-      <div className={scrollInterno ? "shrink-0" : undefined}>
+      <div className="shrink-0">
         <h3 className="ds-h3 font-semibold text-foreground">
           Copiar contratos do AIR
         </h3>
@@ -327,13 +303,13 @@ export function CopiarContratos({
       </div>
 
       {/*
-        scrollInterno: SEM flex-1/h-full — dimensiona pela altura real do
+        No trilho: SEM flex-1/h-full — dimensiona pela altura real do
         conteúdo (filtros + resultado, quando houver), só limitado por
         max-h-full (teto herdado do wrapper pai). Mesmo padrão já aplicado
         em tabela-temas.tsx/distribuicao-quartis.tsx.
       */}
       <div
-        className={scrollInterno ? "max-h-full overflow-y-auto scrollbar-tema space-y-5" : "space-y-5"}
+        className="max-h-full overflow-y-auto scrollbar-tema space-y-5"
       >
         {/* Filtros numa linha (quebra em telas estreitas), todos com 32px
             de altura e alinhados pela base: Operador / Motivo na extremidade

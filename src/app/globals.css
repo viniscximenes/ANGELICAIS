@@ -1,12 +1,39 @@
+/*
+ * globals.css — base global do sistema.
+ *
+ * Organização:
+ *   1. Tailwind + mapeamento dos tokens (@theme)
+ *   2. Tokens que as paletas NÃO definem (motion, sombras do claro, TMA)
+ *   3. Padrão visual (base: /s/reports/consolidado) — tokens e componentes
+ *      reutilizáveis, opt-in, pras páginas migrarem pra eles
+ *   4. Base (@layer base) e utilitários de tipografia/elevação (@layer components)
+ *   5. Regras globais de elemento (scrollbar, foco, seleção, formulários)
+ *   6. Legado do tema claro — overrides !important que as páginas antigas
+ *      ainda usam; sai conforme cada página migrar pro padrão
+ *   7. Transição de tema/paleta
+ *
+ * CORES: vêm SEMPRE da paleta ativa (src/app/palettes/, <html data-palette>,
+ * sempre presente). Não defina --background/--card/--primary/... aqui —
+ * :root[data-palette] vence este arquivo e o valor nunca chegaria à tela.
+ *
+ * Navegador da equipe: só Edge (Chromium). Sem ::-webkit-scrollbar (o Edge
+ * ignora quando scrollbar-color está definido) nem prefixos de Firefox.
+ */
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
+/* ═══════════════════════════════════════════════════════════════════
+   1. Mapeamento dos tokens pro Tailwind (bg-card, text-success, ...)
+   ═══════════════════════════════════════════════════════════════════ */
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: var(--font-sans);
+    --font-mono: var(--font-mono);
+
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,6 +66,17 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
+
+    --color-success: var(--success);
+    --color-success-bg: var(--success-bg);
+    --color-success-border: var(--success-border);
+    --color-warning: var(--warning);
+    --color-warning-bg: var(--warning-bg);
+    --color-warning-border: var(--warning-border);
+    --color-danger: var(--danger);
+    --color-danger-bg: var(--danger-bg);
+    --color-danger-border: var(--danger-border);
+
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -47,10 +85,7 @@
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
 
-    /* === Font mono === */
-    --font-mono: var(--font-mono);
-
-    /* === Typography scale === */
+    /* Escala tipográfica (usada pelas classes ds-*) */
     --text-display: 3rem;
     --text-h1: 1.875rem;
     --text-h2: 1.25rem;
@@ -70,80 +105,21 @@
 
     --tracking-tight: -0.02em;
     --tracking-normal: 0;
-
-    /* === Semantic colors (aliases) === */
-    --color-success: var(--success);
-    --color-success-bg: var(--success-bg);
-    --color-success-border: var(--success-border);
-    --color-warning: var(--warning);
-    --color-warning-bg: var(--warning-bg);
-    --color-warning-border: var(--warning-border);
-    --color-danger: var(--danger);
-    --color-danger-bg: var(--danger-bg);
-    --color-danger-border: var(--danger-border);
-
-    /* === Elevation (aliases) === */
-    --elevation-1-bg: var(--elevation-1-bg);
-    --elevation-1-border: var(--elevation-1-border);
-    --elevation-2-bg: var(--elevation-2-bg);
-    --elevation-2-border: var(--elevation-2-border);
-    --elevation-3-bg: var(--elevation-3-bg);
-    --elevation-3-border: var(--elevation-3-border);
-    --glow-accent: var(--glow-accent);
-    --glow-accent-strong: var(--glow-accent-strong);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   2. Tokens que as paletas não definem
+   ═══════════════════════════════════════════════════════════════════ */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.148 0.004 228.8);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.148 0.004 228.8);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.148 0.004 228.8);
-    --primary: oklch(0.398 0.195 240.0);
-    --primary-foreground: oklch(0.99 0 0);
-    --secondary: oklch(0.967 0.001 286.375);
-    --secondary-foreground: oklch(0.21 0.006 285.885);
-    --muted: oklch(0.963 0.002 197.1);
-    --muted-foreground: oklch(0.56 0.021 213.5);
-    --accent: oklch(0.963 0.002 197.1);
-    --accent-foreground: oklch(0.218 0.008 223.9);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.925 0.005 214.3);
-    --input: oklch(0.925 0.005 214.3);
-    --ring: oklch(0.723 0.014 214.4);
-    --chart-1: oklch(0.872 0.007 219.6);
-    --chart-2: oklch(0.56 0.021 213.5);
-    --chart-3: oklch(0.45 0.017 213.2);
-    --chart-4: oklch(0.378 0.015 216);
-    --chart-5: oklch(0.275 0.011 216.9);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.987 0.002 197.1);
-    --sidebar-foreground: oklch(0.148 0.004 228.8);
-    --sidebar-primary: oklch(0.511 0.262 276.966);
-    --sidebar-primary-foreground: oklch(0.962 0.018 272.314);
-    --sidebar-accent: oklch(0.963 0.002 197.1);
-    --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
-    --sidebar-border: oklch(0.925 0.005 214.3);
-    --sidebar-ring: oklch(0.723 0.014 214.4);
+    /* Motion — padrão de toda transição (ver @layer base) */
+    --ease-out-soft: cubic-bezier(0.4, 0, 0.2, 1);
+    --motion-base: 300ms;
 
-    /* === Semantic colors === */
-    --success: oklch(0.72 0.17 152);
-    --success-bg: oklch(0.72 0.17 152 / 0.12);
-    --success-border: oklch(0.72 0.17 152 / 0.3);
+    /* Textura de grão sobre a página (body::before) */
+    --grain-opacity: 0.03;
 
-    --warning: oklch(0.8 0.15 85);
-    --warning-bg: oklch(0.8 0.15 85 / 0.12);
-    --warning-border: oklch(0.8 0.15 85 / 0.3);
-
-    --danger: oklch(0.65 0.22 25);
-    --danger-bg: oklch(0.65 0.22 25 / 0.12);
-    --danger-border: oklch(0.65 0.22 25 / 0.3);
-
-    /* === TMA — paleta fixa por skill de retenção (donut do modal de
-       detalhamento) === Mapeamento skill → cor é global e igual pra
-       qualquer gestor (não gerado dinamicamente); hues escolhidos pra
-       diferenciação rápida entre as 7 colunas de "queda por skill". */
+    /* TMA — cor fixa por skill de retenção (donut do modal de
+       detalhamento), igual pra qualquer gestor. */
     --tma-outros: oklch(0.65 0.03 240);
     --tma-criticos: oklch(0.65 0.22 25);
     --tma-mud-endereco: oklch(0.8 0.15 85);
@@ -151,109 +127,16 @@
     --tma-qualidade: oklch(0.65 0.18 250);
     --tma-concorrencia: oklch(0.65 0.2 300);
     --tma-hotline-churn: oklch(0.7 0.2 340);
-
-    /* === Elevation === */
-    --elevation-1-bg: oklch(0.218 0.008 223.9);
-    --elevation-1-border: oklch(1 0 0 / 0.06);
-
-    --elevation-2-bg: oklch(0.255 0.009 223);
-    --elevation-2-border: oklch(1 0 0 / 0.1);
-
-    --elevation-3-bg: oklch(0.29 0.01 223);
-    --elevation-3-border: oklch(1 0 0 / 0.14);
-
-    --glow-accent: oklch(0.398 0.195 277.366 / 0.15);
-    --glow-accent-strong: oklch(0.398 0.195 277.366 / 0.3);
-
-    /* === Motion === */
-    --ease-out-soft: cubic-bezier(0.4, 0, 0.2, 1);
-    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-in-out-smooth: cubic-bezier(0.65, 0, 0.35, 1);
-
-    --motion-fast: 200ms;
-    --motion-base: 300ms;
-    --motion-slow: 500ms;
-
-    /* === Special effects === */
-    --grain-opacity: 0.03;
-
-    /* Borda horizontal entre linhas de tabelas densas */
-    --row-border: color-mix(in oklch, var(--border) 50%, transparent);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   Tema claro — overrides
-   ═══════════════════════════════════════════════════════════════════ */
-
 [data-theme="light"] {
-    /* ─── Backgrounds com profundidade ─── */
+    /* Sombras do claro (no escuro não existem: shadow-[var(--shadow-sm)]
+       fica sem sombra, de propósito). */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.09), 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 14px 28px rgba(0, 0, 0, 0.10), 0 4px 10px rgba(0, 0, 0, 0.05);
 
-    /* Fundo principal: off-white perceptível (não branco puro), serve de
-       base sob os cards/tabelas brancos — cria hierarquia visual real. */
-    --background: oklch(0.975 0.003 240);
-
-    /* Cards e áreas de destaque: branco puro — contraste sutil com o fundo
-       + --shadow-sm (abaixo) pra profundidade de verdade. */
-    --card: oklch(1.00 0.00 0);
-    --card-foreground: oklch(0.20 0.008 240); /* #18181b */
-    --popover: oklch(1.00 0.00 0);
-    --popover-foreground: oklch(0.20 0.008 240);
-
-    /* Muted: cinza suave para cabeçalhos da planilha e submenus */
-    --muted: oklch(0.96 0.002 240); /* #f4f4f5 */
-    /* Texto secundário — mais escuro que o padrão shadcn pra ficar legível
-       em fundo claro (labels tipo "RETIDOS", "CANCELADOS"). */
-    --muted-foreground: oklch(0.47 0.014 244); /* ~#5c5f66 */
-
-    /* Bordas visíveis o bastante pra separar sidebar / header / tabela /
-       painel de upload, sem ficarem grossas. */
-    --border: oklch(0.87 0.004 240); /* ~#d9d9dd */
-    --input: oklch(0.87 0.004 240);
-
-    /* Painel lateral: tom mais acinzentado que --background, pra a sidebar
-       se distinguir claramente da área de conteúdo (usado só em light —
-       sidebar.tsx mantém dark:bg-zinc-950 hardcoded e intocado). */
-    --sidebar: oklch(0.945 0.004 240);
-
-    /* Zona de drop do upload: leve cinza "clicável" dentro da borda
-       tracejada, só em repouso (drag-active continua com o tint de
-       --primary). Referenciado com fallback var(--upload-idle-bg,
-       var(--card)) no componente — em dark, onde este token não existe,
-       cai automaticamente de volta em --card, sem mudar nada lá. */
-    --upload-idle-bg: var(--muted);
-
-    /* ─── Texto ─── */
-
-    /* Grafite escuro quase preto pra máxima legibilidade */
-    --foreground: oklch(0.20 0.008 240); /* #18181b */
-
-    /* ─── Primário: azul petróleo bem escuro e dessaturado ───
-       Passo intermediário entre o grafite neutro (chroma quase zero, ficou
-       "seco") e o azul vibrante original (chroma 0.21, "gritava"). Em
-       chroma 0.055 lê como um azul-marinho fechado — dá um toque de cor
-       perceptível de perto, mas ainda lê como "quase preto" à distância. */
-    --primary: oklch(0.24 0.055 240.0);
-    --primary-foreground: oklch(0.98 0.00 0);
-
-    /* ─── Destructive: vermelho mais escuro/dessaturado ─── */
-    --destructive: oklch(0.46 0.13 25.0);
-    --destructive-foreground: oklch(1.00 0.00 0);
-
-    /* ─── Status ─── */
-    --success: oklch(0.55 0.13 145);
-    --success-bg: oklch(0.94 0.03 145);
-    --success-border: oklch(0.85 0.05 145);
-
-    --warning: oklch(0.65 0.11 80);
-    --warning-bg: oklch(0.96 0.03 80);
-    --warning-border: oklch(0.88 0.05 80);
-
-    --danger: oklch(0.52 0.16 25);
-    --danger-bg: oklch(0.95 0.02 25);
-    --danger-border: oklch(0.86 0.04 25);
-
-    /* ─── TMA — mesma paleta fixa, tons mais escuros/saturados pro
-       contraste sobre fundo branco ─── */
+    /* TMA — mesmas cores, mais escuras pro contraste sobre fundo claro */
     --tma-outros: oklch(0.5 0.03 240);
     --tma-criticos: oklch(0.52 0.16 25);
     --tma-mud-endereco: oklch(0.65 0.11 80);
@@ -261,206 +144,131 @@
     --tma-qualidade: oklch(0.5 0.15 250);
     --tma-concorrencia: oklch(0.5 0.17 300);
     --tma-hotline-churn: oklch(0.55 0.17 340);
-
-    /* ─── Elevation ─── */
-    --elevation-1-bg: oklch(1.00 0.00 0);
-    --elevation-1-border: oklch(0.90 0.003 240);
-
-    --elevation-2-bg: oklch(1.00 0.00 0);
-    --elevation-2-border: oklch(0.88 0.003 240);
-
-    --elevation-3-bg: oklch(1.00 0.00 0);
-    --elevation-3-border: oklch(0.85 0.003 240);
-
-    /* ─── Sombras — profundidade real de card/tabela sobre --background ─── */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.09), 0 2px 4px rgba(0, 0, 0, 0.05);
-    --shadow-lg: 0 14px 28px rgba(0, 0, 0, 0.10), 0 4px 10px rgba(0, 0, 0, 0.05);
-
-    /* ─── Glow — único ponto onde sobra um azul "petróleo" discreto ─── */
-    --glow-accent: oklch(0.40 0.09 240.0 / 0.06);
-    --glow-accent-strong: oklch(0.40 0.09 240.0 / 0.12);
-
-    /* ─── Hover states ─── */
-    --card-hover-bg: oklch(0.97 0.002 240);
-    --muted-hover-bg: oklch(0.93 0.002 240);
-    --border-hover: oklch(0.82 0.004 240);
-
-    /* Linha guia */
-    --row-border: oklch(0.90 0.003 240);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Melhorias visuais adicionais para o Light Mode (sobrescritas CSS)
+   3. Padrão visual — base: /s/reports/consolidado
+   Peças do Consolidado que valem pra qualquer página. Tudo opt-in
+   (token ou classe própria): nada aqui muda uma página que não use.
+   Ao migrar uma página, prefira estas peças a recriar no CSS dela.
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Sombra sutil em cards e popovers em Light Mode para criar profundidade */
-[data-theme="light"] [data-slot="card"] {
-    box-shadow: var(--shadow-sm) !important;
+/* Cabeçalho e linha de total das tabelas — fundo, cor do texto e
+   espessura da linha divisória, por tema. Escuro: --muted a 40% + texto
+   --foreground + linha de 1px. Claro: --muted cheio + texto
+   --muted-foreground + linha de 2px. */
+:root {
+    --th-bg: color-mix(in oklab, var(--muted) 40%, transparent);
+    --th-fg: var(--foreground);
+    --th-borda: 1px;
+}
+[data-theme="light"] {
+    --th-bg: var(--muted);
+    --th-fg: var(--muted-foreground);
+    --th-borda: 2px;
 }
 
-/* Correção da borda do Dropzone no hover (sobrepõe estilos inline do react-dropzone) */
-[data-theme="light"] .border-dashed:hover {
-    border-color: var(--primary) !important;
+/* Pulso discreto dos esqueletos de carregamento — no lugar do
+   animate-pulse do Tailwind (100% → 50%, perceptível demais): oscila só
+   entre 100% e 72%, num ciclo mais lento. */
+.skeleton-pulso {
+    animation: skeleton-pulso 2.4s ease-in-out infinite;
+}
+@keyframes skeleton-pulso {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.72; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .skeleton-pulso { animation: none; }
 }
 
-/* Melhor destaque visual de hover e active de botões primários e destrutivos.
-   Primary é um azul petróleo bem escuro — hover/active escurecem ainda mais
-   (como um botão sólido convencional), mantendo o mesmo matiz. */
-[data-theme="light"] .bg-primary:hover {
-    background-color: oklch(0.19 0.05 240.0) !important;
-    opacity: 1 !important;
-}
-[data-theme="light"] .bg-primary:active {
-    background-color: oklch(0.15 0.045 240.0) !important;
-}
-[data-theme="light"] .bg-destructive:hover {
-    background-color: oklch(0.40 0.12 25.0) !important;
-    opacity: 1 !important;
-}
-[data-theme="light"] .bg-destructive:active {
-    background-color: oklch(0.35 0.11 25.0) !important;
-}
-
-/* Hover em botões secundários / inativos com borda */
-[data-theme="light"] button.border-border:hover:not(.bg-primary) {
-    background-color: var(--muted) !important;
-    color: var(--foreground) !important;
-}
-
-/* Destaque sutil para o item ativo ("Reports") na Sidebar. Usa --foreground
-   (não --primary, que agora é quase preto e ficaria indistinguível do texto
-   normal) — fundo cinza claro + peso semibold marcam o item ativo sem
-   depender de cor de destaque. */
-[data-theme="light"] nav a.sidebar-main-link[aria-current="page"] {
-    background-color: color-mix(in oklch, var(--foreground) 8%, transparent) !important;
-    color: var(--foreground) !important;
+/* Botão "Limpar Base" (LimparBaseExpandButton) — animação do Uiverse.io
+ * (by vinodjangid07), na altura dos controles (32px):
+ * - repouso: quadrado com a lixeira, mesmo visual dos botões vizinhos
+ *   (cantos de 6px, fundo transparente, ícone --muted-foreground);
+ * - hover/foco: alarga numa pílula (32 → 120px) — branca no escuro, preta
+ *   no claro —, a lixeira cresce e desce pra fora de vista e o texto
+ *   "Limpar Base" cai de cima pro centro;
+ * - limpando ([data-pending]): fica aberto com "Limpando...". */
+.limpar-base-expand {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    overflow: hidden;
+    border-radius: 0.375rem;
+    border: 1px solid var(--border);
+    background-color: transparent;
+    color: var(--muted-foreground);
+    font-family: var(--font-sans);
     font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+    transition-property: width, background-color, border-color, color;
+    transition-duration: 0.3s;
+}
+.limpar-base-expand:focus-visible {
+    /* Anel próprio (box-shadow) no lugar do outline global de foco. */
+    outline: none;
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+}
+.limpar-base-expand:is(:hover, :focus-visible, [data-pending]) {
+    width: 120px;
+    border-color: #fff;
+    background-color: #fff;
+    color: #0a0a0a;
+}
+[data-theme="light"] .limpar-base-expand:is(:hover, :focus-visible, [data-pending]) {
+    border-color: #0a0a0a;
+    background-color: #0a0a0a;
+    color: #fff;
+}
+.limpar-base-expand[data-pending] {
+    cursor: default;
+}
+.limpar-base-expand__icone {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    transition-duration: 0.3s;
+}
+.limpar-base-expand:is(:hover, :focus-visible, [data-pending]) .limpar-base-expand__icone {
+    transform: translateY(150%) scale(2.6);
+}
+.limpar-base-expand__texto {
+    position: absolute;
+    top: -20px;
+    z-index: 1;
+    white-space: nowrap;
+    font-size: 2px;
+    line-height: 16px;
+    color: currentColor;
+    transition-duration: 0.3s;
+}
+.limpar-base-expand:is(:hover, :focus-visible, [data-pending]) .limpar-base-expand__texto {
+    font-size: 13px;
+    transform: translateY(27px);
 }
 
-/* Customização e hierarquia das Tabelas do Painel do Gestor (Equipe, Tempo Logado & Indisponibilidade, Pausas Detalhadas) */
-[data-theme="light"] [data-equipe-table] > div:first-child,
-[data-theme="light"] [data-tempo-indisp-table] > div:first-child,
-[data-theme="light"] [data-aderencia-tabela] > div:first-child {
-    background-color: var(--muted) !important;
-    border-bottom: 2px solid var(--border) !important;
-    color: var(--foreground) !important;
-}
-/* Pausas Detalhadas: cabeçalho com fundo/borda igual às outras, mas SEM
-   forçar var(--foreground) na cor do texto — esta tabela usa cinza mais
-   claro que as demais (ver .pausas-tabela-header-cor abaixo), de propósito. */
-[data-theme="light"] [data-pausas-tabela] > div:first-child {
-    background-color: var(--muted) !important;
-    border-bottom: 2px solid var(--border) !important;
-}
-/* Sem [data-pausas-tabela] aqui de propósito: essa tabela não tem hover
-   (é só de consulta) — incluir o seletor adicionaria um hover que não foi
-   pedido. */
-[data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover,
-[data-theme="light"] [data-tempo-indisp-table] > div:not(:first-child):not(.font-bold):hover {
-    background-color: var(--muted-hover-bg) !important;
-}
-
-/* Hover apenas em LINKS com elevation (cards clicáveis).
-   Transition aplicada só nos <a> — não afeta os centenas de divs estáticos. */
-[data-theme="light"] a.elevation-1,
-[data-theme="light"] a.elevation-2 {
-    transition:
-        background-color 0.15s ease,
-        border-color 0.15s ease;
-}
-
-[data-theme="light"] a.elevation-1:hover,
-[data-theme="light"] a.elevation-2:hover {
-    background: var(--card-hover-bg);
-    border-color: var(--border-hover);
-}
-
-/* Sombras neutras — visíveis sobre fundo claro */
-[data-theme="light"] .elevation-1 {
-    box-shadow: var(--shadow-sm);
-}
-
-[data-theme="light"] .elevation-2 {
-    box-shadow: var(--shadow-md);
-}
-
-[data-theme="light"] .elevation-3 {
-    box-shadow: var(--shadow-lg);
-}
-
-.dark {
-    --background: oklch(0.148 0.004 228.8);
-    --foreground: oklch(0.987 0.002 197.1);
-    --card: oklch(0.218 0.008 223.9);
-    --card-foreground: oklch(0.987 0.002 197.1);
-    --popover: oklch(0.218 0.008 223.9);
-    --popover-foreground: oklch(0.987 0.002 197.1);
-    --primary: oklch(0.398 0.195 240.0);
-    --primary-foreground: oklch(0.99 0 0);
-    --secondary: oklch(0.274 0.006 286.033);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.275 0.011 216.9);
-    --muted-foreground: oklch(0.723 0.014 214.4);
-    --accent: oklch(0.275 0.011 216.9);
-    --accent-foreground: oklch(0.987 0.002 197.1);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.56 0.021 213.5);
-    --chart-1: oklch(0.872 0.007 219.6);
-    --chart-2: oklch(0.56 0.021 213.5);
-    --chart-3: oklch(0.45 0.017 213.2);
-    --chart-4: oklch(0.378 0.015 216);
-    --chart-5: oklch(0.275 0.011 216.9);
-    --sidebar: oklch(0.218 0.008 223.9);
-    --sidebar-foreground: oklch(0.987 0.002 197.1);
-    --sidebar-primary: oklch(0.585 0.233 277.117);
-    --sidebar-primary-foreground: oklch(0.962 0.018 272.314);
-    --sidebar-accent: oklch(0.275 0.011 216.9);
-    --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.56 0.021 213.5);
-
-    /* === Semantic colors === */
-    --success: oklch(0.72 0.17 152);
-    --success-bg: oklch(0.72 0.17 152 / 0.12);
-    --success-border: oklch(0.72 0.17 152 / 0.3);
-
-    --warning: oklch(0.8 0.15 85);
-    --warning-bg: oklch(0.8 0.15 85 / 0.12);
-    --warning-border: oklch(0.8 0.15 85 / 0.3);
-
-    --danger: oklch(0.65 0.22 25);
-    --danger-bg: oklch(0.65 0.22 25 / 0.12);
-    --danger-border: oklch(0.65 0.22 25 / 0.3);
-
-    /* === Elevation === */
-    --elevation-1-bg: oklch(0.218 0.008 223.9);
-    --elevation-1-border: oklch(1 0 0 / 0.06);
-
-    --elevation-2-bg: oklch(0.255 0.009 223);
-    --elevation-2-border: oklch(1 0 0 / 0.1);
-
-    --elevation-3-bg: oklch(0.29 0.01 223);
-    --elevation-3-border: oklch(1 0 0 / 0.14);
-
-    --glow-accent: oklch(0.398 0.195 240.0 / 0.15);
-    --glow-accent-strong: oklch(0.50 0.18 145.0 / 0.25);
-}
-
+/* ═══════════════════════════════════════════════════════════════════
+   4. Base e utilitários
+   ═══════════════════════════════════════════════════════════════════ */
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
     @apply bg-background text-foreground;
-    }
+  }
   html {
     @apply font-sans;
-    }
+  }
 
-  /* === Grain texture === */
+  /* Textura de grão */
   body::before {
     content: "";
     position: fixed;
@@ -471,7 +279,7 @@
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
   }
 
-  /* === Default transitions === */
+  /* Curva/duração padrão de toda transição */
   *, *::before, *::after {
     transition-timing-function: var(--ease-out-soft);
     transition-duration: var(--motion-base);
@@ -479,7 +287,7 @@
 }
 
 @layer components {
-  /* === Typography utilities === */
+  /* Tipografia */
   .ds-display {
     font-family: var(--font-mono);
     font-size: var(--text-display);
@@ -487,7 +295,6 @@
     line-height: var(--leading-tight);
     letter-spacing: var(--tracking-tight);
   }
-
   .ds-h1 {
     font-family: var(--font-sans);
     font-size: var(--text-h1);
@@ -495,155 +302,89 @@
     line-height: var(--leading-tight);
     letter-spacing: var(--tracking-tight);
   }
-
   .ds-h2 {
     font-family: var(--font-sans);
     font-size: var(--text-h2);
     font-weight: var(--font-weight-semibold);
     line-height: var(--leading-snug);
   }
-
   .ds-h3 {
     font-family: var(--font-sans);
     font-size: var(--text-h3);
     font-weight: var(--font-weight-medium);
     line-height: var(--leading-snug);
   }
-
   .ds-body {
     font-family: var(--font-sans);
     font-size: var(--text-body);
     font-weight: var(--font-weight-regular);
     line-height: var(--leading-normal);
   }
-
   .ds-small {
     font-family: var(--font-sans);
     font-size: var(--text-small);
     font-weight: var(--font-weight-regular);
     line-height: var(--leading-normal);
   }
-
   .ds-mono {
     font-family: var(--font-mono);
     font-size: var(--text-mono);
     font-weight: var(--font-weight-regular);
   }
-
   .ds-mono-sm {
     font-family: var(--font-mono);
     font-size: var(--text-mono-sm);
     font-weight: var(--font-weight-regular);
   }
 
-  /* === Elevation utilities === */
+  /* Elevação */
   .elevation-1 {
     background: var(--elevation-1-bg);
     border: 1px solid var(--elevation-1-border);
   }
-
   .elevation-2 {
     background: var(--elevation-2-bg);
     border: 1px solid var(--elevation-2-border);
   }
-
   .elevation-3 {
     background: var(--elevation-3-bg);
     border: 1px solid var(--elevation-3-border);
     box-shadow: 0 0 60px var(--glow-accent);
   }
 
-  /* === Status utilities === */
+  /* Status */
   .status-danger {
     color: var(--danger);
     background: var(--danger-bg);
     border: 1px solid var(--danger-border);
   }
+  .ds-text-danger { color: var(--danger); }
 
-  .ds-text-danger  { color: var(--danger); }
-
-  /* === Scrollbar discreta no tema (claro/escuro via vars) === */
+  /* Barra de rolagem discreta em containers com overflow interno */
   .scrollbar-tema {
-    scrollbar-width: thin; /* Firefox */
-    scrollbar-color: var(--border) transparent; /* thumb track */
-  }
-
-  .scrollbar-tema::-webkit-scrollbar {
-    height: 6px;
-    width: 6px;
-  }
-
-  .scrollbar-tema::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 9999px;
-  }
-
-  .scrollbar-tema::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 9999px;
-  }
-
-  .scrollbar-tema::-webkit-scrollbar-thumb:hover {
-    background: var(--muted-foreground);
-  }
-
-  /* Ícone do date picker em cinza, padronizado com texto */
-  input[type="date"].date-input-styled::-webkit-calendar-picker-indicator {
-    filter: invert(0.55);
-    cursor: pointer;
-  }
-
-  input[type="date"].date-input-styled::-webkit-calendar-picker-indicator:hover {
-    filter: invert(0.75);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Scrollbar da PÁGINA (html/body) — discreta, segue o tema.
-   Global: antes era um bloco <style> duplicado em ~6 páginas
-   (reports/consolidado, kpi/*, bases/kpi, operacao/analise-operadores...).
-   Agora vale pra todas as rotas. Para containers com overflow interno,
-   use a classe utilitária `.scrollbar-tema`.
+   5. Regras globais de elemento
    ═══════════════════════════════════════════════════════════════════ */
 
+/* Barra de rolagem da PÁGINA — fina, segue o tema. Containers internos:
+   classe .scrollbar-tema. */
 html,
 body {
-  scrollbar-width: thin; /* Firefox */
+  scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
 
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-html::-webkit-scrollbar-track,
-body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-html::-webkit-scrollbar-thumb,
-body::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-}
-
-html::-webkit-scrollbar-thumb:hover,
-body::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground);
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   Focus rings de acessibilidade (Tab navigation)
-   ═══════════════════════════════════════════════════════════════════ */
-
+/* Anel de foco (navegação por Tab) */
 :focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
   border-radius: 4px;
 }
-
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -652,100 +393,122 @@ textarea:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
-
 button:focus:not(:focus-visible),
 a:focus:not(:focus-visible) {
   outline: none;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   Selection color — usa a cor da marca
-   ═══════════════════════════════════════════════════════════════════ */
-
+/* Seleção de texto na cor da marca */
 ::selection {
   background: color-mix(in oklch, var(--primary) 25%, transparent);
   color: var(--foreground);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   Transição sutil e contínua de troca de tema
-   ═══════════════════════════════════════════════════════════════════ */
-
+/* Transição sutil de cor ao trocar de tema */
 html, body, div, header, aside, section, table, thead, tbody, tr, th, td {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease, box-shadow 0.2s ease;
 }
 
-/* Estilização de Date Picker Nativo (Garante harmonia nos popovers de calendário) */
-input[type="date"] {
-  color-scheme: dark;
-}
-
-[data-theme="light"] input[type="date"] {
-  color-scheme: light;
-}
-
-/* Oculta o ícone nativo do navegador para usarmos o nosso ícone customizado com suporte a clique total */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-/* Oculta as setas padrões do input numérico (evita setas brancas desalinhadas) */
+/* Input numérico sem as setas nativas (ficavam brancas e desalinhadas) */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-input[type="number"] {
-  -moz-appearance: textfield; /* Firefox */
-}
-
-/* Garante que o menu suspenso (select / option) herde as cores escuras do tema */
+/* <select> nativo com o menu nas cores do tema */
 select {
   color-scheme: dark;
 }
-
 [data-theme="light"] select {
   color-scheme: light;
 }
-
 select option {
   background-color: var(--card);
   color: var(--foreground);
 }
 
-/* === Transição de tema / paleta ===
-   A troca é feita via View Transitions API (theme-provider.tsx): o navegador
-   anima do snapshot antigo pro estado novo. Enquanto isso, desliga as
-   transições CSS do conteúdo — sem isso, a regra global
-   "*, *::before, *::after { transition-duration: ... }" faz cada elemento
-   animar a própria cor com timing diferente por baixo da máscara. Fora de
-   @layer de propósito: precisa vencer a regra base.
-   Só transition: desligar `animation` aqui fazia as animações de entrada
-   (ex.: o popover do card de tema) reiniciarem quando a classe saía. */
+/* ═══════════════════════════════════════════════════════════════════
+   6. Legado do tema claro
+   Overrides !important que páginas antigas ainda usam. O Consolidado
+   anula vários deles no próprio CSS. Ao migrar uma página pro padrão
+   (seção 3), confira se ela ainda depende de algum; quando nenhuma
+   depender, apague aqui.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Sombra sutil nos cards (ui/card.tsx) */
+[data-theme="light"] [data-slot="card"] {
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* Borda do dropzone no hover (vence o estilo inline do react-dropzone) */
+[data-theme="light"] .border-dashed:hover {
+    border-color: var(--primary) !important;
+}
+
+/* Botões sólidos: hover sem esmaecer (a cor de hover/active vem da paleta,
+   src/app/palettes/*) */
+[data-theme="light"] :is(.bg-primary, .bg-destructive):hover {
+    opacity: 1 !important;
+}
+
+/* Hover em botões secundários com borda */
+[data-theme="light"] button.border-border:hover:not(.bg-primary) {
+    background-color: var(--muted) !important;
+    color: var(--foreground) !important;
+}
+
+/* Cabeçalho das tabelas em grid (Equipe, Tempo Logado & Indisponibilidade,
+   Aderência, Pausas Detalhadas) */
+[data-theme="light"] [data-equipe-table] > div:first-child,
+[data-theme="light"] [data-tempo-indisp-table] > div:first-child,
+[data-theme="light"] [data-aderencia-tabela] > div:first-child {
+    background-color: var(--muted) !important;
+    border-bottom: 2px solid var(--border) !important;
+    color: var(--foreground) !important;
+}
+/* Pausas Detalhadas: mesmo fundo/borda, sem forçar a cor do texto */
+[data-theme="light"] [data-pausas-tabela] > div:first-child {
+    background-color: var(--muted) !important;
+    border-bottom: 2px solid var(--border) !important;
+}
+[data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover,
+[data-theme="light"] [data-tempo-indisp-table] > div:not(:first-child):not(.font-bold):hover {
+    background-color: var(--muted-hover-bg) !important;
+}
+
+/* Sombras neutras das superfícies elevadas */
+[data-theme="light"] .elevation-1 {
+    box-shadow: var(--shadow-sm);
+}
+[data-theme="light"] .elevation-2 {
+    box-shadow: var(--shadow-md);
+}
+[data-theme="light"] .elevation-3 {
+    box-shadow: var(--shadow-lg);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   7. Transição de tema / paleta
+   A troca usa a View Transitions API (theme-provider.tsx). Enquanto isso,
+   desliga as transições CSS do conteúdo — senão cada elemento anima a
+   própria cor por baixo da máscara. Fora de @layer: precisa vencer a regra
+   base. Só transition: desligar animation reiniciava animações de entrada.
+   ═══════════════════════════════════════════════════════════════════ */
 .theme-transitioning *,
 .theme-transitioning *::before,
 .theme-transitioning *::after {
   transition: none !important;
 }
 
-/* As animações do snapshot são feitas em JS (element.animate) — desliga o
-   crossfade padrão do navegador pra não somar com elas. Na revelação em
-   círculo, o snapshot antigo fica parado embaixo e o novo cresce por cima. */
+/* Animações do snapshot feitas em JS (element.animate) — sem o crossfade
+   padrão do navegador. Na revelação em círculo, o snapshot antigo fica
+   parado embaixo e o novo cresce por cima. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
 }
-
 :root[data-theme-transition="reveal"]::view-transition-old(root) {
   z-index: 1;
 }

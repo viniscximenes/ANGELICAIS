@@ -180,7 +180,7 @@ export function ConsolidadoSkeleton({ linhas = TABLE_ROWS_PADRAO }: { linhas?: n
         >
           <div className="space-y-10">
             {/* ── Bloco Equipe (título + subtítulo + botões + tabela/anexo) ──
-                Pulso discreto (skeleton-pulso, reports-consolidado.css),
+                Pulso discreto (skeleton-pulso, globals.css),
                 igual ao do esqueleto do Analítico (abaixo). */}
             <div className="space-y-4 skeleton-pulso">
               <div>

@@ -374,8 +374,6 @@ export function TempoIndispSection({
             <ClearBaseButton
               action={clearTempoLogadoAction}
               onCleared={handleBaseCleared}
-              variant="icon-danger"
-              holdToConfirm
               toastClassName="reports-tempo-indisp-toast"
               showSuccessToast={false}
             />

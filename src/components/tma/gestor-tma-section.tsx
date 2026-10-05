@@ -198,8 +198,6 @@ export function GestorTmaSection({
           <ClearBaseButton
             action={clearTmaAction}
             onCleared={handleBaseCleared}
-            variant="icon-danger"
-            holdToConfirm
             toastClassName="reports-tma-peso-toast"
             showSuccessToast={false}
           />

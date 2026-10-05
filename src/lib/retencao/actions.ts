@@ -13,7 +13,6 @@ import {
   type QuartilOperador,
 } from "./get-quartil-operador";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
-import { getMatrizVolumeTaxa, type MatrizResult } from "./get-matriz-volume-taxa";
 import { getMetaTxRetencao } from "./meta";
 import {
   getContratosFiltrados,
@@ -26,8 +25,6 @@ import {
 } from "./get-por-operador-individual";
 import { getImpactoFaceId, type ImpactoFaceIdData } from "./get-impacto-faceid";
 import { getEfetividadeArgumento, type ArgumentoItem } from "./get-efetividade-argumento";
-import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
-import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 
 type DashboardRetencaoResult = {
   success: boolean;
@@ -38,18 +35,11 @@ type DashboardRetencaoResult = {
     porSegmento: SegmentoResult;
     quartilOperadores: OperadorQuartilItem[];
     quartilPolo: OperadorQuartilItem[];
-    matriz: MatrizResult;
-    /** Análise individual por operador (lista + detalhe do popup). */
-    operadoresIndividual: OperadorIndividual[];
-    /** Quartil de cada operador (equipe e empresa), indexado por prefixo do email. */
-    quartilPorOperador: Record<string, QuartilOperador>;
     /** Card "Impacto do Face ID no Resultado" — visibilidade do fenômeno já excluído do cálculo. */
     impactoFaceId: ImpactoFaceIdData;
     /** Card "Efetividade por Tipo de Argumento" — volume de retidos por técnica. */
     efetividadeArgumento: ArgumentoItem[];
-    /** Config de apelidos do gestor, para resolver o nome exibido. */
-    nomeFantasia: NomeFantasiaSerial;
-    meta: number; // Meta de 0 a 100
+    /** Roster da equipe — lista de operadores do "Copiar contratos do AIR". */
     emailsEquipe: string[];
   };
   error?: string;
@@ -74,9 +64,8 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
   try {
     const emailsEquipe = await getEmailsEquipe(user.profile.id);
 
-    // Carrega a meta customizada do gestor logado
-    const meta = await getMetaTxRetencao(user.profile.id);
-
+    // Só o que a tela usa. A meta vem do servidor da página (mesma da
+    // EquipeTable) e o nome fantasia não é exibido no Analítico.
     const [
       visaoGeral,
       porTema,
@@ -84,11 +73,8 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
       porSegmento,
       quartilOperadores,
       quartilPoloAll,
-      matriz,
-      operadoresIndividual,
       impactoFaceId,
       efetividadeArgumento,
-      nomeFantasiaConfig,
     ] = await Promise.all([
       getVisaoGeral(emailsEquipe),
       getPorTema(emailsEquipe),
@@ -96,21 +82,12 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
       getPorSegmento(emailsEquipe),
       getQuartilOperadores("equipe", emailsEquipe),
       getQuartilOperadores("empresa", []),
-      getMatrizVolumeTaxa(emailsEquipe),
-      getPorOperadorIndividual(emailsEquipe),
       getImpactoFaceId(emailsEquipe),
       getEfetividadeArgumento(emailsEquipe),
-      getNomeFantasiaConfig(user.profile.id),
     ]);
 
     // Operadores da equipe, mas com o rank/quartil calculado sobre o polo.
     const teamEmailsLower = emailsEquipe.map((e) => e.toLowerCase().trim());
-    // Antes de recortar o polo para a equipe: o card de quartil precisa do
-    // ranking COMPLETO da empresa para mostrar "45/142".
-    const quartilPorOperador = montarQuartilPorOperador(
-      quartilOperadores,
-      quartilPoloAll,
-    );
 
     const quartilPolo = quartilPoloAll.filter((op: OperadorQuartilItem) =>
       teamEmailsLower.includes(op.login.toLowerCase().trim()),
@@ -125,16 +102,8 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
         porSegmento,
         quartilOperadores,
         quartilPolo,
-        matriz,
-        operadoresIndividual,
-        quartilPorOperador,
         impactoFaceId,
         efetividadeArgumento,
-        nomeFantasia: {
-          ativo: nomeFantasiaConfig.ativo,
-          mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
-        },
-        meta,
         emailsEquipe,
       },
     };

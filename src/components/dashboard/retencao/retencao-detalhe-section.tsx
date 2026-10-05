@@ -9,12 +9,8 @@ import type { TemaData } from "@/lib/retencao/get-por-tema";
 import type { HoraEvolucaoData } from "@/lib/retencao/get-evolucao-hora";
 import type { SegmentoResult } from "@/lib/retencao/get-por-segmento";
 import type { OperadorQuartilItem } from "@/lib/retencao/get-quartil-operadores";
-import type { MatrizResult } from "@/lib/retencao/get-matriz-volume-taxa";
-import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
-import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
 import type { ImpactoFaceIdData } from "@/lib/retencao/get-impacto-faceid";
 import type { ArgumentoItem } from "@/lib/retencao/get-efetividade-argumento";
-import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { VisaoGeralCards } from "./visao-geral-cards";
 import { EvolucaoEquipe } from "./evolucao-equipe";
 import { TabelaTemas } from "./tabela-temas";
@@ -34,13 +30,10 @@ import { SignatureFooter } from "@/components/gestor/signature-footer";
 
 
 interface RetencaoDetalheSectionProps {
-  emailsEquipeIniciais: string[];
   /** profiles.id do gestor logado — chave de escopo das metas por tema (localStorage). */
   gestorId: string;
   /** Meta geral da taxa (%) — a MESMA da EquipeTable (gestor_config_fantasia.meta_tx_retencao). */
   metaInicial: number;
-  gestora?: string;
-  reportHoraInicial?: string | null;
 }
 
 /**
@@ -59,11 +52,8 @@ interface RetencaoDetalheSectionProps {
  * navegador.
  */
 export function RetencaoDetalheSection({
-  emailsEquipeIniciais,
   gestorId,
   metaInicial,
-  gestora = "Equipe",
-  reportHoraInicial,
 }: RetencaoDetalheSectionProps) {
   // Ao (re)carregar a página, o navegador tenta restaurar a posição de
   // scroll anterior (ex.: estava no meio do trilho do Analítico) — some com
@@ -134,7 +124,6 @@ export function RetencaoDetalheSection({
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [emailsEquipe, setEmailsEquipe] = useState<string[]>(emailsEquipeIniciais);
 
   const [data, setData] = useState<{
     visaoGeral: VisaoGeralData;
@@ -143,13 +132,9 @@ export function RetencaoDetalheSection({
     porSegmento: SegmentoResult;
     quartilOperadores: OperadorQuartilItem[];
     quartilPolo: OperadorQuartilItem[];
-    matriz: MatrizResult;
-    operadoresIndividual: OperadorIndividual[];
-    quartilPorOperador: Record<string, QuartilOperador>;
     impactoFaceId: ImpactoFaceIdData;
     efetividadeArgumento: ArgumentoItem[];
-    nomeFantasia: NomeFantasiaSerial;
-    meta: number;
+    emailsEquipe: string[];
   } | null>(null);
 
   // Meta geral = a da EquipeTable (servidor); por tema = localStorage, lido
@@ -188,15 +173,10 @@ export function RetencaoDetalheSection({
           porSegmento: result.data.porSegmento,
           quartilOperadores: result.data.quartilOperadores,
           quartilPolo: result.data.quartilPolo,
-          matriz: result.data.matriz,
-          operadoresIndividual: result.data.operadoresIndividual,
-          quartilPorOperador: result.data.quartilPorOperador,
           impactoFaceId: result.data.impactoFaceId,
           efetividadeArgumento: result.data.efetividadeArgumento,
-          nomeFantasia: result.data.nomeFantasia,
-          meta: result.data.meta,
+          emailsEquipe: result.data.emailsEquipe,
         });
-        setEmailsEquipe(result.data.emailsEquipe);
       } else {
         setError(result.error || "Erro ao carregar dados do dashboard.");
       }
@@ -366,25 +346,21 @@ export function RetencaoDetalheSection({
               />,
               <DistribuicaoQuartis
                 key="quartis"
-                scrollInterno
                 operadores={data!.quartilOperadores}
                 operadoresPolo={data!.quartilPolo}
                 meta={metaGlobal}
               />,
               <TabelaSegmentos
                 key="segmentos"
-                scrollInterno
                 segmentos={data!.porSegmento}
                 meta={metaGlobal}
               />,
               <CopiarContratos
                 key="copiar-contratos"
-                scrollInterno
-                emailsEquipe={emailsEquipe}
+                emailsEquipe={data!.emailsEquipe}
                 porTema={data!.porTema}
-                operadoresIndividual={data!.operadoresIndividual}
               />,
-              <ImpactoFaceIdCard key="impacto-faceid" scrollInterno data={data!.impactoFaceId} />,
+              <ImpactoFaceIdCard key="impacto-faceid" data={data!.impactoFaceId} />,
               // Assinatura DENTRO do último slide, só no desktop (lg:block):
               // aparece logo abaixo do último card e desliza junto com ele —
               // mesmo ajuste de /s/reports/tempo-indisponibilidade. O card
@@ -393,7 +369,7 @@ export function RetencaoDetalheSection({
               // Mobile (slides empilhados) usa a do fim da seção.
               <div key="efetividade-argumento" className="flex h-full flex-col">
                 <div className="min-h-0">
-                  <EfetividadeArgumentoCard scrollInterno argumentos={data!.efetividadeArgumento} />
+                  <EfetividadeArgumentoCard argumentos={data!.efetividadeArgumento} />
                 </div>
                 <div className="mt-10 hidden shrink-0 lg:block">
                   <SignatureFooter />

@@ -8,22 +8,12 @@ interface DistribuicaoQuartisProps {
   operadores: OperadorQuartilItem[];
   operadoresPolo: OperadorQuartilItem[];
   meta?: number;
-  /**
-   * Quando true, ocupa 100% da altura do container pai (que precisa ter
-   * altura definida) e SÓ a tabela de operadores rola internamente —
-   * título e os toggles (Equipe/Polo, Q1-Q4) ficam fixos fora do scroll.
-   * Usado dentro do trilho horizontal de /s/reports/consolidado
-   * (retencao-horizontal-scroll.tsx): o Q4 pode listar boa parte da
-   * equipe/polo e não pode esticar a altura do trilho inteiro.
-   */
-  scrollInterno?: boolean;
 }
 
 export function DistribuicaoQuartis({
   operadores,
   operadoresPolo,
   meta = 65,
-  scrollInterno = false,
 }: DistribuicaoQuartisProps) {
   const [selectedQuartil, setSelectedQuartil] = useState<1 | 2 | 3 | 4>(4);
   const [toggleMode, setToggleMode] = useState<"equipe" | "polo">("equipe");
@@ -32,15 +22,14 @@ export function DistribuicaoQuartis({
 
   // Filtra e ordena operadores (da menor taxa para a maior) por quartil;
   // empate de taxa → quem tem mais pedidos primeiro (pesa mais na equipe).
-  const effectiveMode = toggleMode;
-  const activeList = effectiveMode === "equipe" ? operadores : operadoresPolo;
+  const activeList = toggleMode === "equipe" ? operadores : operadoresPolo;
   const list = activeList
     .filter((op) => op.quartil === selectedQuartil)
     .sort((a, b) => (a.tx ?? 0) - (b.tx ?? 0) || b.total - a.total);
 
   return (
-    <div className={scrollInterno ? "flex h-full flex-col space-y-3" : "space-y-3"}>
-      <div className={scrollInterno ? "shrink-0" : undefined}>
+    <div className="flex h-full flex-col space-y-3">
+      <div className="shrink-0">
         <h3 className="ds-h3 font-semibold text-foreground">
           Divisor de Quartil
         </h3>
@@ -50,7 +39,7 @@ export function DistribuicaoQuartis({
       </div>
 
       {/*
-        Em scrollInterno, o StyledCard é flex-col SEM h-full/flex-grow — só
+        No trilho, o StyledCard é flex-col SEM h-full/flex-grow — só
         `max-h-full` (teto = altura do slot, herdada do wrapper pai com
         h-full). Poucos operadores no quartil selecionado → card baixo, sem
         sobra vazia dentro da borda. A barra de toggles fica `shrink-0`
@@ -62,10 +51,10 @@ export function DistribuicaoQuartis({
         (StyledCard) removido a pedido.
       */}
       <div
-        className={scrollInterno ? "flex max-h-full flex-col gap-4" : "space-y-4"}
+        className="flex max-h-full flex-col gap-4"
       >
         {/* Sem linha divisória abaixo dos toggles (removida a pedido). */}
-        <div className={`flex flex-wrap items-center gap-3 ${scrollInterno ? "shrink-0" : ""}`}>
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
           <Segmentado
             ariaLabel="Escopo do quartil"
             grupo="quartil-escopo"
@@ -87,7 +76,7 @@ export function DistribuicaoQuartis({
           />
         </div>
 
-        <div className={scrollInterno ? "min-h-0 flex-1 overflow-auto scrollbar-tema" : "overflow-x-auto"}>
+        <div className="min-h-0 flex-1 overflow-auto scrollbar-tema">
           {/* data-tabela-quartis: cabeçalho no visual da tabela principal
               (reports-consolidado.css, junto com data-tabela-temas).
               data-cabecalho-fixo: cabeçalho sticky ao rolar (mesmo CSS). */}

@@ -32,12 +32,8 @@ const TRILHO_CARD = {
   efetividadeArgumento: 6,
 } as const;
 
-// Antes: "text-neutral-700 dark:text-neutral-200" — cinza hardcoded fora do
-// tema (o projeto não usa a estratégia `.dark` do Tailwind, então o
-// `dark:` nunca disparava; o ícone ficava sempre no mesmo cinza médio,
-// independente do tema claro/escuro ativo). Agora lê --muted-foreground do
-// escopo [data-page="reports-consolidado"] (herdado via wrapperClassName/
-// dataPage em FloatingNavSidebar — ver comentário lá).
+// Só tamanho: a cor do ícone (--muted-foreground / --foreground no ativo)
+// vem de reports-consolidado.css (.reports-consolidado-nav [data-nav-icone]).
 const ICON_CLASS = "h-5 w-5 shrink-0";
 
 /** Seção visível agora: "equipe" (tabela do topo) ou o índice do card do trilho. */

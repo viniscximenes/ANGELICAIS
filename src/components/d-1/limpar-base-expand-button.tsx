@@ -7,7 +7,7 @@ import { IconLoader2, IconTrash } from "@tabler/icons-react";
  * hover ele alarga numa pílula, a lixeira cresce e desce pra fora de vista e
  * o texto "Limpar Base" cai de cima pro centro. Adaptado à altura e aos
  * cantos dos controles da página e às cores do tema. Estilos em
- * reports-consolidado.css (.limpar-base-expand) — usado só em
+ * globals.css (.limpar-base-expand, seção "Padrão visual") — usado só em
  * /s/reports/consolidado.
  *
  * Um clique limpa a base (a pressão contínua foi removida a pedido).

@@ -1,7 +1,6 @@
 "use client";
 
-import { BlurFade } from "@/components/ui/blur-fade";
-import { NumberTicker } from "@/components/ui/number-ticker";
+import dynamic from "next/dynamic";
 import { StaticNumber } from "@/components/ui/static-number";
 import type { VisaoGeralData } from "@/lib/retencao/get-visao-geral";
 
@@ -17,6 +16,14 @@ interface VisaoGeralCardsProps {
    */
   semAnimacao?: boolean;
 }
+
+// Animações de entrada só nas rotas que as usam (semAnimacao = false):
+// carregadas sob demanda, fora do bundle de /s/reports/consolidado, que
+// renderiza só SemAnimacao/StaticNumber.
+const BlurFade = dynamic(() => import("@/components/ui/blur-fade").then((m) => m.BlurFade));
+const NumberTicker = dynamic(() =>
+  import("@/components/ui/number-ticker").then((m) => m.NumberTicker),
+);
 
 /** Wrapper sem animação — mesma className do BlurFade, ignora delay/inView. */
 function SemAnimacao({ className, children }: { className?: string; children: React.ReactNode; delay?: number; inView?: boolean }) {
