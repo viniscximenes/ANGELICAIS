@@ -17,19 +17,6 @@
   letter-spacing: var(--letter-spacing);
 }
 
-/* ───────── Coluna Operador fixa das tabelas do Analítico ─────────
- * A coluna acompanha a rolagem horizontal (sticky left) e precisa de fundo
- * opaco, sem cor própria: no cabeçalho, o fundo da página + o tom do
- * cabeçalho (--th-bg é translúcido); nas linhas, o fundo da página.
- */
-[data-page="reports-tempo-indisponibilidade"] [data-tabela-sticky-header] {
-  background-color: var(--background);
-  background-image: linear-gradient(var(--th-bg), var(--th-bg));
-}
-[data-page="reports-tempo-indisponibilidade"] [data-tabela-sticky-nome] {
-  background-color: var(--background);
-}
-
 /* ───────── Input "Meta Indisp. %" (Configurações da Tabela) ─────────
  * Mesmas regras do #config-meta-tx do Consolidado: sem o outline global de
  * foco e, no tema claro, o mesmo fundo leve (--input a 30%) que o Input já

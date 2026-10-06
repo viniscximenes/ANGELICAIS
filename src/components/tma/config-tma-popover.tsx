@@ -56,7 +56,7 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
     if (!/^\d{1,3}:\d{2}$/.test(valor)) {
       toast.error("Meta inválida", {
         description: "Use o formato MM:SS, ex.: 13:00",
-        className: "reports-tma-peso-toast",
+        className: "toast-padrao",
       });
       return;
     }
@@ -68,14 +68,14 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
       ]);
 
       if (resultMeta.success && resultOrdem.success) {
-        toast.success("Configurações salvas", { className: "reports-tma-peso-toast" });
+        toast.success("Configurações salvas", { className: "toast-padrao" });
         onSaved(valor, ordem);
         setOpen(false);
         onOpenChange?.(false);
       } else {
         toast.error("Erro ao salvar", {
           description: (!resultMeta.success && resultMeta.error) || (!resultOrdem.success && resultOrdem.error) || undefined,
-          className: "reports-tma-peso-toast",
+          className: "toast-padrao",
         });
       }
     });

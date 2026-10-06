@@ -12,11 +12,6 @@ import { parseTmaNoClient } from "@/lib/tma/parse-tma-client";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 import { TmaUploadProgressModal, type TmaUploadStep } from "./tma-upload-progress-modal";
 
-interface TmaUploadDropzoneProps {
-  /** Variante enxuta — área de drop mais baixa, sem o ícone central. */
-  compact?: boolean;
-}
-
 // Tipagem mínima da File System Access API (não está no lib.dom do TS) —
 // mesma do UploadDropzone do Consolidado.
 type ShowOpenFilePicker = (options: {
@@ -26,7 +21,7 @@ type ShowOpenFilePicker = (options: {
   multiple?: boolean;
 }) => Promise<{ getFile: () => Promise<File> }[]>;
 
-export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = {}) {
+export function TmaUploadDropzone() {
   // Clique/teclado abre o seletor de arquivos já na pasta Downloads e só com
   // .csv (sem "Todos os arquivos"), via showOpenFilePicker (Chrome/Edge) —
   // mesmo comportamento do anexo do Consolidado. Navegadores sem a API
@@ -59,7 +54,7 @@ export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = 
       if (!rosterResult.success) {
         setStep(null);
         setErrorMessage(rosterResult.error);
-        toast.error("Falha ao processar relatório", { description: rosterResult.error });
+        toast.error("Falha ao processar relatório", { description: rosterResult.error, className: "toast-padrao" });
         return;
       }
 
@@ -81,7 +76,7 @@ export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = 
       if (!result.success) {
         setStep(null);
         setErrorMessage(result.error);
-        toast.error("Falha ao processar relatório", { description: result.error });
+        toast.error("Falha ao processar relatório", { description: result.error, className: "toast-padrao" });
         return;
       }
 
@@ -95,7 +90,7 @@ export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = 
       console.error("[tma-upload] erro:", err);
       setStep(null);
       setErrorMessage("Erro ao processar arquivo");
-      toast.error("Não foi possível processar o arquivo");
+      toast.error("Não foi possível processar o arquivo", { className: "toast-padrao" });
     }
   }, []);
 
@@ -173,27 +168,27 @@ export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = 
         aria-disabled={isProcessing}
         aria-busy={isProcessing}
         data-dropzone-state={dropzoneState}
-        className="upload-dropzone-root-reports-tma-peso relative flex h-full flex-col cursor-pointer items-center justify-center rounded-xl border border-dashed outline-none transition-all duration-300 hover:border-primary focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+        className="relative flex h-full flex-col cursor-pointer items-center justify-center rounded-xl border border-dashed outline-none transition-all duration-300 hover:border-primary focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
         style={{
           background: isDragActive ? "color-mix(in oklch, var(--primary) 8%, var(--muted))" : isHovering ? "var(--dropzone-hover-bg, var(--card))" : "var(--dropzone-idle-bg, var(--card))",
           borderColor: isDragReject ? "var(--danger)" : isDragActive ? "var(--primary)" : "var(--border)",
           borderWidth: isDragActive ? "2px" : "1px",
           boxShadow: isDragActive ? "0 0 40px var(--glow-accent)" : "var(--shadow-sm, none)",
-          padding: compact ? "0.875rem 1.25rem" : "2.5rem 1.5rem",
+          padding: "2.5rem 1.5rem",
           opacity: isProcessing ? 0.5 : 1,
           pointerEvents: isProcessing ? "none" : "auto",
           cursor: isProcessing ? "not-allowed" : "pointer",
-          minHeight: compact ? "auto" : "100%",
+          minHeight: "100%",
         }}
       >
         <input {...getInputProps()} />
         <div className="flex flex-col items-center justify-center gap-3 text-center">
           <div className="relative flex min-h-16 min-w-24 items-center justify-center" aria-hidden="true">
             {isProcessing ? (
-              <IconLoader2 size={compact ? 20 : 26} className="animate-spin text-muted-foreground" />
+              <IconLoader2 size={26} className="animate-spin text-muted-foreground" />
             ) : (
               <ReactBitsFolder
-                size={compact ? 0.42 : 0.68}
+                size={0.68}
                 open={isHovering || isDragActive}
                 color={isDragReject ? "var(--danger)" : "var(--primary)"}
                 backColor={
@@ -209,7 +204,7 @@ export function TmaUploadDropzone({ compact = false }: TmaUploadDropzoneProps = 
               />
             )}
           </div>
-          <p className="upload-dropzone-touch-hint-reports-tma-peso ds-mono-sm text-muted-foreground/80 text-[11px] sm:hidden">
+          <p className="ds-mono-sm text-muted-foreground/80 text-[11px] sm:hidden">
             Toque para selecionar um CSV
           </p>
         </div>

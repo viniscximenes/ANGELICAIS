@@ -1,12 +1,11 @@
 /**
- * Classes das 4 tabelas do Analítico (Pausas detalhadas, Aderência, Pausas
- * NR17 não tiradas, Estouro de NR17) — visual de "Desempenho por marca e
- * unidade" do Consolidado: cabeçalho com os tokens --th-* que fica no topo
+ * Classes das tabelas de consulta do Analítico (Tempo/Indisponibilidade e
+ * TMA) — visual de "Desempenho por marca e unidade" do Consolidado: cabeçalho com os tokens --th-* que fica no topo
  * ao rolar dentro do card (.cabecalho-tabela + .cabecalho-tabela-fixo,
  * globals.css), células py-3 px-4 text-xs, linhas separadas só por
  * border/30 (sem divisórias verticais, sem hover), Operador centralizado
- * em font-semibold e fixo na rolagem horizontal (fundo opaco no CSS da
- * página: data-tabela-sticky-header / data-tabela-sticky-nome).
+ * em font-semibold e fixo na rolagem horizontal (STICKY_HEADER_CELL /
+ * STICKY_NOME_CELL: fundo opaco = página, + tom do cabeçalho no título).
  */
 export const HEADER_ROW_CLASS = "cabecalho-tabela cabecalho-tabela-fixo grid gap-0";
 export const HEADER_CELL_CLASS =
@@ -15,6 +14,15 @@ export const NOME_CELL_CLASS =
   "min-w-0 truncate whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-foreground";
 export const VALOR_CELL_CLASS = "min-w-0 whitespace-nowrap px-4 py-3 text-center text-xs font-medium";
 export const LINHA_CLASS = "grid items-center gap-0";
+/** Linha com separador (todas menos a última). */
+export const LINHA_SEPARADOR_CLASS = "border-b border-border/30";
+
+/** Coluna Operador fixa na rolagem horizontal — fundo opaco sem cor própria:
+ * no cabeçalho, página + tom do cabeçalho (--th-bg é translúcido); nas
+ * linhas, o fundo da página. */
+export const STICKY_HEADER_CELL_CLASS =
+  "sticky left-0 z-10 bg-background bg-[linear-gradient(var(--th-bg),var(--th-bg))]";
+export const STICKY_NOME_CELL_CLASS = "sticky left-0 z-10 bg-background";
 
 /** Card do slide: título fixo em cima, tabela rolando por dentro (nas duas
  * direções) — o trilho tem altura fixa, como no Consolidado. */

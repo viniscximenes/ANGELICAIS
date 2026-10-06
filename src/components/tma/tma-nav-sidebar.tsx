@@ -12,6 +12,7 @@ import {
 import { getLenisInstance } from "@/lib/lenis/lenis-instance";
 import { requestScrollToCard } from "@/lib/retencao/scroll-to-card-event";
 import { FloatingNavSidebar } from "@/components/ui/floating-nav-sidebar";
+import { IconeNav, useSecaoAtiva } from "@/components/gestor/nav-secao-ativa";
 
 /**
  * Índices dos cards no trilho horizontal — precisam bater com a ordem real
@@ -36,25 +37,20 @@ const TRILHO_CARD = {
   pesoDesigual: 5,
 } as const;
 
-const ICON_CLASS = "h-5 w-5 shrink-0 text-[color:var(--muted-foreground)]";
+// Só tamanho: a cor do ícone (--muted-foreground / --foreground no ativo)
+// vem de globals.css (.nav-secoes [data-nav-icone]).
+const ICON_CLASS = "h-5 w-5 shrink-0";
 
 /**
- * Navegação lateral animada do trilho de /reports/tma — MESMO
- * componente/mecanismo de ConsolidadoNavSidebar/TempoIndispNavSidebar
- * (ambos delegam a FloatingNavSidebar, sem editá-lo), só com a lista de
- * itens/ícones trocada pros 6 slides da TMA.
- *
- * "Equipe" (mesmo padrão do Consolidado) rola até a tabela principal —
- * id="equipe-section" em GestorTmaSection.
- *
- * Ícones reaproveitados dos MESMOS ícones já usados no título de cada
- * card/seção correspondente (IconChartLine em EvolucaoTmaChart, IconChartBar
- * em TmaPorTemaCard, IconPhoneCall em CardRechamada, IconScale em
- * CardPesoDesigual, IconArrowsMaximize em CardForaDaCurva) — a tabela
- * Operador × Bucket (AnaliticoTmaTabela) não tem ícone no título, então usei
- * IconTable aqui, sem alterar o título dela.
+ * Navegação lateral de /s/reports/tma-peso — mesmo componente e
+ * comportamento do ConsolidadoNavSidebar (FloatingNavSidebar + .nav-secoes):
+ * item da seção visível destacado, divisória entre a tabela do topo e os
+ * slides do Analítico. Só em telas >= 1024px. Ícones = os dos títulos de
+ * cada card (IconTable na tabela Operador × tema, que não tem ícone).
  */
 export function TmaNavSidebar() {
+  const ativo = useSecaoAtiva("equipe-section");
+
   function scrollToEquipe() {
     const el = document.getElementById("equipe-section");
     if (!el) return;
@@ -68,48 +64,84 @@ export function TmaNavSidebar() {
 
   const links = [
     {
-      label: "Tabela operadores",
+      label: "Tabela de operadores",
       href: "#equipe-section",
-      icon: <IconUsersGroup className={ICON_CLASS} />,
+      icon: (
+        <IconeNav ativo={ativo === "topo"}>
+          <IconUsersGroup className={ICON_CLASS} />
+        </IconeNav>
+      ),
       onClick: scrollToEquipe,
     },
     {
       label: "Evolução da equipe",
       href: "#trilho-card-0",
-      icon: <IconChartLine className={ICON_CLASS} />,
+      icon: (
+        <IconeNav ativo={ativo === TRILHO_CARD.visaoGeral}>
+          <IconChartLine className={ICON_CLASS} />
+        </IconeNav>
+      ),
       onClick: () => requestScrollToCard(TRILHO_CARD.visaoGeral),
     },
     {
       label: "TMA por tema - Operador",
       href: "#trilho-card-1",
-      icon: <IconTable className={ICON_CLASS} />,
+      icon: (
+        <IconeNav ativo={ativo === TRILHO_CARD.tmaPorTemaTabela}>
+          <IconTable className={ICON_CLASS} />
+        </IconeNav>
+      ),
       onClick: () => requestScrollToCard(TRILHO_CARD.tmaPorTemaTabela),
     },
     {
       label: "TMA por tema - Supervisor",
       href: "#trilho-card-2",
-      icon: <IconChartBar className={ICON_CLASS} />,
+      icon: (
+        <IconeNav ativo={ativo === TRILHO_CARD.tmaPorTemaGestor}>
+          <IconChartBar className={ICON_CLASS} />
+        </IconeNav>
+      ),
       onClick: () => requestScrollToCard(TRILHO_CARD.tmaPorTemaGestor),
     },
     {
       label: "Rechamada",
       href: "#trilho-card-3",
-      icon: <IconPhoneCall className={ICON_CLASS} />,
+      icon: (
+        <IconeNav ativo={ativo === TRILHO_CARD.rechamada}>
+          <IconPhoneCall className={ICON_CLASS} />
+        </IconeNav>
+      ),
       onClick: () => requestScrollToCard(TRILHO_CARD.rechamada),
     },
     {
       label: "Fora da curva",
       href: "#trilho-card-4",
-      icon: <IconArrowsMaximize className={ICON_CLASS} />,
+      icon: (
+        <IconeNav ativo={ativo === TRILHO_CARD.foraDaCurva}>
+          <IconArrowsMaximize className={ICON_CLASS} />
+        </IconeNav>
+      ),
       onClick: () => requestScrollToCard(TRILHO_CARD.foraDaCurva),
     },
     {
       label: "Peso desigual",
       href: "#trilho-card-5",
-      icon: <IconScale className={ICON_CLASS} />,
+      icon: (
+        <IconeNav ativo={ativo === TRILHO_CARD.pesoDesigual}>
+          <IconScale className={ICON_CLASS} />
+        </IconeNav>
+      ),
       onClick: () => requestScrollToCard(TRILHO_CARD.pesoDesigual),
     },
   ];
 
-  return <FloatingNavSidebar links={links} />;
+  return (
+    <FloatingNavSidebar
+      links={links}
+      wrapperClassName="nav-secoes"
+      dataPage="reports-tma-peso"
+      // Divisória entre a tabela do topo e os slides do Analítico.
+      divisoriasApos={[0]}
+    />
+  );
 }

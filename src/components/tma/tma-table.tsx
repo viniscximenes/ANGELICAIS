@@ -6,7 +6,6 @@ import type { ReactNode } from "react";
 import {
   corNomeOperador,
   fundoLinhaRuim,
-  TABELA_HEADER_BORDA,
   TABELA_HEADER_CELL_CLASS,
   TABELA_HEADER_CELL_ULTIMA_CLASS,
   TABELA_LINHA_CLASS,
@@ -45,35 +44,19 @@ const GRID_TEMPLATE_COLUMNS = "3fr 2fr 2fr";
 // divisor da última coluna, que aqui é a "Qtd. Ligações".
 const VALOR_CELL_CLASS = `${TABELA_VALOR_CELL_CLASS} last:border-r-0`;
 
-// O Consolidado troca o hover genérico da tabela por --accent, que pertence
-// à paleta Zen Linen da rota. Mantemos a constante compartilhada intacta e
-// fazemos a mesma substituição apenas nesta tabela.
-const TABELA_LINHA_HOVER_CLASS = TABELA_LINHA_CLASS.replace(
-  "hover:bg-muted/40",
-  "hover:bg-accent",
-);
-
 export function TmaTable({ linhas, atendimentosPorOperador, headerButton, thresholdConfig }: TmaTableProps) {
   const [operadorAberto, setOperadorAberto] = useState<TmaLinha | null>(null);
 
   return (
     <>
       {/*
-        `data-equipe-table` é o gancho que o globals.css já usa pra dar ao
-        cabeçalho das tabelas do painel do gestor, no tema claro, o fundo
-        `--muted` sólido + borda inferior de 2px (regra
-        `[data-theme="light"] [data-equipe-table] > div:first-child`).
-        Sem ele, o header caía só no `bg-muted/40` (quase branco no claro).
+        data-tma-table: gancho neutro (análogo a data-equipe-table, sem
+        depender das regras de legado do tema claro). Cabeçalho com os
+        tokens --th-* (.cabecalho-tabela) e hover semântico pela meta
+        (data-meta-linha, .pagina-padrao) — mesmo visual da EquipeTable.
       */}
-      <div data-equipe-table className="overflow-hidden">
-        {/* Cabeçalho — MESMAS classes do header da EquipeTable (Consolidado). */}
-        <div
-          className="ds-body grid gap-0 bg-muted/40 font-bold text-foreground tracking-wide uppercase"
-          style={{
-            ...TABELA_HEADER_BORDA,
-            gridTemplateColumns: GRID_TEMPLATE_COLUMNS,
-          }}
-        >
+      <div data-tma-table className="overflow-hidden">
+        <div className="cabecalho-tabela grid gap-0" style={{ gridTemplateColumns: GRID_TEMPLATE_COLUMNS }}>
           <div className={TABELA_HEADER_CELL_CLASS}>
             Operador
             {headerButton}
@@ -82,8 +65,7 @@ export function TmaTable({ linhas, atendimentosPorOperador, headerButton, thresh
           <div className={TABELA_HEADER_CELL_ULTIMA_CLASS}>Qtd. Ligações</div>
         </div>
 
-        {linhas.map((linha, idx) => {
-          const isLast = idx === linhas.length - 1;
+        {linhas.map((linha) => {
           const semDado = linha.qtdAtendimentos === 0 || linha.tmaSegundos === null;
           const ruim = !semDado && linha.status === "danger";
 
@@ -91,9 +73,8 @@ export function TmaTable({ linhas, atendimentosPorOperador, headerButton, thresh
           // detalhamento pra mostrar, então não é clicável nem reage ao hover.
           const clicavel = !semDado;
 
-          // Hover copiado LITERALMENTE de equipe-table.tsx: fundo (já no
-          // TABELA_LINHA_CLASS) + borda esquerda colorida (vermelha se ruim,
-          // verde se não) + leve translateX — só quando clicável.
+          // Hover de linha clicável (igual à EquipeTable): desliza 2px +
+          // borda esquerda na cor da meta; o fundo vem do hover semântico.
           const hoverClass = clicavel
             ? cn(
                 "hover:translate-x-0.5",
@@ -106,15 +87,15 @@ export function TmaTable({ linhas, atendimentosPorOperador, headerButton, thresh
               key={linha.operatorEmail}
               onClick={clicavel ? () => setOperadorAberto(linha) : undefined}
               data-sem-dados={semDado ? "true" : undefined}
+              data-meta-linha={clicavel ? (ruim ? "abaixo" : "dentro") : undefined}
               className={cn(
-                TABELA_LINHA_HOVER_CLASS,
+                TABELA_LINHA_CLASS,
                 "border-l-2 border-l-transparent transition-[background-color,border-color,transform] duration-200 ease-out",
                 clicavel && "cursor-pointer",
                 hoverClass,
               )}
               style={{
                 background: fundoLinhaRuim(ruim),
-                borderBottom: isLast ? "none" : "1px solid var(--border)/40",
                 opacity: semDado ? 0.65 : 1,
                 gridTemplateColumns: GRID_TEMPLATE_COLUMNS,
               }}
@@ -147,7 +128,7 @@ export function TmaTable({ linhas, atendimentosPorOperador, headerButton, thresh
                   )}
                 </span>
               </div>
-              <div className={VALOR_CELL_CLASS} style={{ fontVariantNumeric: "tabular-nums" }}>
+              <div className={VALOR_CELL_CLASS}>
                 {linha.qtdAtendimentos}
               </div>
             </div>

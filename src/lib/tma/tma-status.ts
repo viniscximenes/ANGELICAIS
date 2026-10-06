@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { createClient } from "@/lib/supabase/server";
 import { metaMmSsParaSegundos, statusTmaDe, type TmaStatus, type TmaThresholdConfig } from "./tma-status-pure";
 
@@ -28,8 +30,13 @@ export { metaMmSsParaSegundos, statusTmaDe, type TmaStatus, type TmaThresholdCon
  * tabela pra ordem_tabela_tma; são round-trips separados de propósito (a
  * alternativa seria passar o config já buscado como parâmetro, o que
  * acoplaria esta função ao formato exato da query de cada chamador).
+ *
+ * cache() do React: getGestorTma e getGestorTmaAnalitico pedem o mesmo
+ * config na mesma requisição — consulta uma vez só.
  */
-export async function getTmaThresholdConfig(gestorId: string): Promise<TmaThresholdConfig> {
+export const getTmaThresholdConfig = cache(async function getTmaThresholdConfig(
+  gestorId: string,
+): Promise<TmaThresholdConfig> {
   const supabase = await createClient();
 
   const [{ data: kpiDef }, { data: config }] = await Promise.all([
@@ -46,4 +53,4 @@ export async function getTmaThresholdConfig(gestorId: string): Promise<TmaThresh
   const threshold = thresholdOverride ?? thresholdDefault;
 
   return { threshold, direction };
-}
+});

@@ -14,23 +14,23 @@ interface FloatingNavSidebarProps {
   links: FloatingNavLink[];
   /**
    * Classe extra opcional no wrapper `fixed` — aditivo, default nenhuma
-   * classe extra (comportamento idêntico ao de sempre). Consolidado e
-   * Tempo/Indisponibilidade passam "nav-secoes" (visual do padrão,
-   * globals.css); o TMA não passa (visual de sempre).
+   * classe extra (comportamento idêntico ao de sempre). Consolidado,
+   * Tempo/Indisponibilidade e TMA passam "nav-secoes" (visual do padrão,
+   * globals.css).
    */
   wrapperClassName?: string;
   /**
    * `data-page` opcional no wrapper — aditivo, default ausente (nenhum
-   * atributo é renderizado, igual a antes). Consolidado e
-   * Tempo/Indisponibilidade passam o data-page da rota pra este wrapper
+   * atributo é renderizado, igual a antes). Consolidado,
+   * Tempo/Indisponibilidade e TMA passam o data-page da rota pra este wrapper
    * herdar o tema e a fonte da página, já que é renderizado como IRMÃO da
    * div `[data-page]` principal (position: fixed), não dentro dela.
    */
   dataPage?: string;
   /**
    * Índices dos links DEPOIS dos quais entra uma divisória fina — aditivo,
-   * default nenhum (visual de sempre). Consolidado e Tempo/Indisponibilidade
-   * separam a tabela de operadores (topo) dos slides do Analítico.
+   * default nenhum (visual de sempre). Consolidado, Tempo/Indisponibilidade
+   * e TMA separam a tabela de operadores (topo) dos slides do Analítico.
    */
   divisoriasApos?: number[];
 }

@@ -12,7 +12,11 @@ interface CardsResumoTmaProps {
   totalAtendidos: number;
 }
 
-/** Indicador principal e volume secundário: mesmas caixas neutras do Analítico do Consolidado. */
+/**
+ * Indicador principal e volume secundário: mesmas caixas neutras do
+ * Analítico do Consolidado (VisaoGeralCards). data-visao-geral-cards aplica
+ * o canto de 18px e o fundo do tema claro (.pagina-padrao, globals.css).
+ */
 export function CardsResumoTma({ tmaMedioPonderado, tmaStatus, totalAtendidos }: CardsResumoTmaProps) {
   // Classes literais (não interpoladas) — mesma ressalva de VisaoGeralCards:
   // o scanner do Tailwind precisa achar a string inteira no código-fonte.
@@ -23,11 +27,16 @@ export function CardsResumoTma({ tmaMedioPonderado, tmaStatus, totalAtendidos }:
         ? "text-success dark:text-success"
         : "text-foreground dark:text-foreground";
 
+  // Barra lateral do card na cor da meta (como a "Taxa de Retenção" do
+  // Consolidado); sem meta/sem dado, mantém --primary.
+  const corBarra =
+    tmaStatus === "danger" ? "var(--danger)" : tmaStatus === "success" ? "var(--success)" : "var(--primary)";
+
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end">
+    <div data-visao-geral-cards className="grid grid-cols-1 gap-4 sm:grid-cols-5 sm:items-end">
       <div className="sm:col-span-2">
         <div className="relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 p-6 shadow-[var(--shadow-sm)] backdrop-blur-md">
-          <div aria-hidden="true" className="absolute top-0 left-0 h-full w-[3px] bg-primary" />
+          <div aria-hidden="true" className="absolute top-0 left-0 h-full w-[3px]" style={{ background: corBarra }} />
           <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             TMA
           </p>

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Instrument_Sans } from "next/font/google";
 
 import "./reports-tma-peso.css";
 
+import { ConsolidadoScrollProgress } from "@/components/gestor/consolidado-scroll-progress";
+import { FonteInter } from "@/components/gestor/fonte-inter";
 import { AnaliticoTmaSection } from "@/components/tma/analitico-tma-section";
 import { GestorTmaSection } from "@/components/tma/gestor-tma-section";
 import { TmaNavSidebar } from "@/components/tma/tma-nav-sidebar";
@@ -22,25 +23,10 @@ export const metadata: Metadata = {
   title: "Reports - TMA & Peso",
 };
 
-const zenSans = Instrument_Sans({
-  subsets: ["latin", "latin-ext"],
-  weight: "variable",
-  variable: "--font-zen-sans",
-});
-
-export const revalidate = 300;
-
-// Loading "fake" de piso mínimo — mesma técnica de /s/reports/consolidado
-// (ver page.tsx daquela rota): o loading.tsx (Suspense fallback) foi
-// desenhado pra replicar a posição exata dos cards da página real, mas se
-// os dados voltarem rápido ele só pisca na tela por uma fração de segundo.
-// Não dá pra controlar isso no client (loading.tsx é só o fallback
-// declarativo do Suspense do Next) — o jeito é atrasar A PRÓPRIA resolução
-// deste Server Component até completar MIN_LOADING_MS, contados desde a
-// entrada na função. Se a busca real já demorou mais que isso,
-// `aguardarPisoMinimo` não espera nada (Math.max trava em 0) — só estica
-// quando sobrou tempo.
-const MIN_LOADING_MS = 3_000;
+// Piso mínimo de loading — mesmo de /s/reports/consolidado: se os dados
+// voltarem rápido, o loading.tsx não fica só piscando na tela. Contado
+// desde a entrada na função; se as buscas já demoraram mais, não espera.
+const MIN_LOADING_MS = 1_000;
 
 async function aguardarPisoMinimo(desde: number) {
   const faltam = MIN_LOADING_MS - (Date.now() - desde);
@@ -66,6 +52,8 @@ export default async function ReportsTmaPage() {
     redirect(getPostLoginPath(user.profile.role));
   }
 
+  // Roster e threshold do TMA são memoizados por requisição (cache()), então
+  // getGestorTma/getGestorTmaAnalitico não os consultam de novo.
   const [
     { operadores, reportHora, reportNomeSupervisor, metaAtualMmSs, ordemTabela },
     nomeFantasiaConfig,
@@ -96,37 +84,35 @@ export default async function ReportsTmaPage() {
   // aplicado depois de TODAS as buscas em paralelo acima.
   await aguardarPisoMinimo(inicioCarregamento);
 
+  // Sem <PageTransition>: o conteúdo já vem pronto via SSR e o loading.tsx
+  // cobre a espera (mesmo motivo documentado em reports/consolidado/page.tsx).
   return (
-    <div className={zenSans.variable}>
-      <div data-page="reports-tma-peso">
-        <TmaNavSidebar />
-        <div className="min-h-screen px-6 py-8 lg:px-12 lg:py-12">
-          <div className="mx-auto max-w-7xl">
-            <div className="space-y-10">
-              <GestorTmaSection
-                linhas={linhas}
-                atendimentosPorOperador={Object.fromEntries(atendimentosPorOperador)}
-                reportHora={reportHora ?? "—"}
-                reportNomeSupervisor={reportNomeSupervisor}
-                metaAtualMmSs={metaAtualMmSs}
-                ordemTabela={ordemTabela}
-                showUpload={showUpload}
-                nomeFantasia={nomeFantasia}
-                olhoInicial={nomeFantasiaConfig.olhoTma}
-                thresholdConfig={analitico.thresholdConfig}
-              />
+    <>
+      <ConsolidadoScrollProgress />
+      {/* Navegação lateral da página (position: fixed, fora do container). */}
+      <TmaNavSidebar />
+      <FonteInter dataPage="reports-tma-peso" toastClass="toast-padrao" />
 
-              <AnaliticoTmaSection
-                roster={roster}
-                analitico={analitico}
-                operadores={operadores}
-              />
-              {/* SignatureFooter agora é renderizada dentro de AnaliticoTmaSection
-                  (no desktop, logo abaixo do último card do trilho). */}
-            </div>
+      <div data-page="reports-tma-peso" className="pagina-padrao min-h-screen px-6 py-8 lg:px-12 lg:py-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="space-y-10">
+            <GestorTmaSection
+              linhas={linhas}
+              atendimentosPorOperador={Object.fromEntries(atendimentosPorOperador)}
+              reportHora={reportHora ?? "—"}
+              reportNomeSupervisor={reportNomeSupervisor}
+              metaAtualMmSs={metaAtualMmSs}
+              ordemTabela={ordemTabela}
+              showUpload={showUpload}
+              nomeFantasia={nomeFantasia}
+              olhoInicial={nomeFantasiaConfig.olhoTma}
+              thresholdConfig={analitico.thresholdConfig}
+            />
+
+            <AnaliticoTmaSection roster={roster} analitico={analitico} operadores={operadores} />
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

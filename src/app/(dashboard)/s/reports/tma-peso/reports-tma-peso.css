@@ -3,524 +3,24 @@
  * As cores (tokens) vêm da paleta global em src/app/palettes/ (paleta ativa) —
  * não redefina --background/--card/--primary/... aqui, senão a troca de
  * paleta deixa de valer nesta página.
+ *
+ * O resto do visual vem das peças do padrão (globals.css, seção 3):
+ * .pagina-padrao (rolagem, anexo, hover das linhas, cards de número),
+ * .cabecalho-tabela, .nav-secoes, .toast-padrao, .modal-neumorfico,
+ * [data-operador-neumorfico], .skeleton-tom — e a fonte de FonteInter.
  */
 
-:is([data-page="reports-tma-peso"], .reports-tma-peso-dialog, body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) {
+[data-page="reports-tma-peso"] {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   letter-spacing: var(--letter-spacing);
 }
 
-/* ───────── Barra de rolagem (fina, no tema da página) ─────────
- * Antes: 10px/quadrada, visual "de sistema" destoando do resto do site.
- * Ajustada pro mesmo padrão discreto de `.scrollbar-tema` (globals.css) e do
- * Consolidado (reports-consolidado.css): mais fina, trilho invisível, thumb
- * translúcido com respiro (border "recortando" o thumb via
- * background-clip).
- *
- * Duas partes:
- * 1) O seletor `:is([data-page="reports-tma-peso"], ...)` — estiliza as
- *    barras de CONTAINERS internos com overflow (tabelas, popovers,
- *    dialogs), que são descendentes do próprio elemento com o atributo.
- * 2) html/body :has([data-page="reports-tma-peso"]) — a barra VERTICAL da
- *    PÁGINA em si é do <html>/<body>, que são ANCESTRAIS do elemento
- *    marcado, não descendentes — a regra acima nunca alcança essa barra, por
- *    isso ela continuava com a cor do tema global (dark/light padrão do
- *    site) em vez do Zen Linen desta rota. `:has()` resolve isso sem
- *    precisar tocar no layout compartilhado. Cores hardcoded (não dá pra
- *    usar var(--border) aqui: a custom property só existe dentro do
- *    elemento com o atributo, e html/body ficam FORA dele) — mesmos valores
- *    de --border/--muted-foreground definidos no topo deste arquivo (dark/
- *    light).
- */
-:is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) {
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: var(--border) transparent;
-}
-
-:is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-:is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) ::-webkit-scrollbar-track {
-  background: transparent;
-}
-:is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) ::-webkit-scrollbar-thumb {
-  background-color: var(--border);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-:is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--muted-foreground);
-  background-clip: padding-box;
-}
-:is([data-page="reports-tma-peso"], body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) ::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-html:has([data-page="reports-tma-peso"]),
-body:has([data-page="reports-tma-peso"]) {
-  scrollbar-width: thin;
-  scrollbar-color: #2C2C2C transparent;
-}
-[data-theme="light"]:has([data-page="reports-tma-peso"]),
-[data-theme="light"] body:has([data-page="reports-tma-peso"]) {
-  scrollbar-color: #D2CBBB transparent;
-}
-
-html:has([data-page="reports-tma-peso"])::-webkit-scrollbar,
-body:has([data-page="reports-tma-peso"])::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-html:has([data-page="reports-tma-peso"])::-webkit-scrollbar-track,
-body:has([data-page="reports-tma-peso"])::-webkit-scrollbar-track {
-  background: transparent;
-}
-html:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb,
-body:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb {
-  background-color: #2C2C2C;
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-[data-theme="light"]:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb,
-[data-theme="light"] body:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb {
-  background-color: #D2CBBB;
-}
-html:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb:hover,
-body:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb:hover {
-  background-color: #8E8A83;
-  background-clip: padding-box;
-}
-[data-theme="light"]:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb:hover,
-[data-theme="light"] body:has([data-page="reports-tma-peso"])::-webkit-scrollbar-thumb:hover {
-  background-color: #5E5A52;
-}
-html:has([data-page="reports-tma-peso"])::-webkit-scrollbar-corner,
-body:has([data-page="reports-tma-peso"])::-webkit-scrollbar-corner {
-  background: transparent;
-}
-/* Fundo do anexo = o MESMO do Consolidado (reports-consolidado.css):
- * escuro → --muted a 40%; claro → var(--muted). Hover = repouso nos dois
- * temas: passar o mouse só anima o ícone (pasta abrindo), o fundo não muda
- * de cor. */
-[data-page="reports-tma-peso"] {
-  --dropzone-idle-bg: color-mix(in oklab, var(--muted) 40%, transparent);
-  --dropzone-hover-bg: var(--dropzone-idle-bg);
-}
-[data-theme="light"] [data-page="reports-tma-peso"] {
-  --dropzone-idle-bg: var(--muted);
-  --dropzone-hover-bg: var(--muted);
-}
-
-/* Folhas da pasta "Anexar Base" (Vercel clara) — mesmos tons do Consolidado. */
-:root[data-palette="vercel"][data-theme="light"] [data-page="reports-tma-peso"] {
-  --upload-folder-paper-1: oklch(0.30 0 0);
-  --upload-folder-paper-2: oklch(0.42 0 0);
-  --upload-folder-paper-3: oklch(0.56 0 0);
-}
-
-/* Navegação local (TmaNavSidebar) — MESMAS regras de .reports-consolidado-nav
- * (reports-consolidado.css): mesmo fundo nos dois temas
- * (--nav-menu-bg-consolidado só existe na Vercel clara; nos demais cai no
- * --nav-menu-bg), mesma borda, e hover SEM fundo — a única animação é o
- * título deslizando pro lado + a cor do texto indo pra --foreground. */
-[data-page="reports-tma-peso"] .bg-sidebar {
-  background-color: var(--nav-menu-bg-consolidado, var(--nav-menu-bg)) !important;
-  box-shadow: var(--kpi-shadow);
-}
-[data-page="reports-tma-peso"] .bg-sidebar.border-border\/60 {
-  border-color: var(--elevation-1-border) !important;
-}
-[data-page="reports-tma-peso"] .bg-sidebar .text-neutral-700 {
-  color: var(--muted-foreground) !important;
-}
-[data-page="reports-tma-peso"] .bg-sidebar a:hover {
-  background: transparent !important;
-}
-[data-page="reports-tma-peso"] .bg-sidebar a:hover .text-neutral-700 {
-  color: var(--foreground) !important;
-}
-[data-page="reports-tma-peso"] .bg-sidebar a:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-  border-radius: 0.375rem;
-}
-
-[data-page="reports-tma-peso"] .elevation-3 {
-  background: var(--card);
-  border-color: var(--border);
-  box-shadow: var(--kpi-shadow);
-}
-body:has([data-page="reports-tma-peso"]) [data-sonner-toast] {
-  --normal-bg: var(--card);
-  --normal-text: var(--foreground);
-  --normal-border: var(--border);
-  background: var(--card) !important;
-  color: var(--foreground) !important;
-  border-color: var(--border) !important;
-}
-body:has([data-page="reports-tma-peso"]) [data-sonner-toast] [data-description] {
-  color: var(--muted-foreground) !important;
-}
-
-/* Toasts acionados por componentes compartilhados recebem uma classe da
-   rota, como no Consolidado, para manter o tema mesmo quando o portal do
-   Sonner estiver fora da árvore de data-page. */
-.reports-tma-peso-toast {
-  background: var(--normal-bg) !important;
-  color: var(--normal-text) !important;
-  border: 1px solid var(--normal-border) !important;
-  font-family: var(--font-zen-sans), "Instrument Sans", ui-sans-serif, system-ui, sans-serif !important;
-}
-.reports-tma-peso-toast [data-description] {
-  color: #8E8A83 !important;
-}
-.reports-tma-peso-toast [data-icon] svg {
-  color: #8DB596 !important;
-}
-.reports-tma-peso-toast[data-type="error"] [data-icon] svg {
-  color: #F07A62 !important;
-}
-
-[data-theme="light"] .reports-tma-peso-toast [data-description] {
-  color: #5E5A52 !important;
-}
-[data-theme="light"] .reports-tma-peso-toast [data-icon] svg {
-  color: #3D6B47 !important;
-}
-[data-theme="light"] .reports-tma-peso-toast[data-type="error"] [data-icon] svg {
-  color: #B3321C !important;
-}
-
-/* O Tooltip do Radix vive em document.body. O seletor geral de portais
-   acima fornece os tokens Zen Linen, mas também aplica a superfície da
-   página ao próprio tooltip. Esta regra restaura a caixa contrastante e a
-   seta do componente compartilhado, igual ao Consolidado. */
-body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] {
-  background-color: var(--foreground) !important;
-  color: var(--background) !important;
-}
-body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] > svg {
-  background-color: var(--foreground) !important;
-  fill: var(--foreground) !important;
-}
-/* Ícone do card de anexo: Folder do React Bits (react-bits-folder.tsx),
-   mesmo componente do Consolidado — anima via prop `open`, sem depender de
-   classes/keyframes CSS daqui. */
-.upload-dropzone-touch-hint-reports-tma-peso {
-  opacity: 0.85;
-}
-
-/* ───────── Spinner de loading (Uiverse.io by abrahamcalsin, "dot-spinner") ─────────
- * https://uiverse.io/abrahamcalsin/serious-turkey-52 — mesmas regras de
- * reports-consolidado.css, escopadas a esta rota. Usado no loading.tsx
- * (Suspense inicial) e no overlay de refresh manual (handleBaseCleared em
- * gestor-tma-section.tsx).
- */
-[data-page="reports-tma-peso"] .dot-spinner {
-  --uib-size: 3rem;
-  --uib-speed: .9s;
-  --uib-color: var(--foreground);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  height: var(--uib-size);
-  width: var(--uib-size);
-}
-
-[data-page="reports-tma-peso"] .dot-spinner__dot {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  height: 100%;
-  width: 100%;
-}
-
-[data-page="reports-tma-peso"] .dot-spinner__dot::before {
-  content: '';
-  height: 20%;
-  width: 20%;
-  border-radius: 50%;
-  background-color: var(--uib-color);
-  transform: scale(0);
-  opacity: 0.5;
-  animation: reports-tma-peso-dot-pulse calc(var(--uib-speed) * 1.111) ease-in-out infinite;
-  box-shadow: 0 0 20px color-mix(in srgb, var(--foreground) 30%, transparent);
-}
-
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(2) { transform: rotate(45deg); }
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(2)::before { animation-delay: calc(var(--uib-speed) * -0.875); }
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(3) { transform: rotate(90deg); }
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(3)::before { animation-delay: calc(var(--uib-speed) * -0.75); }
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(4) { transform: rotate(135deg); }
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(4)::before { animation-delay: calc(var(--uib-speed) * -0.625); }
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(5) { transform: rotate(180deg); }
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(5)::before { animation-delay: calc(var(--uib-speed) * -0.5); }
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(6) { transform: rotate(225deg); }
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(6)::before { animation-delay: calc(var(--uib-speed) * -0.375); }
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(7) { transform: rotate(270deg); }
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(7)::before { animation-delay: calc(var(--uib-speed) * -0.25); }
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(8) { transform: rotate(315deg); }
-[data-page="reports-tma-peso"] .dot-spinner__dot:nth-child(8)::before { animation-delay: calc(var(--uib-speed) * -0.125); }
-
-@keyframes reports-tma-peso-dot-pulse {
-  0%, 100% {
-    transform: scale(0);
-    opacity: 0.5;
-  }
-  50% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-[data-page="reports-tma-peso"] button[aria-pressed]:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-/* Ao cancelar o HoldButton, o preenchimento volta a zero durante
- * --hb-release. Se a largura começar a fechar no mesmo instante, a crista
- * ondulada recalcula a posição contra uma largura em movimento e parece se
- * desprender da barra. Aguardamos o retorno terminar antes de recolher o
- * botão; expansão e confirmação continuam inalteradas. Mesma solução já
- * aplicada em /s/reports/consolidado e /s/reports/tempo-indisponibilidade. */
-[data-page="reports-tma-peso"] button[aria-label="Segure para limpar a base"][data-phase="idle"] {
-  transition-delay: var(--hb-release), 0ms, 0ms, 0ms !important;
-}
-/* ───────── Hover das linhas da TmaTable (tema claro) ─────────
- * globals.css tem uma regra GLOBAL (fora do escopo permitido pra edição):
- *   [data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover
- *   { background-color: var(--muted-hover-bg) !important; }
- * `--muted-hover-bg` (oklch(0.93 0.002 240), ~#ededf0) é resquício do tema
- * antigo — cinza quase branco fora da paleta Zen Linen. Com !important, essa
- * regra vence QUALQUER classe Tailwind, inclusive a borda esquerda colorida
- * que distingue linha boa/ruim (hoverClass em tma-table.tsx), apagando essa
- * distinção no hover. Mesma correção já aplicada em /s/reports/consolidado
- * (equipe-table.tsx/reports-consolidado.css).
- *
- * Correção: seletor AINDA mais específico (mesmo padrão + o escopo
- * [data-page] a mais) escrevendo por cima — só nesta rota. Tom do hover:
- * --muted (bege mais escuro da paleta), não --accent (fica perto demais de
- * --card no claro, lido como "esbranquiçado").
- *
- * Linhas "ruins" (TMA acima da meta) carregam sempre a classe Tailwind
- * `hover:border-l-[var(--danger)]` (ver hoverClass em tma-table.tsx) —
- * reaproveitada aqui como seletor pra dar a essas linhas um hover com leve
- * tom de --danger por cima do bege, em vez do bege neutro das linhas boas.
- *
- * `:not([data-sem-dados="true"])` em TODAS as regras abaixo: operador sem
- * nenhum atendimento no dia não é clicável e não deve reagir a hover NENHUM,
- * nos dois temas — sem isso, essa regra (com !important) também vencia o
- * `hover:bg-transparent` que a própria linha já usa pra ficar neutra.
- */
-[data-theme="light"] [data-page="reports-tma-peso"] [data-equipe-table] > div:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
-  background-color: var(--muted) !important;
-}
-[data-theme="light"] [data-page="reports-tma-peso"] [data-equipe-table] > div.hover\:border-l-\[var\(--danger\)\]:not([data-sem-dados="true"]):hover {
-  background-color: color-mix(in srgb, var(--danger) 16%, var(--muted) 84%) !important;
-}
-
-/* ───────── Hover das linhas "ruins" (tema escuro) ─────────
- * No escuro, linhas com TMA acima da meta já têm um fundo vermelho
- * PERMANENTE (fundoLinhaRuim, inline style — sempre vence qualquer classe
- * Tailwind de hover, incluindo o hover:bg-accent herdado da linha base).
- * Resultado: passar o mouse não mudava NENHUMA cor nessas linhas, só a
- * borda esquerda + o leve translateX (hoverClass) — diferente das linhas
- * boas, que clareiam via hover:bg-accent normalmente. Regra abaixo dá o
- * MESMO feedback de cor no hover, por cima do vermelho de repouso (mistura
- * mais --danger, escurecendo/intensificando em vez de clarear). SEM
- * `[data-theme="light"]` de propósito: a regra do claro (acima) é MAIS
- * específica, então continua vencendo lá — esta só passa a valer no escuro.
- */
-[data-page="reports-tma-peso"] [data-equipe-table] > div.hover\:border-l-\[var\(--danger\)\]:not([data-sem-dados="true"]):hover {
-  background-color: color-mix(in oklch, var(--danger) 14%, transparent) !important;
-}
-
-/* ───────── Hover das linhas "sem dados" (os dois temas) ─────────
- * Operador sem nenhum atendimento no dia não é clicável e não deve reagir a
- * hover NENHUM. As regras acima já excluem essas linhas (:not([data-sem-
- * dados="true"])), mas isso só as deixa DE FORA da correção — no tema claro
- * a regra global de globals.css (--muted-hover-bg, sem essa exclusão) ainda
- * pintava essas linhas ao passar o mouse. Seletor de atributo
- * ([data-sem-dados="true"]) é mais específico que a classe usada por essa
- * regra global, então vence independente da ordem no stylesheet — força
- * transparente nos dois temas.
- */
-[data-page="reports-tma-peso"] [data-equipe-table] > div[data-sem-dados="true"]:hover {
-  background-color: transparent !important;
-}
-
-/* ───────── Fundo dos cards de Resumo (TMA/Atendidos) ─────────
- * CardsResumoTma.tsx usa bg-card/70 — no tema claro isso fica quase
- * idêntico ao --background da página ao redor (pouco contraste, "muito
- * claro"). Mesma correção já aplicada em /s/reports/consolidado
- * (VisaoGeralCards, via wrapper data-visao-geral-cards): não editamos o
- * componente (é usado só nesta página, mas mantemos o mesmo padrão de
- * escopar via wrapper) — data-cards-resumo-tma (adicionado em
- * analitico-tma-section.tsx) escurece .bg-card/70 um tom abaixo do
- * background da página, só no claro. Tema escuro mantém integralmente o
- * bg-card/70 original (fora do seletor [data-theme="light"]).
- */
-[data-theme="light"] [data-page="reports-tma-peso"] [data-cards-resumo-tma] .bg-card\/70 {
-  background-color: color-mix(in srgb, var(--background) 82%, var(--muted) 18%) !important;
-}
-
-/* ───────── Borda tracejada no hover (tema claro) ─────────
- * globals.css tem uma regra GLOBAL (fora do escopo permitido pra edição) que
- * escurece qualquer .border-dashed no hover, no tema claro:
- *   [data-theme="light"] .border-dashed:hover { border-color: var(--primary) !important; }
- * Com !important, essa regra vence até a cor definida via inline style —
- * atinge tanto o dropzone REAL (TmaUploadDropzone, que já define a própria
- * borderColor por estado, mas sem !important) quanto a caixa tracejada MUDA
- * do esqueleto de loading (SkeletonPainelAnexo, sem classe própria, só
- * utilities Tailwind) — fazendo a borda "animar"/escurecer ao passar o
- * mouse ali mesmo estando tudo desabilitado (não é um dropzone real, só um
- * placeholder). Duas regras abaixo cancelam o efeito nos dois casos,
- * restritas a esta rota. Mesma correção já aplicada em /s/reports/consolidado
- * e /s/reports/tempo-indisponibilidade.
- */
-[data-theme="light"] [data-page="reports-tma-peso"] .upload-dropzone-root-reports-tma-peso[data-dropzone-state="idle"]:hover {
-  border-color: var(--border) !important;
-}
-[data-theme="light"] [data-page="reports-tma-peso"] .border-dashed:hover {
-  border-color: var(--border) !important;
-}
-
-/* ───────── "Título" superior da TmaTable (tema claro) ─────────
- * Mesmo ajuste já feito no cabeçalho da EquipeTable do Consolidado (linha
- * :first-child): a cor do texto do cabeçalho (Operador/TMA/Qtd. Ligações)
- * fica mais bege/suave — em vez do --foreground quase preto (#1E1E1E) —
- * igual ao tom já usado pra texto secundário no resto do site
- * (--muted-foreground, #5E5A52). TmaTable não tem linha de totais (sem
- * equivalente ao "EQUIPE" da EquipeTable), então só o cabeçalho recebe o
- * ajuste. Tema escuro inalterado (fora do seletor [data-theme="light"]).
- */
-[data-theme="light"] [data-page="reports-tma-peso"] [data-equipe-table] > div:first-child {
-  color: var(--muted-foreground) !important;
-}
-
-/* ───────── Tabelas do Analítico (tema claro) ─────────
- * Mesmo tratamento já aplicado em /s/reports/tempo-indisponibilidade (as 3
- * tabelas do Analítico da TMA — AnaliticoTmaTabela, CardRechamada,
- * CardForaDaCurva — têm a mesma estrutura de grid com STICKY_HEADER_BG
- * inline + coluna(s) do nome do operador sem fundo próprio no claro):
- * cada bloco usava a MESMA fórmula de STICKY_HEADER_BG (color-mix com
- * --muted 40%), mas sem nenhum reforço de contraste no claro ela ficava
- * pálida demais contra o --card claro ao redor — e a(s) célula(s) com o
- * nome do operador ficavam sem NENHUM fundo próprio (transparentes),
- * misturando com o restante da linha. Normalizamos os três blocos pelos
- * MESMOS tokens da paleta Zen Linen: cabeçalho em --muted opaco com texto
- * muted-foreground (sobrescrevendo o STICKY_HEADER_BG/text-[11px] inline,
- * que podia variar de intensidade visual entre os três), e a(s) célula(s)
- * do operador num bege um pouco mais marcado, pra se separar visualmente
- * do resto da linha — mesma proporção de color-mix usada em
- * reports-tempo-indisp.css. Tema escuro inalterado (fora do seletor
- * [data-theme="light"]).
- */
-[data-theme="light"] [data-page="reports-tma-peso"] :is(
-  [data-analitico-tma-tabela],
-  [data-rechamada-tabela],
-  [data-fora-da-curva-tabela],
-  [data-peso-desigual-tabela]
-) > div:first-child {
-  background-color: var(--muted) !important;
-  border-bottom: 2px solid var(--border) !important;
-  color: var(--muted-foreground) !important;
-}
-
-/* Célula(s) de cabeçalho do NOME do operador — MESMO destaque nos três
- * blocos. Sem esta regra, a célula "Operador"/"1º Atendimento" ficava
- * apoiada só no --muted opaco da linha (regra acima), enquanto na Tabela de
- * TMA por Tema (única com coluna sticky) ela já herdava este fundo mais
- * claro — como o texto usa uma cor translúcida (muted-foreground/70), o
- * MESMO valor de cor parecia mais escuro/diferente contra o --muted cheio
- * do que contra esta mistura mais clara. Normalizado nos três: AnaliticoTma
- * Tabela e CardForaDaCurva têm uma só coluna de nome (1ª); CardRechamada
- * tem duas (1º e 2º Atendimento, 1ª e última coluna do cabeçalho).
- */
-/* Removido: destaque de fundo nas células de título do nome (Rechamada e
- * Fora da Curva). O cabeçalho fica todo no mesmo --muted, sem títulos com
- * fundos diferentes. */
-
-/* Célula(s) do NOME do operador em cada linha — AnaliticoTmaTabela e
-   CardForaDaCurva têm uma só (1ª coluna); CardRechamada tem duas (1º e 2º
-   Atendimento, 1ª e última coluna da linha). */
-[data-theme="light"] [data-page="reports-tma-peso"] [data-fora-da-curva-tabela] > div:not(:first-child) > div:first-child,
-[data-theme="light"] [data-page="reports-tma-peso"] [data-rechamada-tabela] > div:not(:first-child) > div:first-child,
-[data-theme="light"] [data-page="reports-tma-peso"] [data-rechamada-tabela] > div:not(:first-child) > div:last-child {
-  background-color: color-mix(in srgb, var(--card) 68%, var(--muted) 32%) !important;
-}
-
-/* O Dialog do Radix é portado para document.body. O data-page aplicado no
- * próprio conteúdo torna o Zen Linen explícito e independente da árvore da
- * página que disparou o modal.
- *
- * Fallback no var() ("#E9E4D8"/"#141414" — os mesmos hex do tema desta
- * rota): se o seletor `:has()` no topo do arquivo não alcançar o portal por
- * algum motivo (ordem de carregamento do CSS, mudança futura de DOM), a
- * custom property --background cai no fallback explícito em vez de ficar
- * "guaranteed-invalid"/transparente (o que revelaria o branco do tema
- * global do site por baixo do modal — só a borda, resolvida à parte,
- * pareceria "no tema"). O style inline em TmaDetalheDialog (corFundoDialog,
- * via resolverTokenCss) já cobre o mesmo caso de forma mais robusta — este
- * fallback é só uma segunda camada.
- */
-[data-theme="light"] .reports-tma-peso-dialog {
-  background-color: var(--background, #E9E4D8) !important;
-}
-.reports-tma-peso-dialog {
-  background-color: var(--background, #141414) !important;
-  color: var(--foreground) !important;
-  border-color: var(--border) !important;
-  font-family: var(--font-zen-sans), "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
-}
-.reports-tma-peso-dialog [data-slot="dialog-close"] {
-  color: var(--muted-foreground);
-}
-.reports-tma-peso-dialog [data-slot="dialog-close"]:hover {
-  color: var(--foreground);
-  background-color: var(--accent);
-}
-
-/* Capturas: a tabela e o detalhe herdam o mesmo tema da tela, mas ficam
-   livres de scrollbar e de estados transitórios de interação. */
-[data-page="reports-tma-peso"] [data-tma-png],
-[data-page="reports-tma-peso"] [data-tma-detalhe-png] {
-  background-color: var(--background);
-  overflow: visible;
-  scrollbar-width: none;
-}
-[data-page="reports-tma-peso"] [data-tma-png] *,
-[data-page="reports-tma-peso"] [data-tma-detalhe-png] * {
-  scrollbar-width: none;
-}
-[data-page="reports-tma-peso"] [data-tma-png] *::-webkit-scrollbar,
-[data-page="reports-tma-peso"] [data-tma-detalhe-png] *::-webkit-scrollbar {
-  display: none;
-}
-[data-page="reports-tma-peso"] [data-tma-png] :focus,
-[data-page="reports-tma-peso"] [data-tma-detalhe-png] :focus {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Sem clareamento com hex fixos da paleta antiga nos wrappers de export
- * ([data-tma-png] e [data-tma-detalhe-png]): igual ao Consolidado, tela e
- * print usam as cores reais do tema ativo (paleta global). */
-
 /* ───────── Input "Meta do TMA" (Configurações da Tabela) ─────────
- * Mesmas regras do #config-meta-tx do consolidado: sem o outline global de
- * foco (globals.css: input:focus-visible) e, no tema claro, o mesmo fundo
- * leve (--input a 30%) que o Input já tem no escuro (dark:bg-input/30).
+ * Mesmas regras do #config-meta-tx do Consolidado: sem o outline global de
+ * foco e, no tema claro, o mesmo fundo leve (--input a 30%) que o Input já
+ * tem no escuro (dark:bg-input/30).
  */
 [data-page="reports-tma-peso"] #config-meta-tma,
 [data-page="reports-tma-peso"] #config-meta-tma:focus,
@@ -528,72 +28,14 @@ body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] > svg {
   outline: none;
   box-shadow: none;
 }
-
 [data-theme="light"] [data-page="reports-tma-peso"] #config-meta-tma {
   background-color: color-mix(in oklab, var(--input) 30%, transparent);
 }
 
-/* ───────── Fonte única: Instrument Sans em tudo ─────────
- * Mesma regra do consolidado: ds-mono / ds-mono-sm / ds-display
- * (globals.css) e o utilitário font-mono usam var(--font-mono) = Geist Mono.
- * Escopado a esta rota — cobre também os portais (dialogs, popovers,
- * tooltips e toasts abertos a partir desta página). tabular-nums mantém o
- * alinhamento das colunas numéricas que o mono garantia.
- */
-:is([data-page="reports-tma-peso"], .reports-tma-peso-dialog, body:has([data-page="reports-tma-peso"]) :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="tooltip-content"], [data-sonner-toast])) :is(.ds-mono, .ds-mono-sm, .ds-display, .font-mono) {
-  font-family: var(--font-sans);
-  font-variant-numeric: tabular-nums;
-}
-
-/* ───────── TmaTable = visual da EquipeTable do Consolidado ─────────
- * Mesmas regras de reports-consolidado.css, escopadas à tabela desta rota:
- * - cabeçalho: tipografia explícita nas células (e muted-foreground no claro);
- * - hover semântico nos dois temas: acima da meta = --danger 10%, dentro da
- *   meta = --success 7%.
- */
-[data-page="reports-tma-peso"] [data-equipe-table] > div:first-child > div {
-  font-family: var(--font-sans);
-  font-size: var(--text-body);
-  font-weight: 700;
-  line-height: var(--leading-normal);
-  letter-spacing: 0.025em;
-  text-transform: uppercase;
-}
-[data-theme="light"] [data-page="reports-tma-peso"] [data-equipe-table] > div:first-child > div {
-  color: var(--muted-foreground) !important;
-}
-
-[data-theme] [data-page="reports-tma-peso"] [data-equipe-table] > div.hover\:border-l-\[var\(--danger\)\]:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
-  background-color: color-mix(in oklch, var(--danger) 10%, transparent) !important;
-}
-[data-theme] [data-page="reports-tma-peso"] [data-equipe-table] > div.hover\:border-l-\[var\(--success\)\]:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
-  background-color: color-mix(in oklch, var(--success) 7%, transparent) !important;
-}
-
-/* ───────── "TMA por tema - Operador" = "Tabela de pausas detalhadas" ─────────
- * Mesmas regras de reports-tempo-indisp.css (data-pausas-tabela): títulos em
- * --foreground no escuro (no claro, --muted + borda 2px + muted-foreground,
- * regra "Tabelas do Analítico" acima). Partes sticky sem cor própria: o
- * cabeçalho replica a cor da linha do cabeçalho e a coluna Operador o fundo
- * da página. in srgb: a linha do cabeçalho é --muted a 40% sobre o fundo, e
- * o navegador compõe transparência em sRGB.
- */
-[data-page="reports-tma-peso"] :is([data-analitico-tma-tabela], [data-peso-desigual-tabela]) > div:first-child {
-  color: var(--foreground);
-}
-[data-page="reports-tma-peso"] [data-tma-tema-sticky-header] {
-  background-color: color-mix(in srgb, var(--muted) 40%, var(--background));
-}
-[data-theme="light"] [data-page="reports-tma-peso"] [data-tma-tema-sticky-header] {
-  background-color: var(--muted);
-}
-[data-page="reports-tma-peso"] [data-tma-tema-sticky-nome] {
-  background-color: var(--background);
-}
-
-/* ───────── "TMA por tema - supervisor" (TmaPorTemaCard) ─────────
+/* ───────── "TMA por tema - Supervisor" (TmaPorTemaCard) ─────────
  * Trilho das barras: --muted a 45% no escuro (discreto sobre o fundo) e
- * --muted cheio no claro (a 45% some no bege da página). */
+ * --muted cheio no claro (a 45% some no fundo da página).
+ */
 [data-page="reports-tma-peso"] [data-tma-por-tema-trilho] {
   background-color: color-mix(in oklab, var(--muted) 45%, transparent);
 }
@@ -601,67 +43,32 @@ body:has([data-page="reports-tma-peso"]) [data-slot="tooltip-content"] > svg {
   background-color: var(--muted);
 }
 
-/* ───────── Modal do operador (TmaDetalheDialog) = modal do Consolidado ─────────
- * Mesmas regras de reports-consolidado.css (data-tabela-operador-temas e
- * .grafico-evolucao-chart): cabeçalho das tabelas escuro = --muted a 40% +
- * borda 1px e títulos em --foreground; claro = --muted + borda 2px e títulos
- * em --muted-foreground. Gráfico sem a borda de foco ao clicar nele.
- */
-[data-page="reports-tma-peso"] [data-tabela-operador-tma] thead tr {
-  background-color: color-mix(in oklab, var(--muted) 40%, transparent);
-  border-bottom: 1px solid var(--border);
-}
-[data-page="reports-tma-peso"] [data-tabela-operador-tma] thead th {
-  font-family: var(--font-sans);
-  font-size: var(--text-body);
-  font-weight: 700;
-  letter-spacing: 0.025em;
-  text-transform: uppercase;
-  line-height: var(--leading-normal);
-  color: var(--foreground);
-}
-[data-theme="light"] [data-page="reports-tma-peso"] [data-tabela-operador-tma] thead tr {
-  background-color: var(--muted);
-  border-bottom-width: 2px;
-}
-[data-theme="light"] [data-page="reports-tma-peso"] [data-tabela-operador-tma] thead th {
-  color: var(--muted-foreground);
-}
-[data-page="reports-tma-peso"] .grafico-evolucao-chart :is(.recharts-wrapper, .recharts-surface, svg, div):is(:focus, :focus-visible) {
-  outline: none;
-}
-
-/* Botão "Baixar como imagem" do modal do operador: sem a borda de foco (o
- * Dialog foca esse botão sozinho ao abrir, e o outline global de
- * globals.css desenhava uma moldura preta em volta dele). */
-.reports-tma-peso-dialog .tma-detalhe-export-btn,
-.reports-tma-peso-dialog .tma-detalhe-export-btn:is(:focus, :focus-visible) {
-  outline: none !important;
-  box-shadow: none !important;
-  border-color: transparent !important;
-}
-
-/* ───────── Skeletons de carregamento (loading.tsx + overlay de Limpar base) ─────────
- * Mesmo tom do Consolidado (.consolidado-skeleton): os blocos usavam bg-card
- * (branco puro na Vercel clara, sumiam no fundo) — --muted-foreground a 14%,
- * em degraus pelas opacidades originais. Vale nos dois temas.
- */
-.tma-peso-skeleton .bg-card {
-  background-color: color-mix(in oklab, var(--muted-foreground) 14%, transparent);
-}
-.tma-peso-skeleton .bg-card\/70 {
-  background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
-}
-.tma-peso-skeleton :is(.bg-card\/60, .bg-card\/40) {
-  background-color: color-mix(in oklab, var(--muted-foreground) 7%, transparent);
-}
-
 /* ───────── Contagem do "Fora da curva" (Curtas/Longas) no Claude Amber ─────────
- * O bg-muted virava uma pílula quase preta (#131313) no escuro, fora do tom
- * da paleta. Aqui vira um chip tingido com o laranja do --primary, nos dois
+ * O bg-muted virava uma pílula quase preta no escuro, fora do tom da
+ * paleta. Aqui vira um chip tingido com o laranja do --primary, nos dois
  * temas. Vercel inalterada.
  */
 :root[data-palette="claude-amber"] [data-page="reports-tma-peso"] [data-fora-curva-total] {
   background-color: color-mix(in srgb, var(--primary) 16%, transparent);
   color: var(--primary);
+}
+
+/* ───────── Capturas (Copiar imagem e PNG do modal do operador) ─────────
+ * A tabela e o detalhe saem com o tema da tela, sem barra de rolagem nem
+ * anel de foco de estados transitórios. O botão de exportar do modal não
+ * desenha a borda de foco (o Dialog foca esse botão sozinho ao abrir).
+ */
+[data-page="reports-tma-peso"] :is([data-tma-png], [data-tma-detalhe-png]),
+[data-page="reports-tma-peso"] :is([data-tma-png], [data-tma-detalhe-png]) * {
+  scrollbar-width: none;
+}
+[data-page="reports-tma-peso"] :is([data-tma-png], [data-tma-detalhe-png]) :focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+[data-page="reports-tma-peso"] .tma-detalhe-export-btn,
+[data-page="reports-tma-peso"] .tma-detalhe-export-btn:is(:focus, :focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
 }

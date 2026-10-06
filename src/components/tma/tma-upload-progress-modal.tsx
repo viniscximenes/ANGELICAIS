@@ -75,8 +75,9 @@ function getStepStatus(
 }
 
 /**
- * Modal de progresso do upload da TMA — MESMA estrutura visual de
- * UploadProgressModal (d-1/upload-progress-modal.tsx: backdrop com blur,
+ * Modal de progresso do upload da TMA — MESMA estrutura visual da variante
+ * temática de UploadProgressModal (d-1/upload-progress-modal.tsx: card
+ * neumórfico .modal-neumorfico com fundo sólido,
  * card central com scale/opacity/y de entrada, barra de progresso animada,
  * timeline vertical com círculo/brilho na etapa ativa, spinner→check
  * animado), copiada literalmente (mesmas classes/tokens/durações/easing) —
@@ -97,6 +98,11 @@ export function TmaUploadProgressModal({ step, resumoFinal }: TmaUploadProgressM
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
+          // Fundo sólido do card neumórfico do padrão
+          // ([data-upload-backdrop][data-neumorfico], globals.css).
+          data-page="reports-tma-peso"
+          data-upload-backdrop
+          data-neumorfico
           className="fixed inset-0 z-50 flex items-center justify-center"
           style={{
             background: "color-mix(in oklch, var(--background) 80%, transparent)",
@@ -108,10 +114,10 @@ export function TmaUploadProgressModal({ step, resumoFinal }: TmaUploadProgressM
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.96, opacity: 0, y: 8 }}
             transition={{ duration: 0.25, ease: EASE_OUT_EXPO }}
-            className="elevation-3 mx-4 w-full max-w-md rounded-2xl p-9"
+            className="modal-neumorfico mx-4 w-full max-w-md rounded-2xl p-9"
           >
-            <h3 className="ds-h2 mb-1.5">Processando relatório de voz</h3>
-            <p className="ds-small text-muted-foreground mb-7">
+            <h3 className="ds-h3 mb-1.5">Processando relatório de voz</h3>
+            <p className="ds-body text-muted-foreground mb-7">
               {step === "done"
                 ? (resumoFinal ?? "TMA atualizado com sucesso")
                 : "Aguarde enquanto processamos seu arquivo"}
@@ -119,7 +125,7 @@ export function TmaUploadProgressModal({ step, resumoFinal }: TmaUploadProgressM
 
             <div
               className="mb-8 h-1.5 w-full overflow-hidden rounded-full"
-              style={{ background: "var(--elevation-1-bg)" }}
+              style={{ background: "var(--muted, var(--border))" }}
             >
               <motion.div
                 className="h-full rounded-full"
@@ -144,6 +150,7 @@ export function TmaUploadProgressModal({ step, resumoFinal }: TmaUploadProgressM
                   <div key={s.id} className="flex gap-3.5">
                     <div className="flex flex-col items-center">
                       <motion.div
+                        data-etapa-status={status}
                         className="relative flex shrink-0 items-center justify-center rounded-full"
                         initial={false}
                         animate={{ scale: status === "active" ? 1.06 : 1 }}
@@ -216,7 +223,7 @@ export function TmaUploadProgressModal({ step, resumoFinal }: TmaUploadProgressM
                       className={isLast ? "pb-0.5" : "pb-5"}
                     >
                       <p
-                        className="ds-mono font-semibold tracking-wide"
+                        className="ds-body font-semibold"
                         style={{
                           color:
                             status === "done" ? "var(--success)" : status === "active" ? s.color : "var(--foreground)",
@@ -225,7 +232,7 @@ export function TmaUploadProgressModal({ step, resumoFinal }: TmaUploadProgressM
                       >
                         {s.label}
                       </p>
-                      <p className="ds-mono-sm text-muted-foreground/70 mt-0.5 text-[11px]">{s.description}</p>
+                      <p className="ds-small text-muted-foreground/70 mt-0.5">{s.description}</p>
                     </motion.div>
                   </div>
                 );

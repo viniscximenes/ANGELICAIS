@@ -17,8 +17,10 @@ import {
   LINHA_CLASS,
   NOME_CELL_CLASS,
   ROLAGEM_CLASS,
+  STICKY_HEADER_CELL_CLASS,
+  STICKY_NOME_CELL_CLASS,
   VALOR_CELL_CLASS,
-} from "./tabela-analitico";
+} from "@/components/gestor/tabela-analitico";
 
 /**
  * Tolerância FIXA deste card — 10 minutos para mais e para menos, pedido
@@ -100,7 +102,7 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
         <div className={ROLAGEM_CLASS}>
           <div className="min-w-fit">
             <div className={HEADER_ROW_CLASS} style={{ gridTemplateColumns: GRID_COLS }}>
-              <div data-tabela-sticky-header className={cn(HEADER_CELL_CLASS, "sticky left-0 z-10")}>
+              <div className={cn(HEADER_CELL_CLASS, STICKY_HEADER_CELL_CLASS)}>
                 Operador
               </div>
               {COLUNAS_HORARIO.map((col, i) => (
@@ -116,7 +118,7 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
                 className={cn(LINHA_CLASS, idx < linhas.length - 1 && "border-b border-border/30")}
                 style={{ gridTemplateColumns: GRID_COLS }}
               >
-                <div data-tabela-sticky-nome className={cn(NOME_CELL_CLASS, "sticky left-0 z-10")}>
+                <div className={cn(NOME_CELL_CLASS, STICKY_NOME_CELL_CLASS)}>
                   {formatNomeDotSobrenome(op.email)}
                 </div>
                 {COLUNAS_HORARIO.map((col, i) => {

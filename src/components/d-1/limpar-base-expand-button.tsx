@@ -8,7 +8,8 @@ import { IconLoader2, IconTrash } from "@tabler/icons-react";
  * o texto "Limpar Base" cai de cima pro centro. Adaptado à altura e aos
  * cantos dos controles da página e às cores do tema. Estilos em
  * globals.css (.limpar-base-expand, seção "Padrão visual") — usado em
- * /s/reports/consolidado e /s/reports/tempo-indisponibilidade.
+ * /s/reports/consolidado, /s/reports/tempo-indisponibilidade e
+ * /s/reports/tma-peso.
  *
  * Um clique limpa a base (a pressão contínua foi removida a pedido).
  */

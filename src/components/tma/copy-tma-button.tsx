@@ -37,7 +37,7 @@ export function CopyTmaButton({ horaReport }: CopyTmaButtonProps) {
   async function handleCopy() {
     const target = document.querySelector<HTMLElement>("[data-tma-png]");
     if (!target) {
-      toast.error("Tabela não encontrada", { className: "reports-tma-peso-toast" });
+      toast.error("Tabela não encontrada", { className: "toast-padrao" });
       return;
     }
 
@@ -65,7 +65,7 @@ export function CopyTmaButton({ horaReport }: CopyTmaButtonProps) {
       setState("idle");
       toast.error("Não foi possível copiar", {
         description: "Tente em outro navegador (Chrome/Edge)",
-        className: "reports-tma-peso-toast",
+        className: "toast-padrao",
       });
     }
   }

@@ -26,7 +26,7 @@ interface Props {
   onCleared?: () => void | Promise<void>;
   /**
    * Classe extra aplicada aos toasts (sonner) desta ação — ex.
-   * "reports-tma-peso-toast", pra herdar o tema da rota sem tocar no
+   * "toast-padrao", pra herdar o tema da rota sem tocar no
    * <Toaster/> global. Default: undefined.
    */
   toastClassName?: string;
@@ -38,8 +38,8 @@ interface Props {
  * Botão "Limpar Base" com confirmação por pressão contínua (Hold Button do
  * React Bits): ícone-only em repouso, expande horizontalmente revelando
  * "Limpar Base" e só executa a ação após a pressão completar. Usado por
- * TMA, Pausas e o Consolidado do coordenador. (/s/reports/consolidado e
- * /s/reports/tempo-indisponibilidade usam LimparBaseExpandButton.)
+ * Pausas e pelo Consolidado do coordenador. (/s/reports/consolidado,
+ * tempo-indisponibilidade e tma-peso usam LimparBaseExpandButton.)
  */
 export function ClearBaseButton({
   action,

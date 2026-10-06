@@ -75,23 +75,6 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
     typeof document === "undefined"
       ? null
       : document.querySelector<HTMLElement>('[data-page="reports-tma-peso"]');
-  const fontFamilyEscopo = temaTma ? getComputedStyle(temaTma).fontFamily : undefined;
-
-  // Fundo do modal (DialogContent + wrapper interno) — resolvido via
-  // resolverTokenCss (valor COMPUTADO no elemento REAL da página, não a
-  // string "var(--background)" crua): o Dialog do Radix é portado pra
-  // document.body, fora da árvore [data-page="reports-tma-peso"]. O CSS
-  // escopado (.reports-tma-peso-dialog, ver reports-tma-peso.css) cobre a
-  // maioria dos casos, mas depende de um seletor `:has()` bem específico
-  // pra alcançar o portal — se ele não casar (ex.: alguma mudança de DOM,
-  // ordem de carregamento do CSS), --background cai pro valor padrão do
-  // tema GLOBAL do site (claro/quase branco), deixando o modal com "dois
-  // fundos": borda no tom certo (border-border/80, resolvida à parte) e
-  // miolo branco. Resolver aqui, a partir do elemento REAL da página
-  // (sempre montado por baixo enquanto o modal está aberto), elimina essa
-  // dependência por completo — mesma técnica já usada abaixo pra
-  // corAbaixoMeta/corAcimaMeta.
-  const corFundoDialog = resolverTokenCss("--background", "#E9E4D8", temaTma);
 
   // 7 buckets (Hotline + Reversão Churn somadas), espelhando as colunas de
   // "queda por skill" da tabela principal — não as 8 skills cruas.
@@ -227,11 +210,11 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
       */}
       <DialogContent
         data-page="reports-tma-peso"
-        className="reports-tma-peso-dialog max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-4xl bg-background border-border/80 p-6 shadow-2xl"
-        style={{
-          backgroundColor: corFundoDialog,
-          ...(fontFamilyEscopo && { fontFamily: fontFamilyEscopo }),
-        }}
+        // Mesmo visual neumórfico do dialog do operador do Consolidado
+        // (globals.css), com data-neu-tile nos KPIs. pagina-padrao: barras
+        // de rolagem do padrão também neste portal.
+        data-operador-neumorfico
+        className="pagina-padrao max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-4xl bg-background border-border/80 p-6 shadow-2xl"
       >
         {operador && (
           <>
@@ -240,7 +223,8 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
               filename={`tma_${emailLocal}.png`}
               className="tma-detalhe-export-btn absolute top-2 right-10"
               corDeFundoDoAlvo
-              toastClassName="reports-tma-peso-toast"
+              toastClassName="toast-padrao"
+              showSuccessToast={false}
             />
 
             {/*
@@ -250,7 +234,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
               assim a imagem sempre reflete o tema atual (claro/escuro), não
               um tema fixo.
             */}
-            <div ref={pngRef} data-tma-detalhe-png style={{ backgroundColor: corFundoDialog }}>
+            <div ref={pngRef} data-tma-detalhe-png style={{ backgroundColor: "var(--background)" }}>
               <DialogHeader className="pb-3 space-y-1.5">
                 <DialogTitle className="ds-h3 text-foreground font-semibold tracking-tight text-xl">{emailLocal}</DialogTitle>
               </DialogHeader>
@@ -262,13 +246,13 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                 TMA na cor do status (verde dentro da meta, vermelho fora).
               */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="flex flex-col justify-center gap-1 px-4 py-3.5">
+                <div data-neu-tile className="flex flex-col justify-center gap-1 px-4 py-3.5">
                   <p className="ds-small text-muted-foreground mb-1 font-bold tracking-wider uppercase">TMA</p>
                   <p className={`ds-display text-2xl font-bold tabular-nums ${classeStatus(operador.status)}`}>
                     {formatKpiValue(operador.tmaSegundos, "time")}
                   </p>
                 </div>
-                <div className="flex flex-col justify-center gap-1 px-4 py-3.5">
+                <div data-neu-tile className="flex flex-col justify-center gap-1 px-4 py-3.5">
                   <p className="ds-small text-muted-foreground mb-1 font-bold tracking-wider uppercase">Atendimentos</p>
                   <p className="ds-display text-2xl font-bold tabular-nums text-foreground">
                     {operador.qtdAtendimentos}
@@ -279,9 +263,8 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
               {/* ── Evolução por hora ──────────────────────────────── */}
               <div className="space-y-2">
                 <TituloBloco>Evolução por hora</TituloBloco>
-                {/* grafico-evolucao-chart: sem a borda de foco ao clicar no
-                    gráfico (reports-tma-peso.css), igual ao Consolidado. */}
-                <div className="grafico-evolucao-chart w-full h-[220px]">
+                {/* Sem a borda de foco ao clicar no gráfico, igual ao Consolidado. */}
+                <div className="grafico-evolucao-chart w-full h-[220px] [&_*:focus]:outline-none [&_*:focus-visible]:outline-none">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={evolucaoPorHora} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         {temGradiente && (
@@ -450,11 +433,11 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                     </p>
                   ) : (
                     <div className="overflow-x-auto">
-                      {/* data-tabela-operador-tma: cabeçalho no visual da
-                          tabela do modal do Consolidado (reports-tma-peso.css). */}
-                      <table data-tabela-operador-tma className="w-full border-collapse text-left text-sm">
+                      {/* .cabecalho-tabela: cabeçalho no visual da tabela do
+                          modal do Consolidado (globals.css). */}
+                      <table className="w-full border-collapse text-left text-sm">
                         <thead>
-                          <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 font-bold tracking-wide uppercase">
+                          <tr className="cabecalho-tabela">
                             <th className="px-4 py-2.5 font-semibold">Tema</th>
                             <th className="px-4 py-2.5 text-center font-semibold">Atendimentos</th>
                             <th className="px-4 py-2.5 text-center font-semibold">% do total</th>
@@ -490,9 +473,9 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
               <div className="space-y-2">
                 <TituloBloco>Atendimentos</TituloBloco>
                 <div className="overflow-x-auto">
-                  <table data-tabela-operador-tma className="w-full border-collapse text-left text-sm">
+                  <table className="w-full border-collapse text-left text-sm">
                     <thead>
-                      <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 font-bold tracking-wide uppercase">
+                      <tr className="cabecalho-tabela">
                         <th className="px-4 py-2.5 text-center font-semibold">TMA</th>
                         <th className="px-4 py-2.5 font-semibold">Skill</th>
                         <th className="px-4 py-2.5 text-center font-semibold">Cliente</th>

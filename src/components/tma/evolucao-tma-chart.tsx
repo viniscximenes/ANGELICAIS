@@ -13,6 +13,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+import { GraficoVazio } from "@/components/dashboard/retencao/analitico-skeleton";
 import { formatFaixaHora } from "@/components/dashboard/retencao/grafico-evolucao";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import type { TmaHoraData } from "@/lib/tma/get-gestor-tma-evolucao-hora";
@@ -21,6 +22,30 @@ import type { TmaThresholdConfig } from "@/lib/tma/tma-status";
 interface EvolucaoTmaChartProps {
   dados: TmaHoraData[];
   thresholdConfig: TmaThresholdConfig;
+}
+
+/** Altura do gráfico — a mesma do "Evolução da equipe" do Consolidado. */
+const ALTURA_GRAFICO = 380;
+
+/** Recorta as horas vazias das pontas (antes do 1º e depois do último
+ * atendimento) — mesma regra do "Evolução da equipe" do Consolidado. */
+function recortarHoras(dados: TmaHoraData[]): TmaHoraData[] {
+  const primeiro = dados.findIndex((h) => h.total > 0);
+  if (primeiro === -1) return [];
+  let ultimo = dados.length - 1;
+  while (ultimo > primeiro && dados[ultimo].total === 0) ultimo--;
+  return dados.slice(primeiro, ultimo + 1);
+}
+
+function Titulo() {
+  return (
+    <div>
+      <h3 className="ds-h3 font-semibold text-foreground">Evolução da equipe</h3>
+      <p className="ds-small text-muted-foreground mt-1">
+        TMA e volume de atendimentos ao longo do dia. Cada hora representa o intervalo completo (ex.: 09h = 09:00 às 09:59).
+      </p>
+    </div>
+  );
 }
 
 /** Abaixo disso, o TMA da hora é marcado como amostra pequena (mesmo piso do Consolidado). */
@@ -91,7 +116,7 @@ function CursorSemHorasVazias(props: {
  * nunca numa imagem exportada/compartilhada.
  */
 export function EvolucaoTmaChart({ dados, thresholdConfig }: EvolucaoTmaChartProps) {
-  const chartData = dados;
+  const chartData = recortarHoras(dados);
   const threshold = thresholdConfig.threshold;
 
   const validValues = chartData
@@ -137,15 +162,25 @@ export function EvolucaoTmaChart({ dados, thresholdConfig }: EvolucaoTmaChartPro
     eixoTma = { domain: [base, topo], ticks };
   }
 
+  // Sem atendimento com horário: o gráfico esqueleto parado (como no
+  // Consolidado), com o título mantido.
+  if (chartData.length === 0) {
+    return (
+      <div className="space-y-3">
+        <Titulo />
+        <GraficoVazio
+          titulo="Sem atendimentos com horário"
+          descricao="Ainda não há atendimentos com horário pra montar a evolução do dia."
+          altura={320}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {/* ── Título fora do card ─────────────────────────────────── */}
-      <div>
-        <h3 className="ds-h3 font-semibold text-foreground">Evolução da equipe</h3>
-        <p className="ds-small text-muted-foreground mt-1">
-          TMA e volume de atendimentos ao longo do dia. Cada hora representa o intervalo completo (ex.: 09h = 09:00 às 09:59).
-        </p>
-      </div>
+      <Titulo />
 
       {/* ── Legenda (mesma do Consolidado, adaptada ao TMA) ─────── */}
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs">
@@ -180,8 +215,11 @@ export function EvolucaoTmaChart({ dados, thresholdConfig }: EvolucaoTmaChartPro
         </span>
       </div>
 
-      {/* grafico-evolucao-chart: sem a borda de foco ao clicar (reports-tma-peso.css). */}
-      <div className="grafico-evolucao-chart w-full h-[320px]">
+      {/* Sem a borda de foco ao clicar no gráfico (o Recharts o deixa focável). */}
+      <div
+        className="grafico-evolucao-chart w-full [&_*:focus]:outline-none [&_*:focus-visible]:outline-none"
+        style={{ height: ALTURA_GRAFICO }}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             {temGradiente && (

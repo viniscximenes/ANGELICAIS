@@ -752,7 +752,8 @@ select option {
     color: var(--foreground) !important;
 }
 
-/* Cabeçalho das tabelas em grid com data-equipe-table (EquipeTable, TMA) */
+/* Cabeçalho das tabelas em grid com data-equipe-table (EquipeTable:
+   Consolidado, comparativo, quartil) */
 [data-theme="light"] [data-equipe-table] > div:first-child {
     background-color: var(--muted) !important;
     border-bottom: 2px solid var(--border) !important;
