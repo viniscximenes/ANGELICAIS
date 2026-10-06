@@ -1,6 +1,6 @@
 "use client";
 
-import { TABELA_HEADER_BORDA } from "@/components/gestor/tabela-padrao";
+import { GraficoVazio } from "@/components/dashboard/retencao/analitico-skeleton";
 import {
   buildForecastPorOperador,
   calcularAderenciaOperador,
@@ -9,54 +9,23 @@ import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
 import { cn } from "@/lib/utils";
 
 import type { OperadorAnaliticoTempoIndisp } from "./merge-tempo-indisp";
+import {
+  CARD_CLASS,
+  gridColunas,
+  HEADER_CELL_CLASS,
+  HEADER_ROW_CLASS,
+  LINHA_CLASS,
+  NOME_CELL_CLASS,
+  ROLAGEM_CLASS,
+  VALOR_CELL_CLASS,
+} from "./tabela-analitico";
 
 /**
- * Tolerância FIXA deste card — 10 minutos para mais e para menos, conforme
- * pedido explicitamente pra esta tabela. É INDEPENDENTE de
- * config_aderencia.toleranciaMin (o valor configurável que o
- * OperadorAnaliticoDialog usa hoje — atualmente também 10 por default, mas
- * ajustável pelo gestor na engrenagem). Este card não lê nem altera essa
- * config; usa sempre 10, hardcoded.
- *
- * Exportada: reaproveitada por pausas-nao-realizadas-analitico.tsx (não usa
- * tolerância, mas documenta o mesmo horizonte) e por
- * aderencia-equipe-analitico.tsx (agregado da mesma tolerância) — nenhum
- * dos dois recalcula ou redefine esse número, só importam esta constante.
+ * Tolerância FIXA deste card — 10 minutos para mais e para menos, pedido
+ * explícito pra esta tabela. Independente de config_aderencia.toleranciaMin
+ * (o valor configurável que o OperadorAnaliticoDialog usa).
  */
-export const ADERENCIA_CARD_TOLERANCIA_MIN = 10;
-
-/** Piso do Operador (sticky) — mesmo valor/metodologia reaproveitado pelos outros cards com coluna Operador (nome real mais longo da base, "francisquele.goncalves"). */
-export const PISO_OPERADOR_PX_COMPARTILHADO = 182;
-
-/** Texto de observação abaixo do título — informa a regra de tolerância deste card. */
-const ADERENCIA_OBSERVACAO_TEXTO =
-  "Aderência avaliada com tolerância de 10 minutos para mais ou para menos em cada horário (login e pausas).";
-
-/**
- * Pisos de largura (px) — medição real via Puppeteer dos textos reais
- * (fonte/tracking reais) + padding das células de tabela-padrao.tsx, mesma
- * metodologia de pausas-detalhadas-analitico.tsx.
- *
- * Cabeçalhos medidos (ds-mono-sm font-bold tracking-wider uppercase):
- *   OPERADOR 63 · LOGIN PREV. 86 · LOGIN REAL 78 ·
- *   PAUSA 10 PREV. 110 · PAUSA 10 REAL 102 ·
- *   PAUSA 20 PREV. 110 · PAUSA 20 REAL 102
- * Valor mais largo ("08:00"): 36. Padding: header (px-2) 16px, valor/nome
- * (px-3) 24px.
- *
- * Operador: 152 (nome real mais longo, "francisquele.goncalves") + 24 + 6 = 182.
- * Colunas de dado: piso ÚNICO (maior necessário) = 110 (maior título,
- * "Pausa 10/20 Prev.") + 16 (padding header) + 6 (folga) = 132 — o valor
- * (36+24=60) fica bem abaixo, o título manda. Piso único (não por coluna)
- * pelo mesmo motivo já documentado nas tabelas irmãs: com pisos diferentes
- * por coluna, o espaço extra do `minmax(piso,1fr)` nunca reequilibra a
- * diferença inicial entre elas.
- */
-const PISO_OPERADOR_PX = 182;
-// 132 → 150: títulos com px-4 (32px) e o tamanho do cabeçalho de
-// "Desempenho por marca e unidade" — "PAUSA 10 PREV." (~115px) + 32, com
-// folga, pra nenhum título ser cortado com reticências.
-const DATA_COL_PISO_PX = 150;
+const ADERENCIA_CARD_TOLERANCIA_MIN = 10;
 
 const COLUNAS_HORARIO: { key: 0 | 1 | 2 | 3; sufixo: "Prev." | "Real" }[] = [
   { key: 0, sufixo: "Prev." },
@@ -69,11 +38,7 @@ const COLUNAS_HORARIO: { key: 0 | 1 | 2 | 3; sufixo: "Prev." | "Real" }[] = [
   { key: 3, sufixo: "Real" },
 ];
 
-/**
- * "Pausa 10" pras duas pausas de 10 min (key 1 e key 3) — mesmo nome nas
- * duas, sem "Seg."/"2ª" no cabeçalho; a ORDEM das colunas (1ª antes da 2ª)
- * já diferencia qual é qual, sem precisar de sufixo no título.
- */
+/** "Pausa 10" nas duas pausas de 10 min — a ordem das colunas já diferencia. */
 const LABELS_ITEM: Record<0 | 1 | 2 | 3, string> = {
   0: "Login",
   1: "Pausa 10",
@@ -81,56 +46,23 @@ const LABELS_ITEM: Record<0 | 1 | 2 | 3, string> = {
   3: "Pausa 10",
 };
 
-/** Colunas cuja célula "Real" recebe cor semântica (dentro/fora da tolerância) — Login fica de fora, sem cor, como já era. */
+/** Colunas cuja célula "Real" recebe cor semântica (dentro/fora da tolerância) — Login fica sem cor. */
 const COLUNAS_COM_COR: Set<0 | 1 | 2 | 3> = new Set([1, 2, 3]);
 
-/**
- * Visual = "Desempenho por marca e unidade" (tabela-segmentos.tsx, consolidado),
- * o mesmo já aplicado em pausas-detalhadas-analitico.tsx: cabeçalho ds-body
- * bold uppercase tracking-wide (cor por tema em reports-tempo-indisp.css),
- * células py-3 px-4 text-xs, linhas separadas só por border/30 (sem
- * divisórias verticais, sem hover), Operador centralizado em font-semibold.
- * Fundo opaco da coluna sticky Operador no CSS da página — mesma cor da
- * linha, sem destaque próprio.
- */
-const HEADER_ROW_CLASS = "ds-body grid gap-0 bg-muted/40 font-bold tracking-wide uppercase";
-const HEADER_CELL_CLASS = "min-w-0 overflow-hidden text-ellipsis whitespace-nowrap px-4 py-2.5 text-center";
-const NOME_CELL_CLASS = "min-w-0 truncate whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-foreground";
-const VALOR_CELL_CLASS = "min-w-0 whitespace-nowrap px-4 py-3 text-center text-xs font-medium";
-
-const GRID_COLS = [
-  `minmax(${PISO_OPERADOR_PX}px, 1.6fr)`,
-  ...COLUNAS_HORARIO.map(() => `minmax(${DATA_COL_PISO_PX}px, 1fr)`),
-].join(" ");
-
-/** Soma dos pisos — largura mínima total da tabela (documentação, não consumida). */
-export const ADERENCIA_TABELA_MIN_WIDTH_PX = PISO_OPERADOR_PX + COLUNAS_HORARIO.length * DATA_COL_PISO_PX;
+// Piso único das colunas de dado: maior título ("PAUSA 10 PREV.", ~115px) + px-4, com folga.
+const GRID_COLS = gridColunas(COLUNAS_HORARIO.length, 150);
 
 interface Props {
   operadores: OperadorAnaliticoTempoIndisp[];
-  /** Mesmo Map já construído uma vez em TempoIndispSection (buildForecastPorOperador) — não recalculado aqui. */
+  /** Mesmo Map já construído em TempoIndispSection (buildForecastPorOperador). */
   forecastPorOperador: ReturnType<typeof buildForecastPorOperador>;
 }
 
 /**
- * Bloco "Aderência de login e pausas" — título e texto de observação, seguido da
- * tabela sem container visual, como os blocos analíticos do Consolidado:
- * uma linha por operador, comparando horário previsto x real de Login e das
- * 3 pausas que já entram na aderência do dialog hoje (calcularAderenciaOperador,
- * de @/lib/d1-db/calcular-aderencia — REAPROVEITADA aqui, chamada uma vez
- * por operador, exatamente como já é chamada uma vez pro operador
- * selecionado no dialog).
- *
- * Sem coluna de situação textual: a aderência de cada pausa (exceto Login)
- * é representada só pela cor do valor na célula "Real" — reaproveita
- * item.dentroTolerancia (já calculado por calcularAderenciaOperador com
- * ADERENCIA_CARD_TOLERANCIA_MIN=10), sem nenhuma lógica de comparação nova.
- *
- * Tabela só de consulta: sem hover, sem clique, sem popup — mesmo padrão de
- * PausasDetalhadasAnalitico. Sem rolagem vertical interna: cresce na
- * vertical até mostrar todas as linhas (o trilho que contém este card usa
- * RetencaoHorizontalScroll com `dynamicHeight`, que faz a section crescer
- * pro tamanho real do conteúdo em vez de cortar).
+ * "Aderência de login e pausas" — uma linha por operador com horário
+ * previsto cadastrado, comparando previsto x real de Login e das 3 pausas
+ * (calcularAderenciaOperador, a mesma do dialog). A aderência de cada pausa
+ * aparece só na cor do valor "Real" (verde dentro, vermelho fora).
  */
 export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
   const linhas = operadores
@@ -150,112 +82,75 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
     })
     .filter(({ aderencia }) => aderencia.forecast !== null);
 
-  if (linhas.length === 0) return null;
-
   return (
-    <div className="space-y-3">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="ds-h3 font-semibold text-foreground">Aderência de login e pausas</h3>
-          <p className="ds-small text-muted-foreground mt-1">{ADERENCIA_OBSERVACAO_TEXTO}</p>
-        </div>
+    <div className={CARD_CLASS}>
+      <div className="shrink-0">
+        <h3 className="ds-h3 font-semibold text-foreground">Aderência de login e pausas</h3>
+        <p className="ds-small text-muted-foreground mt-1">
+          Aderência avaliada com tolerância de 10 minutos para mais ou para menos em cada horário (login e pausas).
+        </p>
       </div>
 
-      {/* Sem container visual — mesmo padrão atual das tabelas analíticas do Consolidado. */}
-      <div className="overflow-hidden">
-          {/*
-            overflow-x-auto: rede de segurança horizontal (mesmo padrão de
-            PausasDetalhadasAnalitico/TabelaTemas). Sem container visual,
-            este wrapper cuida apenas da rolagem horizontal.
-            Sem data-lenis-prevent: o consolidado (TabelaTemas,
-            DistribuicaoQuartis) também não usa esse atributo em nenhuma das
-            tabelas roláveis que já convivem com o trilho GSAP hoje — não
-            existe esse mecanismo no projeto; confirmado sem conflito real
-            via teste de wheel horizontal (ver relatório da tarefa anterior).
-          */}
-          <div className="overflow-x-auto scrollbar-tema">
-            <div data-aderencia-tabela className="min-w-fit">
-              <div
-                className={HEADER_ROW_CLASS}
-                style={{ gridTemplateColumns: GRID_COLS, ...TABELA_HEADER_BORDA }}
-              >
-                <div
-                  data-tabela-sticky-header
-                  className={cn(HEADER_CELL_CLASS, "sticky left-0 z-10")}
-                >
-                  Operador
-                </div>
-                {COLUNAS_HORARIO.map((col, i) => (
-                  <div key={i} className={HEADER_CELL_CLASS}>
-                    {LABELS_ITEM[col.key]} {col.sufixo}
-                  </div>
-                ))}
+      {linhas.length === 0 ? (
+        <GraficoVazio
+          titulo="Sem horários programados"
+          descricao="Nenhum operador da equipe tem horários de login e pausas programados."
+        />
+      ) : (
+        <div className={ROLAGEM_CLASS}>
+          <div className="min-w-fit">
+            <div className={HEADER_ROW_CLASS} style={{ gridTemplateColumns: GRID_COLS }}>
+              <div data-tabela-sticky-header className={cn(HEADER_CELL_CLASS, "sticky left-0 z-10")}>
+                Operador
               </div>
-
-              {linhas.map(({ op, aderencia }, idx) => {
-                const isLastLinha = idx === linhas.length - 1;
-
-                return (
-                  <div
-                    key={op.email}
-                    className={cn("grid items-center gap-0", !isLastLinha && "border-b border-border/30")}
-                    style={{ gridTemplateColumns: GRID_COLS }}
-                  >
-                    <div
-                      data-tabela-sticky-nome
-                      className={cn(NOME_CELL_CLASS, "sticky left-0 z-10")}
-                    >
-                      {formatNomeDotSobrenome(op.email)}
-                    </div>
-                    {COLUNAS_HORARIO.map((col, i) => {
-                      const item = aderencia.items[col.key];
-                      const val = col.sufixo === "Prev." ? item.horaForecast : item.horaReal;
-                      const isEmpty = !val;
-                      // Cor semântica SÓ na célula "Real" das 3 pausas
-                      // pedidas (não em Login, não em "Prev.") — mesmo
-                      // token/estilo de cor da tabela unificada de
-                      // operadores (equipe-table.tsx: style={{color:
-                      // var(--success)/var(--danger)}} direto no texto,
-                      // sem fundo/ícone), reaproveitando
-                      // item.dentroTolerancia já calculado (sem nova regra).
-                      const aplicaCor = col.sufixo === "Real" && COLUNAS_COM_COR.has(col.key);
-                      const cor = !aplicaCor || isEmpty
-                        ? undefined
-                        : item.dentroTolerancia === null
-                          ? undefined
-                          : item.dentroTolerancia
-                            ? "var(--success)"
-                            : "var(--danger)";
-                      return (
-                        <div
-                          key={i}
-                          className={cn(
-                            VALOR_CELL_CLASS,
-                            cor ? undefined : isEmpty ? "text-muted-foreground" : "text-foreground",
-                          )}
-                          style={{
-                            fontVariantNumeric: "tabular-nums",
-                            color: cor,
-                            // MESMO peso que ValorSemantico usa pra valor
-                            // colorido na tabela principal (tabela-padrao.tsx:
-                            // fontWeight: 600 inline, não uma classe Tailwind
-                            // font-*) — reaproveitado aqui, não inventado.
-                            // Só quando há cor (Real dentro/fora da
-                            // tolerância); "—" e valores sem cor continuam
-                            // no peso de VALOR_CELL_CLASS.
-                            fontWeight: cor ? 600 : undefined,
-                          }}
-                        >
-                          {val ?? "—"}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
+              {COLUNAS_HORARIO.map((col, i) => (
+                <div key={i} className={HEADER_CELL_CLASS}>
+                  {LABELS_ITEM[col.key]} {col.sufixo}
+                </div>
+              ))}
             </div>
+
+            {linhas.map(({ op, aderencia }, idx) => (
+              <div
+                key={op.email}
+                className={cn(LINHA_CLASS, idx < linhas.length - 1 && "border-b border-border/30")}
+                style={{ gridTemplateColumns: GRID_COLS }}
+              >
+                <div data-tabela-sticky-nome className={cn(NOME_CELL_CLASS, "sticky left-0 z-10")}>
+                  {formatNomeDotSobrenome(op.email)}
+                </div>
+                {COLUNAS_HORARIO.map((col, i) => {
+                  const item = aderencia.items[col.key];
+                  const val = col.sufixo === "Prev." ? item.horaForecast : item.horaReal;
+                  const isEmpty = !val;
+                  // Cor semântica SÓ na célula "Real" das 3 pausas (mesmo
+                  // token/peso do valor-veredito da tabela principal).
+                  const aplicaCor = col.sufixo === "Real" && COLUNAS_COM_COR.has(col.key);
+                  const cor =
+                    !aplicaCor || isEmpty || item.dentroTolerancia === null
+                      ? undefined
+                      : item.dentroTolerancia
+                        ? "var(--success)"
+                        : "var(--danger)";
+                  return (
+                    <div
+                      key={i}
+                      className={cn(
+                        VALOR_CELL_CLASS,
+                        "tabular-nums",
+                        cor ? undefined : isEmpty ? "text-muted-foreground" : "text-foreground",
+                      )}
+                      style={{ color: cor, fontWeight: cor ? 600 : undefined }}
+                    >
+                      {val ?? "—"}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

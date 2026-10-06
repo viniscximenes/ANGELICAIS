@@ -254,6 +254,300 @@
     transform: translateY(27px);
 }
 
+/* Página no padrão — classe .pagina-padrao no wrapper [data-page] da
+   página (e no esqueleto/portais que precisem). Reúne o que vale pra
+   página inteira: barras de rolagem, anexo (dropzone), banner de erro,
+   foco dos toggles, hover semântico das linhas e cards de número. */
+
+/* Barras de rolagem: finas. Containers: --border. Página (<html>/<body>,
+   daí o :has) e cards com rolagem interna (.scrollbar-tema): branca a 85%
+   no escuro, --foreground a 70% no claro. */
+.pagina-padrao {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+.pagina-padrao .scrollbar-tema,
+html:has(.pagina-padrao),
+body:has(.pagina-padrao) {
+    scrollbar-color: color-mix(in oklab, #fff 85%, transparent) transparent;
+}
+[data-theme="light"] .pagina-padrao .scrollbar-tema,
+html[data-theme="light"]:has(.pagina-padrao),
+html[data-theme="light"] body:has(.pagina-padrao) {
+    scrollbar-color: color-mix(in oklab, var(--foreground) 70%, transparent) transparent;
+}
+
+/* Anexo (dropzone): fundo = o do cabeçalho das tabelas; hover = repouso
+   (só o ícone anima). Folhas da pasta mais escuras na Vercel clara. A
+   borda tracejada não muda no hover (vence o legado da seção 6), nem no
+   placeholder do esqueleto. */
+.pagina-padrao {
+    --dropzone-idle-bg: color-mix(in oklab, var(--muted) 40%, transparent);
+    --dropzone-hover-bg: var(--dropzone-idle-bg);
+}
+[data-theme="light"] .pagina-padrao {
+    --dropzone-idle-bg: var(--muted);
+    --dropzone-hover-bg: var(--muted);
+}
+:root[data-palette="vercel"][data-theme="light"] .pagina-padrao {
+    --upload-folder-paper-1: oklch(0.30 0 0);
+    --upload-folder-paper-2: oklch(0.42 0 0);
+    --upload-folder-paper-3: oklch(0.56 0 0);
+}
+[data-theme="light"] .pagina-padrao .border-dashed:hover {
+    border-color: var(--border) !important;
+}
+
+/* Banner de erro do upload: fundo/borda derivados do --danger da paleta. */
+.pagina-padrao .status-danger {
+    color: var(--danger);
+    background: color-mix(in oklch, var(--danger) 12%, transparent);
+    border-color: color-mix(in oklch, var(--danger) 35%, transparent);
+}
+
+/* Toggles (aria-pressed, ex.: olho do nome fantasia): anel --ring no foco. */
+.pagina-padrao button[aria-pressed] {
+    outline: none;
+}
+.pagina-padrao button[aria-pressed]:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+
+/* Hover semântico das linhas (gancho data-meta-linha): abaixo da meta =
+   --danger 10%, dentro = --success 7%. Linhas sem dado ficam neutras.
+   Especificidade maior que o hover cinza do legado (seção 6). */
+[data-theme] .pagina-padrao [data-meta-linha="abaixo"]:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
+    background-color: color-mix(in oklch, var(--danger) 10%, transparent) !important;
+}
+[data-theme] .pagina-padrao [data-meta-linha="dentro"]:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
+    background-color: color-mix(in oklch, var(--success) 7%, transparent) !important;
+}
+
+/* Cards de número (wrapper data-visao-geral-cards): cantos de 18px; no
+   claro, fundo um degrau abaixo do fundo da página. */
+.pagina-padrao [data-visao-geral-cards] .bg-card\/70 {
+    border-radius: 18px !important;
+}
+[data-theme="light"] .pagina-padrao [data-visao-geral-cards] .bg-card\/70 {
+    background-color: color-mix(in srgb, var(--background) 82%, var(--muted) 18%) !important;
+}
+
+/* Cabeçalho de tabela (linha <tr> ou <div> em grid): tokens --th-*, texto
+   14px negrito em caixa alta. .cabecalho-tabela-fixo: fica no topo ao
+   rolar dentro do card (fundo opaco = página + tom do cabeçalho). */
+.cabecalho-tabela {
+    background-color: var(--th-bg);
+    border-bottom: var(--th-borda) solid var(--border);
+}
+.cabecalho-tabela > * {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    font-weight: 700;
+    line-height: var(--leading-normal);
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+    color: var(--th-fg);
+}
+.cabecalho-tabela-fixo {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background-color: var(--background);
+    background-image: linear-gradient(var(--th-bg), var(--th-bg));
+}
+
+/* Tom dos blocos do esqueleto de carregamento (bg-card puro some na
+   Vercel clara): --muted-foreground a 14%, em degraus pelas opacidades. */
+.skeleton-tom .bg-card {
+    background-color: color-mix(in oklab, var(--muted-foreground) 14%, transparent);
+}
+.skeleton-tom .bg-card\/70 {
+    background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
+}
+.skeleton-tom :is(.bg-card\/60, .bg-card\/40) {
+    background-color: color-mix(in oklab, var(--muted-foreground) 7%, transparent);
+}
+
+/* Toasts (sonner) — classe .toast-padrao no toast (o <Toaster/> monta no
+   body, fora do [data-page]). Ícones nas cores semânticas da paleta. A
+   fonte vem do componente de fonte da página (FonteInter). */
+.toast-padrao {
+    background: var(--normal-bg) !important;
+    color: var(--normal-text) !important;
+    border: 1px solid var(--normal-border) !important;
+}
+.toast-padrao [data-icon] svg {
+    color: var(--success) !important;
+}
+.toast-padrao[data-type="error"] [data-icon] svg {
+    color: var(--danger) !important;
+}
+.toast-padrao[data-type="warning"] [data-icon] svg {
+    color: var(--warning) !important;
+}
+.toast-padrao:is([data-type="info"], [data-type="loading"]) [data-icon] svg {
+    color: var(--muted-foreground) !important;
+}
+.toast-padrao [data-description] {
+    color: color-mix(in oklch, var(--normal-text) 78%, transparent) !important;
+}
+
+/* Menu de seções flutuante (FloatingNavSidebar com wrapperClassName
+   "nav-secoes"): item da seção visível em --foreground (texto semibold) +
+   tracinho à esquerda do ícone ([data-nav-ativo], ver nav-secao-ativa.tsx);
+   inativos em --muted-foreground; hover sem fundo, só a cor. No claro,
+   painel um degrau mais escuro que a página, borda e sombra marcadas. */
+.nav-secoes .bg-sidebar {
+    background-color: var(--nav-menu-bg-consolidado, var(--nav-menu-bg)) !important;
+    box-shadow: var(--kpi-shadow);
+}
+.nav-secoes .border-border\/60 {
+    border-color: var(--elevation-1-border) !important;
+}
+.nav-secoes a:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+}
+.nav-secoes [data-nav-icone] {
+    color: var(--muted-foreground);
+    transition: color 200ms ease;
+}
+.nav-secoes [data-nav-marcador] {
+    background: transparent;
+    transition: background-color 200ms ease;
+}
+.nav-secoes [data-nav-ativo] [data-nav-marcador] {
+    background: var(--foreground);
+}
+.nav-secoes a > span.text-sm {
+    color: var(--muted-foreground);
+}
+.nav-secoes a:has([data-nav-ativo]) > span.text-sm {
+    color: var(--foreground);
+    font-weight: 600;
+}
+.nav-secoes [data-nav-icone][data-nav-ativo],
+.nav-secoes a:hover > span.text-sm,
+.nav-secoes a:hover [data-nav-icone] {
+    color: var(--foreground);
+}
+.nav-secoes [data-nav-divisoria] {
+    background-color: var(--elevation-1-border, var(--border));
+}
+[data-theme="light"] .nav-secoes .bg-sidebar {
+    background-color: color-mix(in oklab, var(--foreground) 6%, var(--background)) !important;
+    box-shadow: 0 4px 14px -4px rgb(0 0 0 / 0.18);
+}
+[data-theme="light"] .nav-secoes .border-border\/60,
+[data-theme="light"] .nav-secoes [data-nav-divisoria] {
+    border-color: rgb(0 0 0 / 0.14) !important;
+}
+[data-theme="light"] .nav-secoes [data-nav-divisoria] {
+    background-color: rgb(0 0 0 / 0.14);
+}
+
+/* Neumórfico (Uiverse.io — escuro by Yaseen549, claro by adamgiebl):
+   card e fundo da tela na MESMA cor (#212121 / #e0e0e0), cantos de 30px,
+   sombra dupla. O relevo só funciona com fundo = card, por isso o fundo
+   da tela é sólido e sem blur.
+   - Modal "Atualizando base": .modal-neumorfico no card +
+     data-neumorfico no [data-upload-backdrop] (UploadProgressModal).
+   - Dialog do operador: [data-operador-neumorfico] no DialogContent, com
+     [data-neu-tile] (KPIs) e [data-neu-chip] (chips). Dentro dele, borda,
+     "muted" e texto secundário recalibrados pro fundo do card. */
+.modal-neumorfico {
+    color: var(--foreground);
+    border: none;
+    border-radius: 30px;
+    background: #e0e0e0;
+    box-shadow: 15px 15px 30px #bebebe, -15px -15px 30px #ffffff;
+}
+:root:not([data-theme="light"]) .modal-neumorfico {
+    background: #212121;
+    box-shadow: 15px 15px 30px rgb(25, 25, 25), -15px -15px 30px rgb(60, 60, 60);
+}
+/* Bolinha das etapas pendentes no claro: um degrau abaixo do card. */
+[data-theme="light"] .modal-neumorfico [data-etapa-status="pending"] {
+    background: #d2d2d2 !important;
+    border-color: rgb(0 0 0 / 0.1) !important;
+}
+/* !important: o componente aplica blur + fundo translúcido inline. */
+[data-upload-backdrop][data-neumorfico] {
+    background: #e0e0e0 !important;
+    backdrop-filter: none !important;
+}
+:root:not([data-theme="light"]) [data-upload-backdrop][data-neumorfico] {
+    background: #212121 !important;
+}
+
+:root:not([data-theme="light"]) [data-operador-neumorfico] {
+    --background: #212121;
+    --border: rgb(255 255 255 / 0.1);
+    --muted: rgb(255 255 255 / 0.07);
+    --muted-foreground: #b4b4b4;
+    background: #212121;
+    border: none;
+    border-radius: 30px;
+    box-shadow: 15px 15px 30px rgb(25, 25, 25), -15px -15px 30px rgb(60, 60, 60);
+}
+[data-theme="light"] [data-operador-neumorfico] {
+    --background: #e0e0e0;
+    --border: rgb(0 0 0 / 0.12);
+    --muted: rgb(0 0 0 / 0.05);
+    --muted-foreground: #4f4f4f;
+    background: #e0e0e0;
+    border: none;
+    border-radius: 30px;
+    box-shadow: 15px 15px 30px #bebebe, -15px -15px 30px #ffffff;
+}
+:root:not([data-theme="light"]):has([data-operador-neumorfico]) [data-slot="dialog-overlay"] {
+    background: #212121;
+    backdrop-filter: none;
+}
+[data-theme="light"]:has([data-operador-neumorfico]) [data-slot="dialog-overlay"] {
+    background: #e0e0e0;
+    backdrop-filter: none;
+}
+[data-operador-neumorfico] [data-neu-tile] {
+    border-radius: 18px;
+}
+[data-operador-neumorfico] [data-neu-chip] {
+    border: none !important;
+    border-radius: 10px;
+}
+:root:not([data-theme="light"]) [data-operador-neumorfico] [data-neu-tile] {
+    background: #212121;
+    box-shadow: 6px 6px 14px rgb(24, 24, 24), -6px -6px 14px rgb(46, 46, 46);
+}
+:root:not([data-theme="light"]) [data-operador-neumorfico] [data-neu-chip] {
+    background: #212121 !important;
+    box-shadow: 3px 3px 7px rgb(24, 24, 24), -3px -3px 7px rgb(46, 46, 46);
+}
+[data-theme="light"] [data-operador-neumorfico] [data-neu-tile] {
+    background: #e0e0e0;
+    box-shadow: 6px 6px 14px #c4c4c4, -6px -6px 14px #fcfcfc;
+}
+[data-theme="light"] [data-operador-neumorfico] [data-neu-chip] {
+    background: #e0e0e0 !important;
+    box-shadow: 3px 3px 7px #c4c4c4, -3px -3px 7px #fcfcfc;
+}
+/* Cabeçalho das tabelas do dialog: o --th-bg é resolvido no :root e não
+   acompanha o --muted recalibrado — tom próprio aqui. Prefixo :root:
+   precisa vencer as regras de cabeçalho do CSS das páginas. */
+:root:not([data-theme="light"]) [data-operador-neumorfico] :is([data-tabela-operador-temas] thead tr, .cabecalho-tabela) {
+    background-color: rgb(255 255 255 / 0.05);
+    border-bottom-color: rgb(255 255 255 / 0.12);
+}
+:root[data-theme="light"] [data-operador-neumorfico] :is([data-tabela-operador-temas] thead tr, .cabecalho-tabela) {
+    background-color: rgb(0 0 0 / 0.05);
+    border-bottom-color: rgb(0 0 0 / 0.12);
+}
+:root [data-operador-neumorfico] :is([data-tabela-operador-temas] thead th, .cabecalho-tabela > *) {
+    color: var(--foreground);
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    4. Base e utilitários
    ═══════════════════════════════════════════════════════════════════ */
@@ -458,22 +752,13 @@ select option {
     color: var(--foreground) !important;
 }
 
-/* Cabeçalho das tabelas em grid (Equipe, Tempo Logado & Indisponibilidade,
-   Aderência, Pausas Detalhadas) */
-[data-theme="light"] [data-equipe-table] > div:first-child,
-[data-theme="light"] [data-tempo-indisp-table] > div:first-child,
-[data-theme="light"] [data-aderencia-tabela] > div:first-child {
+/* Cabeçalho das tabelas em grid com data-equipe-table (EquipeTable, TMA) */
+[data-theme="light"] [data-equipe-table] > div:first-child {
     background-color: var(--muted) !important;
     border-bottom: 2px solid var(--border) !important;
     color: var(--foreground) !important;
 }
-/* Pausas Detalhadas: mesmo fundo/borda, sem forçar a cor do texto */
-[data-theme="light"] [data-pausas-tabela] > div:first-child {
-    background-color: var(--muted) !important;
-    border-bottom: 2px solid var(--border) !important;
-}
-[data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover,
-[data-theme="light"] [data-tempo-indisp-table] > div:not(:first-child):not(.font-bold):hover {
+[data-theme="light"] [data-equipe-table] > div:not(:first-child):not(.font-bold):hover {
     background-color: var(--muted-hover-bg) !important;
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useCallback, useEffect, useState } from "react";
+import { useTopoAoCarregar } from "@/lib/lenis/use-topo-ao-carregar";
 import { fetchDashboardRetencaoAction } from "@/lib/retencao/actions";
 import { onBaseAtualizada } from "@/lib/retencao/base-cleared-event";
 import type { VisaoGeralData } from "@/lib/retencao/get-visao-geral";
@@ -27,6 +27,7 @@ import {
 } from "@/lib/retencao/metas-consolidado";
 import { RetencaoHorizontalScroll } from "./retencao-horizontal-scroll";
 import { SignatureFooter } from "@/components/gestor/signature-footer";
+import { CabecalhoSecao } from "@/components/gestor/cabecalho-secao";
 
 
 interface RetencaoDetalheSectionProps {
@@ -55,72 +56,8 @@ export function RetencaoDetalheSection({
   gestorId,
   metaInicial,
 }: RetencaoDetalheSectionProps) {
-  // Ao (re)carregar a página, o navegador tenta restaurar a posição de
-  // scroll anterior (ex.: estava no meio do trilho do Analítico) — some com
-  // o cabeçalho e deixa a página abrindo "no meio". Desligamos a restauração
-  // automática e forçamos o topo, só nesta rota.
-  //
-  // Um scrollTo(0,0) único (na montagem, ou de novo quando os dados client-
-  // side chegam) não bastava: este componente busca os próprios dados
-  // depois do mount (ver `load`, abaixo), então o documento cresce de
-  // altura em mais de um momento enquanto carrega — e o navegador tenta
-  // RESTAURAR a posição salva de novo a cada vez que a altura aumenta o
-  // suficiente pra alcançá-la (comportamento nativo, assíncrono, sem um
-  // gancho JS pra saber exatamente quando ele vai tentar). Corrigir só nos
-  // momentos que a gente prevê (mount, `loading` virando false) sempre
-  // deixava uma janela sem cobertura.
-  //
-  // Corrigido com uma "guarda" por alguns frames: a cada
-  // requestAnimationFrame, se o scroll saiu de 0 sem o usuário ter mexido o
-  // mouse/toque/teclado, volta pro topo e chama ScrollTrigger.update()
-  // (recalcula só o PROGRESSO dos triggers contra o novo scroll — não usa
-  // .refresh(), que remede layout de TODOS os ScrollTriggers da página e
-  // reflowava até o painel de anexo ao lado da tabela). A guarda se
-  // desliga sozinha no primeiro gesto real do usuário (wheel/touch/tecla)
-  // ou depois de UNLOCK_MS, o que vier primeiro — nunca prende um scroll
-  // manual do usuário. useLayoutEffect (não useEffect): a PRIMEIRA correção
-  // roda antes do navegador pintar o frame inicial, sem flash.
-  useLayoutEffect(() => {
-    if (typeof window === "undefined") return;
-    const previous = window.history.scrollRestoration;
-    window.history.scrollRestoration = "manual";
-
-    const UNLOCK_MS = 2000;
-    let active = true;
-    let rafId = 0;
-
-    const stop = () => {
-      if (!active) return;
-      active = false;
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("wheel", stop);
-      window.removeEventListener("touchstart", stop);
-      window.removeEventListener("keydown", stop);
-      window.clearTimeout(timeoutId);
-    };
-
-    const tick = () => {
-      if (!active) return;
-      if (window.scrollY !== 0) {
-        window.scrollTo(0, 0);
-        ScrollTrigger.update();
-      }
-      rafId = requestAnimationFrame(tick);
-    };
-
-    window.scrollTo(0, 0);
-    tick();
-
-    window.addEventListener("wheel", stop, { passive: true });
-    window.addEventListener("touchstart", stop, { passive: true });
-    window.addEventListener("keydown", stop);
-    const timeoutId = window.setTimeout(stop, UNLOCK_MS);
-
-    return () => {
-      stop();
-      window.history.scrollRestoration = previous;
-    };
-  }, []);
+  // Abre sempre no topo (ver use-topo-ao-carregar.ts).
+  useTopoAoCarregar();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -223,37 +160,9 @@ export function RetencaoDetalheSection({
   // engatar. Nos outros estados (loading/erro/sem dados) continua
   // renderizado normalmente, fora do trilho.
   //
-  // Simplificado: removido o label "Detalhamento Analítico" e a repetição
-  // de gestora/"report às HH:MM" — essa informação já aparece no
-  // cabeçalho da EquipeTable logo acima ("Equipe - O supervisor [nome] fez
-  // um report às HH:MM"), repetir aqui era redundante. Divisória tracejada
-  // removida a pedido (linhas pontilhadas tiradas de toda a página
-  // reports/consolidado).
-  // CAUSA do espaçamento sumindo só no estado "com dados": o gap ABAIXO da
-  // divisória vinha do `space-y-6` do <section> pai — que só funciona
-  // quando `cabecalho` é filho DIRETO dele (caminhos loading/error/vazio,
-  // linha abaixo). No caminho "com dados", `cabecalho` é passado como prop
-  // `header` pro RetencaoHorizontalScroll e renderizado DENTRO da área
-  // pinada do trilho — não é mais filho do <section>, então o `space-y-6`
-  // nunca chegava a aplicar. Corrigido tirando essa dependência do pai:
-  // `mb-6` agora mora no PRÓPRIO header, funcionando igual nos dois lugares
-  // onde `cabecalho` é usado.
-  const cabecalho = (
-    <header className="pt-2 pb-4 mb-6 flex items-center gap-4">
-      <h2 className="font-sans shrink-0 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-        Analítico
-      </h2>
-      {/* Divisória ao lado do título: um traço curto em cima e um longo
-          embaixo, indo até a borda direita, na cor do texto do report
-          (muted-foreground) a 55%: o traço sólido de 2px na cor cheia parecia
-          bem mais claro que as letras finas do texto. Linhas sólidas (pontilhadas
-          foram removidas da página a pedido). */}
-      <div aria-hidden="true" className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <span className="block h-0.5 w-24 bg-muted-foreground/55" />
-        <span className="block h-0.5 w-full bg-muted-foreground/55" />
-      </div>
-    </header>
-  );
+  // Simplificado: sem o label "Detalhamento Analítico" e sem repetir
+  // gestora/"report às HH:MM" (já estão no cabeçalho da página).
+  const cabecalho = <CabecalhoSecao titulo="Analítico" />;
 
   return (
     <section>

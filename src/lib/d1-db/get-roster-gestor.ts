@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -7,8 +9,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * "Equipe vazia" (retorno []) e "equipe sem dado do dia" são estados
  * diferentes; só o primeiro deve virar o erro "sem equipe" nas páginas do
  * gestor.
+ *
+ * cache() do React: a mesma requisição (page.tsx + getGestorTempoLogado +
+ * getGestorIndisponibilidade, por exemplo) consulta o roster uma vez só.
+ * Fora de uma requisição do React, chama direto (sem memo).
  */
-export async function getRosterOperadoresGestor(gestorId: string): Promise<string[]> {
+export const getRosterOperadoresGestor = cache(async function getRosterOperadoresGestor(
+  gestorId: string,
+): Promise<string[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("d1_operadores_gestor")
@@ -22,4 +30,4 @@ export async function getRosterOperadoresGestor(gestorId: string): Promise<strin
   }
 
   return (data ?? []).map((row) => row.operador_email.trim().toLowerCase());
-}
+});

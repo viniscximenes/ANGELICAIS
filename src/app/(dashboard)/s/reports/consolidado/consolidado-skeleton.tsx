@@ -11,9 +11,9 @@ import "./reports-consolidado.css";
 import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
 import { AnaliticoSkeleton } from "@/components/dashboard/retencao/analitico-skeleton";
 
-// MESMA fonte de page.tsx (Inter, ver fonte.tsx) — o loading monta ANTES
+// MESMA fonte de page.tsx (Inter, ver fonte-inter.tsx) — o loading monta ANTES
 // de page.tsx resolver; sem ela o esqueleto mediria com outra fonte.
-import { FonteConsolidado } from "./fonte";
+import { FonteInter } from "@/components/gestor/fonte-inter";
 
 // Larguras reais das colunas da EquipeTable (BASE_COLUMN_WIDTHS_PX, ver
 // equipe-table.tsx) — Operador / Retidos / Cancelados / Pedidos / Tx Retenção.
@@ -165,14 +165,14 @@ function SkeletonNavSidebar() {
 export function ConsolidadoSkeleton({ linhas = TABLE_ROWS_PADRAO }: { linhas?: number }) {
   return (
     <>
-      <FonteConsolidado />
+      <FonteInter dataPage="reports-consolidado" toastClass="reports-consolidado-toast" />
       <SkeletonNavSidebar />
 
       {/* consolidado-skeleton: tom dos blocos (reports-consolidado.css) —
           bg-card sozinho é branco puro na Vercel clara e os blocos sumiam. */}
       <div
         data-page="reports-consolidado"
-        className={`consolidado-skeleton relative min-h-screen px-6 py-8 lg:px-12 lg:py-12`}
+        className={`consolidado-skeleton pagina-padrao relative min-h-screen px-6 py-8 lg:px-12 lg:py-12`}
       >
         <div
           aria-hidden="true"

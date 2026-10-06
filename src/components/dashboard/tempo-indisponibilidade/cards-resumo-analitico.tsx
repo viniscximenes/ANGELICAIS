@@ -65,51 +65,20 @@ export function CardsResumoAnalitico({
         ? "text-success"
         : "text-danger";
 
-  // Cor via TOKEN (var(--success)/var(--danger)), passada como `style`
-  // (não só `className`) pro <NumberTicker> — causa real do card aparecer
-  // branco no tema escuro: NumberTicker (number-ticker.tsx) tem
-  // `text-black dark:text-white` HARDCODED na própria className base,
-  // mesclada via cn()/tailwind-merge com o className recebido. `dark:` é
-  // outra "variante" pro tailwind-merge (não conflita com uma classe SEM
-  // variante como `text-success`), então as duas convivem no HTML; no
-  // tema escuro, a regra `.dark\:text-white` do CSS gerado vem DEPOIS de
-  // `.text-success` no stylesheet (variantes são emitidas em bloco
-  // separado, após as classes-base) e vence no empate de especificidade —
-  // por isso só o tema escuro tinha o bug (no claro, `.text-success` já
-  // vem depois de `.text-black`, mesma família sem variante, ordem
-  // alfabética/de descoberta já favorecia a classe certa). `style` inline
-  // tem especificidade maior que QUALQUER classe, então sempre vence —
-  // não mexi em number-ticker.tsx (compartilhado com EquipeTable/
-  // VisaoGeralCards do consolidado, que tem exatamente o mesmo padrão —
-  // NÃO CORRIGIDO ali de propósito, fora do escopo e mudaria o
-  // consolidado).
+  // Cor também inline no número: a classe sozinha perdia pra cor herdada
+  // do componente de número no tema escuro.
   const indispColorVar =
     indispMedia === null ? undefined : indispMedia < metaIndisponibilidade ? "var(--success)" : "var(--danger)";
 
   return (
-    // Mesmo padrão de VisaoGeralCards (consolidado): caixa neutra
-    // (rounded-lg border border-border bg-card/70 shadow-sm backdrop-blur),
-    // SEM cantoneiras (StyledCard) — lá as cantoneiras só aparecem no
-    // container do gráfico/tabela, não nos cards de número. grid-cols-1
-    // empilha em mobile; a partir de sm, uma grade única cujas colunas
-    // viram "unidades" — card grande = 2 unidades, pequeno = 1 (mesma
-    // proporção 2:1 do card primário/secundários de lá, só generalizada
-    // pra 2 grandes em vez de 1: 2+2+1+1 = 6 colunas). sm:items-end —
-    // MESMA classe de VisaoGeralCards, cada item ocupa só a própria
-    // altura de conteúdo (os pequenos não esticam) e é alinhado pela BASE
-    // da linha (altura do maior item, os cards grandes).
-    // text-4xl xl:text-5xl nos dois cards grandes (abaixo): VisaoGeralCards
-    // não tem NENHUM passo de fonte responsivo (é text-5xl fixo) porque o
-    // valor dele (ex. "62.3%") é curto — o nosso "Tempo Logado" é HH:MM:SS
-    // (8 caracteres) e mede via Puppeteer, em viewport real, transbordava
-    // 36px do card em 1100px de largura com text-5xl fixo. Como não há
-    // padrão de clamp pra copiar do consolidado, escalei usando a MESMA
-    // escala tipográfica Tailwind já usada em todo o projeto (um passo
-    // abaixo, text-4xl, até xl:1280px, onde volta a text-5xl) — não é um
-    // número solto, é o próximo degrau padrão da escala.
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-6 sm:items-end">
+    // Mesmo padrão de VisaoGeralCards (Consolidado): caixa neutra, sem
+    // cantoneiras; data-visao-geral-cards aplica o canto de 18px e o fundo
+    // do tema claro (.pagina-padrao, globals.css). Grade de 6 "unidades":
+    // card grande = 2, pequeno = 1 (2+2+1+1); sm:items-end alinha pela base.
+    // text-4xl até xl: o "Tempo Logado" (HH:MM:SS) transbordava com text-5xl.
+    <div data-visao-geral-cards className="grid grid-cols-1 gap-4 sm:grid-cols-6 sm:items-end">
       <div className="sm:col-span-2">
-        <div className="tempo-indisp-resumo-card relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 px-6 py-5 shadow-[var(--shadow-sm)] backdrop-blur-md">
+        <div className="relative flex h-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card/70 px-6 py-5 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <div
             aria-hidden="true"
             className="absolute top-0 left-0 h-full w-[3px]"
@@ -135,7 +104,7 @@ export function CardsResumoAnalitico({
       </div>
 
       <div className="sm:col-span-2">
-        <div className="tempo-indisp-resumo-card flex h-full flex-col justify-center gap-2 rounded-lg border border-border bg-card/70 px-6 py-5 shadow-[var(--shadow-sm)] backdrop-blur-md">
+        <div className="flex h-full flex-col justify-center gap-2 rounded-lg border border-border bg-card/70 px-6 py-5 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             Indisp. %
           </p>
@@ -156,7 +125,7 @@ export function CardsResumoAnalitico({
       </div>
 
       <div className="sm:col-span-1">
-        <div className="tempo-indisp-resumo-card flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
+        <div className="flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             NR17 %
           </p>
@@ -176,7 +145,7 @@ export function CardsResumoAnalitico({
       </div>
 
       <div className="sm:col-span-1">
-        <div className="tempo-indisp-resumo-card flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
+        <div className="flex h-full flex-col justify-center gap-1 rounded-lg border border-border bg-card/70 px-4 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md">
           <p className="ds-small text-muted-foreground mb-1 tracking-wider uppercase">
             Particular %
           </p>

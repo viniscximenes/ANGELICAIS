@@ -10,13 +10,12 @@ import {
 import { getLenisInstance } from "@/lib/lenis/lenis-instance";
 import { requestScrollToCard } from "@/lib/retencao/scroll-to-card-event";
 import { FloatingNavSidebar } from "@/components/ui/floating-nav-sidebar";
+import { IconeNav, useSecaoAtiva } from "@/components/gestor/nav-secao-ativa";
 
 /**
- * Índices dos cards no trilho horizontal de /s/reports/tempo-indisponibilidade
- * — precisam bater com a ordem real do array `slides` em
- * tempo-indisp-section.tsx: 0 = 4 cards de resumo + Tabela de Pausas
- * Detalhadas (JUNTOS, um único slide), 1 = Aderência, 2 = Pausas
- * obrigatórias não realizadas, 3 = Estouro de pausa.
+ * Índices dos cards no trilho horizontal — precisam bater com a ordem real
+ * do array `slides` em tempo-indisp-section.tsx: 0 = cards de resumo +
+ * Pausas detalhadas, 1 = Aderência, 2 = Pausas NR17 não tiradas, 3 = Estouro.
  */
 const TRILHO_CARD = {
   resumo: 0,
@@ -25,46 +24,24 @@ const TRILHO_CARD = {
   estouroPausa: 3,
 } as const;
 
-// Antes: "text-neutral-700 dark:text-neutral-200" — cinza hardcoded fora do
-// tema (o projeto não usa a estratégia `.dark` do Tailwind, então o `dark:`
-// nunca disparava). Agora lê --muted-foreground do escopo
-// [data-page="reports-tempo-indisponibilidade"] (herdado via
-// wrapperClassName/dataPage abaixo) — mesmo ajuste de ConsolidadoNavSidebar.
-const ICON_CLASS = "h-5 w-5 shrink-0 text-[color:var(--muted-foreground)]";
+// Só tamanho: a cor do ícone (--muted-foreground / --foreground no ativo)
+// vem de globals.css (.nav-secoes [data-nav-icone]).
+const ICON_CLASS = "h-5 w-5 shrink-0";
+
+/** Bloco do topo (título + controles + anexo + tabela de operadores). */
+const ID_TOPO = "tempo-indisp-section";
 
 /**
- * Navegação lateral animada do trilho de /s/reports/tempo-indisponibilidade —
- * MESMO componente/mecanismo de ConsolidadoNavSidebar (ambos delegam a
- * FloatingNavSidebar), só com a lista de itens/ícones trocada.
- *
- * Sem destaque de item ativo — MESMA lógica do consolidado, que não tem
- * nenhuma (nenhum scroll-spy, nenhum IntersectionObserver, nenhum estado de
- * "item selecionado" em lugar nenhum do projeto).
- *
- * Primeiro item ("Tabela operadores") = a tabela unificada de operadores.
- * Alvo do scroll: id="tempo-indisp-cabecalho" (bloco do título da página),
- * sem offset — MESMO ponto de chegada do Consolidado (#equipe-section):
- * a linha "{nome} fez um report às HH:MM" fica logo abaixo do header fixo,
- * seguida dos controles, anexo e tabela.
- *
- * Um item por SLIDE — "Resumo" (slide 0), "Aderência" (slide 1), "Pausas
- * Detalhadas" (rótulo do item que leva ao slide 0 — reaproveita o mesmo
- * onClick de "Resumo", só o texto mudou) — na verdade "Resumo" FOI
- * renomeado pra "Pausas Detalhadas" (mesmo destino/ícone/posição, só o
- * rótulo mudou). Os itens do trilho, com o MESMO ícone que aparece ao lado
- * do título do card correspondente:
- *   - "Pausas detalhadas" → IconListDetails
- *   - "Aderência de login e pausas" → IconClockCheck
- *   - "Pausas NR17 não tiradas" → IconCalendarX
- *   - "Estouro de NR17" → IconClockExclamation
+ * Navegação lateral de /s/reports/tempo-indisponibilidade — mesmo
+ * componente e comportamento do ConsolidadoNavSidebar (FloatingNavSidebar
+ * + .nav-secoes): item da seção visível destacado, divisória entre a
+ * tabela do topo e os slides do Analítico. Só em telas >= 1024px.
  */
 export function TempoIndispNavSidebar() {
-  // Mesmo ponto de chegada do Consolidado (scrollToEquipe em
-  // consolidado-nav-sidebar.tsx): topo do bloco do título, SEM offset — o
-  // título fica sob o header fixo e a linha "{nome} fez um report às HH:MM"
-  // aparece logo abaixo dele, seguida dos controles/anexo/tabela.
+  const ativo = useSecaoAtiva(ID_TOPO);
+
   function scrollToTabela() {
-    const el = document.getElementById("tempo-indisp-cabecalho");
+    const el = document.getElementById(ID_TOPO);
     if (!el) return;
     const lenis = getLenisInstance();
     if (lenis) {
@@ -76,33 +53,53 @@ export function TempoIndispNavSidebar() {
 
   const links = [
     {
-      label: "Tabela operadores",
-      href: "#tempo-indisp-cabecalho",
-      icon: <IconUsersGroup className={ICON_CLASS} />,
+      label: "Tabela de operadores",
+      href: `#${ID_TOPO}`,
+      icon: (
+        <IconeNav ativo={ativo === "topo"}>
+          <IconUsersGroup className={ICON_CLASS} />
+        </IconeNav>
+      ),
       onClick: scrollToTabela,
     },
     {
       label: "Pausas detalhadas",
       href: "#trilho-card-0",
-      icon: <IconListDetails className={ICON_CLASS} />,
+      icon: (
+        <IconeNav ativo={ativo === TRILHO_CARD.resumo}>
+          <IconListDetails className={ICON_CLASS} />
+        </IconeNav>
+      ),
       onClick: () => requestScrollToCard(TRILHO_CARD.resumo),
     },
     {
       label: "Aderência de login e pausas",
       href: "#trilho-card-1",
-      icon: <IconClockCheck className={ICON_CLASS} />,
+      icon: (
+        <IconeNav ativo={ativo === TRILHO_CARD.aderencia}>
+          <IconClockCheck className={ICON_CLASS} />
+        </IconeNav>
+      ),
       onClick: () => requestScrollToCard(TRILHO_CARD.aderencia),
     },
     {
       label: "Pausas NR17 não tiradas",
       href: "#trilho-card-2",
-      icon: <IconCalendarX className={ICON_CLASS} />,
+      icon: (
+        <IconeNav ativo={ativo === TRILHO_CARD.pausasNaoRealizadas}>
+          <IconCalendarX className={ICON_CLASS} />
+        </IconeNav>
+      ),
       onClick: () => requestScrollToCard(TRILHO_CARD.pausasNaoRealizadas),
     },
     {
       label: "Estouro de NR17",
       href: "#trilho-card-3",
-      icon: <IconClockExclamation className={ICON_CLASS} />,
+      icon: (
+        <IconeNav ativo={ativo === TRILHO_CARD.estouroPausa}>
+          <IconClockExclamation className={ICON_CLASS} />
+        </IconeNav>
+      ),
       onClick: () => requestScrollToCard(TRILHO_CARD.estouroPausa),
     },
   ];
@@ -110,8 +107,10 @@ export function TempoIndispNavSidebar() {
   return (
     <FloatingNavSidebar
       links={links}
-      wrapperClassName="reports-tempo-indisp-nav"
+      wrapperClassName="nav-secoes"
       dataPage="reports-tempo-indisponibilidade"
+      // Divisória entre a tabela do topo e os slides do Analítico.
+      divisoriasApos={[0]}
     />
   );
 }

@@ -74,7 +74,7 @@ export function ConfigTabelaTempoIndispPopover({
     if (Number.isNaN(valor) || valor < 0 || valor > 100) {
       toast.error("Meta inválida", {
         description: "Informe um valor entre 0 e 100.",
-        className: "reports-tempo-indisp-toast",
+        className: "toast-padrao",
       });
       return;
     }
@@ -83,19 +83,19 @@ export function ConfigTabelaTempoIndispPopover({
       try {
         const result = await saveConfigTabelaTempoIndispAction(valor, ordem);
         if (result.success) {
-          toast.success("Configurações salvas", { className: "reports-tempo-indisp-toast" });
+          toast.success("Configurações salvas", { className: "toast-padrao" });
           onSaved(valor, ordem);
           setOpen(false);
           onOpenChange?.(false);
         } else {
           toast.error("Erro ao salvar", {
             description: result.error,
-            className: "reports-tempo-indisp-toast",
+            className: "toast-padrao",
           });
         }
       } catch (err) {
         if (handleStaleActionError(err)) return;
-        toast.error("Erro inesperado ao salvar", { className: "reports-tempo-indisp-toast" });
+        toast.error("Erro inesperado ao salvar", { className: "toast-padrao" });
         console.error("[ConfigTabelaTempoIndispPopover] erro:", err);
       }
     });

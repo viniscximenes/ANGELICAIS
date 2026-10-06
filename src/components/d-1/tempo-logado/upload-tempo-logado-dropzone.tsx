@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
-import { IconFileSpreadsheet, IconLoader2, IconUpload } from "@tabler/icons-react";
+import { IconLoader2 } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
@@ -18,8 +18,6 @@ type UploadStep =
   | null;
 
 interface UploadTempoLogadoDropzoneProps {
-  /** Visual compacto (barra horizontal fina) — usado na página unificada do gestor. Default: card grande vertical. */
-  compact?: boolean;
   /**
    * Clique/teclado abre o seletor de arquivos já na pasta Downloads e só com
    * .csv (sem a opção "Todos os arquivos"), via File System Access API
@@ -28,6 +26,13 @@ interface UploadTempoLogadoDropzoneProps {
    * de UploadDropzone (/s/reports/consolidado, prop de mesmo nome).
    */
   abrirEmDownloads?: boolean;
+  /**
+   * Ao concluir, recarrega a página com o modal de progresso AINDA aberto,
+   * em vez de fechar o modal e depois recarregar (a tabela antiga aparecia
+   * por um instante entre o modal e o esqueleto). Mesma prop de
+   * UploadDropzone (/s/reports/consolidado).
+   */
+  recarregarComModalAberto?: boolean;
 }
 
 // Tipagem mínima da File System Access API (não está no lib.dom do TS).
@@ -39,8 +44,8 @@ type ShowOpenFilePicker = (options: {
 }) => Promise<{ getFile: () => Promise<File> }[]>;
 
 export function UploadTempoLogadoDropzone({
-  compact = false,
   abrirEmDownloads = false,
+  recarregarComModalAberto = false,
 }: UploadTempoLogadoDropzoneProps = {}) {
   // Detectado só no client (evita divergência de hidratação com o SSR).
   const [pickerNativo, setPickerNativo] = useState(false);
@@ -79,7 +84,7 @@ export function UploadTempoLogadoDropzone({
       if (firstLineBreak === -1 || csvText.length < 50) {
         setStep(null);
         setErrorMessage("CSV vazio ou inválido.");
-        toast.error("CSV vazio", { className: "reports-tempo-indisp-toast" });
+        toast.error("CSV vazio", { className: "toast-padrao" });
         return;
       }
 
@@ -97,7 +102,7 @@ export function UploadTempoLogadoDropzone({
         setErrorMessage(uploadResult.error);
         toast.error("Falha ao atualizar base", {
           description: uploadResult.error,
-          className: "reports-tempo-indisp-toast",
+          className: "toast-padrao",
         });
         return;
       }
@@ -106,16 +111,16 @@ export function UploadTempoLogadoDropzone({
       setStep("done");
 
       setTimeout(() => {
-        setStep(null);
+        if (!recarregarComModalAberto) setStep(null);
         window.location.reload();
       }, 3000);
     } catch (err) {
       setStep(null);
       setErrorMessage("Erro ao ler arquivo");
-      toast.error("Não foi possível ler o arquivo", { className: "reports-tempo-indisp-toast" });
+      toast.error("Não foi possível ler o arquivo", { className: "toast-padrao" });
       console.error("[upload-tempo-logado] read error:", err);
     }
-  }, []);
+  }, [recarregarComModalAberto]);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -177,53 +182,6 @@ export function UploadTempoLogadoDropzone({
         ? "active"
         : "idle";
 
-  if (compact) {
-    return (
-      <>
-        <div
-          {...getRootProps()}
-          className="flex shrink-0 cursor-pointer items-center gap-2 rounded-md border border-dashed transition-colors duration-200 hover:border-primary"
-          style={{
-            background: isDragActive
-              ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
-              : "var(--card)",
-            borderColor: isDragReject
-              ? "var(--danger)"
-              : isDragActive
-                ? "var(--primary)"
-                : "var(--border)",
-            padding: "6px 12px",
-            opacity: isProcessing ? 0.5 : 1,
-            pointerEvents: isProcessing ? "none" : "auto",
-            fontSize: "12px",
-          }}
-        >
-          <input {...getInputProps()} />
-          {isDragActive ? (
-            <IconFileSpreadsheet
-              size={14}
-              style={{ color: "var(--primary)" }}
-              aria-hidden="true"
-            />
-          ) : (
-            <IconUpload size={14} className="text-primary" aria-hidden="true" />
-          )}
-          <span className="ds-mono-sm text-muted-foreground whitespace-nowrap">
-            {isDragActive ? "Solte para enviar" : "Enviar CSV"}
-          </span>
-        </div>
-
-        {errorMessage && !isProcessing && (
-          <span role="alert" className="status-danger ds-small rounded-md px-2 py-1">
-            {errorMessage}
-          </span>
-        )}
-
-        <UploadProgressModal step={step} rowsWritten={rowsWritten} />
-      </>
-    );
-  }
-
   // Ícone único animado, sem texto permanente — mesmo padrão de
   // UploadDropzone (/s/reports/consolidado, 22ª rodada): a informação
   // continua acessível via aria-label completo (leitor de tela).
@@ -256,7 +214,7 @@ export function UploadTempoLogadoDropzone({
         aria-disabled={isProcessing}
         aria-busy={isProcessing}
         data-dropzone-state={dropzoneState}
-        className="upload-dropzone-root-reports-tempo-indisp relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed outline-none transition-all duration-300 hover:border-primary focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+        className="relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed outline-none transition-all duration-300 hover:border-primary focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
         style={{
           background: isDragActive
             ? "color-mix(in oklch, var(--primary) 8%, var(--muted))"
@@ -302,7 +260,7 @@ export function UploadTempoLogadoDropzone({
             )}
           </div>
 
-          <p className="upload-dropzone-touch-hint-reports-tempo-indisp ds-mono-sm text-muted-foreground/80 text-[11px] sm:hidden">
+          <p className="ds-mono-sm text-muted-foreground/80 text-[11px] sm:hidden">
             Toque para selecionar um CSV
           </p>
         </div>

@@ -27,7 +27,8 @@ import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fant
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import { cn } from "@/lib/utils";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
-import { getLenisInstance } from "@/lib/lenis/lenis-instance";
+import { useSetasRolagem } from "@/lib/lenis/use-setas-rolagem";
+import { formatCabecalhoReport } from "@/lib/gestor/format-cabecalho-report";
 import { fetchOperadorDetalheAction } from "@/lib/retencao/actions";
 import type { OperadorIndividual } from "@/lib/retencao/get-por-operador-individual";
 import type { QuartilOperador } from "@/lib/retencao/get-quartil-operador";
@@ -45,48 +46,6 @@ import {
 } from "@/app/(dashboard)/s/reports/consolidado/consolidado-skeleton";
 import { CursorCarregando } from "@/components/gestor/cursor-carregando";
 
-// Texto da 2ª linha do cabeçalho ("{nome} fez um report às {hora}") — mesma
-// checagem de "hora ausente/zerada" de formatReportLabel (@/lib/gestor/
-// format-report-label), mas com um texto mais curto: sem o "Equipe -" e sem
-// o "O supervisor" na frente do nome (pedido explícito desta rodada). Mantida
-// LOCAL (não uma alteração em formatReportLabel) porque essa função é
-// compartilhada por outras 3 tabelas (gestor-tma-section, tempo-indisp-section)
-// que continuam precisando do texto original.
-// Sem report ainda (hora nula/zerada): retorna null e a linha inteira some —
-// mesmo comportamento de antes (o `{formatReportLabel(...) && (...)}` já
-// escondia a linha nesse caso), só que agora não há mais fallback textual
-// tipo "-" ou "undefined" visível.
-// Dias da base colada no fim da linha — "(base do dia 03/10)" ou, com mais
-// de um dia, "(bases do dia 02/10 - 03/10)". Um gestor pode colar a base de
-// outra data e a atualização vale pra todos; sem isso ficava confuso.
-// Uploads anteriores à coluna report_datas_base vêm sem dias: o trecho some.
-function formatCabecalhoReport(
-  hora: string | null | undefined,
-  nomeSupervisor: string | null | undefined,
-  datasBase: string[] | null | undefined,
-): string | null {
-  if (!hora || hora === "—" || hora === "00:00" || hora === "00:00:00") return null;
-  const horaCurta = hora.match(/^(\d{1,2}:\d{2})/)?.[1] ?? hora;
-  const nome = nomeSupervisor?.trim();
-  const texto = nome ? `${nome} fez um report às ${horaCurta}` : `Atualizado às ${horaCurta}`;
-  return `${texto}${formatDiasBase(datasBase)}`;
-}
-
-/** ["2026-10-02", "2026-10-03"] → "  -   (bases do dia 02/10 - 03/10)". */
-function formatDiasBase(datasBase: string[] | null | undefined): string {
-  const dias = (datasBase ?? [])
-    .map((iso) => iso.match(/^\d{4}-(\d{2})-(\d{2})/))
-    .filter((m): m is RegExpMatchArray => m !== null)
-    .map((m) => `${m[2]}/${m[1]}`);
-  if (dias.length === 0) return "";
-  // Separador "  -   " com os espaços exatos pedidos (o <p> usa
-  // whitespace-pre-wrap pra não colapsar os espaços).
-  const separador = "  -   ";
-  return dias.length === 1
-    ? `${separador}(base do dia ${dias[0]})`
-    : `${separador}(bases do dia ${dias.join(" - ")})`;
-}
-
 // Intervalo do polling: reconsulta a base a cada 30s para refletir mudanças
 // sem precisar de F5. A tabela unificada Tempo Logado & Indisponibilidade
 // (tempo-indisp-section.tsx) tinha o mesmo mecanismo (tabela + seção
@@ -96,12 +55,6 @@ function formatDiasBase(datasBase: string[] | null | undefined): string {
 // à parte — não fazia parte dessa decisão. A seção Analítico da TMA
 // (analitico-tma-tabela.tsx/cards-resumo-tma.tsx) nunca teve polling.
 const POLL_INTERVAL_MS = 30_000;
-
-// Camadas que "donas" das setas do teclado (ver handleKeyDown).
-const SELETOR_CAMADA_ABERTA =
-  '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [role="combobox"], [data-radix-popper-content-wrapper]';
-const SELETOR_CAMADA_ABERTA_DOC =
-  '[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"], [data-radix-popper-content-wrapper]';
 
 // Piso mínimo (ms) da tela de loading exibida durante o refresh MANUAL
 // (botão "Limpar base") — mesma lógica/duração do piso mínimo do
@@ -434,61 +387,8 @@ export function GestorEquipeSection({
     };
   }, []);
 
-  // Navegação via teclado: setas Cima (ArrowUp) e Baixo (ArrowDown) rolam a página.
-  //
-  // Usa lenis.scrollTo (não window.scrollBy nativo): o Lenis já controla o
-  // scroll da página via seu próprio RAF (ver LenisProvider). Se o scroll
-  // nativo com behavior:"smooth" mexer no scrollTop por fora do Lenis, o
-  // Lenis mantém internamente um alvo de scroll (`animatedScroll`) que fica
-  // dessincronizado do scroll real — no primeiro wheel/touch seguinte ele
-  // "puxa" a página de volta pro alvo antigo, travando/anulando o scroll das
-  // setas. Passar pelo lenis.scrollTo mantém os dois em sincronia (isso
-  // também evita a página "pular" um trecho inteiro do scroll horizontal
-  // pinado por ScrollTrigger, que também lê a posição real do scroll).
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-      // Outro componente já tratou a tecla, ou é atalho com modificador.
-      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-
-      const active = document.activeElement as HTMLElement | null;
-      const isInput =
-        active &&
-        (active.tagName === "INPUT" ||
-          active.tagName === "TEXTAREA" ||
-          active.tagName === "SELECT" ||
-          active.isContentEditable);
-      if (isInput) return;
-
-      // Foco dentro de popover/dialog/menu/lista: as setas são deles. E com
-      // um dialog/popover aberto (foco pode ter ficado no body), também não
-      // rola a página por baixo dele.
-      if (active?.closest(SELETOR_CAMADA_ABERTA) || document.querySelector(SELETOR_CAMADA_ABERTA_DOC)) {
-        return;
-      }
-
-      const lenis = getLenisInstance();
-
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        if (lenis) {
-          lenis.scrollTo(lenis.animatedScroll + 120, { duration: 0.4 });
-        } else {
-          window.scrollBy({ top: 120, behavior: "smooth" });
-        }
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        if (lenis) {
-          lenis.scrollTo(lenis.animatedScroll - 120, { duration: 0.4 });
-        } else {
-          window.scrollBy({ top: -120, behavior: "smooth" });
-        }
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  // Setas Cima/Baixo rolam a página (ver use-setas-rolagem.ts).
+  useSetasRolagem();
 
   // Quando o olho está aberto, revela o nome real derivado do email original.
   // A tabela PNG usa sempre `operadores` (nomes fantasia já resolvidos no server).

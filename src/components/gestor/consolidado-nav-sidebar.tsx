@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
 import {
   IconUsersGroup,
   IconChartLine,
@@ -14,6 +13,7 @@ import {
 import { getLenisInstance } from "@/lib/lenis/lenis-instance";
 import { requestScrollToCard } from "@/lib/retencao/scroll-to-card-event";
 import { FloatingNavSidebar } from "@/components/ui/floating-nav-sidebar";
+import { IconeNav, useSecaoAtiva } from "@/components/gestor/nav-secao-ativa";
 
 /**
  * Índices dos cards no trilho horizontal — precisam bater com a ordem real
@@ -33,82 +33,8 @@ const TRILHO_CARD = {
 } as const;
 
 // Só tamanho: a cor do ícone (--muted-foreground / --foreground no ativo)
-// vem de reports-consolidado.css (.reports-consolidado-nav [data-nav-icone]).
+// vem de globals.css (.nav-secoes [data-nav-icone]).
 const ICON_CLASS = "h-5 w-5 shrink-0";
-
-/** Seção visível agora: "equipe" (tabela do topo) ou o índice do card do trilho. */
-type Ativo = "equipe" | number;
-
-/**
- * Descobre a seção visível acompanhando a rolagem:
- * - enquanto a tabela de operadores ocupa boa parte da tela (o fundo dela
- *   ainda abaixo de 35% da altura da janela) → "equipe";
- * - depois disso, o card do trilho horizontal cuja borda esquerda está mais
- *   perto da borda esquerda da área do trilho (é o que está "na frente",
- *   já que o trilho desliza pra esquerda conforme a página rola).
- * Lê só posições do DOM (#equipe-section, #trilho-card-N) — não mexe no
- * trilho nem nos cálculos de pin/snap dele. rAF evita medir mais de uma
- * vez por frame.
- */
-function useSecaoAtiva(): Ativo {
-  const [ativo, setAtivo] = useState<Ativo>("equipe");
-
-  useEffect(() => {
-    let raf = 0;
-    function medir() {
-      raf = 0;
-      const equipe = document.getElementById("equipe-section");
-      if (equipe && equipe.getBoundingClientRect().bottom > window.innerHeight * 0.35) {
-        setAtivo("equipe");
-        return;
-      }
-      const primeiro = document.getElementById("trilho-card-0");
-      const area = primeiro?.parentElement?.parentElement;
-      if (!primeiro || !area) return;
-      const esquerdaArea = area.getBoundingClientRect().left;
-      let melhor = 0;
-      let menorDistancia = Infinity;
-      for (let i = 0; ; i++) {
-        const card = document.getElementById(`trilho-card-${i}`);
-        if (!card) break;
-        const distancia = Math.abs(card.getBoundingClientRect().left - esquerdaArea);
-        if (distancia < menorDistancia) {
-          menorDistancia = distancia;
-          melhor = i;
-        }
-      }
-      setAtivo(melhor);
-    }
-    function agendar() {
-      if (!raf) raf = requestAnimationFrame(medir);
-    }
-    agendar();
-    window.addEventListener("scroll", agendar, { passive: true });
-    window.addEventListener("resize", agendar);
-    return () => {
-      if (raf) cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", agendar);
-      window.removeEventListener("resize", agendar);
-    };
-  }, []);
-
-  return ativo;
-}
-
-/**
- * Caixa de largura fixa do ícone (todos os textos começam no mesmo ponto) +
- * marcador do item ativo: tracinho vertical à esquerda, no estilo das
- * cantoneiras dos cards. Cores em reports-consolidado.css
- * (.reports-consolidado-nav [data-nav-ativo]).
- */
-function IconeNav({ ativo, children }: { ativo: boolean; children: ReactNode }) {
-  return (
-    <span data-nav-icone data-nav-ativo={ativo || undefined} className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center">
-      <span aria-hidden="true" data-nav-marcador className="absolute top-0.5 -left-2.5 h-4 w-0.5 rounded-full" />
-      {children}
-    </span>
-  );
-}
 
 /**
  * Navegação lateral animada (hover expande 60px → 300px, padrão Aceternity —
@@ -131,7 +57,7 @@ function IconeNav({ ativo, children }: { ativo: boolean; children: ReactNode }) 
  * específica do consolidado, IDÊNTICA à de antes da extração.
  */
 export function ConsolidadoNavSidebar() {
-  const ativo = useSecaoAtiva();
+  const ativo = useSecaoAtiva("equipe-section");
 
   function scrollToEquipe() {
     const el = document.getElementById("equipe-section");
@@ -149,7 +75,7 @@ export function ConsolidadoNavSidebar() {
       label: "Tabela de operadores",
       href: "#equipe-section",
       icon: (
-        <IconeNav ativo={ativo === "equipe"}>
+        <IconeNav ativo={ativo === "topo"}>
           <IconUsersGroup className={ICON_CLASS} />
         </IconeNav>
       ),
@@ -230,7 +156,7 @@ export function ConsolidadoNavSidebar() {
   return (
     <FloatingNavSidebar
       links={links}
-      wrapperClassName="reports-consolidado-nav"
+      wrapperClassName="nav-secoes"
       dataPage="reports-consolidado"
       // Divisória entre a tabela do topo e os slides do Analítico.
       divisoriasApos={[0]}

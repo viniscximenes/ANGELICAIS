@@ -64,70 +64,28 @@ export function OperadorAnaliticoDialog({
     { label: "Hora Logout", valor: formatLogout(operador.statusTL, operador.horaLogout), cor: "text-foreground" },
   ];
 
-  // Escopo do tema Zen Linen (reports-tempo-indisp.css): resolvido a partir
-  // de QUALQUER elemento com [data-page="reports-tempo-indisponibilidade"]
-  // já montado no DOM — este Dialog roda em portal (document.body), então a
-  // raiz do documento (comportamento padrão de getComputedStyle/resolverTokenCss)
-  // NÃO carrega os tokens escopados dessa rota. Mesmo padrão de
-  // OperadorDetalheDialog (/s/reports/consolidado).
-  const elementoEscopoTema =
-    typeof document !== "undefined"
-      ? document.querySelector<HTMLElement>('[data-page="reports-tempo-indisponibilidade"]')
-      : null;
-
-  // Fonte do tema (Instrument Sans / --font-zen-sans): a variável só existe
-  // como classe (zenSans.variable) no elemento raiz da página REAL — este
-  // Dialog, em portal, ficaria fora dessa árvore e uma var() não resolvida
-  // invalidaria toda a declaração font-family (não cai no fallback
-  // "Instrument Sans" da lista, cai na fonte herdada de fora do tema).
-  // Resolve o font-family já COMPUTADO no container real da página e aplica
-  // direto no DialogContent — mesma técnica de OperadorDetalheDialog.
-  const fontFamilyEscopo = elementoEscopoTema
-    ? getComputedStyle(elementoEscopoTema).fontFamily
-    : undefined;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/*
-        data-page="reports-tempo-indisponibilidade": este DialogContent é
-        renderizado em portal (document.body), fora da árvore [data-page] da
-        rota — sem o atributo aqui, ele não herdaria as CSS custom properties
-        do tema Zen Linen definidas em reports-tempo-indisp.css. Mesmo padrão
-        de OperadorDetalheDialog (/s/reports/consolidado).
+        data-page: o DialogContent vive em portal (document.body) — o atributo
+        leva o tema e a fonte da página (FonteInter) até ele.
+        data-operador-neumorfico: mesmo visual neumórfico do dialog do
+        operador do Consolidado (globals.css), com data-neu-tile nos KPIs.
+        pagina-padrao: barras de rolagem do padrão também neste portal.
       */}
       <DialogContent
         data-page="reports-tempo-indisponibilidade"
+        data-operador-neumorfico
         // sm:max-w-4xl: mesma largura do modal do operador do Consolidado.
-        className="max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-4xl bg-background border-border/80 p-6 shadow-2xl"
-        style={fontFamilyEscopo ? { fontFamily: fontFamilyEscopo } : undefined}
+        className="pagina-padrao max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-4xl bg-background border-border/80 p-6 shadow-2xl"
       >
         <ExportPopupPngButton
           contentRef={pngRef}
           filename={`${nomeReal}_${dataFile}.png`}
           className="absolute top-2 right-10"
           corDeFundoDoAlvo
-          toastClassName="reports-tempo-indisp-toast"
-          // SEM tooltipDataPage de propósito (rodada anterior desta mesma
-          // tarefa introduziu essa prop e QUEBROU o fundo do tooltip —
-          // causa raiz: [data-page="reports-tempo-indisponibilidade"], em
-          // reports-tempo-indisp.css, não é só uma "ponte" de custom
-          // properties — o MESMO seletor também define `background-color:
-          // var(--background)` e `color: var(--foreground)` REAIS (regra
-          // pensada pro elemento raiz da página, não pro TooltipContent).
-          // Colocar esse atributo direto no TooltipContent (via essa prop)
-          // fazia essa regra bater nele também, sobrescrevendo o
-          // `bg-foreground`/`text-background` do tooltip padrão (Tailwind,
-          // mesma especificidade, mas carregado ANTES no cascade) com as
-          // cores INVERTIDAS (fundo escuro igual ao fundo da própria
-          // página por trás, texto claro) — a "caixa" ficava da mesma cor
-          // do que está atrás dela, por isso parecia sumir (só a seta
-          // sobrava visível, porque ela seta bg-foreground/fill-foreground
-          // direto nela mesma, sem carregar o atributo [data-page]).
-          // Sem a prop, este tooltip usa o MESMO caminho (sem scoping de
-          // tema) do ExportPopupPngButton do modal de detalhe do
-          // consolidado (OperadorDetalheDialog, que também nunca passou
-          // tooltipDataPage) — visual idêntico ao de antes, caixa de fundo
-          // de volta nos dois temas.
+          toastClassName="toast-padrao"
+          showSuccessToast={false}
         />
 
         {/*
@@ -135,13 +93,8 @@ export function OperadorAnaliticoDialog({
           wrapper (via pngRef + ExportPopupPngButton), com background
           explícito porque o fundo do DialogContent fica no ancestral, fora
           do que é capturado. A imagem sai igual ao modal na tela, no tema
-          ATUAL da sessão (claro ou escuro) — não mais um template forçado em
-          tema claro fixo. Mesmo padrão de OperadorDetalheDialog
-          (/s/reports/consolidado). Sem `data-tempo-indisp-png` aqui: esse
-          atributo é exclusivo do clone oculto da tabela principal e, no
-          tema claro, clareia seus tokens para a captura. Aplicá-lo ao modal
-          visível criava uma segunda camada quase branca dentro do fundo do
-          tema.
+          ATUAL da sessão (claro ou escuro). Mesmo padrão de
+          OperadorDetalheDialog (/s/reports/consolidado).
         */}
         <div
           ref={pngRef}
@@ -161,6 +114,7 @@ export function OperadorAnaliticoDialog({
                 // sem borda/fundo, apenas o espaçamento interno do texto.
                 <div
                   key={c.label}
+                  data-neu-tile
                   className="flex flex-col justify-center gap-1 px-4 py-3.5"
                 >
                   <p className="ds-small text-muted-foreground mb-1 font-bold tracking-wider uppercase">
@@ -188,12 +142,11 @@ export function OperadorAnaliticoDialog({
                   </p>
                 ) : (
                   <div className="overflow-x-auto">
-                    {/* data-tabela-operador-tempo: cabeçalho no visual da
-                        "Retenção por Tema" do modal do Consolidado
-                        (reports-tempo-indisp.css). */}
-                    <table data-tabela-operador-tempo className="w-full border-collapse text-left text-sm">
+                    {/* .cabecalho-tabela: cabeçalho no visual da "Retenção
+                        por Tema" do modal do Consolidado (globals.css). */}
+                    <table className="w-full border-collapse text-left text-sm">
                       <thead>
-                        <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 font-bold tracking-wide uppercase">
+                        <tr className="cabecalho-tabela">
                           <th className="px-4 py-2.5 font-semibold">Item</th>
                           <th className="px-4 py-2.5 text-center font-semibold">Forecast</th>
                           <th className="px-4 py-2.5 text-center font-semibold">Real</th>
@@ -261,9 +214,9 @@ export function OperadorAnaliticoDialog({
                       </p>
                     ) : (
                       <div className="overflow-x-auto">
-                        <table data-tabela-operador-tempo className="w-full border-collapse text-left text-sm">
+                        <table className="w-full border-collapse text-left text-sm">
                           <thead>
-                            <tr className="ds-body text-muted-foreground border-border/40 border-b bg-muted/40 font-bold tracking-wide uppercase">
+                            <tr className="cabecalho-tabela">
                               <th className="px-4 py-2.5 font-semibold">Pausa</th>
                               <th className="px-4 py-2.5 text-center font-semibold">Duração</th>
                             </tr>

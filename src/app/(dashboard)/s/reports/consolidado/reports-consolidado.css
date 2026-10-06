@@ -11,38 +11,22 @@
   font-family: var(--font-sans);
   letter-spacing: var(--letter-spacing);
   /* Cabeçalho/linha de total das tabelas: tokens --th-bg/--th-fg/--th-borda
-   * do padrão global (globals.css, seção 3). */
-}
-
-/* ───────── Barra de rolagem (fina, no tema da página) ─────────
- * Fina e com trilho invisível. Vale nos containers internos ([data-page]
- * ...) E na barra da PÁGINA, que é do <html>/<body> — ancestrais do
- * [data-page], por isso o `:has()`. Cor do thumb: --border nos containers
- * (scrollbar-color é herdado); a da página e a dos cards (.scrollbar-tema)
- * ficam nos blocos próprios mais abaixo.
- * Só scrollbar-width/scrollbar-color: o Edge (único navegador da equipe)
- * ignora ::-webkit-scrollbar quando essas propriedades estão definidas.
- */
-[data-page="reports-consolidado"],
-html:has([data-page="reports-consolidado"]),
-body:has([data-page="reports-consolidado"]) {
-  scrollbar-width: thin;
-}
-[data-page="reports-consolidado"] {
-  scrollbar-color: var(--border) transparent;
+   * do padrão global (globals.css, seção 3). Rolagem, anexo, cards de
+   * número, hover das linhas, menu lateral e modais neumórficos: peças da
+   * seção 3 (.pagina-padrao, .nav-secoes, .modal-neumorfico...). */
 }
 
 /* ───────── Toasts desta página (sonner) ─────────
- * Mesma exceção documentada em kpi-operadores.css: o <Toaster/> global monta
- * em document.body, fora de [data-page="reports-consolidado"] — por isso a
- * classe .reports-consolidado-toast (passada só em toasts desta rota) em vez
- * do seletor de atributo.
+ * O <Toaster/> global monta em document.body, fora do [data-page] — daí a
+ * classe .reports-consolidado-toast. Mesmo visual de .toast-padrao
+ * (globals.css), mas com nome próprio: /s/operacao/comparativo, quartil e
+ * componentes do /c também passam esta classe.
  */
 .reports-consolidado-toast {
   background: var(--normal-bg) !important;
   color: var(--normal-text) !important;
   border: 1px solid var(--normal-border) !important;
-  /* font-family: Inter, definida em fonte.tsx (<style> global da rota). */
+  /* font-family: Inter, definida em FonteInter (<style> global da rota). */
 }
 /* Ícones nas cores semânticas da paleta ativa (nos dois temas). */
 .reports-consolidado-toast [data-icon] svg {
@@ -57,89 +41,6 @@ body:has([data-page="reports-consolidado"]) {
 .reports-consolidado-toast[data-type="info"] [data-icon] svg,
 .reports-consolidado-toast[data-type="loading"] [data-icon] svg {
   color: var(--muted-foreground) !important;
-}
-
-/* ───────── Menu de seções flutuante (ConsolidadoNavSidebar) ─────────
- * Renderizado como IRMÃO da div [data-page="reports-consolidado"] (position:
- * fixed, precisa ficar fora do container centralizado) — não dentro da
- * árvore normal do [data-page] principal. Por isso recebe seu PRÓPRIO
- * data-page (ver `dataPage` em FloatingNavSidebar) só pra herdar as CSS
- * custom properties do tema definidas acima, e uma classe própria
- * (.reports-consolidado-nav) usada aqui como gancho pra sobrescrever as
- * classes Tailwind do hover-sidebar.tsx compartilhado (bg-sidebar,
- * border-border/60) — SEM editar esse componente
- * compartilhado (TempoIndispNavSidebar não passa wrapperClassName/dataPage,
- * então continua 100% com o visual de sempre).
- */
-.reports-consolidado-nav .bg-sidebar {
-  /* --nav-menu-bg-consolidado só existe na Vercel clara (vercel.css);
-     nos demais temas/paletas cai no --nav-menu-bg de sempre. */
-  background-color: var(--nav-menu-bg-consolidado, var(--nav-menu-bg)) !important;
-  box-shadow: var(--kpi-shadow);
-}
-.reports-consolidado-nav .border-border\/60 {
-  border-color: var(--elevation-1-border) !important;
-}
-/* Hover do item: SEM fundo cinza (removido a pedido) — a única animação é o
-   título deslizando pro lado (group-hover:translate-x-1 do SidebarLink) +
-   a cor do texto indo pra --foreground (ver "Menu lateral: seção ativa"). */
-.reports-consolidado-nav a:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-  border-radius: 0.375rem;
-}
-
-/* ───────── Toggle do olho (nome fantasia) ─────────
- * Botão com aria-pressed no cabeçalho da EquipeTable: sem a borda de foco
- * do navegador, trocada por um anel na cor do tema (--ring).
- */
-[data-page="reports-consolidado"] button[aria-pressed] {
-  outline: none;
-}
-[data-page="reports-consolidado"] button[aria-pressed]:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-/* ───────── Fundo dos cards de Visão Geral (Tx Retenção/Pedidos/Retidos/Churn) ─────────
- * VisaoGeralCards.tsx é COMPARTILHADO com /operacao/comparativo-consolidado,
- * então não editamos o componente — só aqui, via wrapper com
- * data-visao-geral-cards (adicionado em retencao-detalhe-section.tsx,
- * exclusivo desta rota). Mesma correção já aplicada em
- * /s/reports/tempo-indisponibilidade (.tempo-indisp-resumo-card): no tema
- * claro, os cards precisam se separar do fundo da página sem voltar ao
- * branco do card padrão.
- */
-/* Cards de número (Taxa / Pedidos / Retidos / Churn e os do Face ID):
- * MESMO visual nos dois temas — borda fina + fundo de card + sombra leve
- * (o de sempre), com cantos de 18px. O relevo neumórfico foi testado e
- * descartado: funcionava no claro mas não no fundo quase preto do escuro,
- * e o pedido é visual igual entre os temas.
- * Claro: o fundo do card é um degrau abaixo do fundo da página (o card
- * padrão é branco puro e sumia — mesma correção do tempo-indisponibilidade). */
-[data-page="reports-consolidado"] [data-visao-geral-cards] .bg-card\/70 {
-  border-radius: 18px !important;
-}
-[data-theme="light"] [data-page="reports-consolidado"] [data-visao-geral-cards] .bg-card\/70 {
-  background-color: color-mix(in srgb, var(--background) 82%, var(--muted) 18%) !important;
-}
-
-/* ───────── Hover semântico das linhas (vermelho / verde, os dois temas) ─────────
- * Cada linha clicável mantém a própria cor no hover, só um pouco mais
- * intensa que o repouso: abaixo da meta = --danger (repouso 5% → hover 10%);
- * dentro da meta = --success (sem fundo em repouso → hover 7%).
- * Gancho: data-meta-linha (equipe-table.tsx), em vez das classes Tailwind
- * geradas (hover:border-l-[var(--danger)]), que quebravam com qualquer
- * mudança de classe. !important + especificidade maior: vence o hover
- * cinza global do tema claro (globals.css, [data-equipe-table] ... :hover).
- * Toda linha com atendimento tem data-meta-linha; as sem atendimento
- * (data-sem-dados) ficam de fora.
- */
-[data-theme] [data-page="reports-consolidado"] [data-equipe-table] > div[data-meta-linha="abaixo"]:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
-  background-color: color-mix(in oklch, var(--danger) 10%, transparent) !important;
-}
-[data-theme] [data-page="reports-consolidado"] [data-equipe-table] > div[data-meta-linha="dentro"]:not(:first-child):not(.font-bold):not([data-sem-dados="true"]):hover {
-  background-color: color-mix(in oklch, var(--success) 7%, transparent) !important;
 }
 
 /* ───────── Cabeçalho e linha de totais (EQUIPE) da EquipeTable ─────────
@@ -177,122 +78,6 @@ body:has([data-page="reports-consolidado"]) {
   letter-spacing: 0.025em;
   text-transform: uppercase;
   color: var(--th-fg) !important;
-}
-
-/* ───────── Dropzone "Anexar Base" (Problema 2, 6ª rodada) ─────────
- * UploadDropzone lia `var(--upload-idle-bg, var(--card))` /
- * `var(--muted-hover-bg, var(--card))` — tokens globais definidos só pro
- * tema antigo (globals.css), pensados pra outro conjunto de cores (--muted
- * ali é um cinza quase branco). Embora esses tokens globais, quando
- * resolvidos DENTRO desta página, acabem puxando os valores locais de
- * --muted/--card por causa da cascata de custom properties, o resultado
- * ficava perto demais do próprio fundo do StyledCard ("ANEXAR BASE") — sem
- * ler como uma área de drop distinta, e sem seguir explicitamente a paleta
- * Zen Linen desta rota.
- * Tokens PRÓPRIOS desta página, com color-mix a partir de --card/--muted
- * (mesma técnica do StyledCard, que mistura --background/--card) — dão um
- * tom claramente diferente do fundo do card ao redor, sem sair da paleta,
- * nos dois temas. UploadDropzone referencia com fallback pro --card (ver
- * upload-dropzone.tsx), então mesmo que este CSS não carregasse por algum
- * motivo, o layout não quebra.
- */
-/* Fundo = o MESMO do cabeçalho da tabela (linha OPERADOR/RETIDOS/...):
- * escuro → bg-muted/40 do cabeçalho; claro → var(--muted) (regra global do
- * cabeçalho em globals.css, redefinida no bloco [data-theme="light"] abaixo).
- * Hover = repouso nos dois temas: passar o mouse só anima o ícone (pasta
- * abrindo), o fundo não muda de cor. */
-[data-page="reports-consolidado"] {
-  --dropzone-idle-bg: color-mix(in oklab, var(--muted) 40%, transparent);
-  --dropzone-hover-bg: var(--dropzone-idle-bg);
-}
-
-/* Exceção compartilhada com Tempo/Indisponibilidade: no tema claro, o
- * hover anima apenas o conteúdo interno do anexo, sem escurecer o fundo ou
- * a borda pontilhada (hover = repouso). Estados de drag/rejeição continuam
- * sinalizados. */
-[data-theme="light"] [data-page="reports-consolidado"] {
-  --dropzone-idle-bg: var(--muted);
-  --dropzone-hover-bg: var(--muted);
-}
-
-[data-theme="light"] [data-page="reports-consolidado"] .upload-dropzone-root-reports-consolidado[data-dropzone-state="idle"]:hover {
-  border-color: var(--border) !important;
-}
-
-/* ───────── Placeholder do anexo na tela de loading (kpi-loading-screen.tsx) ─────────
- * globals.css tem uma regra GLOBAL (fora do escopo permitido pra edição) que
- * escurece qualquer .border-dashed no hover, no tema claro:
- *   [data-theme="light"] .border-dashed:hover { border-color: var(--primary) !important; }
- * Isso atinge também a caixa tracejada muda do esqueleto de loading (não tem
- * classe própria, só utilities Tailwind), fazendo a borda "animar" ao passar
- * o mouse ali mesmo estando tudo desabilitado. O dropzone real já tem a
- * regra acima cancelando o mesmo efeito; aqui cancelamos de novo, restrita a
- * esta rota, pra cobrir a caixa do loading também. Mesma correção já
- * aplicada em /s/reports/tempo-indisponibilidade.
- */
-[data-theme="light"] [data-page="reports-consolidado"] .border-dashed:hover {
-  border-color: var(--border) !important;
-}
-
-/* Banner de erro do upload — `.status-danger` (globals.css) usa
- * --danger-bg/--danger-border, tokens que esta página NÃO redefine (só
- * --danger foi trazido pra paleta Zen Linen) — o banner saía com o
- * vermelho/rosa saturado do tema antigo, destoando do resto. Override
- * escopado, derivando fundo/borda do --danger já correto da paleta local
- * via color-mix, em vez de mexer em `.status-danger` (compartilhada). */
-[data-page="reports-consolidado"] .status-danger {
-  color: var(--danger);
-  background: color-mix(in oklch, var(--danger) 12%, transparent);
-  border-color: color-mix(in oklch, var(--danger) 35%, transparent);
-}
-
-/* ───────── Modal de upload (UploadProgressModal) — variant="reports-consolidado" ─────────
- * upload-progress-modal.tsx é COMPARTILHADO com
- * upload-tempo-logado-dropzone.tsx (mesma lógica de etapas). Só
- * upload-dropzone.tsx (exclusivo desta rota) passa
- * variant="reports-consolidado", que troca `elevation-3`/`ds-h2`/`ds-mono`
- * genéricos por esta classe — Tempo Logado nunca passa a prop, então
- * continua 100% com o card `elevation-3` de sempre.
- *
- * O componente não é um portal de verdade (sem createPortal — é um
- * position:fixed dentro da própria árvore da página), então var(--card)/
- * var(--border) já herdariam certo mesmo sem o `data-page` no backdrop; ele
- * é aplicado mesmo assim (mesmo padrão das outras rotas desta série) só pra
- * permitir seletor CSS explícito aqui, sem depender de onde no DOM a árvore
- * do modal fica pendurada.
- */
-/* Fundo/borda/sombra vêm das versões neumórficas por tema (logo abaixo e
- * no fim do arquivo); aqui só a cor do texto. */
-.reports-consolidado-upload-modal {
-  color: var(--foreground);
-}
-
-/* Tema escuro: card do Uiverse.io (by Yaseen549), IDÊNTICO à referência —
- * #212121, cantos de 30px, sombra dupla (rgb(25) embaixo/direita, rgb(60)
- * em cima/esquerda), com o fundo da tela TAMBÉM #212121 (ver backdrop
- * abaixo): o relevo só funciona com fundo = card. Escolhido assim mesmo
- * ficando um pouco mais claro que o fundo da página. O tamanho segue o
- * conteúdo do modal (o original tinha 190×254px). Tema claro: versão
- * clara do Uiverse (#e0e0e0), no fim do arquivo. */
-:root:not([data-theme="light"]) .reports-consolidado-upload-modal {
-  background: #212121;
-  border: none;
-  border-radius: 30px;
-  box-shadow:
-    15px 15px 30px rgb(25, 25, 25),
-    -15px -15px 30px rgb(60, 60, 60);
-}
-
-/* Fundo do modal: sólido, sem blur (o componente aplica blur + fundo
- * translúcido inline — daí o !important). Só nesta rota.
- * Escuro: #212121 (= card, como na referência). Claro: #e0e0e0 (= card do
- * Uiverse claro, ver abaixo). */
-[data-upload-backdrop][data-page="reports-consolidado"] {
-  background: #e0e0e0 !important;
-  backdrop-filter: none !important;
-}
-:root:not([data-theme="light"]) [data-upload-backdrop][data-page="reports-consolidado"] {
-  background: #212121 !important;
 }
 
 /* ───────── Toasts desta página (sonner) — texto da descrição ─────────
@@ -335,21 +120,6 @@ body:has([data-page="reports-consolidado"]) {
   color: var(--muted-foreground);
 }
 
-/* ───────── Fonte única: Inter em tudo (ver fonte.tsx) ─────────
- * ds-mono / ds-mono-sm / ds-display (globals.css)
- * usam var(--font-mono) = Geist Mono. Esses componentes são COMPARTILHADOS
- * com outras rotas (EquipeTable, TabelaPadrao, TabelaTemas, VisaoGeralCards,
- * OperadorDetalheDialog, SignatureFooter, ClearBaseButton...), então a troca
- * é feita só aqui, escopada a [data-page="reports-consolidado"] — que também
- * cobre os portais que já carregam o atributo (DialogContent do detalhe do
- * operador, popovers de config, nav lateral, loading). tabular-nums mantém
- * os números com largura fixa (alinhamento de colunas que o mono garantia).
- */
-[data-page="reports-consolidado"] :is(.ds-mono, .ds-mono-sm, .ds-display) {
-  font-family: var(--font-sans);
-  font-variant-numeric: tabular-nums;
-}
-
 /* ───────── Input "Meta Taxa Retenção" (Configurações da Tabela) ─────────
  * O contorno preto vinha do outline global de foco (globals.css:
  * input:focus-visible { outline: 2px solid var(--primary) }), que é
@@ -366,20 +136,6 @@ body:has([data-page="reports-consolidado"]) {
 [data-page="reports-consolidado"] input[id^="meta-"]:focus-visible {
   outline: none;
   box-shadow: none;
-}
-
-/* ───────── Folhas da pasta "Anexar Base" (Vercel clara) ─────────
- * As folhas usavam --upload-folder-paper-1/2/3 do vercel.css claro
- * (oklch 0.60 / 0.75 / 0.90): cinzas muito claros perto do corpo preto da
- * pasta, destoando. Aqui ficam mais escuras, mantendo a escada de tons
- * (1 = mais escura, atrás; 3 = mais clara, na frente). Tokens redefinidos só
- * dentro desta rota: TMA/Tempo Logado e o painel do coordenador (que usam
- * os mesmos tokens) não mudam; tema escuro e Claude Amber inalterados.
- */
-:root[data-palette="vercel"][data-theme="light"] [data-page="reports-consolidado"] {
-  --upload-folder-paper-1: oklch(0.30 0 0);
-  --upload-folder-paper-2: oklch(0.42 0 0);
-  --upload-folder-paper-3: oklch(0.56 0 0);
 }
 
 /* ───────── Barra lateral do card "Taxa de Retenção" (Analítico) ─────────
@@ -514,6 +270,8 @@ body:has([data-page="reports-consolidado"]) {
  * tom do skeleton do Analítico (--muted-foreground a 14%, o cinza das barras
  * do gráfico), em degraus pelas opacidades originais pra manter a
  * hierarquia (bloco cheio > /70 > /60 e /40). Vale nos dois temas.
+ * Mesmo tom de .skeleton-tom (globals.css); a classe fica aqui porque os
+ * loadings do /c, comparativo e quartil também usam .consolidado-skeleton.
  */
 .consolidado-skeleton .bg-card {
   background-color: color-mix(in oklab, var(--muted-foreground) 14%, transparent);
@@ -546,78 +304,6 @@ body:has([data-page="reports-consolidado"]) {
   display: none;
 }
 
-/* ───────── Dialog do operador: mesmo visual da tela "Atualizando base" ─────────
- * Tema escuro, só quando aberto por esta rota (prop visualNeumorfico →
- * data-operador-neumorfico). Card do Uiverse (by Yaseen549): #212121, cantos
- * de 30px, sombra dupla rgb(25)/rgb(60), sem borda; fundo da tela também
- * #212121, sólido e sem blur (relevo só funciona com fundo = card).
- * --background redefinido DENTRO do card: tudo que usa a cor de fundo ali
- * (o próprio card, o wrapper capturado no PNG, contornos de pontos do
- * gráfico) passa a ser #212121, sem "buracos" mais escuros.
- */
-:root:not([data-theme="light"]) [data-operador-neumorfico] {
-  --background: #212121;
-  background: #212121;
-  border: none;
-  border-radius: 30px;
-  box-shadow:
-    15px 15px 30px rgb(25, 25, 25),
-    -15px -15px 30px rgb(60, 60, 60);
-}
-:root:not([data-theme="light"]):has([data-operador-neumorfico]) [data-slot="dialog-overlay"] {
-  background: #212121;
-  backdrop-filter: none;
-}
-
-/* Conteúdo do dialog neumórfico: os tokens do tema escuro foram pensados pro
- * fundo quase preto da página — sobre o #212121 a borda sumia (divisórias
- * dos títulos, grade do gráfico), os rótulos cinza ficavam apagados e as
- * barras a 15% viravam um tom barrento. Recalibrados só aqui dentro:
- * - borda e "muted" como branco translúcido (sempre visíveis sobre #212121);
- * - texto secundário mais claro;
- * - KPIs e chips de quartil com o MESMO relevo do card (sombra dupla menor);
- * - cabeçalho da tabela no tom "muted" recalibrado, texto em --foreground. */
-:root:not([data-theme="light"]) [data-operador-neumorfico] {
-  --border: rgb(255 255 255 / 0.1);
-  --muted: rgb(255 255 255 / 0.07);
-  --muted-foreground: #b4b4b4;
-}
-:root:not([data-theme="light"]) [data-operador-neumorfico] [data-neu-tile] {
-  border-radius: 18px;
-  background: #212121;
-  box-shadow:
-    6px 6px 14px rgb(24, 24, 24),
-    -6px -6px 14px rgb(46, 46, 46);
-}
-:root:not([data-theme="light"]) [data-operador-neumorfico] [data-neu-chip] {
-  border: none !important;
-  border-radius: 10px;
-  background: #212121 !important;
-  box-shadow:
-    3px 3px 7px rgb(24, 24, 24),
-    -3px -3px 7px rgb(46, 46, 46);
-}
-:root:not([data-theme="light"]) [data-operador-neumorfico] [data-tabela-operador-temas] thead tr {
-  background-color: rgb(255 255 255 / 0.05);
-  border-bottom-color: rgb(255 255 255 / 0.12);
-}
-:root:not([data-theme="light"]) [data-operador-neumorfico] [data-tabela-operador-temas] thead th {
-  color: var(--foreground);
-}
-
-/* ───────── Barra de rolagem interna dos cards: branca (padrão do /c) ─────────
- * Os cards do trilho do Analítico (temas, quartis, segmentos, contratos,
- * face ID, perfilação) rolam por dentro (.scrollbar-tema). Mesmo visual da
- * lista de prioridades do /c (coordenador-consolidado.css): thumb branco a
- * 85% no escuro, --foreground a 70% no claro.
- */
-[data-page="reports-consolidado"] .scrollbar-tema {
-  scrollbar-color: color-mix(in oklab, #fff 85%, transparent) transparent;
-}
-[data-theme="light"] [data-page="reports-consolidado"] .scrollbar-tema {
-  scrollbar-color: color-mix(in oklab, var(--foreground) 70%, transparent) transparent;
-}
-
 /* ───────── Cabeçalho fixo ao rolar ("por tema" e "Divisor de Quartil") ─────────
  * Tabelas com data-temas-refinado (TabelaTemas com refinado) ou
  * data-cabecalho-fixo (DistribuicaoQuartis). O fundo do cabeçalho é
@@ -637,132 +323,4 @@ body:has([data-page="reports-consolidado"]) {
 }
 [data-page="reports-consolidado"] :is([data-temas-refinado], [data-cabecalho-fixo]) thead tr {
   border-bottom: none !important;
-}
-
-/* ───────── Tema claro: card neumórfico do Uiverse.io (by adamgiebl) ─────────
- * Mesma ideia do escuro, nas cores claras da referência: card e fundo
- * #e0e0e0, cantos de 30px, sombra #bebebe embaixo/direita e #ffffff em
- * cima/esquerda. Vale na tela "Atualizando base" (fundo: regra do backdrop
- * acima) e no dialog do operador (aberto pelo Consolidado).
- */
-[data-theme="light"] .reports-consolidado-upload-modal {
-  background: #e0e0e0;
-  border: none;
-  border-radius: 30px;
-  box-shadow:
-    15px 15px 30px #bebebe,
-    -15px -15px 30px #ffffff;
-}
-/* Bolinha das etapas pendentes: o --elevation-1-bg do claro é branco puro e
- * saltava sobre o card #e0e0e0. Espelha o escuro (bolinha um degrau mais
- * escura que o card, borda discreta). !important: a cor vem inline. */
-[data-theme="light"] .reports-consolidado-upload-modal [data-etapa-status="pending"] {
-  background: #d2d2d2 !important;
-  border-color: rgb(0 0 0 / 0.1) !important;
-}
-
-[data-theme="light"] [data-operador-neumorfico] {
-  /* Tokens recalibrados pro #e0e0e0 (mesmo motivo do escuro): borda e
-     "muted" como preto translúcido, texto secundário mais escuro. */
-  --background: #e0e0e0;
-  --border: rgb(0 0 0 / 0.12);
-  --muted: rgb(0 0 0 / 0.05);
-  --muted-foreground: #4f4f4f;
-  background: #e0e0e0;
-  border: none;
-  border-radius: 30px;
-  box-shadow:
-    15px 15px 30px #bebebe,
-    -15px -15px 30px #ffffff;
-}
-[data-theme="light"]:has([data-operador-neumorfico]) [data-slot="dialog-overlay"] {
-  background: #e0e0e0;
-  backdrop-filter: none;
-}
-[data-theme="light"] [data-operador-neumorfico] [data-neu-tile] {
-  border-radius: 18px;
-  background: #e0e0e0;
-  box-shadow:
-    6px 6px 14px #c4c4c4,
-    -6px -6px 14px #fcfcfc;
-}
-[data-theme="light"] [data-operador-neumorfico] [data-neu-chip] {
-  border: none !important;
-  border-radius: 10px;
-  background: #e0e0e0 !important;
-  box-shadow:
-    3px 3px 7px #c4c4c4,
-    -3px -3px 7px #fcfcfc;
-}
-[data-theme="light"] [data-operador-neumorfico] [data-tabela-operador-temas] thead tr {
-  background-color: rgb(0 0 0 / 0.05);
-  border-bottom-color: rgb(0 0 0 / 0.12);
-}
-[data-theme="light"] [data-operador-neumorfico] [data-tabela-operador-temas] thead th {
-  color: var(--foreground);
-}
-
-/* ───────── Menu lateral: seção ativa + divisória ─────────
- * ConsolidadoNavSidebar marca o item da seção visível ([data-nav-ativo] no
- * ícone, calculado pela rolagem). Inativos: ícone e texto em
- * --muted-foreground. Ativo: ícone e texto em --foreground (texto
- * semibold) + tracinho vertical à esquerda do ícone (cantoneira). Hover
- * continua levando o texto pro --foreground. Divisória entre a tabela do
- * topo e os slides do Analítico na cor da borda do menu.
- */
-.reports-consolidado-nav [data-nav-icone] {
-  color: var(--muted-foreground);
-  transition: color 200ms ease;
-}
-.reports-consolidado-nav [data-nav-icone][data-nav-ativo] {
-  color: var(--foreground);
-}
-.reports-consolidado-nav [data-nav-marcador] {
-  background: transparent;
-  transition: background-color 200ms ease;
-}
-.reports-consolidado-nav [data-nav-ativo] [data-nav-marcador] {
-  background: var(--foreground);
-}
-.reports-consolidado-nav a > span.text-sm {
-  color: var(--muted-foreground);
-}
-.reports-consolidado-nav a:has([data-nav-ativo]) > span.text-sm {
-  color: var(--foreground);
-  font-weight: 600;
-}
-.reports-consolidado-nav a:hover > span.text-sm,
-.reports-consolidado-nav a:hover [data-nav-icone] {
-  color: var(--foreground);
-}
-.reports-consolidado-nav [data-nav-divisoria] {
-  background-color: var(--elevation-1-border, var(--border));
-}
-
-/* Menu lateral no tema claro: o fundo quase branco sumia sobre a página
- * quase branca. Um degrau de cinza (6% da cor do texto sobre o fundo),
- * borda mais marcada e sombra curta e nítida pra destacar o painel. */
-[data-theme="light"] .reports-consolidado-nav .bg-sidebar {
-  background-color: color-mix(in oklab, var(--foreground) 6%, var(--background)) !important;
-  box-shadow: 0 4px 14px -4px rgb(0 0 0 / 0.18);
-}
-[data-theme="light"] .reports-consolidado-nav .border-border\/60 {
-  border-color: rgb(0 0 0 / 0.14) !important;
-}
-[data-theme="light"] .reports-consolidado-nav [data-nav-divisoria] {
-  background-color: rgb(0 0 0 / 0.14);
-}
-
-/* ───────── Barra de rolagem da PÁGINA: mesmo esquema dos cards ─────────
- * A barra vertical da página é do <html>/<body> (ancestrais do [data-page],
- * daí o :has()). Escuro: thumb branco a 85%; claro: --foreground a 70% —
- * igual à barra interna dos cards do Analítico (acima). Os tokens vêm da
- * paleta no :root, então resolvem no <html>. */
-html:has([data-page="reports-consolidado"]),
-body:has([data-page="reports-consolidado"]) {
-  scrollbar-color: color-mix(in oklab, #fff 85%, transparent) transparent;
-}
-html[data-theme="light"]:has([data-page="reports-consolidado"]),
-html[data-theme="light"] body:has([data-page="reports-consolidado"]) {
-  scrollbar-color: color-mix(in oklab, var(--foreground) 70%, transparent) transparent;
 }

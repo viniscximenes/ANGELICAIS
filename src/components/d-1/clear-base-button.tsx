@@ -38,8 +38,8 @@ interface Props {
  * Botão "Limpar Base" com confirmação por pressão contínua (Hold Button do
  * React Bits): ícone-only em repouso, expande horizontalmente revelando
  * "Limpar Base" e só executa a ação após a pressão completar. Usado por
- * TMA, Tempo/Indisponibilidade, Pausas e o Consolidado do coordenador.
- * (/s/reports/consolidado usa LimparBaseExpandButton direto.)
+ * TMA, Pausas e o Consolidado do coordenador. (/s/reports/consolidado e
+ * /s/reports/tempo-indisponibilidade usam LimparBaseExpandButton.)
  */
 export function ClearBaseButton({
   action,

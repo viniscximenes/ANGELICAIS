@@ -19,9 +19,9 @@ interface UploadProgressModalProps {
    * um portal de verdade — ele já renderiza dentro da árvore da página via
    * position:fixed, então herdaria as CSS vars do tema mesmo sem o
    * atributo; ele é reforçado aqui só pra seguir o mesmo padrão e permitir
-   * seletores CSS explícitos no CSS da rota) e troca classes/tokens
-   * genéricos (elevation-3, ds-h2, ds-mono) pelas classes do tema Zen Linen
-   * definidas no CSS daquela rota. A lógica de etapas (STEPS/getStepStatus)
+   * seletores CSS explícitos no CSS da rota) e troca o card `elevation-3`
+   * genérico pelo card neumórfico do padrão (.modal-neumorfico, seção 3 de
+   * globals.css). A lógica de etapas (STEPS/getStepStatus)
    * e a acessibilidade (aria-live/role=status, prefers-reduced-motion) são
    * IDÊNTICAS em todas as variantes — só a casca visual muda.
    * - "reports-consolidado": usada só por upload-dropzone.tsx (exclusivo de
@@ -34,16 +34,10 @@ interface UploadProgressModalProps {
 
 const VARIANT_CONFIG: Record<
   "reports-consolidado" | "reports-tempo-indisp",
-  { dataPage: string; modalClass: string }
+  { dataPage: string }
 > = {
-  "reports-consolidado": {
-    dataPage: "reports-consolidado",
-    modalClass: "reports-consolidado-upload-modal",
-  },
-  "reports-tempo-indisp": {
-    dataPage: "reports-tempo-indisponibilidade",
-    modalClass: "reports-tempo-indisp-upload-modal",
-  },
+  "reports-consolidado": { dataPage: "reports-consolidado" },
+  "reports-tempo-indisp": { dataPage: "reports-tempo-indisponibilidade" },
 };
 
 const STEPS: Array<{
@@ -129,6 +123,9 @@ export function UploadProgressModal({
           exit={{ opacity: 0 }}
           transition={fadeTransition}
           data-page={themedConfig?.dataPage}
+          // Variantes temáticas: fundo sólido do card neumórfico
+          // (.modal-neumorfico / [data-neumorfico] em globals.css).
+          data-neumorfico={isThemed || undefined}
           // Gancho pra uma rota sobrescrever o fundo (ex.: preto sólido sem
           // blur em reports-consolidado.css) sem mexer nas outras variantes.
           data-upload-backdrop
@@ -148,7 +145,7 @@ export function UploadProgressModal({
             aria-live="polite"
             className={
               themedConfig
-                ? `${themedConfig.modalClass} mx-4 w-full max-w-md rounded-2xl p-9`
+                ? "modal-neumorfico mx-4 w-full max-w-md rounded-2xl p-9"
                 : "elevation-3 mx-4 w-full max-w-md rounded-2xl p-9"
             }
           >

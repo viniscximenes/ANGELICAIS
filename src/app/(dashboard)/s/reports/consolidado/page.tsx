@@ -6,7 +6,7 @@ import { GestorEquipeSection } from "@/components/gestor/gestor-equipe-section";
 import { RetencaoDetalheSection } from "@/components/dashboard/retencao/retencao-detalhe-section";
 import { ConsolidadoNavSidebar } from "@/components/gestor/consolidado-nav-sidebar";
 import { ConsolidadoScrollProgress } from "@/components/gestor/consolidado-scroll-progress";
-import { FonteConsolidado } from "./fonte";
+import { FonteInter } from "@/components/gestor/fonte-inter";
 import { StyledCard } from "@/components/gestor/styled-card";
 import { UploadDropzone } from "@/components/d-1/upload-dropzone";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
@@ -91,10 +91,10 @@ export default async function ReportsConsolidadoPage() {
     return (
       <>
         <ConsolidadoScrollProgress />
-        <FonteConsolidado />
+        <FonteInter dataPage="reports-consolidado" toastClass="reports-consolidado-toast" />
         <div
           data-page="reports-consolidado"
-          className="min-h-screen px-6 py-8 lg:px-12 lg:py-12"
+          className="pagina-padrao min-h-screen px-6 py-8 lg:px-12 lg:py-12"
         >
         <div className="mx-auto max-w-7xl space-y-6">
           <div className="pt-4">
@@ -178,11 +178,11 @@ export default async function ReportsConsolidadoPage() {
         fixed, então fica fora do fluxo do container centralizado abaixo.
       */}
       <ConsolidadoNavSidebar />
-      <FonteConsolidado />
+      <FonteInter dataPage="reports-consolidado" toastClass="reports-consolidado-toast" />
 
       <div
         data-page="reports-consolidado"
-        className="min-h-screen px-6 py-8 lg:px-12 lg:py-12"
+        className="pagina-padrao min-h-screen px-6 py-8 lg:px-12 lg:py-12"
       >
         <div className="mx-auto max-w-7xl">
           {/*

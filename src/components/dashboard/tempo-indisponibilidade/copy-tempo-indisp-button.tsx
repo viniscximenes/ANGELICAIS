@@ -47,7 +47,7 @@ export function CopyTempoIndispButton({ horaReport }: CopyTempoIndispButtonProps
   async function handleCopy() {
     const target = document.querySelector<HTMLElement>("[data-tempo-indisp-png]");
     if (!target) {
-      toast.error("Tabela não encontrada", { className: "reports-tempo-indisp-toast" });
+      toast.error("Tabela não encontrada", { className: "toast-padrao" });
       return;
     }
 
@@ -78,7 +78,7 @@ export function CopyTempoIndispButton({ horaReport }: CopyTempoIndispButtonProps
       setState("idle");
       toast.error("Não foi possível copiar", {
         description: "Tente em outro navegador (Chrome/Edge)",
-        className: "reports-tempo-indisp-toast",
+        className: "toast-padrao",
       });
     }
   }

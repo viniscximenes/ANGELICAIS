@@ -24,6 +24,10 @@ export function OlhoToggleButton({ olhoAberto, onToggle }: OlhoToggleButtonProps
     <button
       type="button"
       onClick={onToggle}
+      // aria-pressed: estado pro leitor de tela e gancho do anel de foco
+      // (.pagina-padrao button[aria-pressed], globals.css) — igual ao
+      // botão do olho do Consolidado.
+      aria-pressed={olhoAberto}
       title={olhoAberto ? "Mostrar nomes fantasia" : "Revelar nomes reais"}
       className="text-foreground/80 hover:text-foreground transition-colors inline-block align-middle ml-1.5"
     >

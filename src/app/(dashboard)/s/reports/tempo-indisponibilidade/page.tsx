@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Instrument_Sans } from "next/font/google";
 
 import "./reports-tempo-indisp.css";
+import { UploadTempoLogadoDropzone } from "@/components/d-1/tempo-logado/upload-tempo-logado-dropzone";
 import { TempoIndispSection } from "@/components/dashboard/tempo-indisponibilidade/tempo-indisp-section";
+import { ConsolidadoScrollProgress } from "@/components/gestor/consolidado-scroll-progress";
+import { FonteInter } from "@/components/gestor/fonte-inter";
+import { StyledCard } from "@/components/gestor/styled-card";
 import { TempoIndispNavSidebar } from "@/components/gestor/tempo-indisp-nav-sidebar";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
@@ -20,23 +23,10 @@ export const metadata: Metadata = {
   title: "Reports - Tempo Logado & Indisponibilidade",
 };
 
-// Fonte do tema Zen Linen — carregada só nesta rota, mesmo padrão de
-// /s/reports/consolidado, /kpi/operadores etc: next/font/google gera uma
-// variável escopada ao módulo que a importa, referenciada só dentro de
-// [data-page="reports-tempo-indisponibilidade"] em reports-tempo-indisp.css,
-// então não afeta nenhuma outra página.
-const zenSans = Instrument_Sans({
-  subsets: ["latin", "latin-ext"],
-  weight: "variable",
-  variable: "--font-zen-sans",
-});
-
-export const revalidate = 300;
-
-// Mesmo piso mínimo de /s/reports/consolidado: o fallback de loading permanece
-// por pelo menos 3s contando desde a entrada na página. Se as buscas já
-// consumirem esse tempo, não há espera adicional.
-const MIN_LOADING_MS = 3_000;
+// Piso mínimo de loading — mesmo de /s/reports/consolidado: se os dados
+// voltarem rápido, o loading.tsx não fica só piscando na tela. Contado
+// desde a entrada na função; se as buscas já demoraram mais, não espera.
+const MIN_LOADING_MS = 1_000;
 
 async function aguardarPisoMinimo(desde: number) {
   const faltam = MIN_LOADING_MS - (Date.now() - desde);
@@ -44,6 +34,8 @@ async function aguardarPisoMinimo(desde: number) {
     await new Promise((resolve) => setTimeout(resolve, faltam));
   }
 }
+
+const DATA_PAGE = "reports-tempo-indisponibilidade";
 
 export default async function ReportsTempoIndisponibilidadePage() {
   const inicioCarregamento = Date.now();
@@ -56,97 +48,98 @@ export default async function ReportsTempoIndisponibilidadePage() {
     redirect(getPostLoginPath(user.profile.role));
   }
 
-  // Roster da equipe D-1 (d1_operadores_gestor) e config da tabela unificada
-  // (meta de Indisp.% + ordenação) buscados antes do resto: o roster porque
-  // getPausasProgramadas precisa dele, e a config porque getGestorIndisponibilidade
-  // precisa da meta pra calcular cumpriuMeta.
-  const [rosterD1, configTabelaTempoIndisp] = await Promise.all([
-    getRosterOperadoresGestor(user.profile.id),
-    getConfigTabelaTempoIndisp(user.profile.id),
+  const gestorId = user.profile.id;
+
+  // Uma onda só de buscas: a indisponibilidade espera só a config (precisa
+  // da meta pra calcular cumpriuMeta) e as pausas programadas só o roster —
+  // o resto não espera nada. O roster é memoizado por requisição (cache()
+  // em get-roster-gestor.ts), então getGestorTempoLogado/Indisponibilidade
+  // não o consultam de novo.
+  const configTabelaP = getConfigTabelaTempoIndisp(gestorId);
+  const [
+    dataTempoLogado,
+    dataIndisponibilidade,
+    nomeFantasiaConfig,
+    pausasProgramadas,
+    configAderencia,
+    configTabelaTempoIndisp,
+  ] = await Promise.all([
+    getGestorTempoLogado(gestorId),
+    configTabelaP.then((config) => getGestorIndisponibilidade(gestorId, config.metaIndisponibilidade)),
+    getNomeFantasiaConfig(gestorId),
+    getRosterOperadoresGestor(gestorId).then((roster) => getPausasProgramadas(roster)),
+    getConfigAderencia(gestorId),
+    configTabelaP,
   ]);
 
-  // Fetch único da página (antes dividido entre esta rota e
-  // /analitico, hoje fundidas): tempo logado, indisponibilidade,
-  // nome fantasia, pausas programadas (filtradas pelo roster) e
-  // tolerância de aderência.
-  const [dataTempoLogado, dataIndisponibilidade, nomeFantasiaConfig, pausasProgramadas, configAderencia] =
-    await Promise.all([
-      getGestorTempoLogado(user.profile.id),
-      getGestorIndisponibilidade(user.profile.id, configTabelaTempoIndisp.metaIndisponibilidade),
-      getNomeFantasiaConfig(user.profile.id),
-      getPausasProgramadas(rosterD1),
-      getConfigAderencia(user.profile.id),
-    ]);
-
+  // Piso mínimo aplicado depois de TODAS as buscas, nos dois caminhos.
   await aguardarPisoMinimo(inicioCarregamento);
 
-  // Os dois datasets vêm do mesmo upload de BASE - 2 — se um vier vazio,
-  // tratamos como falha (evita renderizar a página pela metade).
+  const showUpload = can(user.profile.role, "manage_d1_base");
+
+  // Sem equipe (roster vazio → as duas listas vêm vazias): mesmo título e
+  // mesma linguagem visual do Consolidado e, pra quem pode, o anexo da base.
   if (
     dataTempoLogado.operadores.length === 0 ||
     dataIndisponibilidade.operadores.length === 0
   ) {
     return (
-      <div
-        data-page="reports-tempo-indisponibilidade"
-        className={`flex min-h-[60vh] items-center justify-center px-6 ${zenSans.variable}`}
-      >
-        <div
-          className="elevation-1 ds-body text-muted-foreground max-w-md rounded-xl px-6 py-10 text-center"
-          style={{ border: "1px solid var(--border)" }}
-        >
-          Não foi possível carregar os dados da equipe.
-          <br />
-          <span className="ds-mono-sm" style={{ color: "var(--muted-foreground)" }}>
-            Verifique se há operadores cadastrados na sua equipe (Configurações
-            &rarr; Operadores do D-1) e se a base do dia já foi atualizada.
-          </span>
+      <>
+        <ConsolidadoScrollProgress />
+        <FonteInter dataPage={DATA_PAGE} toastClass="toast-padrao" />
+        <div data-page={DATA_PAGE} className="pagina-padrao min-h-screen px-6 py-8 lg:px-12 lg:py-12">
+          <div className="mx-auto max-w-7xl space-y-6">
+            <div className="pt-4">
+              <h1 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+                Tempo Logado &amp; Indisponibilidade
+              </h1>
+            </div>
+
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
+              <StyledCard
+                withGradient
+                className="flex min-h-[220px] flex-1 flex-col items-center justify-center gap-2 p-10 text-center"
+              >
+                <h3 className="ds-h3 text-foreground font-semibold">Ainda não há dados da equipe</h3>
+                <p className="ds-body text-muted-foreground max-w-md text-sm">
+                  {showUpload
+                    ? "Anexe a base do dia ao lado. Se ela já foi anexada, confira se há operadores cadastrados na sua equipe (Configurações → Operadores do D-1)."
+                    : "Confira se há operadores cadastrados na sua equipe (Configurações → Operadores do D-1) e se a base do dia já foi atualizada."}
+                </p>
+              </StyledCard>
+
+              {showUpload && (
+                <div className="min-h-[220px] min-w-0 flex-1 self-stretch">
+                  <UploadTempoLogadoDropzone abrirEmDownloads recarregarComModalAberto />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
-
-  const showUpload = can(user.profile.role, "manage_d1_base");
 
   const nomeFantasia = {
     ativo: nomeFantasiaConfig.ativo,
     mapa: Object.fromEntries(nomeFantasiaConfig.mapa),
   };
 
-  // NÃO envolvido em <PageTransition> (o branch "sem dados" acima
-  // também não) — mesmo motivo documentado em reports/consolidado/page.tsx:
-  // PageTransition faz um fade a partir de opacity:0 via motion/react, que
-  // só anima depois que o JS hidrata no client. Como esta página agora tem
-  // loading.tsx cobrindo a espera do Server Component, esse fade adicional
-  // faria o HTML real (já com os dados) ficar invisível por uma janela
-  // perceptível entre o loading.tsx sumir e a hidratação terminar —
-  // exatamente a sequência "loading → tela vazia → dados" já corrigida no
-  // consolidado. Removendo o fade aqui, o swap loading→conteúdo fica direto.
+  // Sem <PageTransition>: o conteúdo já vem pronto via SSR e o loading.tsx
+  // cobre a espera — um fade extra deixava a tela vazia entre o loading e
+  // os dados (mesmo motivo documentado em reports/consolidado/page.tsx).
   return (
     <>
-      {/*
-        Navegação lateral animada, EXCLUSIVA desta página — mesmo
-        componente/mecanismo do ConsolidadoNavSidebar (ambos delegam a
-        FloatingNavSidebar), só com a lista de itens trocada. position:
-        fixed, fica fora do fluxo do container centralizado abaixo — mesma
-        posição de ConsolidadoNavSidebar em /s/reports/consolidado.
-      */}
+      <ConsolidadoScrollProgress />
+      {/* Navegação lateral da página (position: fixed, fora do container). */}
       <TempoIndispNavSidebar />
+      <FonteInter dataPage={DATA_PAGE} toastClass="toast-padrao" />
 
-      <div
-        data-page="reports-tempo-indisponibilidade"
-        className={`min-h-screen px-6 py-8 lg:px-12 lg:py-12 ${zenSans.variable}`}
-      >
+      <div data-page={DATA_PAGE} className="pagina-padrao min-h-screen px-6 py-8 lg:px-12 lg:py-12">
         <div className="mx-auto max-w-7xl">
-          {/*
-            Cabeçalho (título "Tempo Logado & Indisponibilidade" + linha
-            "{supervisor} fez um report às {hora}" + controles) é renderizado
-            DENTRO de TempoIndispSection, não aqui — mesmo motivo do
-            GestorEquipeSection em /s/reports/consolidado: o texto do report e
-            os controles (engrenagem, limpar base) dependem de estado client
-            atualizado por refetch() após ações do gestor, então só podem
-            viver num Client Component. Ver o topo de TempoIndispSection.
-          */}
+          {/* Cabeçalho (título + "{supervisor} fez um report às {hora}" +
+              controles) vive dentro de TempoIndispSection: depende de estado
+              client atualizado por refetch() após as ações do gestor. */}
           <TempoIndispSection
             operadoresTempoLogadoIniciais={dataTempoLogado.operadores}
             operadoresIndisponibilidadeIniciais={dataIndisponibilidade.operadores}
@@ -160,12 +153,6 @@ export default async function ReportsTempoIndisponibilidadePage() {
             metaIndisponibilidadeInicial={configTabelaTempoIndisp.metaIndisponibilidade}
             ordemTabelaInicial={configTabelaTempoIndisp.ordemTabela}
           />
-
-          {/*
-            SignatureFooter agora é renderizada DENTRO de TempoIndispSection:
-            no desktop, logo abaixo do último card do trilho (Estouro de
-            NR17); no mobile/sem dados, no fim da seção. Ver lá o porquê.
-          */}
         </div>
       </div>
     </>

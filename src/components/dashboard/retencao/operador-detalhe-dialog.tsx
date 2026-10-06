@@ -249,7 +249,9 @@ export function OperadorDetalheDialog({
       <DialogContent
         data-page="reports-consolidado"
         data-operador-neumorfico={visualNeumorfico || undefined}
-        className="max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-4xl bg-background border-border/80 p-6 shadow-2xl"
+        // pagina-padrao (só no Consolidado, que passa visualNeumorfico):
+        // barras de rolagem do padrão (globals.css) também neste portal.
+        className={`${visualNeumorfico ? "pagina-padrao " : ""}max-h-[85vh] overflow-y-auto scrollbar-tema sm:max-w-4xl bg-background border-border/80 p-6 shadow-2xl`}
         style={fontFamilyEscopo ? { fontFamily: fontFamilyEscopo } : undefined}
       >
 
@@ -312,7 +314,7 @@ export function OperadorDetalheDialog({
                 <div
                   key={c.label}
                   // data-neu-tile: gancho do visual neumórfico (só no
-                  // Consolidado, ver [data-operador-neumorfico] no CSS).
+                  // Consolidado, ver [data-operador-neumorfico] em globals.css).
                   data-neu-tile
                   className="flex flex-col justify-center gap-1 px-4 py-3.5"
                 >
