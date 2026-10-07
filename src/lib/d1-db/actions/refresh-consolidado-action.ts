@@ -11,30 +11,47 @@ import type { OperadorConsolidado, ResumoEquipe } from "../types";
 type RefreshConsolidadoResult =
   | {
       success: true;
+      semMudanca: false;
       operadores: OperadorConsolidado[];
       equipe: ResumoEquipe;
       nomeSupervisorReport: string | null;
       datasBaseReport: string[] | null;
+      versao: string;
     }
+  | { success: true; semMudanca: true }
   | { success: false };
 
 /**
  * Refetch leve dos dados da tabela Consolidado/Equipe (operadores + hora/nome
  * do report), usado pelo polling de GestorEquipeSection.
+ *
+ * `versaoConhecida`: a versão que o cliente já tem (ver
+ * GestorConsolidadoResult.versao). Se nada mudou, responde `semMudanca` só
+ * com as consultas de roster + base — sem perfil, nome do supervisor, nome
+ * fantasia e faixas de RV (antes eram ~8 consultas a cada 30s por aba).
  */
-export async function refreshConsolidadoAction(): Promise<RefreshConsolidadoResult> {
+export async function refreshConsolidadoAction(
+  versaoConhecida?: string,
+): Promise<RefreshConsolidadoResult> {
   const user = await getCurrentUser();
   if (!user || user.profile.role !== "GESTOR") return { success: false };
 
-  const [{ data, reportHora, reportNomeSupervisor, reportDatasBase, erro }, nomeFantasiaConfig, rvFaixas] = await Promise.all([
-    getGestorConsolidado(user.profile.id),
-    getNomeFantasiaConfig(user.profile.id),
-    getCurrentPerUnitFaixas(),
-  ]);
+  const resultado = await getGestorConsolidado(
+    user.profile.id,
+    typeof versaoConhecida === "string" ? versaoConhecida : undefined,
+  );
+  const { data, reportHora, reportNomeSupervisor, reportDatasBase, erro, versao } = resultado;
 
   // Erro de banco: success false mantém a tabela que já está na tela (o
   // polling tenta de novo em 30s), em vez de trocá-la por tudo zerado.
-  if (erro || data.operadores.length === 0) return { success: false };
+  if (erro) return { success: false };
+  if (resultado.semMudanca) return { success: true, semMudanca: true };
+  if (data.operadores.length === 0) return { success: false };
+
+  const [nomeFantasiaConfig, rvFaixas] = await Promise.all([
+    getNomeFantasiaConfig(user.profile.id),
+    getCurrentPerUnitFaixas(),
+  ]);
 
   const nomeFantasia = {
     ativo: nomeFantasiaConfig.ativo,
@@ -64,9 +81,11 @@ export async function refreshConsolidadoAction(): Promise<RefreshConsolidadoResu
 
   return {
     success: true,
+    semMudanca: false,
     operadores,
     equipe,
     nomeSupervisorReport: reportNomeSupervisor,
     datasBaseReport: reportDatasBase,
+    versao,
   };
 }

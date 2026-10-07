@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import "./reports-consolidado.css";
@@ -38,6 +39,11 @@ export const metadata: Metadata = {
 const MIN_LOADING_MS = 1_000;
 
 async function aguardarPisoMinimo(desde: number) {
+  // Re-render disparado por Server Action (revalidatePath no toggle RV,
+  // salvar configuração, Limpar Base): a página é refeita DENTRO da resposta
+  // da action, sem loading.tsx na tela — o piso aqui só atrasava a action em
+  // 1s. O Next marca essas requisições com o header `next-action`.
+  if ((await headers()).has("next-action")) return;
   const faltam = MIN_LOADING_MS - (Date.now() - desde);
   if (faltam > 0) {
     await new Promise((resolve) => setTimeout(resolve, faltam));
@@ -63,7 +69,7 @@ export default async function ReportsConsolidadoPage() {
   // getGestorConsolidado roda UMA vez aqui: reportHora/reportNomeSupervisor
   // vão como prop pra GestorEquipeSection. Os e-mails da equipe NÃO são
   // buscados aqui — o Analítico já os recebe da própria action.
-  const [{ data, reportHora, reportNomeSupervisor, reportDatasBase, erro }, nomeFantasiaConfig, configTabela, rvFaixas] =
+  const [{ data, reportHora, reportNomeSupervisor, reportDatasBase, erro, versao }, nomeFantasiaConfig, configTabela, rvFaixas] =
     await Promise.all([
       getGestorConsolidado(user.profile.id),
       getNomeFantasiaConfig(user.profile.id),
@@ -230,6 +236,7 @@ export default async function ReportsConsolidadoPage() {
               olhoInicial={nomeFantasiaConfig.olhoConsolidado}
               nomeSupervisorReport={reportNomeSupervisor}
               datasBaseReport={reportDatasBase}
+              versaoInicial={versao}
               metaTxInicial={configTabela.metaTxRetencao}
               ordemTabelaInicial={configTabela.ordemTabela}
               showRvDiarioInicial={configTabela.showRvDiario}

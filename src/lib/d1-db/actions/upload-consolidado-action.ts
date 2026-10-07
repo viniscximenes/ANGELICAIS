@@ -50,6 +50,10 @@ export async function uploadConsolidadoAction(
     `[upload-consolidado] parse concluído. Lidas: ${parseResult.lidas}, válidas: ${parseResult.validas}, puladas: ${parseResult.puladas}`,
   );
 
+  if (parseResult.formatoInvalido) {
+    return { success: false, error: "Erro ao ler o CSV. Verifique o formato." };
+  }
+
   if (parseResult.linhas.length === 0) {
     return { success: false, error: "Nenhuma linha válida encontrada no CSV." };
   }

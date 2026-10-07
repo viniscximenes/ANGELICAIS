@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
 import { IconLoader2 } from "@tabler/icons-react";
-import Papa from "papaparse";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
@@ -134,36 +133,23 @@ export function UploadDropzone({
         }
       }
 
-      // Agora passa a STRING decodificada pro papaparse
-      Papa.parse<string[]>(csvText, {
-        complete: async (result) => {
-          if (result.errors.length > 0) {
-            setStep(null);
-            setErrorMessage("Erro ao ler o CSV. Verifique o formato.");
-            toast.error("CSV inválido", { className: "reports-consolidado-toast" });
-            return;
-          }
+      // Checagem rápida aqui (cabeçalho + ao menos 1 linha com conteúdo),
+      // sem parsear o CSV: o parse completo — inclusive a recusa de CSV
+      // malformado — é feito uma vez só, no servidor (parseBaseRetencao).
+      // Antes o papaparse rodava aqui também, só pra isso. Linha "vazia" =
+      // só separadores/aspas/espaços, mesmo critério de antes.
+      let linhasComConteudo = 0;
+      for (const linha of csvText.split(/\r?\n/)) {
+        if (linha.replace(/[,;\t"\s]/g, "") !== "" && ++linhasComConteudo >= 2) break;
+      }
+      if (linhasComConteudo < 2) {
+        setStep(null);
+        setErrorMessage("CSV vazio ou só com cabeçalho.");
+        toast.error("CSV vazio", { className: "reports-consolidado-toast" });
+        return;
+      }
 
-          const rows = result.data.filter((row) =>
-            row.some((cell) => cell !== ""),
-          );
-
-          if (rows.length < 2) {
-            setStep(null);
-            setErrorMessage("CSV vazio ou só com cabeçalho.");
-            toast.error("CSV vazio", { className: "reports-consolidado-toast" });
-            return;
-          }
-
-          await processUpload(csvText);
-        },
-        error: (err: Error) => {
-          setStep(null);
-          setErrorMessage(err.message);
-          toast.error("Erro ao processar arquivo", { className: "reports-consolidado-toast" });
-        },
-        skipEmptyLines: true,
-      });
+      await processUpload(csvText);
     } catch (err) {
       setStep(null);
       setErrorMessage("Erro ao ler arquivo");

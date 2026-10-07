@@ -142,6 +142,8 @@ interface GestorEquipeSectionProps {
   nomeSupervisorReport?: string | null;
   /** Dias (YYYY-MM-DD) da base do último upload — d1_consolidado.report_datas_base. */
   datasBaseReport?: string[] | null;
+  /** Versão dos dados vinda do servidor — o polling só busca tudo de novo quando ela muda. */
+  versaoInicial?: string;
   /** Meta de TX Retenção (%, escala 0-100) — config do gestor, `gestor_config_fantasia.meta_tx_retencao`. */
   metaTxInicial?: number;
   /** Ordenação salva da tabela — `gestor_config_fantasia.ordem_tabela`. */
@@ -160,6 +162,7 @@ export function GestorEquipeSection({
   olhoInicial = false,
   nomeSupervisorReport: nomeSupervisorReportInicial = null,
   datasBaseReport: datasBaseReportInicial = null,
+  versaoInicial = "",
   metaTxInicial = DEFAULT_META_TX_RETENCAO,
   ordemTabelaInicial = DEFAULT_ORDEM_TABELA,
   showRvDiarioInicial = DEFAULT_SHOW_RV_DIARIO,
@@ -294,10 +297,17 @@ export function GestorEquipeSection({
   // Evita duas buscas sobrepostas (polling + volta da aba + "Limpar base").
   const refetchEmVooRef = useRef<Promise<boolean> | null>(null);
 
+  // Versão dos dados que a tela mostra (ver getGestorConsolidado). Vai em
+  // cada poll: se o servidor achar a mesma, responde "sem mudança" sem
+  // refazer as consultas pesadas, e nada na tela é atualizado.
+  const versaoRef = useRef(versaoInicial);
+
   const buscarConsolidado = useCallback(async (): Promise<boolean> => {
     try {
-      const result = await refreshConsolidadoAction();
+      const result = await refreshConsolidadoAction(versaoRef.current);
+      if (result.success && result.semMudanca) return false;
       if (result.success) {
+        versaoRef.current = result.versao;
         setOperadores(result.operadores);
         setEquipe(result.equipe);
         setNomeSupervisorReport(result.nomeSupervisorReport);
@@ -448,6 +458,10 @@ export function GestorEquipeSection({
     () => ordenarOperadores(operadoresParaTela, ordemTabela),
     [operadoresParaTela, ordemTabela],
   );
+  // Tabela oculta do "Copiar imagem" sob demanda (ver o wrapper no JSX).
+  const [tabelaPngMontada, setTabelaPngMontada] = useState(false);
+  const montarTabelaPng = useCallback(() => setTabelaPngMontada(true), []);
+
   const operadoresPngOrdenados = useMemo(
     () => ordenarOperadores(operadores, ordemTabela),
     [operadores, ordemTabela],
@@ -551,12 +565,17 @@ export function GestorEquipeSection({
             <LimparBaseExpandButton onConfirm={handleLimparBase} pending={limpandoBase} />
           )}
 
-          <CopyTableButton
-            operadores={operadores}
-            equipe={equipe}
-            supervisor={gestora}
-            nomeSupervisorReport={nomeSupervisorReport}
-          />
+          {/* display:contents — não muda o layout da linha de controles.
+              Ponteiro em cima ou foco no botão monta a tabela oculta do PNG
+              (ver tabelaPngMontada); o clique vem sempre depois disso. */}
+          <span className="contents" onPointerOver={montarTabelaPng} onFocus={montarTabelaPng}>
+            <CopyTableButton
+              operadores={operadores}
+              equipe={equipe}
+              supervisor={gestora}
+              nomeSupervisorReport={nomeSupervisorReport}
+            />
+          </span>
 
           <LabeledSwitch label="Exibir RV" checked={showRvDiario} onCheckedChange={handleToggleRvDiario} />
         </div>
@@ -572,38 +591,43 @@ export function GestorEquipeSection({
           porque o gestor tinha o nome fantasia temporariamente aberto na
           tela no momento do clique.
           O CopyTableButton procura por [data-tabela-png].
+          Só montado depois do primeiro hover/foco no "Copiar imagem" (e
+          fica montado dali em diante) — antes era uma 2ª tabela inteira no
+          DOM o tempo todo, re-renderizando a cada poll e animação.
         */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "fixed",
-            top: "-99999px",
-            left: "-99999px",
-            // SEM width explícita de propósito: `position: fixed` com só
-            // `top`/`left` definidos (sem `right`) faz o navegador dar
-            // shrink-wrap no elemento — a largura vira a largura intrínseca
-            // real do conteúdo (StyledCard + seu padding/borda reais + o
-            // grid fixo de 760/920px da EquipeTable por dentro). Antes esse
-            // valor era forçado por fora (760/920 + uma constante de chrome
-            // hardcoded) — se o padding/borda/radius do card mudasse, a
-            // constante ficava errada e cortava a última coluna
-            // silenciosamente. Deixando o wrapper se auto-dimensionar, ele
-            // nunca mais pode ficar mais estreito que o conteúdo real, por
-            // definição — não há mais nenhum número pra desatualizar.
-          }}
-        >
-          <div data-tabela-png>
-            <KpiFrame>
-              <EquipeTable
-                key="gestor-equipe-png"
-                operadores={operadoresPngOrdenados}
-                equipe={equipe}
-                metaTx={metaTxFracao}
-                showRvDiario={showRvDiario}
-              />
-            </KpiFrame>
+        {tabelaPngMontada && (
+          <div
+            aria-hidden="true"
+            style={{
+              position: "fixed",
+              top: "-99999px",
+              left: "-99999px",
+              // SEM width explícita de propósito: `position: fixed` com só
+              // `top`/`left` definidos (sem `right`) faz o navegador dar
+              // shrink-wrap no elemento — a largura vira a largura intrínseca
+              // real do conteúdo (StyledCard + seu padding/borda reais + o
+              // grid fixo de 760/920px da EquipeTable por dentro). Antes esse
+              // valor era forçado por fora (760/920 + uma constante de chrome
+              // hardcoded) — se o padding/borda/radius do card mudasse, a
+              // constante ficava errada e cortava a última coluna
+              // silenciosamente. Deixando o wrapper se auto-dimensionar, ele
+              // nunca mais pode ficar mais estreito que o conteúdo real, por
+              // definição — não há mais nenhum número pra desatualizar.
+            }}
+          >
+            <div data-tabela-png>
+              <KpiFrame>
+                <EquipeTable
+                  key="gestor-equipe-png"
+                  operadores={operadoresPngOrdenados}
+                  equipe={equipe}
+                  metaTx={metaTxFracao}
+                  showRvDiario={showRvDiario}
+                />
+              </KpiFrame>
+            </div>
           </div>
-        </div>
+        )}
 
         {/*
           Sem borda/divisória aqui de propósito (removida nesta rodada) — o

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTopoAoCarregar } from "@/lib/lenis/use-topo-ao-carregar";
 import { fetchDashboardRetencaoAction } from "@/lib/retencao/actions";
 import { onBaseAtualizada } from "@/lib/retencao/base-cleared-event";
@@ -154,6 +154,13 @@ export function RetencaoDetalheSection({
 
   const hasNoData = !data || data.visaoGeral.total === 0;
 
+  // Chave que força o ScrollTrigger a recalcular quando as metas mudam —
+  // memorizada pra não refazer o JSON.stringify a cada render.
+  const refreshKeyTrilho = useMemo(
+    () => `${metaGlobal}-${JSON.stringify(themeMetas)}`,
+    [metaGlobal, themeMetas],
+  );
+
   // Avisa a sidebar de navegação (ConsolidadoNavSidebar) se os cards do
   // trilho existem — sem eles, os itens dela não têm pra onde rolar.
   const trilhoDisponivel = !loading && !error && !hasNoData;
@@ -229,7 +236,7 @@ export function RetencaoDetalheSection({
           */}
           <RetencaoHorizontalScroll
             header={cabecalho}
-            refreshKey={`${metaGlobal}-${JSON.stringify(themeMetas)}`}
+            refreshKey={refreshKeyTrilho}
             slides={[
               <div
                 key="visao-geral-evolucao"

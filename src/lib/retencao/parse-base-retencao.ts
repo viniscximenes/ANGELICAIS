@@ -27,6 +27,13 @@ type ParseResult = {
   lidas: number;
   validas: number;
   puladas: number;
+  /**
+   * true quando o Papa.parse acusou erro de formato (aspas sem fechar,
+   * delimitador não detectado...). O upload recusa o arquivo — antes essa
+   * checagem só existia no navegador (UploadDropzone parseava o CSV inteiro
+   * só pra isso).
+   */
+  formatoInvalido: boolean;
 };
 
 function normalizeHeader(h: string): string {
@@ -97,11 +104,12 @@ export function parseBaseRetencao(csvText: string): ParseResult {
 
   if (parsed.errors.length > 0) {
     console.error("[parse-base-retencao] erro no Papa.parse:", parsed.errors);
+    return { linhas: [], lidas: 0, validas: 0, puladas: 0, formatoInvalido: true };
   }
 
   const rows = parsed.data;
   if (rows.length < 2) {
-    return { linhas: [], lidas: 0, validas: 0, puladas: 0 };
+    return { linhas: [], lidas: 0, validas: 0, puladas: 0, formatoInvalido: false };
   }
 
   const rawHeaders = rows[0];
@@ -184,5 +192,5 @@ export function parseBaseRetencao(csvText: string): ParseResult {
     validas++;
   }
 
-  return { linhas, lidas, validas, puladas };
+  return { linhas, lidas, validas, puladas, formatoInvalido: false };
 }

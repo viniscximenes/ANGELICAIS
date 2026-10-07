@@ -44,16 +44,24 @@ export function useSecaoAtiva(idTopo: string): SecaoAtiva {
       }
       setAtivo(melhor);
     }
+    // A sidebar que usa este hook só aparece em telas >= lg (FloatingNavSidebar:
+    // `hidden lg:block`). Abaixo disso ela está montada mas invisível — não
+    // mede nada (antes lia a posição de todos os cards a cada frame de
+    // rolagem no celular). Ao cruzar o breakpoint, mede na hora.
+    const desktop = window.matchMedia("(min-width: 1024px)");
     function agendar() {
+      if (!desktop.matches) return;
       if (!raf) raf = requestAnimationFrame(medir);
     }
     agendar();
     window.addEventListener("scroll", agendar, { passive: true });
     window.addEventListener("resize", agendar);
+    desktop.addEventListener("change", agendar);
     return () => {
       if (raf) cancelAnimationFrame(raf);
       window.removeEventListener("scroll", agendar);
       window.removeEventListener("resize", agendar);
+      desktop.removeEventListener("change", agendar);
     };
   }, [idTopo]);
 

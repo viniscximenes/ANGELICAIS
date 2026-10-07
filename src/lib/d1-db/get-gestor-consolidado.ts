@@ -31,6 +31,7 @@ type Row = {
   report_hora: string | null;
   report_nome_supervisor: string | null;
   report_datas_base: string[] | null;
+  updated_at: string | null;
 };
 
 const ZERO_BREAKDOWN: MotivosBreakdown = {
@@ -55,6 +56,15 @@ type GestorConsolidadoResult = {
    * tela em vez de zerar.
    */
   erro: boolean;
+  /**
+   * "Versão" dos dados da equipe no dia (roster + nº de linhas + último
+   * updated_at). Muda a cada upload/Limpar Base/mudança de equipe — o
+   * polling manda a última conhecida pra pular a busca completa quando nada
+   * mudou. Vazia em erro/equipe vazia.
+   */
+  versao: string;
+  /** true quando `versaoConhecida` bateu: `data` vem vazio e não deve ser usado. */
+  semMudanca: boolean;
 };
 
 const EMPTY_RESULT: GestorConsolidadoResult = {
@@ -66,7 +76,16 @@ const EMPTY_RESULT: GestorConsolidadoResult = {
   reportNomeSupervisor: null,
   reportDatasBase: null,
   erro: false,
+  versao: "",
+  semMudanca: false,
 };
+
+/** Hash curto (djb2) do roster — entra na versão sem mandar os e-mails de novo. */
+function hashRoster(roster: string[]): string {
+  let h = 5381;
+  for (const ch of roster.join(",")) h = ((h << 5) + h + ch.charCodeAt(0)) | 0;
+  return (h >>> 0).toString(36);
+}
 
 /**
  * Lê o D-1 Consolidado da equipe de um gestor (d1_consolidado, data de
@@ -80,7 +99,15 @@ const EMPTY_RESULT: GestorConsolidadoResult = {
  * ninguém cadastrado) — esse é o único caso que deve virar o erro "sem
  * equipe" na página.
  */
-export async function getGestorConsolidado(gestorId: string): Promise<GestorConsolidadoResult> {
+export async function getGestorConsolidado(
+  gestorId: string,
+  /**
+   * Versão que o cliente já tem (polling). Se for igual à atual, retorna
+   * `semMudanca: true` logo depois das 2 consultas básicas (roster + base),
+   * sem buscar perfil, nome do supervisor etc.
+   */
+  versaoConhecida?: string,
+): Promise<GestorConsolidadoResult> {
   const admin = createAdminClient();
 
   const roster = await getRosterOperadoresGestor(gestorId);
@@ -107,16 +134,13 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
   // roster (@alloha.com/@sumicity.net.br) pra não perder linhas do CSV.
   const emailsComVariantes = roster.flatMap(getEmailVariants);
 
-  const [{ data, error }, { data: gestorProfile }] = await Promise.all([
-    admin
-      .from("d1_consolidado")
-      .select(
-        "operator_email, gestor_id, supervisor, retidos, cancelados, pedidos, tx_retencao, motivos_retidos, motivos_cancelados, report_hora, report_nome_supervisor, report_datas_base",
-      )
-      .in("operator_email", emailsComVariantes)
-      .eq("data_ref", dataRefHojeBR()),
-    admin.from("profiles").select("full_name").eq("id", gestorId).maybeSingle(),
-  ]);
+  const { data, error } = await admin
+    .from("d1_consolidado")
+    .select(
+      "operator_email, gestor_id, supervisor, retidos, cancelados, pedidos, tx_retencao, motivos_retidos, motivos_cancelados, report_hora, report_nome_supervisor, report_datas_base, updated_at",
+    )
+    .in("operator_email", emailsComVariantes)
+    .eq("data_ref", dataRefHojeBR());
 
   if (error) {
     // Sem a base do dia, a tabela sairia toda zerada como se ninguém tivesse
@@ -126,6 +150,20 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
   }
 
   const rows = (data ?? []) as Row[];
+
+  // Versão: muda com a equipe (roster), com linhas entrando/saindo (upload,
+  // Limpar Base) e com qualquer linha regravada (updated_at do upsert).
+  const ultimoUpdate = rows.reduce((max, row) => (row.updated_at && row.updated_at > max ? row.updated_at : max), "");
+  const versao = `${hashRoster(roster)}:${rows.length}:${ultimoUpdate}`;
+  if (versaoConhecida && versaoConhecida === versao) {
+    return { ...EMPTY_RESULT, versao, semMudanca: true };
+  }
+
+  const { data: gestorProfile } = await admin
+    .from("profiles")
+    .select("full_name")
+    .eq("id", gestorId)
+    .maybeSingle();
   const nomeGestor = gestorProfile?.full_name ?? "";
   // Chave por PREFIXO (sem domínio) — a mesma pessoa pode aparecer no CSV
   // como @alloha.com num dia e @sumicity.net.br noutro; o roster só guarda
@@ -199,6 +237,8 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
   return {
     data: { operadores, consolidado },
     erro: false,
+    versao,
+    semMudanca: false,
     reportHora: linhaCabecalho?.report_hora ?? null,
     reportDatasBase: linhaCabecalho?.report_datas_base ?? null,
     // Só formatação de exibição ("GABRIEL HENRIQUE XIMENES DA SILVA" →

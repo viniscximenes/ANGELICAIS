@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { motion, useMotionValue, useSpring } from "motion/react";
 
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/d1-db/types";
@@ -226,20 +226,38 @@ export function EquipeTable({
     rvTarget.set(showRvDiario ? RV_COLUMN_PX : 0);
   }, [showRvDiario, rvTarget]);
   const rvWidthSpring = useSpring(rvTarget, { damping: 30, stiffness: 220 });
-  const [rvWidthPx, setRvWidthPx] = useState(rvWidthSpring.get());
-  useEffect(() => rvWidthSpring.on("change", setRvWidthPx), [rvWidthSpring]);
-  // Progresso 0→1 da animação, usado só pra opacidade do conteúdo da
-  // coluna (evita texto "espremido" visível enquanto a coluna é estreita).
-  const rvProgress = RV_COLUMN_PX > 0 ? rvWidthPx / RV_COLUMN_PX : 0;
+
+  // A largura animada NÃO passa pelo estado do React: antes era um setState
+  // a cada frame do spring, re-renderizando a tabela inteira (todas as
+  // linhas) ~60x/s durante o toggle. Agora cada frame só escreve duas
+  // variáveis CSS no container — `--rv-col` (largura do track) e `--rv-op`
+  // (progresso 0→1, usado na opacidade do conteúdo da coluna pra não
+  // mostrar texto "espremido") — e o React só re-renderiza quando a coluna
+  // passa a existir/deixa de existir (rvVisivel, que liga as bordas).
+  const tabelaRef = useRef<HTMLDivElement>(null);
+  const [rvLarguraInicial] = useState(() => rvWidthSpring.get());
+  const [rvVisivel, setRvVisivel] = useState(rvLarguraInicial >= 1);
+  useEffect(
+    () =>
+      rvWidthSpring.on("change", (largura) => {
+        const el = tabelaRef.current;
+        if (el) {
+          el.style.setProperty("--rv-col", `${largura}px`);
+          el.style.setProperty("--rv-op", String(RV_COLUMN_PX > 0 ? largura / RV_COLUMN_PX : 0));
+        }
+        setRvVisivel(largura >= 1);
+      }),
+    [rvWidthSpring],
+  );
 
   // ÚNICA fonte de verdade da largura das colunas — a 6ª (RV) usa a
-  // largura animada acima; as 5 primeiras agora são PIXELS FIXOS
-  // (BASE_COLUMN_WIDTHS_PX), não `fr`, exatamente pra não recalcularem
+  // largura animada acima (var(--rv-col)); as 5 primeiras agora são PIXELS
+  // FIXOS (BASE_COLUMN_WIDTHS_PX), não `fr`, exatamente pra não recalcularem
   // durante a transição do toggle (ver comentário na constante). Header/
   // linhas/totais leem a MESMA variável — se estivesse duplicada em 3
   // lugares, poderia dessincronizar (já foi causa de um bug de
   // alinhamento antes).
-  const gridTemplateColumns = `${BASE_COLUMN_WIDTHS_PX.join("px ")}px ${rvWidthPx}px`;
+  const gridTemplateColumns = `${BASE_COLUMN_WIDTHS_PX.join("px ")}px var(--rv-col)`;
 
   return (
     // Container PRÓPRIO sem border/rounded/elevation-1 (TABELA_CONTAINER_CLASS,
@@ -251,7 +269,20 @@ export function EquipeTable({
     // TABELA_CONTAINER_CLASS aqui recriaria esse container. `data-equipe-table`
     // preservado (gancho do seletor global em globals.css pro fundo/borda
     // do cabeçalho no tema claro — não depende da borda externa removida).
-    <div data-equipe-table className="overflow-hidden">
+    <div
+      ref={tabelaRef}
+      data-equipe-table
+      className="overflow-hidden"
+      // Valores iniciais das variáveis da coluna RV; dali em diante quem as
+      // atualiza é o spring (useEffect acima). Como estes valores não mudam
+      // entre renders, o React nunca sobrescreve o que o spring escreveu.
+      style={
+        {
+          "--rv-col": `${rvLarguraInicial}px`,
+          "--rv-op": RV_COLUMN_PX > 0 ? rvLarguraInicial / RV_COLUMN_PX : 0,
+        } as CSSProperties
+      }
+    >
       {/*
         Cabeçalho Estilo Planilha — estilo de texto copiado LITERALMENTE
         do label "EQUIPE" (linha de totais, abaixo): lá o texto vem de
@@ -297,22 +328,22 @@ export function EquipeTable({
         <div className={TABELA_HEADER_CELL_CLASS}>Cancelados</div>
         <div className={TABELA_HEADER_CELL_CLASS}>Pedidos</div>
         {/*
-          border-r some quando a coluna RV está fechada (rvWidthPx ~0) —
+          border-r some quando a coluna RV está fechada (rvVisivel false) —
           Tx Retenção volta a ser a última coluna visualmente nesse caso,
           igual antes de existir a coluna RV.
         */}
-        <div className={cn(TABELA_HEADER_CELL_CLASS, rvWidthPx < 1 && "border-r-0")}>
+        <div className={cn(TABELA_HEADER_CELL_CLASS, !rvVisivel && "border-r-0")}>
           Tx Retenção
         </div>
         {/*
           Coluna RV Diário SEMPRE renderizada agora (nunca monta/desmonta)
-          — só a largura do track (rvWidthPx, acima) e a opacidade do
+          — só a largura do track (--rv-col, acima) e a opacidade do
           conteúdo animam. overflow-hidden clipa o texto enquanto a
           coluna está estreita durante a transição.
         */}
         <div
           className={cn(TABELA_HEADER_CELL_ULTIMA_CLASS, "overflow-hidden")}
-          style={{ opacity: rvProgress }}
+          style={{ opacity: "var(--rv-op)" }}
         >
           RV Diário
         </div>
@@ -349,6 +380,10 @@ export function EquipeTable({
           <motion.div
             key={key}
             layout
+            // Só mede/anima o layout quando a POSIÇÃO da linha muda
+            // (reordenação, operador entrando/saindo). Sem isto o motion
+            // media todas as linhas a cada render (poll, flash de valor).
+            layoutDependency={idx}
             transition={{ layout: { duration: 0.3, ease: "easeInOut" } }}
             onClick={clicavel ? () => onOperadorClick!(emailOriginal) : undefined}
             onKeyDown={
@@ -425,7 +460,7 @@ export function EquipeTable({
             <div
               className={cn(
                 "ds-mono-sm min-w-0 flex flex-col items-center justify-center gap-1 px-3 py-2",
-                rvWidthPx >= 1 && "border-r border-border/30",
+                rvVisivel && "border-r border-border/30",
               )}
             >
               {semAtendimentos ? (
@@ -479,7 +514,7 @@ export function EquipeTable({
             </div>
             <div
               className="ds-mono-sm min-w-0 overflow-hidden px-3 py-2 text-center"
-              style={{ fontVariantNumeric: "tabular-nums", opacity: rvProgress }}
+              style={{ fontVariantNumeric: "tabular-nums", opacity: "var(--rv-op)" }}
             >
               {formatRv(op.rvDiario)}
             </div>
@@ -523,7 +558,7 @@ export function EquipeTable({
           <div
             className={cn(
               "min-w-0 flex items-center justify-center gap-1.5 px-3 py-2.5",
-              rvWidthPx >= 1 && "border-r border-border/40",
+              rvVisivel && "border-r border-border/40",
             )}
           >
             {equipe.txRetencao === null ? (
@@ -552,7 +587,7 @@ export function EquipeTable({
           </div>
           <div
             className="min-w-0 overflow-hidden px-3 py-2.5 text-center"
-            style={{ fontVariantNumeric: "tabular-nums", opacity: rvProgress }}
+            style={{ fontVariantNumeric: "tabular-nums", opacity: "var(--rv-op)" }}
           >
             {formatRv(equipe.rvDiario)}
           </div>
