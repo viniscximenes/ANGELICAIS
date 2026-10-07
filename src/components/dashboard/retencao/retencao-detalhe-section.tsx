@@ -127,6 +127,11 @@ export function RetencaoDetalheSection({
     }
   }, []);
 
+  // Carrega no MOUNT, não ao entrar na viewport — intencional (auditoria
+  // 2026-10-07): carregar só ao rolar faria o esqueleto aparecer na frente
+  // do usuário e mudaria a altura do trilho do Analítico durante a rolagem.
+  // O custo já foi reduzido no servidor: fetchDashboardRetencaoAction lê o
+  // lote UMA vez (lerAtendimentosDoLote) em vez de 8 varreduras.
   useEffect(() => {
     const activeRef = { current: true };
     load(activeRef);

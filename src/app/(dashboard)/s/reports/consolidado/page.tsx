@@ -37,6 +37,11 @@ export const metadata: Metadata = {
 // Server Component até completar MIN_LOADING_MS, contados desde a entrada
 // na função. Se a busca real já demorou mais que isso, `aguardarPisoMinimo`
 // não espera nada (Math.max trava em 0) — só estica quando sobrou tempo.
+//
+// DECISÃO DE PRODUTO (não é falha de desempenho): o piso foi pedido pelo
+// usuário e mantido nas auditorias de 2026-10-07. Vale para a navegação
+// inicial e para o reload após upload. Respostas de Server Action já não
+// esperam (ver aguardarPisoMinimo). Não remover sem pedido explícito.
 const MIN_LOADING_MS = 1_000;
 
 async function aguardarPisoMinimo(desde: number) {
