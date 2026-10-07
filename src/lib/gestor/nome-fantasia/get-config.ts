@@ -8,6 +8,14 @@ type NomeFantasiaConfig = {
   olhoTempoIndisponibilidade: boolean;
   olhoOperacional: boolean;
   olhoTma: boolean;
+  /**
+   * true quando a leitura falhou (config ou nomes). Os valores acima vêm
+   * então no padrão (ativo=false/mapa vazio) e NÃO devem ser tratados como
+   * a configuração real: no Consolidado isso revelaria nomes reais com o
+   * olho fechado (auditoria 2026-10-07). Campo aditivo — telas que não o
+   * leem continuam como antes.
+   */
+  erro: boolean;
 };
 
 export async function getNomeFantasiaConfig(
@@ -61,5 +69,6 @@ export async function getNomeFantasiaConfig(
     olhoTempoIndisponibilidade: cfg?.olho_tempo_indisponibilidade ?? false,
     olhoOperacional: cfg?.olho_operacional ?? false,
     olhoTma: cfg?.olho_tma ?? false,
+    erro: Boolean(configResult.error || nomesResult.error),
   };
 }

@@ -160,7 +160,7 @@ export function GestorEquipeSection({
   operadores: operadoresIniciais,
   equipe: equipeInicial,
   showUpload = false,
-  nomeFantasia,
+  nomeFantasia: nomeFantasiaInicial,
   olhoInicial = false,
   nomeSupervisorReport: nomeSupervisorReportInicial = null,
   datasBaseReport: datasBaseReportInicial = null,
@@ -172,6 +172,10 @@ export function GestorEquipeSection({
   const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
   const [operadores, setOperadores] = useState(operadoresIniciais);
   const [equipe, setEquipe] = useState(equipeInicial);
+  // Config de nome fantasia — atualizada pelo polling (refreshConsolidadoAction)
+  // junto com os nomes, pra o botão do olho acompanhar quando o recurso é
+  // ligado/desligado em outra aba.
+  const [nomeFantasia, setNomeFantasia] = useState(nomeFantasiaInicial);
   const [nomeSupervisorReport, setNomeSupervisorReport] = useState(
     nomeSupervisorReportInicial,
   );
@@ -315,6 +319,7 @@ export function GestorEquipeSection({
         setEquipe(result.equipe);
         setNomeSupervisorReport(result.nomeSupervisorReport);
         setDatasBaseReport(result.datasBaseReport);
+        setNomeFantasia(result.nomeFantasia);
 
         // Base nova detectada (versão da base mudou) — avisa a árvore irmã
         // (RetencaoDetalheSection, bloco Analítico) pra refazer sua busca

@@ -30,6 +30,12 @@ export type ConfigTabela = {
   showRvDiario: boolean;
   /** Metas por tema (meta_temas). null = nunca salvou no banco. */
   themeMetas: Record<string, number> | null;
+  /**
+   * true quando a leitura falhou — os campos acima vêm no padrão e não são a
+   * configuração do gestor. A página mostra erro em vez de classificar pela
+   * meta errada.
+   */
+  erro: boolean;
 };
 
 /**

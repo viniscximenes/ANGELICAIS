@@ -41,5 +41,5 @@ export async function getConfigTabela(gestorId: string): Promise<ConfigTabela> {
 
   const themeMetas = themeMetasDoBanco(data?.meta_temas);
 
-  return { metaTxRetencao, ordemTabela, showRvDiario, themeMetas };
+  return { metaTxRetencao, ordemTabela, showRvDiario, themeMetas, erro: Boolean(error) };
 }

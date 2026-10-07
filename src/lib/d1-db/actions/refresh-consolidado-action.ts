@@ -1,6 +1,7 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/auth/get-current-user";
+import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import { getCurrentPerUnitFaixas } from "@/lib/rv/get-current-per-unit-faixas";
 import { getGestorConsolidado } from "../get-gestor-consolidado";
@@ -24,6 +25,12 @@ type RefreshConsolidadoResult =
       versao: string;
       /** Só a parte da base (d1_consolidado + roster): muda = base nova pro Analítico. */
       versaoBase: string;
+      /**
+       * Config de nome fantasia atual — o cliente usa `ativo` para revelar
+       * nomes e mostrar o botão do olho. Antes só os nomes vinham atualizados
+       * e a tabela ficava sem o olho até recarregar.
+       */
+      nomeFantasia: NomeFantasiaSerial;
     }
   | { success: true; semMudanca: true }
   | { success: false };
@@ -67,7 +74,10 @@ export async function refreshConsolidadoAction(
 
   // Erro de banco: success false mantém a tabela que já está na tela (o
   // polling tenta de novo em 30s), em vez de trocá-la por tudo zerado.
-  if (primeiro.erro) return { success: false };
+  // Inclui falha ao ler o nome fantasia: o fallback (ativo=false) recalcularia
+  // os nomes REAIS e os mostraria com o olho fechado — durante um
+  // compartilhamento de tela, sem ação do gestor.
+  if (primeiro.erro || nomeFantasiaConfig.erro) return { success: false };
 
   let resultado = primeiro;
   if (resultado.semMudanca) {
@@ -106,5 +116,6 @@ export async function refreshConsolidadoAction(
     datasBaseReport: reportDatasBase,
     versao: montarVersaoConsolidado(versao, extras),
     versaoBase: versao,
+    nomeFantasia,
   };
 }

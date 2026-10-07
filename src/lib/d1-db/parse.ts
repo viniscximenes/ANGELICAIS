@@ -84,13 +84,18 @@ export function horaAtualBR(): string {
 
 /** Data de hoje em YYYY-MM-DD, timezone America/Sao_Paulo. */
 export function dataRefHojeBR(): string {
+  return dataRefBR(new Date());
+}
+
+/** Data (YYYY-MM-DD) de um instante qualquer, no fuso America/Sao_Paulo. */
+export function dataRefBR(instante: Date): string {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   });
-  const parts = formatter.formatToParts(new Date());
+  const parts = formatter.formatToParts(instante);
   const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
   return `${map.year}-${map.month}-${map.day}`;
 }

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { dataRefBR, dataRefHojeBR } from "@/lib/d1-db/parse";
 import { filtrarEscopoEmMemoria, type EscopoFiltroParams } from "./escopo";
 
 /**
@@ -118,11 +119,27 @@ const COLUNAS_ATENDIMENTO =
  * empresa) por carregamento. Uma leitura só também garante que todos os
  * indicadores saem do mesmo lote.
  */
-export function lerAtendimentosDoLote(): Promise<LinhaAtendimento[]> {
+export async function lerAtendimentosDoLote(): Promise<LinhaAtendimento[]> {
+  // Lote de outro dia = Analítico vazio, igual à tabela (ver loteEhDeHoje).
+  if (!(await loteEhDeHoje())) return [];
   return lerLoteRetencao<LinhaAtendimento>(
     (supabase) => supabase.from("retencao_atendimentos").select(COLUNAS_ATENDIMENTO),
     "lerAtendimentosDoLote",
   );
+}
+
+/**
+ * true quando o lote atual foi importado HOJE (data de Brasília). A tabela
+ * do Consolidado lê d1_consolidado pela data de hoje (data_ref, gravado no
+ * mesmo upload que importado_em); o Analítico lia o último lote de qualquer
+ * dia. Depois da virada do dia, antes de um upload novo, a tabela ficava
+ * zerada e o Analítico mostrava o dia anterior (auditoria 2026-10-07).
+ * Agora os dois blocos ficam vazios juntos até a base do dia chegar.
+ */
+export async function loteEhDeHoje(): Promise<boolean> {
+  const lote = await getLoteAtual();
+  if (!lote) return false;
+  return dataRefBR(new Date(lote)) === dataRefHojeBR();
 }
 
 /**

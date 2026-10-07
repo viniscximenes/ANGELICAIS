@@ -13,7 +13,7 @@ import {
   type QuartilOperador,
 } from "./get-quartil-operador";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
-import { getMetaTxRetencao } from "./meta";
+import { getMetaTxRetencaoOuErro } from "./meta";
 import {
   getContratosFiltrados,
   type FiltroContratos,
@@ -25,7 +25,7 @@ import {
 } from "./get-por-operador-individual";
 import { getImpactoFaceId, type ImpactoFaceIdData } from "./get-impacto-faceid";
 import { getEfetividadeArgumento, type ArgumentoItem } from "./get-efetividade-argumento";
-import { lerAtendimentosDoLote } from "./ler-lote";
+import { lerAtendimentosDoLote, loteEhDeHoje } from "./ler-lote";
 
 type DashboardRetencaoResult = {
   success: boolean;
@@ -176,7 +176,7 @@ export async function fetchOperadorDetalheAction(login: string): Promise<Operado
       getPorOperadorIndividual(emailsEquipe, fonte),
       getQuartilOperadores("equipe", emailsEquipe, { fonte }),
       getQuartilOperadores("empresa", [], { fonte }),
-      getMetaTxRetencao(user.profile.id),
+      getMetaTxRetencaoOuErro(user.profile.id),
     ]);
 
     const operador = operadores.find((op) => getEmailPrefix(op.login) === prefixoAlvo);
@@ -216,7 +216,12 @@ export async function fetchContratosFiltradosAction(
       : null;
 
   try {
-    const emailsEquipe = await getEmailsEquipe(user.profile.id);
+    const [emailsEquipe, deHoje] = await Promise.all([
+      getEmailsEquipe(user.profile.id),
+      loteEhDeHoje(),
+    ]);
+    // Mesmo critério do Analítico: lote de outro dia não entra.
+    if (!deHoje) return { success: true, data: [] };
     const data = await getContratosFiltrados({
       operador: textoOuNull(filtros.operador),
       status: filtros.status,

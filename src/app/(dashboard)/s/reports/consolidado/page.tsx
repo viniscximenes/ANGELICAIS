@@ -72,13 +72,18 @@ export default async function ReportsConsolidadoPage() {
   // getGestorConsolidado roda UMA vez aqui: reportHora/reportNomeSupervisor
   // vão como prop pra GestorEquipeSection. Os e-mails da equipe NÃO são
   // buscados aqui — o Analítico já os recebe da própria action.
-  const [{ data, reportHora, reportNomeSupervisor, reportDatasBase, erro, versao }, nomeFantasiaConfig, configTabela, rvFaixas] =
+  const [{ data, reportHora, reportNomeSupervisor, reportDatasBase, erro: erroBase, versao }, nomeFantasiaConfig, configTabela, rvFaixas] =
     await Promise.all([
       getGestorConsolidado(user.profile.id),
       getNomeFantasiaConfig(user.profile.id),
       getConfigTabela(user.profile.id),
       getCurrentPerUnitFaixas(),
     ]);
+
+  // Falha ao ler o nome fantasia ou a config da tabela também é erro da
+  // página: os fallbacks (ativo=false, meta/ordem padrão) revelariam nomes
+  // reais com o olho fechado ou classificariam pela meta errada, sem avisar.
+  const erro = erroBase || nomeFantasiaConfig.erro || configTabela.erro;
 
   const nomeFantasia = {
     ativo: nomeFantasiaConfig.ativo,
