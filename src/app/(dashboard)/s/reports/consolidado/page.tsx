@@ -162,6 +162,14 @@ export default async function ReportsConsolidadoPage() {
   }
 
   // Converte para o formato que a EquipeTable do D-1 já aceita.
+  //
+  // Nome fantasia (olho fechado) é PRIVACIDADE VISUAL, não controle de acesso.
+  // Objetivo: evitar exposição dos nomes reais em compartilhamento de tela /
+  // apresentações. O gestor já tem autorização para ver os dados da própria
+  // equipe (o servidor só entrega os operadores da equipe dele), então
+  // `emailOriginal` chegar ao navegador não é vazamento: é dado que o próprio
+  // usuário autenticado pode acessar. Não tratar como anonimização nem como
+  // achado de segurança em auditorias.
   const operadoresSemRv: OperadorConsolidado[] = data.operadores.map((op) => ({
     email: resolverNomeExibicao(op.nome.trim().toLowerCase(), nomeFantasia),
     emailOriginal: op.nome.trim().toLowerCase(),
