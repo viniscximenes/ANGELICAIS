@@ -1,4 +1,4 @@
-import { lerLoteRetencao } from "./ler-lote";
+import { lerLoteOuFonte, type LinhaAtendimento } from "./ler-lote";
 import { dedupePorContrato } from "./dedupe-por-contrato";
 import { classificarAtendimento } from "./classificar-atendimento";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
@@ -30,7 +30,7 @@ export type OperadorIndividual = {
 };
 
 type Linha = {
-  usuario_login: string;
+  usuario_login: string | null;
   usuario_nome: string | null;
   cod_air: string | null;
   status_hora: string | null;
@@ -83,8 +83,12 @@ function taxa(retidos: number, cancelados: number): number | null {
  */
 export async function getPorOperadorIndividual(
   emailsEquipe: string[],
+  /** Lote já lido (lerAtendimentosDoLote) — recorta em memória em vez de consultar. */
+  fonte?: readonly LinhaAtendimento[],
 ): Promise<OperadorIndividual[]> {
-  const todas = await lerLoteRetencao<Linha>(
+  const todas = await lerLoteOuFonte<Linha>(
+    fonte,
+    { emailsEquipe },
     (supabase) =>
       aplicarFiltroEscopo(
         supabase

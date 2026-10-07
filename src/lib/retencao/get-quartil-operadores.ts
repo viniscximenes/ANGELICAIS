@@ -1,4 +1,5 @@
 import { getPorOperador } from "./get-por-operador";
+import type { LinhaAtendimento } from "./ler-lote";
 import { computeQuartis, type OperadorParaQuartil } from "@/lib/kpi/gestor/compute-quartis";
 import type { KpiDefinition } from "@/lib/kpi/types";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
@@ -21,6 +22,8 @@ type GetQuartilOperadoresOpcoes = {
    * demais telas que usam esta função não mudam.
    */
   loginsPermitidos?: Iterable<string>;
+  /** Lote já lido (lerAtendimentosDoLote) — repassado a getPorOperador. */
+  fonte?: readonly LinhaAtendimento[];
 };
 
 export type OperadorQuartilItem = {
@@ -47,7 +50,7 @@ export async function getQuartilOperadores(
   emailsEquipe: string[],
   opcoes: GetQuartilOperadoresOpcoes = {},
 ): Promise<OperadorQuartilItem[]> {
-  const operadores = await getPorOperador(escopo, emailsEquipe);
+  const operadores = await getPorOperador(escopo, emailsEquipe, opcoes.fonte);
 
   // Allowlist opcional por prefixo de email (ver GetQuartilOperadoresOpcoes).
   const prefixosPermitidos = opcoes.loginsPermitidos

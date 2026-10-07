@@ -25,7 +25,7 @@ import {
 } from "./get-por-operador-individual";
 import { getImpactoFaceId, type ImpactoFaceIdData } from "./get-impacto-faceid";
 import { getEfetividadeArgumento, type ArgumentoItem } from "./get-efetividade-argumento";
-import { comLoteEstavel } from "./ler-lote";
+import { lerAtendimentosDoLote } from "./ler-lote";
 
 type DashboardRetencaoResult = {
   success: boolean;
@@ -63,12 +63,16 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
   }
 
   try {
-    const emailsEquipe = await getEmailsEquipe(user.profile.id);
+    // O lote é lido UMA vez (empresa inteira) e cada indicador recorta a
+    // equipe em memória — antes eram 8 varreduras paginadas da mesma tabela.
+    // Leitura única = todos os cards do mesmo lote, sem precisar conferir.
+    const [emailsEquipe, fonte] = await Promise.all([
+      getEmailsEquipe(user.profile.id),
+      lerAtendimentosDoLote(),
+    ]);
 
     // Só o que a tela usa. A meta vem do servidor da página (mesma da
     // EquipeTable) e o nome fantasia não é exibido no Analítico.
-    // comLoteEstavel: os indicadores são consultas separadas — se um upload
-    // trocar a base no meio, relê tudo para nenhum card mostrar outro lote.
     const [
       visaoGeral,
       porTema,
@@ -78,18 +82,16 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
       quartilPoloAll,
       impactoFaceId,
       efetividadeArgumento,
-    ] = await comLoteEstavel(() =>
-      Promise.all([
-        getVisaoGeral(emailsEquipe),
-        getPorTema(emailsEquipe),
-        getEvolucaoHora(emailsEquipe, { porOperador: true }),
-        getPorSegmento(emailsEquipe),
-        getQuartilOperadores("equipe", emailsEquipe),
-        getQuartilOperadores("empresa", []),
-        getImpactoFaceId(emailsEquipe),
-        getEfetividadeArgumento(emailsEquipe),
-      ]),
-    );
+    ] = await Promise.all([
+      getVisaoGeral(emailsEquipe, fonte),
+      getPorTema(emailsEquipe, fonte),
+      getEvolucaoHora(emailsEquipe, { porOperador: true, fonte }),
+      getPorSegmento(emailsEquipe, fonte),
+      getQuartilOperadores("equipe", emailsEquipe, { fonte }),
+      getQuartilOperadores("empresa", [], { fonte }),
+      getImpactoFaceId(emailsEquipe, fonte),
+      getEfetividadeArgumento(emailsEquipe, fonte),
+    ]);
 
     // Operadores da equipe, mas com o rank/quartil calculado sobre o polo.
     // Por PREFIXO (sem domínio): getPorOperador agrupa por prefixo e guarda
@@ -155,7 +157,12 @@ export async function fetchOperadorDetalheAction(login: string): Promise<Operado
   }
 
   try {
-    const emailsEquipe = await getEmailsEquipe(user.profile.id);
+    const [emailsEquipe, fonte] = await Promise.all([
+      getEmailsEquipe(user.profile.id),
+      // Lote lido uma vez para os três recortes abaixo (antes: equipe 2x +
+      // empresa 1x, cada um uma varredura paginada).
+      lerAtendimentosDoLote(),
+    ]);
     const prefixoAlvo = getEmailPrefix(login);
 
     // Confirma que o operador pedido pertence à equipe do gestor logado —
@@ -166,9 +173,9 @@ export async function fetchOperadorDetalheAction(login: string): Promise<Operado
     }
 
     const [operadores, quartilEquipe, quartilPoloAll, meta] = await Promise.all([
-      getPorOperadorIndividual(emailsEquipe),
-      getQuartilOperadores("equipe", emailsEquipe),
-      getQuartilOperadores("empresa", []),
+      getPorOperadorIndividual(emailsEquipe, fonte),
+      getQuartilOperadores("equipe", emailsEquipe, { fonte }),
+      getQuartilOperadores("empresa", [], { fonte }),
       getMetaTxRetencao(user.profile.id),
     ]);
 

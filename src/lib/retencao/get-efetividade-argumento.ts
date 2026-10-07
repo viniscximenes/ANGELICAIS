@@ -1,4 +1,4 @@
-import { lerLoteRetencao } from "./ler-lote";
+import { lerLoteOuFonte, type LinhaAtendimento } from "./ler-lote";
 import { dedupePorContrato } from "./dedupe-por-contrato";
 import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
@@ -39,8 +39,13 @@ type LinhaCrua = {
  * FaceID entra aqui normalmente, categorizado como "FaceID" — é só mais uma
  * técnica/origem entre as demais.
  */
-export async function getEfetividadeArgumento(emailsEquipe: string[]): Promise<ArgumentoItem[]> {
-  const allData = await lerLoteRetencao<LinhaCrua>(
+export async function getEfetividadeArgumento(
+  emailsEquipe: string[],
+  fonte?: readonly LinhaAtendimento[],
+): Promise<ArgumentoItem[]> {
+  const allData = await lerLoteOuFonte<LinhaCrua>(
+    fonte,
+    { emailsEquipe },
     (supabase) =>
       aplicarFiltroEscopo(
         supabase

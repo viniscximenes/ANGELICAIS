@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { filtrarEscopoEmMemoria, type EscopoFiltroParams } from "./escopo";
 
 /**
  * Leitura paginada e consistente de retencao_atendimentos.
@@ -20,8 +21,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *  - No fim, confere se o lote ainda é o atual. Se trocou no meio, as páginas
  *    seguintes teriam voltado vazias (leitura incompleta): lê de novo.
  *
- * Para várias consultas que precisam enxergar o MESMO lote (ex.: os
- * indicadores do Analítico, em Promise.all), envolver com comLoteEstavel.
+ * Quando vários indicadores precisam do MESMO lote (Analítico), ler uma
+ * vez com lerAtendimentosDoLote e passar como `fonte` aos get-*.
  */
 
 const PAGE_SIZE = 1000;
@@ -89,17 +90,54 @@ export async function lerLoteRetencao<T>(
   throw new Error(ERRO_LOTE_ALTERADO);
 }
 
+/** Colunas que os indicadores do Analítico usam (união de todos os get-*). */
+export type LinhaAtendimento = {
+  usuario_login: string | null;
+  usuario_nome: string | null;
+  cod_air: string | null;
+  status_hora: string | null;
+  hora_bucket: number | null;
+  foi_cancelamento: boolean | null;
+  status_retencao: string | null;
+  motivo: string | null;
+  submotivo: string | null;
+  primeiro_nivel: string | null;
+  marca: string | null;
+  unidade_nome: string | null;
+  unidade_sigla: string | null;
+  ult_equipe: string | null;
+};
+
+const COLUNAS_ATENDIMENTO =
+  "usuario_login, usuario_nome, cod_air, status_hora, hora_bucket, foi_cancelamento, status_retencao, motivo, submotivo, primeiro_nivel, marca, unidade_nome, unidade_sigla, ult_equipe";
+
 /**
- * Roda `ler` (normalmente um Promise.all de vários get-*) e garante que todas
- * as consultas enxergaram o mesmo lote: cada upload gera um importado_em novo,
- * então lote igual antes e depois = nenhum upload no meio.
+ * O lote inteiro (empresa), lido UMA vez. Os get-* aceitam essas linhas como
+ * `fonte` e recortam a equipe em memória (filtrarEscopoEmMemoria). Antes o
+ * Analítico fazia 8 varreduras paginadas da mesma tabela (7 da equipe + 1 da
+ * empresa) por carregamento. Uma leitura só também garante que todos os
+ * indicadores saem do mesmo lote.
  */
-export async function comLoteEstavel<T>(ler: () => Promise<T>): Promise<T> {
-  for (let tentativa = 0; tentativa < TENTATIVAS; tentativa++) {
-    const antes = await getLoteAtual();
-    const resultado = await ler();
-    if ((await getLoteAtual()) === antes) return resultado;
-    console.warn("[comLoteEstavel] lote trocou durante a leitura — relendo.");
-  }
-  throw new Error(ERRO_LOTE_ALTERADO);
+export function lerAtendimentosDoLote(): Promise<LinhaAtendimento[]> {
+  return lerLoteRetencao<LinhaAtendimento>(
+    (supabase) => supabase.from("retencao_atendimentos").select(COLUNAS_ATENDIMENTO),
+    "lerAtendimentosDoLote",
+  );
+}
+
+/**
+ * `fonte` informada → recorta em memória; senão lê do banco como sempre
+ * (chamadores que usam um get-* isolado não mudam).
+ */
+export async function lerLoteOuFonte<
+  T extends { usuario_login?: string | null; hora_bucket?: number | null },
+>(
+  fonte: readonly T[] | undefined,
+  escopo: EscopoFiltroParams,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  montarQuery: (supabase: AdminClient) => any,
+  contexto: string,
+): Promise<T[]> {
+  if (fonte) return filtrarEscopoEmMemoria(fonte, escopo);
+  return lerLoteRetencao<T>(montarQuery, contexto);
 }

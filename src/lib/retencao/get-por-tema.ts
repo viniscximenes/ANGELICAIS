@@ -1,4 +1,4 @@
-import { lerLoteRetencao } from "./ler-lote";
+import { lerLoteOuFonte, type LinhaAtendimento } from "./ler-lote";
 import { dedupePorContrato } from "./dedupe-por-contrato";
 import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
@@ -28,8 +28,10 @@ export type TemaData = {
  */
 export async function getPorTema(
   emailsEquipe: string[],
+  /** Lote já lido (lerAtendimentosDoLote) — recorta em memória em vez de consultar. */
+  fonte?: readonly LinhaAtendimento[],
 ): Promise<TemaData[]> {
-  const allData = await lerLoteRetencao<{
+  const allData = await lerLoteOuFonte<{
     usuario_login: string | null;
     cod_air: string | null;
     status_hora: string | null;
@@ -38,6 +40,8 @@ export async function getPorTema(
     foi_cancelamento: boolean | null;
     status_retencao: string | null;
   }>(
+    fonte,
+    { emailsEquipe },
     (supabase) =>
       aplicarFiltroEscopo(
         supabase

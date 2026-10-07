@@ -1,4 +1,4 @@
-import { lerLoteRetencao } from "./ler-lote";
+import { lerLoteOuFonte, type LinhaAtendimento } from "./ler-lote";
 import { dedupePorContrato } from "./dedupe-por-contrato";
 import { classificarAtendimento } from "./classificar-atendimento";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
@@ -21,8 +21,10 @@ type OperadorItem = {
 export async function getPorOperador(
   escopo: "equipe" | "empresa",
   emailsEquipe: string[],
+  /** Lote já lido (lerAtendimentosDoLote) — recorta em memória em vez de consultar. */
+  fonte?: readonly LinhaAtendimento[],
 ): Promise<OperadorItem[]> {
-  const allData = await lerLoteRetencao<{
+  const allData = await lerLoteOuFonte<{
     usuario_login: string | null;
     usuario_nome: string | null;
     cod_air: string | null;
@@ -30,6 +32,8 @@ export async function getPorOperador(
     foi_cancelamento: boolean | null;
     status_retencao: string | null;
   }>(
+    fonte,
+    { escopo, emailsEquipe },
     (supabase) =>
       aplicarFiltroEscopo(
         supabase

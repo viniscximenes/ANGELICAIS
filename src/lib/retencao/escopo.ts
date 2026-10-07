@@ -1,6 +1,6 @@
 import { getEmailVariants } from "@/lib/utils/email-variants";
 
-type EscopoFiltroParams = {
+export type EscopoFiltroParams = {
   /**
    * Padrão "equipe". O dashboard não tem mais o toggle Equipe/Polo — tudo é
    * lido no escopo da equipe do gestor.
@@ -56,4 +56,31 @@ export function aplicarFiltroEscopo(query: any, params: EscopoFiltroParams) {
   }
 
   return q;
+}
+
+/**
+ * Mesmo filtro de aplicarFiltroEscopo, aplicado a linhas já lidas — usado
+ * quando o Analítico lê o lote UMA vez (lerAtendimentosDoLote) e cada
+ * indicador recorta a equipe em memória, em vez de 8 varreduras paginadas
+ * da mesma tabela. Mesma semântica do SQL: IN exato pelas variantes de
+ * domínio, equipe vazia = nenhuma linha, período por hora_bucket.
+ */
+export function filtrarEscopoEmMemoria<
+  T extends { usuario_login?: string | null; hora_bucket?: number | null },
+>(linhas: readonly T[], params: EscopoFiltroParams): T[] {
+  let resultado: T[] = [...linhas];
+
+  if ((params.escopo ?? "equipe") === "equipe") {
+    const permitidos = new Set(params.emailsEquipe.flatMap(getEmailVariants));
+    resultado = resultado.filter((l) => l.usuario_login != null && permitidos.has(l.usuario_login));
+  }
+
+  if (params.periodo) {
+    const { horaInicio, horaFim } = params.periodo;
+    resultado = resultado.filter(
+      (l) => l.hora_bucket != null && l.hora_bucket >= horaInicio && l.hora_bucket <= horaFim,
+    );
+  }
+
+  return resultado;
 }

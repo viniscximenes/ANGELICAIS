@@ -1,4 +1,4 @@
-import { lerLoteRetencao } from "./ler-lote";
+import { lerLoteOuFonte, type LinhaAtendimento } from "./ler-lote";
 import { BUCKETS, bucketDe } from "./buckets-hora";
 import { dedupePorContrato } from "./dedupe-por-contrato";
 import { classificarAtendimento } from "./classificar-atendimento";
@@ -68,11 +68,11 @@ function impactoSemOperador(
  */
 export async function getEvolucaoHora(
   emailsEquipe: string[],
-  opcoes: { porOperador?: boolean } = {},
+  opcoes: { porOperador?: boolean; fonte?: readonly LinhaAtendimento[] } = {},
 ): Promise<HoraEvolucaoData[]> {
   // Sem recorte de horas: os buckets das pontas ("< 08" e "≥ 20") precisam
   // enxergar os atendimentos fora da janela de operação.
-  const allData = await lerLoteRetencao<{
+  const allData = await lerLoteOuFonte<{
     usuario_login: string | null;
     cod_air: string | null;
     status_hora: string | null;
@@ -81,6 +81,8 @@ export async function getEvolucaoHora(
     motivo: string | null;
     status_retencao: string | null;
   }>(
+    opcoes.fonte,
+    { emailsEquipe },
     (supabase) =>
       aplicarFiltroEscopo(
         supabase
