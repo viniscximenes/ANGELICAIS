@@ -4,17 +4,19 @@ import { getEmailPrefix, getEmailVariants } from "@/lib/utils/email-variants";
 import { dataRefHojeBR } from "./parse";
 import { getRosterOperadoresGestor } from "./get-roster-gestor";
 import type {
-  ContratoItem,
   GestorConsolidado,
-  GestorContrato,
   GestorData,
   GestorOperadorLinha,
   MotivosBreakdown,
-  TxPorMotivo,
 } from "./types";
 
 /**
  * Linhas de d1_consolidado devidamente tipadas (só os campos usados aqui).
+ *
+ * contratos_retidos/contratos_cancelados (JSON com nome do cliente) NÃO são
+ * buscados: nenhuma tela que usa esta função exibe contratos — o "Copiar
+ * contratos" do Analítico lê retencao_atendimentos. Antes vinham em todo
+ * poll de 30s só pra serem descartados.
  */
 type Row = {
   operator_email: string;
@@ -25,8 +27,6 @@ type Row = {
   tx_retencao: number | null;
   motivos_retidos: MotivosBreakdown | null;
   motivos_cancelados: MotivosBreakdown | null;
-  contratos_retidos: ContratoItem[] | null;
-  contratos_cancelados: ContratoItem[] | null;
   report_hora: string | null;
   report_nome_supervisor: string | null;
   report_datas_base: string[] | null;
@@ -41,20 +41,9 @@ const ZERO_BREAKDOWN: MotivosBreakdown = {
   outros: 0,
 };
 
-function somarBreakdown(a: MotivosBreakdown, b: MotivosBreakdown | null): MotivosBreakdown {
-  if (!b) return a;
-  return {
-    financeiro: a.financeiro + b.financeiro,
-    mudancaEndereco: a.mudancaEndereco + b.mudancaEndereco,
-    insatisfacaoServico: a.insatisfacaoServico + b.insatisfacaoServico,
-    insatisfacaoAtendimento: a.insatisfacaoAtendimento + b.insatisfacaoAtendimento,
-    mudancaProvedora: a.mudancaProvedora + b.mudancaProvedora,
-    outros: a.outros + b.outros,
-  };
-}
-
 type GestorConsolidadoResult = {
-  data: GestorData;
+  /** Só o que page.tsx e refreshConsolidadoAction usam (linhas + total da equipe). */
+  data: Pick<GestorData, "operadores" | "consolidado">;
   reportHora: string | null;
   reportNomeSupervisor: string | null;
   /** Dias (YYYY-MM-DD, em ordem) da base do último upload — null em uploads antigos. */
@@ -65,17 +54,6 @@ const EMPTY_RESULT: GestorConsolidadoResult = {
   data: {
     operadores: [],
     consolidado: { gestora: "", retidos: 0, cancelados: 0, pedidos: 0, txRetencao: null },
-    contratosRetidos: [],
-    contratosCancelados: [],
-    motivosConsolidados: { retidos: ZERO_BREAKDOWN, cancelados: ZERO_BREAKDOWN },
-    txPorMotivo: {
-      financeiro: null,
-      mudancaEndereco: null,
-      insatisfacaoServico: null,
-      insatisfacaoAtendimento: null,
-      mudancaProvedora: null,
-      outros: null,
-    },
   },
   reportHora: null,
   reportNomeSupervisor: null,
@@ -112,7 +90,7 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
     admin
       .from("d1_consolidado")
       .select(
-        "operator_email, supervisor, retidos, cancelados, pedidos, tx_retencao, motivos_retidos, motivos_cancelados, contratos_retidos, contratos_cancelados, report_hora, report_nome_supervisor, report_datas_base",
+        "operator_email, supervisor, retidos, cancelados, pedidos, tx_retencao, motivos_retidos, motivos_cancelados, report_hora, report_nome_supervisor, report_datas_base",
       )
       .in("operator_email", emailsComVariantes)
       .eq("data_ref", dataRefHojeBR()),
@@ -164,25 +142,15 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
     };
   });
 
+  // Total da linha "EQUIPE" = soma das MESMAS linhas exibidas na tabela.
+  // Antes somava todas as `rows` — se o mesmo operador tivesse linha com
+  // @alloha.com e com @sumicity.net.br no dia (o índice único é pelo e-mail
+  // completo), a tabela mostrava uma e o total contava as duas.
   let totalRetidos = 0;
   let totalCancelados = 0;
-  let motivosRetidos = ZERO_BREAKDOWN;
-  let motivosCancelados = ZERO_BREAKDOWN;
-  const contratosRetidos: GestorContrato[] = [];
-  const contratosCancelados: GestorContrato[] = [];
-
-  for (const row of rows) {
-    totalRetidos += row.retidos ?? 0;
-    totalCancelados += row.cancelados ?? 0;
-    motivosRetidos = somarBreakdown(motivosRetidos, row.motivos_retidos);
-    motivosCancelados = somarBreakdown(motivosCancelados, row.motivos_cancelados);
-
-    for (const item of row.contratos_retidos ?? []) {
-      contratosRetidos.push({ ...item, operador: row.operator_email });
-    }
-    for (const item of row.contratos_cancelados ?? []) {
-      contratosCancelados.push({ ...item, operador: row.operator_email });
-    }
+  for (const op of operadores) {
+    totalRetidos += op.retidos;
+    totalCancelados += op.cancelados;
   }
 
   // PEDIDOS = RETIDOS + CANCELADOS também na linha "EQUIPE" (total geral).
@@ -196,31 +164,8 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
     txRetencao: totalPedidos > 0 ? totalRetidos / totalPedidos : null,
   };
 
-  const txDoBucket = (bucket: keyof MotivosBreakdown): number | null => {
-    const retidosBucket = motivosRetidos[bucket];
-    const canceladosBucket = motivosCancelados[bucket];
-    const denom = retidosBucket + canceladosBucket;
-    return denom > 0 ? retidosBucket / denom : null;
-  };
-
-  const txPorMotivo: TxPorMotivo = {
-    financeiro: txDoBucket("financeiro"),
-    mudancaEndereco: txDoBucket("mudancaEndereco"),
-    insatisfacaoServico: txDoBucket("insatisfacaoServico"),
-    insatisfacaoAtendimento: txDoBucket("insatisfacaoAtendimento"),
-    mudancaProvedora: txDoBucket("mudancaProvedora"),
-    outros: txDoBucket("outros"),
-  };
-
   return {
-    data: {
-      operadores,
-      consolidado,
-      contratosRetidos,
-      contratosCancelados,
-      motivosConsolidados: { retidos: motivosRetidos, cancelados: motivosCancelados },
-      txPorMotivo,
-    },
+    data: { operadores, consolidado },
     reportHora: rows[0]?.report_hora ?? null,
     reportDatasBase: rows[0]?.report_datas_base ?? null,
     // Só formatação de exibição ("GABRIEL HENRIQUE XIMENES DA SILVA" →

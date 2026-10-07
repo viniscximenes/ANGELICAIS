@@ -22,6 +22,12 @@ type UploadConsolidadoResult =
     }
   | { success: false; error: string };
 
+/** Teto de linhas do CSV — o mesmo número dito no aria-label do UploadDropzone. */
+const MAX_LINHAS_CSV = 10_000;
+
+/** Mensagem genérica pro cliente: o erro cru do banco fica só no log do servidor. */
+const ERRO_GRAVAR_BASE = "Não foi possível gravar a base. Tente novamente.";
+
 export async function uploadConsolidadoAction(
   csvText: string,
 ): Promise<UploadConsolidadoResult> {
@@ -35,6 +41,10 @@ export async function uploadConsolidadoAction(
     return { success: false, error: "Sem permissão para atualizar a base" };
   }
 
+  if (typeof csvText !== "string" || csvText.trim() === "") {
+    return { success: false, error: "Arquivo vazio ou inválido." };
+  }
+
   const parseResult = parseBaseRetencao(csvText);
 
   console.info(
@@ -45,14 +55,22 @@ export async function uploadConsolidadoAction(
     return { success: false, error: "Nenhuma linha válida encontrada no CSV." };
   }
 
+  // Mesmo limite anunciado na área de anexo (UploadDropzone, aria-label) —
+  // antes só existia no texto. A base do dia tem ~2 mil linhas; o teto só
+  // barra arquivo errado/gigante antes de gravar no banco.
+  if (parseResult.linhas.length > MAX_LINHAS_CSV) {
+    return {
+      success: false,
+      error: `O arquivo tem ${parseResult.linhas.length.toLocaleString("pt-BR")} linhas — o limite é ${MAX_LINHAS_CSV.toLocaleString("pt-BR")}.`,
+    };
+  }
+
   // 1. Persiste retencao_atendimentos (fonte de verdade já existente,
   // reaproveitada — mesma função usada hoje pelo fluxo de retenção).
   const dbResult = await salvarBaseRetencao(parseResult.linhas);
   if (!dbResult.success) {
-    return {
-      success: false,
-      error: dbResult.error || "Erro ao gravar retencao_atendimentos",
-    };
+    // Detalhe do banco só no log (salvarBaseRetencao já registra).
+    return { success: false, error: ERRO_GRAVAR_BASE };
   }
 
   // 2. Agrega por operador (usuario_login), a partir das MESMAS linhas já
@@ -228,10 +246,7 @@ export async function uploadConsolidadoAction(
 
     if (upsertErr) {
       console.error("[upload-consolidado] erro no upsert:", upsertErr.message);
-      return {
-        success: false,
-        error: `Erro ao gravar d1_consolidado: ${upsertErr.message}`,
-      };
+      return { success: false, error: ERRO_GRAVAR_BASE };
     }
 
     // BUG DE MERGE ENTRE UPLOADS DO MESMO DIA (confirmado no código: `dataRef`

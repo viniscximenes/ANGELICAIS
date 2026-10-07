@@ -55,10 +55,12 @@ export async function clearConsolidadoAction(): Promise<ClearConsolidadoResult> 
     revalidatePath("/s/reports/consolidado");
     return { success: true };
   } catch (err) {
+    // Detalhe (mensagem do Postgres/PostgREST) só no log do servidor — o
+    // toast do cliente não deve expor nome de tabela/coluna/constraint.
     console.error("[clear-consolidado] erro:", err);
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Erro desconhecido",
+      error: "Não foi possível limpar a base. Tente novamente.",
     };
   }
 }

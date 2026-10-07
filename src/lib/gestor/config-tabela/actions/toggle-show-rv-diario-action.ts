@@ -20,6 +20,8 @@ export async function toggleShowRvDiarioAction(
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Não autenticado" };
   if (user.profile.role !== "GESTOR") return { success: false, error: "Sem permissão" };
+  // Server Action é um endpoint público: o tipo do TS não chega em runtime.
+  if (typeof valor !== "boolean") return { success: false, error: "Valor inválido" };
 
   const supabase = await createClient();
   const gestorId = user.profile.id;

@@ -87,10 +87,14 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
     ]);
 
     // Operadores da equipe, mas com o rank/quartil calculado sobre o polo.
-    const teamEmailsLower = emailsEquipe.map((e) => e.toLowerCase().trim());
+    // Por PREFIXO (sem domínio): getPorOperador agrupa por prefixo e guarda
+    // como `login` a primeira variante que encontrou — se fosse a
+    // @sumicity.net.br, a comparação exata com o roster (@alloha.com) tirava
+    // o operador do comparativo de quartil.
+    const prefixosEquipe = new Set(emailsEquipe.map(getEmailPrefix));
 
     const quartilPolo = quartilPoloAll.filter((op: OperadorQuartilItem) =>
-      teamEmailsLower.includes(op.login.toLowerCase().trim()),
+      prefixosEquipe.has(getEmailPrefix(op.login)),
     );
 
     return {
@@ -140,6 +144,10 @@ export async function fetchOperadorDetalheAction(login: string): Promise<Operado
   if (!user || user.profile.role !== "GESTOR") {
     return { success: false, error: "Acesso não autorizado." };
   }
+  // Server Action é um endpoint público: o tipo do TS não chega em runtime.
+  if (typeof login !== "string" || login.trim() === "") {
+    return { success: false, error: "Operador inválido." };
+  }
 
   try {
     const emailsEquipe = await getEmailsEquipe(user.profile.id);
@@ -182,10 +190,27 @@ export async function fetchContratosFiltradosAction(
     return { success: false, error: "Acesso não autorizado." };
   }
 
+  // Server Action é um endpoint público: os tipos do TS não chegam em
+  // runtime. Monta o filtro só com campos conferidos (o escopo da equipe já
+  // é garantido por emailsEquipe; isto evita valores malformados).
+  const textoOuNull = (v: unknown) => (typeof v === "string" && v.trim() !== "" ? v : null);
+  const hora = (v: unknown) => typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 23;
+  if (!filtros || typeof filtros !== "object" || !["retido", "cancelado", "todos"].includes(filtros.status)) {
+    return { success: false, error: "Filtros inválidos." };
+  }
+  const periodo =
+    filtros.periodo && hora(filtros.periodo.horaInicio) && hora(filtros.periodo.horaFim)
+      ? { horaInicio: filtros.periodo.horaInicio, horaFim: filtros.periodo.horaFim }
+      : null;
+
   try {
     const emailsEquipe = await getEmailsEquipe(user.profile.id);
     const data = await getContratosFiltrados({
-      ...filtros,
+      operador: textoOuNull(filtros.operador),
+      status: filtros.status,
+      periodo,
+      motivo: textoOuNull(filtros.motivo),
+      submotivo: textoOuNull(filtros.submotivo),
       emailsEquipe,
     });
     return { success: true, data };

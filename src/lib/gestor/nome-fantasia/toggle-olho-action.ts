@@ -9,6 +9,13 @@ type TabelaOlho =
   | "operacional"
   | "tma";
 
+const TABELAS_OLHO: readonly TabelaOlho[] = [
+  "consolidado",
+  "tempo_indisponibilidade",
+  "operacional",
+  "tma",
+];
+
 type ToggleOlhoResult =
   | { success: true }
   | { success: false; error: string };
@@ -20,6 +27,11 @@ export async function toggleOlhoAction(
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Não autenticado" };
   if (user.profile.role !== "GESTOR") return { success: false, error: "Sem permissão" };
+  // Server Action é um endpoint público: o tipo do TS não chega em runtime.
+  // Sem isto, qualquer `tabela` desconhecida caía no `else` (olho_operacional).
+  if (typeof valor !== "boolean" || !TABELAS_OLHO.includes(tabela)) {
+    return { success: false, error: "Valor inválido" };
+  }
 
   const supabase = await createClient();
   const gestorId = user.profile.id;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { IconEye, IconEyeOff } from "@tabler/icons-react";
 import { toast } from "sonner";
 
@@ -239,11 +239,20 @@ export function GestorEquipeSection({
   function handleToggleOlho() {
     const novoValor = !olhoAberto;
     setOlhoAberto(novoValor);
-    toggleOlhoAction("consolidado", novoValor).catch((err) => {
-      if (!handleStaleActionError(err)) {
-        console.error("[GestorEquipeSection] erro ao salvar preferência de olho:", err);
-      }
-    });
+    // A action devolve { success: false } em vez de lançar — sem checar isso a
+    // tela ficava com o valor novo e o banco com o antigo (volta no F5).
+    toggleOlhoAction("consolidado", novoValor)
+      .then((r) => {
+        if (!r.success) {
+          setOlhoAberto(!novoValor);
+          toast.error("Não foi possível salvar a preferência", { className: TOAST_CLASS });
+        }
+      })
+      .catch((err) => {
+        if (!handleStaleActionError(err)) {
+          console.error("[GestorEquipeSection] erro ao salvar preferência de olho:", err);
+        }
+      });
   }
 
   // "Exibir RV" (antes "RV Diário") — mesma função de sempre: liga/desliga a
@@ -252,11 +261,19 @@ export function GestorEquipeSection({
   // switch, ver LabeledSwitch), pra bater com "Exibir RV" de /kpi/operadores.
   function handleToggleRvDiario(novoValor: boolean) {
     setShowRvDiario(novoValor);
-    toggleShowRvDiarioAction(novoValor).catch((err) => {
-      if (!handleStaleActionError(err)) {
-        console.error("[GestorEquipeSection] erro ao salvar preferência de RV Diário:", err);
-      }
-    });
+    // Mesmo cuidado do handleToggleOlho: { success: false } desfaz o toggle.
+    toggleShowRvDiarioAction(novoValor)
+      .then((r) => {
+        if (!r.success) {
+          setShowRvDiario(!novoValor);
+          toast.error("Não foi possível salvar a preferência", { className: TOAST_CLASS });
+        }
+      })
+      .catch((err) => {
+        if (!handleStaleActionError(err)) {
+          console.error("[GestorEquipeSection] erro ao salvar preferência de RV Diário:", err);
+        }
+      });
   }
 
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -277,20 +294,7 @@ export function GestorEquipeSection({
   // Evita duas buscas sobrepostas (polling + volta da aba + "Limpar base").
   const refetchEmVooRef = useRef<Promise<boolean> | null>(null);
 
-  // Refetch usado tanto pelo polling quanto (imediatamente, sem esperar os
-  // 30s) pelo "Limpar Base" — mesma fonte, dois gatilhos.
-  // Retorna true quando já avisou o Analítico (report mudou), pra quem chamou
-  // não avisar de novo.
-  function refetchConsolidado(): Promise<boolean> {
-    if (!refetchEmVooRef.current) {
-      refetchEmVooRef.current = buscarConsolidado().finally(() => {
-        refetchEmVooRef.current = null;
-      });
-    }
-    return refetchEmVooRef.current;
-  }
-
-  async function buscarConsolidado(): Promise<boolean> {
+  const buscarConsolidado = useCallback(async (): Promise<boolean> => {
     try {
       const result = await refreshConsolidadoAction();
       if (result.success) {
@@ -324,7 +328,33 @@ export function GestorEquipeSection({
       console.error("[GestorEquipeSection] erro ao atualizar consolidado (polling):", err);
       return false;
     }
-  }
+  }, []);
+
+  // Refetch usado tanto pelo polling quanto (imediatamente, sem esperar os
+  // 30s) pelo "Limpar Base" — mesma fonte, dois gatilhos.
+  // Retorna true quando já avisou o Analítico (report mudou), pra quem chamou
+  // não avisar de novo.
+  //
+  // `depoisDaBuscaEmVoo`: usado pelo "Limpar Base". Uma busca do polling que
+  // já estava em voo começou ANTES da limpeza e traria os dados antigos —
+  // reaproveitá-la deixava a tabela com os números de antes até o próximo
+  // poll. Nesse caso espera ela terminar e faz uma busca nova.
+  const refetchConsolidado = useCallback(
+    (depoisDaBuscaEmVoo = false): Promise<boolean> => {
+      const iniciar = (): Promise<boolean> => {
+        if (!refetchEmVooRef.current) {
+          refetchEmVooRef.current = buscarConsolidado().finally(() => {
+            refetchEmVooRef.current = null;
+          });
+        }
+        return refetchEmVooRef.current;
+      };
+      const emVoo = refetchEmVooRef.current;
+      if (depoisDaBuscaEmVoo && emVoo) return emVoo.then(iniciar);
+      return iniciar();
+    },
+    [buscarConsolidado],
+  );
 
   // Handler específico do "Limpar Base" (não reaproveitado pelo polling):
   // além de recarregar a EquipeTable (mesmo refetch de sempre), avisa a
@@ -358,7 +388,7 @@ export function GestorEquipeSection({
     try {
       // Só avisa o Analítico se o refetch ainda não avisou (report mudou) —
       // antes avisava sempre, e o Analítico recarregava duas vezes.
-      const jaAvisou = await refetchConsolidado();
+      const jaAvisou = await refetchConsolidado(true);
       if (!jaAvisou) notifyBaseAtualizada();
     } finally {
       const faltam = MIN_REFRESH_LOADING_MS - (Date.now() - inicio);
@@ -385,7 +415,7 @@ export function GestorEquipeSection({
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
       document.removeEventListener("visibilitychange", atualizarSeVisivel);
     };
-  }, []);
+  }, [refetchConsolidado]);
 
   // Setas Cima/Baixo rolam a página (ver use-setas-rolagem.ts).
   useSetasRolagem();
@@ -544,7 +574,6 @@ export function GestorEquipeSection({
           O CopyTableButton procura por [data-tabela-png].
         */}
         <div
-          data-equipe-png-wrapper
           aria-hidden="true"
           style={{
             position: "fixed",
@@ -616,8 +645,16 @@ export function GestorEquipeSection({
               transition: "width 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           >
-            <div ref={cardVisivelWrapperRef} className="h-full">
-              <KpiFrame className="h-full">
+            {/*
+              Abaixo de lg (celular/tablet em pé) a tabela tem largura fixa
+              de 760/920px e não cabe: antes as colunas da direita (Tx, RV)
+              eram cortadas sem rolagem. Agora o card acompanha a largura
+              real da tabela (w-max) e esta caixa rola na horizontal. Só
+              abaixo de lg — no desktop nada muda (a animação de largura do
+              toggle RV não pode ganhar barra de rolagem no meio).
+            */}
+            <div ref={cardVisivelWrapperRef} className="h-full max-lg:overflow-x-auto">
+              <KpiFrame className="h-full max-lg:w-max max-lg:min-w-full">
                 <EquipeTable
                   key="gestor-equipe-visible"
                   operadores={operadoresOrdenados}
