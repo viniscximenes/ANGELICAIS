@@ -55,7 +55,7 @@ export default async function ReportsTmaPage() {
   // Roster e threshold do TMA são memoizados por requisição (cache()), então
   // getGestorTma/getGestorTmaAnalitico não os consultam de novo.
   const [
-    { operadores, reportHora, reportNomeSupervisor, metaAtualMmSs, ordemTabela },
+    { operadores, reportHora, reportNomeSupervisor, reportDatasBase, metaAtualMmSs, ordemTabela },
     nomeFantasiaConfig,
     atendimentosPorOperador,
     analitico,
@@ -101,6 +101,7 @@ export default async function ReportsTmaPage() {
               atendimentosPorOperador={Object.fromEntries(atendimentosPorOperador)}
               reportHora={reportHora ?? "—"}
               reportNomeSupervisor={reportNomeSupervisor}
+              datasBaseReport={reportDatasBase}
               metaAtualMmSs={metaAtualMmSs}
               ordemTabela={ordemTabela}
               showUpload={showUpload}

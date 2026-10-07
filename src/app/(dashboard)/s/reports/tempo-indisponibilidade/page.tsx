@@ -145,6 +145,7 @@ export default async function ReportsTempoIndisponibilidadePage() {
             operadoresIndisponibilidadeIniciais={dataIndisponibilidade.operadores}
             horaReportInicial={dataTempoLogado.horaReport ?? null}
             nomeSupervisorReportInicial={dataTempoLogado.nomeSupervisorReport}
+            datasBaseReportInicial={dataTempoLogado.reportDatasBase ?? null}
             pausasProgramadas={pausasProgramadas}
             toleranciaMin={configAderencia.toleranciaMin}
             showUpload={showUpload}

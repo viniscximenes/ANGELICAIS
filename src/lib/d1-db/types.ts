@@ -124,6 +124,8 @@ export type GestorTempoLogadoData = {
   operadores: GestorTempoLogadoLinha[];
   horaReport?: string;
   nomeSupervisorReport?: string | null;
+  /** Dias (YYYY-MM-DD) da base do último upload — coluna DATE da base, não o dia do upload. */
+  reportDatasBase?: string[] | null;
 };
 
 // ═══════════════════════════════════════════════════════════════════

@@ -29,6 +29,8 @@ export type GestorTmaResult = {
   operadores: OperadorTma[];
   reportHora: string | null;
   reportNomeSupervisor: string | null;
+  /** Dias (YYYY-MM-DD) da base do último upload — coluna DATE da base, não o dia do upload. */
+  reportDatasBase: string[] | null;
   /** Meta efetiva usada pra colorir (override do gestor ou default do KPI), em "MM:SS". */
   metaAtualMmSs: string;
   /** Ordenação salva do gestor — `gestor_config_fantasia.ordem_tabela_tma`. */
@@ -57,7 +59,7 @@ export async function getGestorTma(gestorId: string): Promise<GestorTmaResult> {
     admin
       .from("d1_tma")
       .select(
-        "operator_email, qtd_atendimentos, tma_segundos, talk_medio_segundos, acw_medio_segundos, report_hora, report_nome_supervisor, qtd_outros, qtd_criticos, qtd_mud_endereco, qtd_financeiro, qtd_qualidade, qtd_concorrencia, qtd_hotline_churn",
+        "operator_email, qtd_atendimentos, tma_segundos, talk_medio_segundos, acw_medio_segundos, report_hora, report_nome_supervisor, report_datas_base, qtd_outros, qtd_criticos, qtd_mud_endereco, qtd_financeiro, qtd_qualidade, qtd_concorrencia, qtd_hotline_churn",
       )
       .eq("gestor_id", gestorId)
       .eq("data_ref", dataRef)
@@ -161,6 +163,7 @@ export async function getGestorTma(gestorId: string): Promise<GestorTmaResult> {
   return {
     operadores,
     reportHora: rows?.[0]?.report_hora ?? null,
+    reportDatasBase: rows?.[0]?.report_datas_base ?? null,
     reportNomeSupervisor: await resolveNomeSupervisorReportExibicao(
       admin,
       rows?.[0]?.report_nome_supervisor,

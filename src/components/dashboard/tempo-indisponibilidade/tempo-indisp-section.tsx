@@ -54,6 +54,8 @@ interface TempoIndispSectionProps {
   operadoresIndisponibilidadeIniciais: GestorIndispLinha[];
   horaReportInicial: string | null;
   nomeSupervisorReportInicial?: string | null;
+  /** Dias (YYYY-MM-DD) da base do último upload — d1_tempo_logado.report_datas_base. */
+  datasBaseReportInicial?: string[] | null;
   pausasProgramadas: PausaProgramadaDb[];
   toleranciaMin: number;
   /** Mostra o anexo e o "Limpar Base" (gated por manage_d1_base na página). */
@@ -69,6 +71,7 @@ export function TempoIndispSection({
   operadoresIndisponibilidadeIniciais,
   horaReportInicial,
   nomeSupervisorReportInicial = null,
+  datasBaseReportInicial = null,
   pausasProgramadas,
   toleranciaMin,
   showUpload = false,
@@ -90,6 +93,7 @@ export function TempoIndispSection({
   const [toleranciaMinState, setToleranciaMin] = useState(toleranciaMin);
   const [horaReport, setHoraReport] = useState(horaReportInicial);
   const [nomeSupervisorReport, setNomeSupervisorReport] = useState(nomeSupervisorReportInicial);
+  const [datasBaseReport, setDatasBaseReport] = useState(datasBaseReportInicial);
   const [olhoAberto, setOlhoAberto] = useState(olhoInicial);
   const [metaIndisponibilidade, setMetaIndisponibilidade] = useState(metaIndisponibilidadeInicial);
   const [ordemTabela, setOrdemTabela] = useState<OrdemTabelaTempoIndisp>(ordemTabelaInicial);
@@ -122,6 +126,7 @@ export function TempoIndispSection({
         setOperadoresTL(tlResult.operadores);
         setHoraReport(tlResult.horaReport);
         setNomeSupervisorReport(tlResult.nomeSupervisorReport);
+        setDatasBaseReport(tlResult.datasBaseReport);
       }
       if (indispResult.success) {
         setOperadoresIndisp(indispResult.operadores);
@@ -207,7 +212,9 @@ export function TempoIndispSection({
       )
     : { forecast: null, items: [], percentualTotal: null };
 
-  const textoReport = formatCabecalhoReport(horaReport, nomeSupervisorReport);
+  // "... fez um report às HH:MM  -   (base do dia DD/MM)" — mesma regra do
+  // Consolidado, inclusive "(bases do dia ...)" com mais de um dia na base.
+  const textoReport = formatCabecalhoReport(horaReport, nomeSupervisorReport, datasBaseReport);
   const cabecalhoAnalitico = <CabecalhoSecao titulo="Analítico" />;
 
   return (

@@ -44,6 +44,8 @@ interface GestorTmaSectionProps {
   atendimentosPorOperador: Record<string, AtendimentoTma[]>;
   reportHora: string;
   reportNomeSupervisor: string | null;
+  /** Dias (YYYY-MM-DD) da base do último upload — d1_tma.report_datas_base. */
+  datasBaseReport?: string[] | null;
   metaAtualMmSs: string;
   ordemTabela: OrdemTabelaTma;
   showUpload?: boolean;
@@ -58,6 +60,7 @@ export function GestorTmaSection({
   atendimentosPorOperador: atendimentosIniciais,
   reportHora: reportHoraInicial,
   reportNomeSupervisor: reportNomeSupervisorInicial,
+  datasBaseReport: datasBaseReportInicial = null,
   metaAtualMmSs: metaInicial,
   ordemTabela: ordemInicial,
   showUpload = false,
@@ -69,6 +72,7 @@ export function GestorTmaSection({
   const [atendimentosPorOperador, setAtendimentosPorOperador] = useState(atendimentosIniciais);
   const [reportHora, setReportHora] = useState(reportHoraInicial);
   const [reportNomeSupervisor, setReportNomeSupervisor] = useState(reportNomeSupervisorInicial);
+  const [datasBaseReport, setDatasBaseReport] = useState(datasBaseReportInicial);
   const [metaAtualMmSs, setMetaAtualMmSs] = useState(metaInicial);
   const [ordemTabela, setOrdemTabela] = useState(ordemInicial);
   // Espelha o open/close do popover de configurações só pra elevar a tabela
@@ -108,6 +112,7 @@ export function GestorTmaSection({
         setAtendimentosPorOperador(result.atendimentosPorOperador);
         setReportHora(result.reportHora);
         setReportNomeSupervisor(result.reportNomeSupervisor);
+        setDatasBaseReport(result.datasBaseReport);
         setMetaAtualMmSs(result.metaAtualMmSs);
         setOrdemTabela(result.ordemTabela);
       }
@@ -166,7 +171,9 @@ export function GestorTmaSection({
     document.cookie = `${COOKIE_LINHAS}=${linhas.length}; path=/; max-age=31536000; samesite=lax`;
   }, [linhas.length]);
 
-  const textoReport = formatCabecalhoReport(reportHora, reportNomeSupervisor);
+  // "... fez um report às HH:MM  -   (base do dia DD/MM)" — mesma regra do
+  // Consolidado, inclusive "(bases do dia ...)" com mais de um dia na base.
+  const textoReport = formatCabecalhoReport(reportHora, reportNomeSupervisor, datasBaseReport);
 
   return (
     <>

@@ -1,5 +1,7 @@
 import Papa from "papaparse";
 
+import { diasDistintosOrdenados } from "@/lib/utils/parse-data-flexivel";
+
 import { linhasValidasDeRows } from "./parse-tma";
 import { bucketDaSkill, zeroSkillBuckets, type SkillBucket } from "./skills-retencao";
 import type { TmaRosterRow } from "./actions/get-tma-roster-action";
@@ -32,6 +34,8 @@ export type UploadTmaPayload = {
   colisoes: number;
   agregados: AgregadoTmaPayload[];
   detalhes: DetalheTmaPayload[];
+  /** Dias distintos (YYYY-MM-DD) da coluna DATE das linhas válidas — cabeçalho "base do dia". */
+  datasBase: string[];
 };
 
 /**
@@ -143,5 +147,6 @@ export async function parseTmaNoClient(
     colisoes,
     agregados: Array.from(porOperador.values()),
     detalhes,
+    datasBase: diasDistintosOrdenados(linhas.map((l) => l.data)),
   };
 }

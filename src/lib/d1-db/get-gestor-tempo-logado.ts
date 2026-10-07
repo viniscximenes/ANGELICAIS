@@ -40,7 +40,7 @@ export async function getGestorTempoLogado(gestorId: string): Promise<GestorTemp
     admin
       .from("d1_tempo_logado")
       .select(
-        "operator_email, tempo_logado, logout_estimado, hora_login, hora_logout, report_hora, report_nome_supervisor",
+        "operator_email, tempo_logado, logout_estimado, hora_login, hora_logout, report_hora, report_nome_supervisor, report_datas_base",
       )
       .in("operator_email", emailsComVariantes)
       .eq("data_ref", dataRefHojeBR()),
@@ -98,6 +98,8 @@ export async function getGestorTempoLogado(gestorId: string): Promise<GestorTemp
   return {
     operadores,
     horaReport: rowComHora?.report_hora ?? rows[0]?.report_hora ?? undefined,
+    // Dias da base do último upload (coluna DATE) — iguais em todas as linhas.
+    reportDatasBase: rowComHora?.report_datas_base ?? rows[0]?.report_datas_base ?? null,
     // Só formatação de exibição ("GABRIEL HENRIQUE XIMENES DA SILVA" →
     // "Gabriel Ximenes") — ver resolveNomeSupervisorReportExibicao.
     nomeSupervisorReport: await resolveNomeSupervisorReportExibicao(

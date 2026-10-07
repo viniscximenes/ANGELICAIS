@@ -1,5 +1,7 @@
 import Papa from "papaparse";
 
+import { parseDataFlexivel } from "@/lib/utils/parse-data-flexivel";
+
 import { isSkillRetencao } from "./skills-retencao";
 
 export type TmaLinhaValida = {
@@ -7,6 +9,7 @@ export type TmaLinhaValida = {
   skill: string; // valor original da coluna SKILL (não normalizado)
   callId: string | null;
   callSegmentId: string | null;
+  data: string | null; // DATE, normalizada pra "YYYY-MM-DD"
   hora: string | null; // TIME, "HH:MM:SS"
   ani: string | null;
   talkSegundos: number; // sempre >= 1 (linhas com TALK TIME vazio já foram descartadas)
@@ -60,6 +63,7 @@ export function linhasValidasDeRows(rows: string[][]): ParseTmaResult {
   const iSkill = idx("SKILL");
   const iCallId = idx("CALL ID");
   const iCallSegmentId = idx("CALL SEGMENT ID");
+  const iDate = idx("DATE");
   const iTime = idx("TIME");
   const iAni = idx("ANI");
   const iTalkTime = idx("TALK TIME");
@@ -116,6 +120,7 @@ export function linhasValidasDeRows(rows: string[][]): ParseTmaResult {
       skill: skillRaw,
       callId: iCallId !== -1 ? (row[iCallId]?.trim() || null) : null,
       callSegmentId: iCallSegmentId !== -1 ? (row[iCallSegmentId]?.trim() || null) : null,
+      data: iDate !== -1 ? parseDataFlexivel(row[iDate]) : null,
       hora: iTime !== -1 ? (row[iTime]?.trim() || null) : null,
       ani: iAni !== -1 ? (row[iAni]?.trim() || null) : null,
       talkSegundos,

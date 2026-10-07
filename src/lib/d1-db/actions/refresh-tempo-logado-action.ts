@@ -10,6 +10,8 @@ type RefreshTempoLogadoResult =
       operadores: GestorTempoLogadoLinha[];
       horaReport: string;
       nomeSupervisorReport: string | null;
+      /** Dias (YYYY-MM-DD) da base do último upload — d1_tempo_logado.report_datas_base. */
+      datasBaseReport: string[] | null;
     }
   | { success: false };
 
@@ -28,6 +30,7 @@ export async function refreshTempoLogadoAction(): Promise<RefreshTempoLogadoResu
     success: true,
     operadores: data.operadores,
     horaReport: data.horaReport ?? "—",
+    datasBaseReport: data.reportDatasBase ?? null,
     nomeSupervisorReport: data.nomeSupervisorReport ?? null,
   };
 }

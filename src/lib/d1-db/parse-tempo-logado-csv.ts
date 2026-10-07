@@ -1,5 +1,7 @@
 import Papa from "papaparse";
 
+import { parseDataFlexivel } from "@/lib/utils/parse-data-flexivel";
+
 /**
  * Parser da BASE - 2: CSV de tempo logado / pausas, 11 colunas. Além das
  * pausas, captura LOGIN TIMESTAMP / LOGOUT TIMESTAMP (hora de login e logout
@@ -86,34 +88,6 @@ function extrairHoraDaColunaHour(val: string | undefined | null): string | null 
   if (Number.isNaN(h) || h < 0 || h > 23) return null;
 
   return `${String(h).padStart(2, "0")}:${m[2] ?? "00"}:00`;
-}
-
-/** DATE aceita AAAA/MM/DD ou DD/MM/AAAA (com "/" ou "-"), detectado pelo segmento de 4 dígitos. */
-function parseDataFlexivel(val: string | undefined | null): string | null {
-  if (!val) return null;
-  const cleaned = val.trim();
-  const m = cleaned.match(/^(\d{1,4})[/-](\d{1,2})[/-](\d{1,4})$/);
-  if (!m) return null;
-
-  const [, p1, p2, p3] = m;
-  let year: string, month: string, day: string;
-  if (p1.length === 4) {
-    year = p1;
-    month = p2;
-    day = p3;
-  } else if (p3.length === 4) {
-    day = p1;
-    month = p2;
-    year = p3;
-  } else {
-    return null;
-  }
-
-  const monthNum = parseInt(month, 10);
-  const dayNum = parseInt(day, 10);
-  if (monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > 31) return null;
-
-  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
 
 export function parseTempoLogadoCsv(csvText: string): ParseTempoLogadoCsvResult {

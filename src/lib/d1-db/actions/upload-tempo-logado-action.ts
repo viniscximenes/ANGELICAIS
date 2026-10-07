@@ -13,6 +13,7 @@ import {
   somarHoraMaisSegundos,
 } from "../parse";
 import { parseTempoLogadoCsv, type TempoLogadoCsvRow } from "../parse-tempo-logado-csv";
+import { diasDistintosOrdenados } from "@/lib/utils/parse-data-flexivel";
 import { COLUNAS_PAUSA, REASON_TO_COLUNA } from "../reason-codes-indisp";
 import { META_TEMPO_LOGADO_SEGUNDOS } from "../types";
 
@@ -148,6 +149,11 @@ export async function uploadTempoLogadoAction(
 
   const dataRef = dataRefHojeBR();
   const reportHora = horaAtualBR();
+  // Dias da base colada (coluna DATE das linhas válidas, YYYY-MM-DD) — vão
+  // pro cabeçalho do report ("base do dia 03/10" / "bases do dia 02/10 -
+  // 03/10"), igual ao Consolidado: um gestor pode colar a base de outra
+  // data e a atualização vale pra todos.
+  const reportDatasBase = diasDistintosOrdenados(parseResult.linhas.map((l) => l.data_ref));
 
   const rowsTempoLogado: Record<string, unknown>[] = [];
   const rowsIndisp: Record<string, unknown>[] = [];
@@ -183,6 +189,7 @@ export async function uploadTempoLogadoAction(
       hora_logout: horaLogout,
       report_hora: reportHora,
       report_nome_supervisor: user.profile.fullName,
+      report_datas_base: reportDatasBase,
     });
 
     // Tempo indisponível total = soma de todas as pausas mapeadas (definição

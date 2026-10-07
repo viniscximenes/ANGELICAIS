@@ -60,6 +60,11 @@ export async function uploadTmaAction(payload: UploadTmaPayload): Promise<Upload
   await enforceRetentionTma(dataRef);
 
   const reportHora = horaAtualBR();
+  // Dias da base colada (coluna DATE, extraída no client) — cabeçalho do
+  // report, igual ao Consolidado. Vem do client: só aceita YYYY-MM-DD.
+  const reportDatasBase = Array.isArray(payload.datasBase)
+    ? payload.datasBase.filter((d) => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)).slice(0, 62)
+    : [];
   const rowsAgregado: Record<string, unknown>[] = payload.agregados.map((agg) => ({
     data_ref: dataRef,
     gestor_id: agg.gestorId,
@@ -79,6 +84,7 @@ export async function uploadTmaAction(payload: UploadTmaPayload): Promise<Upload
     qtd_hotline_churn: agg.buckets.hotlineChurn,
     report_hora: reportHora,
     report_nome_supervisor: user.profile.fullName,
+    report_datas_base: reportDatasBase.length > 0 ? reportDatasBase : null,
   }));
 
   const { error: upsertErr } = await admin

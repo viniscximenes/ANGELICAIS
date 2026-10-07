@@ -16,6 +16,8 @@ type RefreshTmaResult =
       atendimentosPorOperador: Record<string, AtendimentoTma[]>;
       reportHora: string;
       reportNomeSupervisor: string | null;
+      /** Dias (YYYY-MM-DD) da base do último upload — d1_tma.report_datas_base. */
+      datasBaseReport: string[] | null;
       metaAtualMmSs: string;
       ordemTabela: OrdemTabelaTma;
     }
@@ -26,7 +28,7 @@ export async function refreshTmaAction(): Promise<RefreshTmaResult> {
   const user = await getCurrentUser();
   if (!user || user.profile.role !== "GESTOR") return { success: false };
 
-  const [{ operadores, reportHora, reportNomeSupervisor, metaAtualMmSs, ordemTabela }, nomeFantasiaConfig, atendimentosMap] =
+  const [{ operadores, reportHora, reportNomeSupervisor, reportDatasBase, metaAtualMmSs, ordemTabela }, nomeFantasiaConfig, atendimentosMap] =
     await Promise.all([
       getGestorTma(user.profile.id),
       getNomeFantasiaConfig(user.profile.id),
@@ -49,6 +51,7 @@ export async function refreshTmaAction(): Promise<RefreshTmaResult> {
     atendimentosPorOperador: Object.fromEntries(atendimentosMap),
     reportHora: reportHora ?? "—",
     reportNomeSupervisor,
+    datasBaseReport: reportDatasBase,
     metaAtualMmSs,
     ordemTabela,
   };
