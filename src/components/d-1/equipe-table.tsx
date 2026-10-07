@@ -68,16 +68,20 @@ const META_TX_PADRAO = 0.6;
  * `--muted-hover-bg` é um cinza quase branco fora da paleta Zen Linen e não
  * redefinido por esta página. Com `!important`, essa regra global vencia
  * QUALQUER classe Tailwind aqui, daí o hover claro/esbranquiçado reportado.
- * A correção completa está em reports-consolidado.css, com um seletor ainda
- * mais específico (mesmo padrão + o escopo [data-page] a mais) escrevendo
- * `var(--accent)` por cima, só para esta rota.
+ * O hover semântico das linhas (verde/vermelho pela meta) vive em
+ * globals.css (`.pagina-padrao [data-meta-linha]`), para todas as páginas
+ * que usam esta tabela — não no CSS de uma rota.
  */
 const TABELA_LINHA_HOVER_CLASS = TABELA_LINHA_CLASS.replace(
   "hover:bg-muted/40",
   "hover:bg-accent",
 );
 
-function formatOperatorLabel(email: string): string {
+/**
+ * Rótulo da coluna Operador (parte antes do "@"). Exportado: o título do
+ * detalhe do operador (GestorEquipeSection) usa a MESMA regra, sem cópia.
+ */
+export function formatOperatorLabel(email: string): string {
   return email.split("@")[0] || email;
 }
 
@@ -263,9 +267,10 @@ export function EquipeTable({
     // Container PRÓPRIO sem border/rounded/elevation-1 (TABELA_CONTAINER_CLASS,
     // usado pelas outras tabelas do mesmo padrão — Tempo Logado/
     // Indisponibilidade/TMA — continua intocado em tabela-padrao.tsx). Este
-    // componente (EquipeTable) só é consumido por /s/reports/consolidado,
-    // dentro do KpiFrame da rota, que fornece padding e cantoneiras sem
-    // criar um container com fundo/borda/raio — usar
+    // componente (EquipeTable) é usado por /s/reports/consolidado e também
+    // pelo comparativo e pelo quartil da Operação; no Consolidado fica dentro
+    // do KpiFrame da rota, que fornece padding e cantoneiras sem criar um
+    // container com fundo/borda/raio — usar
     // TABELA_CONTAINER_CLASS aqui recriaria esse container. `data-equipe-table`
     // preservado (gancho do seletor global em globals.css pro fundo/borda
     // do cabeçalho no tema claro — não depende da borda externa removida).
@@ -402,8 +407,8 @@ export function EquipeTable({
             role={clicavel ? "button" : undefined}
             tabIndex={clicavel ? 0 : undefined}
             data-sem-dados={semAtendimentos ? "true" : undefined}
-            // Gancho de estilo por página (ex.: hover verde/vermelho em
-            // reports-consolidado.css) — sem estilo próprio aqui.
+            // Gancho do hover verde/vermelho pela meta (globals.css,
+            // .pagina-padrao [data-meta-linha]) — sem estilo próprio aqui.
             data-meta-linha={semAtendimentos ? undefined : belowMeta ? "abaixo" : "dentro"}
             className={cn(
               TABELA_LINHA_HOVER_CLASS,

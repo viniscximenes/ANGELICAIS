@@ -352,7 +352,6 @@ export function RetencaoHorizontalScroll({
     return () => {
       mm.revert();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slides.length, refreshKey]);
 
   return (

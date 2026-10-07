@@ -1,3 +1,4 @@
+import { themeMetasDoBanco } from "@/lib/retencao/metas-consolidado";
 import { createClient } from "@/lib/supabase/server";
 
 import {
@@ -10,7 +11,7 @@ import {
 
 /**
  * Config de exibição da tabela do gestor (meta de TX + ordenação + toggle de
- * RV Diário), armazenada em `gestor_config_fantasia` (mesma linha usada pelo
+ * RV Diário + metas por tema), armazenada em `gestor_config_fantasia` (mesma linha usada pelo
  * módulo de nome fantasia e pela meta do Dashboard de Retenção).
  */
 export async function getConfigTabela(gestorId: string): Promise<ConfigTabela> {
@@ -18,7 +19,7 @@ export async function getConfigTabela(gestorId: string): Promise<ConfigTabela> {
 
   const { data, error } = await supabase
     .from("gestor_config_fantasia")
-    .select("meta_tx_retencao, ordem_tabela, show_rv_diario")
+    .select("meta_tx_retencao, ordem_tabela, show_rv_diario, meta_temas")
     .eq("gestor_id", gestorId)
     .maybeSingle();
 
@@ -38,5 +39,7 @@ export async function getConfigTabela(gestorId: string): Promise<ConfigTabela> {
 
   const showRvDiario = data?.show_rv_diario ?? DEFAULT_SHOW_RV_DIARIO;
 
-  return { metaTxRetencao, ordemTabela, showRvDiario };
+  const themeMetas = themeMetasDoBanco(data?.meta_temas);
+
+  return { metaTxRetencao, ordemTabela, showRvDiario, themeMetas };
 }

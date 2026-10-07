@@ -5,7 +5,7 @@ import { IconEye, IconEyeOff } from "@tabler/icons-react";
 import { toast } from "sonner";
 
 import { CopyTableButton } from "@/components/d-1/copy-table-button";
-import { EquipeTable } from "@/components/d-1/equipe-table";
+import { EquipeTable, formatOperatorLabel } from "@/components/d-1/equipe-table";
 import { UploadDropzone } from "@/components/d-1/upload-dropzone";
 import { LimparBaseExpandButton } from "@/components/d-1/limpar-base-expand-button";
 import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
@@ -37,9 +37,9 @@ import { OperadorDetalheDialog } from "@/components/dashboard/retencao/operador-
 import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
 import {
   DEFAULT_THEME_METAS,
-  lerThemeMetas,
+  lerThemeMetasLegado,
+  limparThemeMetasLegado,
   notifyMetasAtualizadas,
-  salvarThemeMetas,
 } from "@/lib/retencao/metas-consolidado";
 import {
   COOKIE_LINHAS,
@@ -75,11 +75,6 @@ const MIN_REFRESH_LOADING_MS = 1_000;
 
 /** Classe dos toasts desta rota (ver .reports-consolidado-toast no CSS). */
 const TOAST_CLASS = "reports-consolidado-toast";
-
-/** Mesmo rótulo da coluna Operador da EquipeTable (parte antes do "@"). */
-function rotuloOperador(email: string): string {
-  return email.split("@")[0] || email;
-}
 
 // CAUSA RAIZ HISTÓRICA da última coluna (Tx Retenção/RV Diário) cortada: o
 // wrapper VISÍVEL abaixo precisa de uma largura EXPLÍCITA (é uma `transition:
@@ -135,12 +130,12 @@ function useCardChromePx(cardWrapperRef: RefObject<HTMLDivElement | null>): numb
 }
 
 interface GestorEquipeSectionProps {
-  /** profiles.id do gestor — escopo das metas por tema no localStorage. */
+  /** profiles.id do gestor — escopo da leitura de transição das metas por tema. */
   gestorId: string;
+  /** Metas por tema do banco (getConfigTabela). null = nunca salvou. */
+  metasTemasIniciais?: Record<string, number> | null;
   operadores: OperadorConsolidado[];
   equipe: ResumoEquipe;
-  /** Nome da gestora — usado no texto do report copiado. */
-  gestora?: string;
   /** Mostra a área de upload da base (gated por manage_d1_base na página). */
   showUpload?: boolean;
   nomeFantasia?: NomeFantasiaSerial;
@@ -161,9 +156,9 @@ interface GestorEquipeSectionProps {
 
 export function GestorEquipeSection({
   gestorId,
+  metasTemasIniciais = null,
   operadores: operadoresIniciais,
   equipe: equipeInicial,
-  gestora,
   showUpload = false,
   nomeFantasia,
   olhoInicial = false,
@@ -183,12 +178,15 @@ export function GestorEquipeSection({
   const [datasBaseReport, setDatasBaseReport] = useState(datasBaseReportInicial);
   const [metaTxRetencao, setMetaTxRetencao] = useState(metaTxInicial);
   const [ordemTabela, setOrdemTabela] = useState(ordemTabelaInicial);
-  // Metas por tema do Analítico — editadas no ConfigTabelaPopover, lidas do
-  // localStorage só depois do mount (no SSR não existe storage).
-  const [themeMetas, setThemeMetas] = useState<Record<string, number>>(DEFAULT_THEME_METAS);
+  // Metas por tema — do banco (meta_temas), editadas no ConfigTabelaPopover.
+  // Nunca salvas no banco: vale o que o gestor tinha no navegador (leitura
+  // de transição, só depois do mount — no SSR não existe storage).
+  const [themeMetas, setThemeMetas] = useState<Record<string, number>>(
+    metasTemasIniciais ?? DEFAULT_THEME_METAS,
+  );
   useEffect(() => {
-    setThemeMetas(lerThemeMetas(gestorId));
-  }, [gestorId]);
+    if (metasTemasIniciais === null) setThemeMetas(lerThemeMetasLegado(gestorId));
+  }, [gestorId, metasTemasIniciais]);
   // Espelha o open/close do ConfigTabelaPopover só pra elevar a tabela acima
   // do overlay de blur (z-40) enquanto o popover está aberto.
   const [configPopoverOpen, setConfigPopoverOpen] = useState(false);
@@ -204,9 +202,9 @@ export function GestorEquipeSection({
   const [limpandoBase, setLimpandoBase] = useState(false);
 
   // Detalhamento individual do operador (clique no nome da EquipeTable) —
-  // busca sob demanda via fetchOperadorDetalheAction (retencao_atendimentos),
-  // desacoplado do carregamento pesado do bloco analítico (que só roda
-  // quando aquela seção entra em vista). Antes vivia dentro do card
+  // busca no clique via fetchOperadorDetalheAction (retencao_atendimentos,
+  // calcula a equipe inteira e devolve o operador), à parte do Analítico
+  // (que carrega no mount da página). Antes vivia dentro do card
   // "Operadores" do trilho horizontal; migrado pra cá quando esse card foi
   // removido (o dado já estava disponível ali, agora é buscado no clique).
   const [operadorSelecionado, setOperadorSelecionado] = useState<OperadorIndividual | null>(null);
@@ -456,7 +454,7 @@ export function GestorEquipeSection({
     const linha = operadoresParaTela.find(
       (op) => (op.emailOriginal ?? op.email) === operadorSelecionadoEmail,
     );
-    return rotuloOperador(linha?.email ?? operadorSelecionado.login);
+    return formatOperatorLabel(linha?.email ?? operadorSelecionado.login);
   }, [operadorSelecionado, operadorSelecionadoEmail, operadoresParaTela]);
 
   const operadoresOrdenados = useMemo(
@@ -623,7 +621,8 @@ export function GestorEquipeSection({
               setMetaTxRetencao(metaTx);
               setOrdemTabela(ordem);
               setThemeMetas(novasThemeMetas);
-              salvarThemeMetas(gestorId, novasThemeMetas);
+              // Já gravadas no banco pela action — a cópia local sai.
+              limparThemeMetasLegado(gestorId);
               // A meta geral agora é a mesma na tabela e no Analítico.
               notifyMetasAtualizadas({ metaGlobal: metaTx, themeMetas: novasThemeMetas });
             }}
@@ -638,12 +637,7 @@ export function GestorEquipeSection({
               Ponteiro em cima ou foco no botão monta a tabela oculta do PNG
               (ver tabelaPngMontada); o clique vem sempre depois disso. */}
           <span className="contents" {...pngHandlers}>
-            <CopyTableButton
-              operadores={operadores}
-              equipe={equipe}
-              supervisor={gestora}
-              nomeSupervisorReport={nomeSupervisorReport}
-              onCapturaFim={handleCapturaPngFim}
+            <CopyTableButton equipe={equipe} onCapturaFim={handleCapturaPngFim}
             />
           </span>
 

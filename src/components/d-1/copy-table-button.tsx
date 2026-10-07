@@ -4,7 +4,7 @@ import { useState } from "react";
 import { IconCamera, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
-import type { OperadorConsolidado, ResumoEquipe } from "@/lib/d1-db/types";
+import type { ResumoEquipe } from "@/lib/d1-db/types";
 import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 import { copyFormattedHtml, escapeHtml } from "@/lib/utils/copy-formatted-html";
 import { cn } from "@/lib/utils";
@@ -56,13 +56,9 @@ function formatReportHtml(
 }
 
 interface CopyTableButtonProps {
-  // operadores e supervisor continuam aceitos (o caller os passa), mas o texto
-  // copiado não os usa mais — agora é só título + hora do report + imagem.
-  operadores: OperadorConsolidado[];
+  // Só a equipe (hora do report): o texto copiado é título + hora + imagem.
+  // A imagem vem da tabela oculta [data-tabela-png], não de props.
   equipe: ResumoEquipe;
-  supervisor?: string;
-  /** Nome do supervisor que fez o último report (BASE - 1!S2, junto com a hora). */
-  nomeSupervisorReport?: string | null;
   /**
    * Chamado quando a captura termina (sucesso ou erro). Opcional — usado por
    * GestorEquipeSection pra desmontar a tabela oculta do PNG depois do uso.

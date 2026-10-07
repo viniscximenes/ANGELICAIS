@@ -23,7 +23,7 @@ import { EfetividadeArgumentoCard } from "./efetividade-argumento-card";
 import { AnaliticoSkeleton, GraficoVazio } from "./analitico-skeleton";
 import {
   DEFAULT_THEME_METAS,
-  lerThemeMetas,
+  lerThemeMetasLegado,
   onMetasAtualizadas,
 } from "@/lib/retencao/metas-consolidado";
 import { RetencaoHorizontalScroll } from "./retencao-horizontal-scroll";
@@ -32,10 +32,12 @@ import { CabecalhoSecao } from "@/components/gestor/cabecalho-secao";
 
 
 interface RetencaoDetalheSectionProps {
-  /** profiles.id do gestor logado — chave de escopo das metas por tema (localStorage). */
+  /** profiles.id do gestor logado — escopo da leitura de transição das metas por tema. */
   gestorId: string;
   /** Meta geral da taxa (%) — a MESMA da EquipeTable (gestor_config_fantasia.meta_tx_retencao). */
   metaInicial: number;
+  /** Metas por tema do banco (gestor_config_fantasia.meta_temas). null = nunca salvou. */
+  metasTemasIniciais?: Record<string, number> | null;
 }
 
 /**
@@ -56,6 +58,7 @@ interface RetencaoDetalheSectionProps {
 export function RetencaoDetalheSection({
   gestorId,
   metaInicial,
+  metasTemasIniciais = null,
 }: RetencaoDetalheSectionProps) {
   // Abre sempre no topo (ver use-topo-ao-carregar.ts).
   useTopoAoCarregar();
@@ -75,13 +78,16 @@ export function RetencaoDetalheSection({
     emailsEquipe: string[];
   } | null>(null);
 
-  // Meta geral = a da EquipeTable (servidor); por tema = localStorage, lido
-  // só depois do mount. Edição nos dois casos: "Configurações da Tabela".
+  // Meta geral e por tema vêm do servidor (gestor_config_fantasia); por tema
+  // nunca salva no banco cai na leitura de transição do navegador. Edição
+  // nos dois casos: "Configurações da Tabela".
   const [metaGlobal, setMetaGlobal] = useState(metaInicial);
-  const [themeMetas, setThemeMetas] = useState<Record<string, number>>(DEFAULT_THEME_METAS);
+  const [themeMetas, setThemeMetas] = useState<Record<string, number>>(
+    metasTemasIniciais ?? DEFAULT_THEME_METAS,
+  );
   useEffect(() => {
-    setThemeMetas(lerThemeMetas(gestorId));
-  }, [gestorId]);
+    if (metasTemasIniciais === null) setThemeMetas(lerThemeMetasLegado(gestorId));
+  }, [gestorId, metasTemasIniciais]);
   useEffect(
     () =>
       onMetasAtualizadas((metas) => {

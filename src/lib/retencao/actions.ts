@@ -137,10 +137,10 @@ type OperadorDetalheResult =
 /**
  * Detalhamento de UM operador (retencao_atendimentos), buscado sob demanda a
  * partir da EquipeTable (d1_consolidado, topo de /s/reports/consolidado) —
- * fonte principal/"viva" da página. Diferente de `fetchDashboardRetencaoAction`
- * (que carrega TODOS os operadores de uma vez para o trilho analítico), esta
- * action busca só o operador clicado, mantendo a EquipeTable desacoplada do
- * carregamento pesado/lazy do bloco analítico.
+ * fonte principal/"viva" da página. Chamada no clique, à parte de
+ * `fetchDashboardRetencaoAction` (o Analítico, que carrega no mount da
+ * página). Lê o lote uma vez e calcula a equipe inteira (o quartil do
+ * operador depende da equipe e do polo); devolve só o operador clicado.
  *
  * `login` é o e-mail canônico do roster (`emailOriginal` em d1_consolidado /
  * `login` em retencao_atendimentos) — mesma identidade, os dois lados

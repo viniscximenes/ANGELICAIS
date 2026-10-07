@@ -14,12 +14,9 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { getGestorConsolidado } from "@/lib/d1-db/get-gestor-consolidado";
-import type { OperadorConsolidado, ResumoEquipe } from "@/lib/d1-db/types";
+import { montarTabelaConsolidado } from "@/lib/d1-db/montar-tabela-consolidado";
 import { getConfigTabela } from "@/lib/gestor/config-tabela/get-config-tabela";
-import { formatNomeProprio } from "@/lib/gestor/derive-nome-operador";
 import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
-import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
-import { aplicarRvDiarioNaEquipe } from "@/lib/rv/calculate-rv-diario";
 import { getCurrentPerUnitFaixas } from "@/lib/rv/get-current-per-unit-faixas";
 import { montarVersaoConsolidado, versaoExtrasConsolidado } from "@/lib/d1-db/versao-consolidado";
 
@@ -167,39 +164,17 @@ export default async function ReportsConsolidadoPage() {
     );
   }
 
-  // Converte para o formato que a EquipeTable do D-1 já aceita.
-  //
-  // Nome fantasia (olho fechado) é PRIVACIDADE VISUAL, não controle de acesso.
-  // Objetivo: evitar exposição dos nomes reais em compartilhamento de tela /
-  // apresentações. O gestor já tem autorização para ver os dados da própria
-  // equipe (o servidor só entrega os operadores da equipe dele), então
-  // `emailOriginal` chegar ao navegador não é vazamento: é dado que o próprio
-  // usuário autenticado pode acessar. Não tratar como anonimização nem como
-  // achado de segurança em auditorias.
-  const operadoresSemRv: OperadorConsolidado[] = data.operadores.map((op) => ({
-    email: resolverNomeExibicao(op.nome.trim().toLowerCase(), nomeFantasia),
-    emailOriginal: op.nome.trim().toLowerCase(),
-    supervisor: op.gestora,
-    retidos: op.retidos,
-    cancelados: op.cancelados,
-    pedidos: op.pedidos,
-    txRetencao: op.txRetencao,
-  }));
-
-  const { operadores, rvDiarioEquipe } = aplicarRvDiarioNaEquipe(operadoresSemRv, rvFaixas);
-
-  const equipe: ResumoEquipe = {
-    retidos: data.consolidado.retidos,
-    cancelados: data.consolidado.cancelados,
-    pedidos: data.consolidado.pedidos,
-    txRetencao: data.consolidado.txRetencao,
-    horaReport: reportHora ?? "—",
-    rvDiario: rvDiarioEquipe,
-  };
-
-  const gestora = data.consolidado.gestora
-    ? formatNomeProprio(data.consolidado.gestora)
-    : "Equipe";
+  // Converte para o formato que a EquipeTable do D-1 já aceita — mesma
+  // função do polling (refreshConsolidadoAction). O comentário sobre nome
+  // fantasia ser privacidade visual (e emailOriginal não ser vazamento) está
+  // em montarTabelaConsolidado.
+  const { operadores, equipe } = montarTabelaConsolidado({
+    linhas: data.operadores,
+    consolidado: data.consolidado,
+    reportHora,
+    nomeFantasia,
+    rvFaixas,
+  });
 
   // NÃO envolvido em <PageTransition> (o branch "sem dados" acima
   // também não): PageTransition faz um fade a partir de opacity:0 via
@@ -244,7 +219,6 @@ export default async function ReportsConsolidadoPage() {
               gestorId={user.profile.id}
               operadores={operadores}
               equipe={equipe}
-              gestora={gestora}
               showUpload={showUpload}
               nomeFantasia={nomeFantasia}
               olhoInicial={nomeFantasiaConfig.olhoConsolidado}
@@ -254,11 +228,13 @@ export default async function ReportsConsolidadoPage() {
               metaTxInicial={configTabela.metaTxRetencao}
               ordemTabelaInicial={configTabela.ordemTabela}
               showRvDiarioInicial={configTabela.showRvDiario}
+              metasTemasIniciais={configTabela.themeMetas}
             />
 
             <RetencaoDetalheSection
               gestorId={user.profile.id}
               metaInicial={configTabela.metaTxRetencao}
+              metasTemasIniciais={configTabela.themeMetas}
             />
             {/* SignatureFooter agora é renderizada dentro de RetencaoDetalheSection
                 (no desktop, logo abaixo do último card do trilho). */}

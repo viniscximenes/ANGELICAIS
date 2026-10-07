@@ -1,6 +1,7 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { validarThemeMetas } from "@/lib/retencao/metas-consolidado";
 import { createClient } from "@/lib/supabase/server";
 
 import { isOrdemTabela, type OrdemTabela } from "../types";
@@ -12,6 +13,8 @@ type SaveConfigTabelaResult =
 export async function saveConfigTabelaAction(
   metaTxRetencao: number,
   ordemTabela: OrdemTabela,
+  /** Metas por tema — gravadas em meta_temas junto com a meta geral. */
+  themeMetas: Record<string, number>,
 ): Promise<SaveConfigTabelaResult> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Não autenticado" };
@@ -32,6 +35,11 @@ export async function saveConfigTabelaAction(
     return { success: false, error: "Ordenação inválida." };
   }
 
+  const metasTemas = validarThemeMetas(themeMetas);
+  if (!metasTemas) {
+    return { success: false, error: "Metas por tema inválidas: cada uma deve ser entre 0 e 100." };
+  }
+
   const supabase = await createClient();
   const gestorId = user.profile.id;
 
@@ -40,6 +48,7 @@ export async function saveConfigTabelaAction(
       gestor_id: gestorId,
       meta_tx_retencao: metaTxRetencao,
       ordem_tabela: ordemTabela,
+      meta_temas: metasTemas,
     },
     { onConflict: "gestor_id" },
   );

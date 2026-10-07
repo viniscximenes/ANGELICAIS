@@ -100,7 +100,8 @@ export function ConfigTabelaPopover({
 
     startTransition(async () => {
       try {
-        const result = await saveConfigTabelaAction(valor, ordem);
+        // Metas por tema vão ao banco junto com a meta geral (meta_temas).
+        const result = await saveConfigTabelaAction(valor, ordem, themeMetas);
         if (result.success) {
           toast.success("Configurações salvas", { className: "reports-consolidado-toast" });
           onSaved(valor, ordem, themeMetas);

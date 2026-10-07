@@ -28,6 +28,8 @@ export type ConfigTabela = {
   metaTxRetencao: number;
   ordemTabela: OrdemTabela;
   showRvDiario: boolean;
+  /** Metas por tema (meta_temas). null = nunca salvou no banco. */
+  themeMetas: Record<string, number> | null;
 };
 
 /**

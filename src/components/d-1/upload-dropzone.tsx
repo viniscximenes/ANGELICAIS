@@ -247,7 +247,7 @@ export function UploadDropzone({
         aria-disabled={isProcessing}
         aria-busy={isProcessing}
         data-dropzone-state={dropzoneState}
-        className="upload-dropzone-root-reports-consolidado relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed outline-none transition-all duration-300 hover:border-primary focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+        className="relative flex h-full cursor-pointer items-center justify-center rounded-xl border border-dashed outline-none transition-all duration-300 hover:border-primary focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
         style={{
                 // Tokens PRÓPRIOS desta página (reports-consolidado.css), com
                 // color-mix a partir de --card/--muted — mesma técnica do
@@ -306,7 +306,7 @@ export function UploadDropzone({
           </div>
 
           {/* Dica sempre perceptível em touch/telas pequenas, já que hover não existe. */}
-          <p className="upload-dropzone-touch-hint-reports-consolidado ds-mono-sm text-muted-foreground/80 text-[11px] sm:hidden">
+          <p className="ds-mono-sm text-muted-foreground/80 text-[11px] sm:hidden">
             Toque para selecionar um CSV
           </p>
         </div>
