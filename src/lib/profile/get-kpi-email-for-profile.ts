@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getEmailVariants } from "@/lib/utils/email-variants";
 
 /**
@@ -24,7 +24,10 @@ import { getEmailVariants } from "@/lib/utils/email-variants";
 export async function resolveKpiEmailCandidatesForProfiles(
   emails: string[],
 ): Promise<Map<string, string[]>> {
-  const supabase = await createClient();
+  // Client admin (não a sessão): a policy de SELECT em profiles só deixa o
+  // usuário comum ler a PRÓPRIA linha, e aqui o GESTOR procura o alias de KPI
+  // de outras pessoas (os e-mails da equipe). Só lê as duas colunas do alias.
+  const supabase = createAdminClient();
   const normalizedEmails = [...new Set(emails.map((e) => e.trim().toLowerCase()))];
   const result = new Map<string, string[]>();
 

@@ -29,13 +29,19 @@ export async function resolveNomeSupervisorReportExibicao(
   const nomeBruto = nomeReportBruto?.trim();
   if (!nomeBruto) return null;
 
-  const { data: profileMatch } = await admin
+  // ilike (não eq) porque full_name tem caixa inconsistente. `\`, `%` e `_`
+  // do nome são escapados pra valerem como texto, não como curinga. limit(2)
+  // em vez de maybeSingle: com dois homônimos o maybeSingle dava erro e
+  // caía no fallback por acaso — agora só usa o username quando o match é
+  // único, e homônimo vai explicitamente pro fallback.
+  const nomeSemCuringa = nomeBruto.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const { data: matches } = await admin
     .from("profiles")
     .select("username")
-    .ilike("full_name", nomeBruto)
-    .maybeSingle();
+    .ilike("full_name", nomeSemCuringa)
+    .limit(2);
 
-  const username = profileMatch?.username?.trim();
+  const username = matches?.length === 1 ? matches[0].username?.trim() : undefined;
   if (username) {
     return formatNomeProprio(username.replace(/[._-]+/g, " "));
   }

@@ -26,31 +26,14 @@ export async function clearConsolidadoAction(): Promise<ClearConsolidadoResult> 
     const admin = createAdminClient();
     const dataRef = dataRefHojeBR();
 
-    const { error } = await admin.from("d1_consolidado").delete().eq("data_ref", dataRef);
+    // Limpa as duas bases numa transação só (função limpar_base_consolidado,
+    // scripts/sql/upload-consolidado-atomico.sql): d1_consolidado de hoje
+    // (EquipeTable) e retencao_atendimentos inteira (Analítico — guarda só o
+    // último lote, então "tudo" = "o lote do dia"). Antes eram dois deletes
+    // separados e uma falha no segundo deixava o Analítico com a base velha.
+    // Usa o mesmo lock do upload: não corre junto com um upload em andamento.
+    const { error } = await admin.rpc("limpar_base_consolidado", { p_data_ref: dataRef });
     if (error) throw new Error(error.message);
-
-    // Limpa a base do bloco Analítico (mesma página /s/reports/consolidado),
-    // alimentada pelo MESMO upload do consolidado (uploadConsolidadoAction
-    // grava nas duas). Sem isso, a EquipeTable ficaria vazia e o bloco
-    // analítico seguiria mostrando os dados antigos.
-    //
-    // Apaga tudo (não só data_ref de hoje): salvarBaseRetencao já mantém
-    // apenas o último lote, então "tudo" e "o lote do dia" são a mesma coisa.
-    // O Supabase client não faz DELETE sem filtro — o neq no id pega todas.
-    //
-    // Falha aqui não derruba a limpeza do consolidado, que já foi concluída;
-    // fica registrada no log.
-    const { error: erroRetencao } = await admin
-      .from("retencao_atendimentos")
-      .delete()
-      .neq("id", "00000000-0000-0000-0000-000000000000");
-
-    if (erroRetencao) {
-      console.error(
-        "[clear-consolidado] erro ao limpar retencao_atendimentos:",
-        erroRetencao.message,
-      );
-    }
 
     revalidatePath("/s/reports/consolidado");
     return { success: true };

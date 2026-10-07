@@ -7,7 +7,6 @@ import { can } from "@/lib/auth/permissions";
 import { dedupePorContrato } from "@/lib/retencao/dedupe-por-contrato";
 import { classificarAtendimento } from "@/lib/retencao/classificar-atendimento";
 import { parseBaseRetencao } from "@/lib/retencao/parse-base-retencao";
-import { salvarBaseRetencao } from "@/lib/retencao/salvar-base-retencao";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
 import { bucketMotivo, dataRefHojeBR, horaAtualBR, zeroBreakdown } from "../parse";
@@ -65,15 +64,7 @@ export async function uploadConsolidadoAction(
     };
   }
 
-  // 1. Persiste retencao_atendimentos (fonte de verdade já existente,
-  // reaproveitada — mesma função usada hoje pelo fluxo de retenção).
-  const dbResult = await salvarBaseRetencao(parseResult.linhas);
-  if (!dbResult.success) {
-    // Detalhe do banco só no log (salvarBaseRetencao já registra).
-    return { success: false, error: ERRO_GRAVAR_BASE };
-  }
-
-  // 2. Agrega por operador (usuario_login), a partir das MESMAS linhas já
+  // 1. Agrega por operador (usuario_login), a partir das MESMAS linhas já
   // parseadas — evita reler o banco. Motivo (do cancelamento) é
   // classificado nas 6 categorias históricas do D-1, tanto pra atendimentos
   // retidos quanto cancelados.
@@ -152,7 +143,7 @@ export async function uploadConsolidadoAction(
 
   const admin = createAdminClient();
 
-  // 3. Resolve gestor_id por operador via d1_operadores_gestor — mapeamento
+  // 2. Resolve gestor_id por operador via d1_operadores_gestor — mapeamento
   // global (o CSV cobre a empresa toda, não só a equipe de quem faz o
   // upload), igual à estrutura antiga de 8 abas por supervisor no Sheets.
   const { data: mapeamento, error: mapErr } = await admin
@@ -188,8 +179,8 @@ export async function uploadConsolidadoAction(
     }
   }
 
-  // 4. Monta as linhas pra UPSERT em d1_consolidado (uma por operador
-  // conhecido em d1_operadores_gestor).
+  // 3. Monta as linhas de d1_consolidado (uma por operador conhecido em
+  // d1_operadores_gestor).
   const dataRef = dataRefHojeBR();
   const reportHora = horaAtualBR();
   // Dias da base colada (status_hora já vem como "YYYY-MM-DDTHH:mm:ss-03:00",
@@ -239,60 +230,25 @@ export async function uploadConsolidadoAction(
     });
   }
 
-  if (rows.length > 0) {
-    const { error: upsertErr } = await admin
-      .from("d1_consolidado")
-      .upsert(rows, { onConflict: "data_ref,operator_email" });
+  // 4. Grava tudo numa transação só (função substituir_base_consolidado,
+  // scripts/sql/upload-consolidado-atomico.sql): troca retencao_atendimentos
+  // inteira, faz o upsert em d1_consolidado e remove do dia quem não veio
+  // neste upload. Ou grava tudo, ou nada — antes eram requests separados e
+  // uma falha no meio deixava a tabela e o Analítico com bases diferentes.
+  // A função também serializa uploads simultâneos (advisory lock): o
+  // segundo espera o primeiro terminar, em vez de apagar parte do lote dele.
+  const { data: linhasGravadas, error: rpcErr } = await admin.rpc(
+    "substituir_base_consolidado",
+    {
+      p_atendimentos: parseResult.linhas,
+      p_consolidado: rows,
+      p_data_ref: dataRef,
+    },
+  );
 
-    if (upsertErr) {
-      console.error("[upload-consolidado] erro no upsert:", upsertErr.message);
-      return { success: false, error: ERRO_GRAVAR_BASE };
-    }
-
-    // BUG DE MERGE ENTRE UPLOADS DO MESMO DIA (confirmado no código: `dataRef`
-    // é sempre "hoje" — `dataRefHojeBR()` — então duas subidas de base no
-    // MESMO dia caem sempre no MESMO data_ref): upsert sozinho só
-    // insere/atualiza os operadores presentes NESTE upload — um operador que
-    // saiu da base nova (não trabalhou, ou saiu da equipe) nunca tem sua
-    // linha antiga removida, e fica "grudado" com o resultado do upload
-    // anterior pra sempre, mesmo a base nova não tendo reportado nada sobre
-    // ele. Corrigido replicando o padrão de "sobrescrita segura" já usado em
-    // salvar-base-retencao.ts pra retencao_atendimentos: upsert primeiro
-    // (nunca deixa quem SEGUE aparecendo na base sem dado visível, mesmo por
-    // um instante), DEPOIS deleta só quem tinha linha em `data_ref` mas não
-    // veio nesta rodada.
-    const emailsDesteUpload = new Set(rows.map((r) => r.operator_email as string));
-
-    const { data: emailsExistentes, error: existentesErr } = await admin
-      .from("d1_consolidado")
-      .select("operator_email")
-      .eq("data_ref", dataRef);
-
-    if (existentesErr) {
-      console.error(
-        "[upload-consolidado] erro ao buscar operadores existentes pra limpeza:",
-        existentesErr.message,
-      );
-    } else {
-      const emailsObsoletos = (emailsExistentes || [])
-        .map((r) => r.operator_email)
-        .filter((email) => !emailsDesteUpload.has(email));
-
-      if (emailsObsoletos.length > 0) {
-        const { error: deleteErr } = await admin
-          .from("d1_consolidado")
-          .delete()
-          .eq("data_ref", dataRef)
-          .in("operator_email", emailsObsoletos);
-
-        if (deleteErr) {
-          console.error(
-            "[upload-consolidado] erro ao remover operadores obsoletos do dia:",
-            deleteErr.message,
-          );
-        }
-      }
-    }
+  if (rpcErr) {
+    console.error("[upload-consolidado] erro ao gravar a base:", rpcErr.message);
+    return { success: false, error: ERRO_GRAVAR_BASE };
   }
 
   if (operadoresSemGestor > 0) {
@@ -306,7 +262,7 @@ export async function uploadConsolidadoAction(
 
   return {
     success: true,
-    rowsWritten: dbResult.rowsWritten,
+    rowsWritten: typeof linhasGravadas === "number" ? linhasGravadas : parseResult.linhas.length,
     operadoresAtualizados: rows.length,
     operadoresSemGestor,
   };
