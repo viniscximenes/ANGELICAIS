@@ -168,9 +168,19 @@
  * do gráfico inteiro. Removido só nos dois gráficos desta seção
  * (.grafico-evolucao-chart, só aplicada com visualDetalhado / na visão
  * acumulada — o comparativo não recebe a classe).
+ *
+ * Só o foco de MOUSE perde o contorno (:not(:focus-visible)). No foco por
+ * teclado (Tab até o gráfico; ←/→ percorrem as horas e abrem o tooltip "Quem
+ * derrubou nesta hora") aparece um anel sutil --ring — auditoria
+ * 2026-10-07: antes o gráfico não era alcançável por teclado.
  */
-[data-page="reports-consolidado"] .grafico-evolucao-chart :is(.recharts-wrapper, .recharts-surface, svg, div):is(:focus, :focus-visible) {
+[data-page="reports-consolidado"] .grafico-evolucao-chart :is(.recharts-wrapper, .recharts-surface, svg, div):focus:not(:focus-visible) {
   outline: none;
+}
+[data-page="reports-consolidado"] .grafico-evolucao-chart .recharts-surface:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* ───────── Cabeçalho da tabela "Taxa de retenção por tema" = cabeçalho da tabela principal ─────────

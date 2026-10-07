@@ -287,12 +287,18 @@ export function EvolucaoEquipe({
       {/* grafico-evolucao-chart: regra de reports-consolidado.css que tira o
           contorno de foco do navegador ao clicar no gráfico. */}
       <div
-        className="grafico-evolucao-chart w-full [&_*:focus]:outline-none [&_*:focus-visible]:outline-none"
+        className="grafico-evolucao-chart w-full [&_*:focus:not(:focus-visible)]:outline-none"
         style={{ height: altura }}
       >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
-            accessibilityLayer={false}
+            // Teclado: Tab foca o gráfico e ←/→ percorrem as horas mostrando
+            // o mesmo tooltip do ponteiro (antes desligado — só o mouse via
+            // "Quem derrubou nesta hora"). Anel de foco só no teclado
+            // (reports-consolidado.css, .grafico-evolucao-chart).
+            accessibilityLayer
+            title={titulo ?? "Evolução por hora"}
+            desc="Use as setas esquerda e direita para ver os detalhes de cada hora."
             data={chartData}
             margin={{ top: 16, right: 8, left: 8, bottom: 0 }}
             barGap={2}
@@ -406,9 +412,9 @@ export function EvolucaoEquipe({
         {/*
           Alternativa ao gráfico para leitor de tela/teclado (auditoria
           2026-10-07): o detalhe por hora e "quem derrubou" só existia no
-          tooltip do ponteiro. accessibilityLayer continua desligado de
-          propósito (evita o gráfico virar alvo de foco/contorno ao clicar);
-          esta tabela é sr-only — não muda nada no visual. Fica DENTRO do
+          tooltip do ponteiro. Complementa o teclado do gráfico
+          (accessibilityLayer, ←/→): leitor de tela lê a tabela inteira de
+          uma vez. É sr-only — não muda nada no visual. Fica DENTRO do
           contêiner do gráfico: como irmã no space-y-3, o gráfico deixaria de
           ser o último filho e ganharia margem embaixo.
         */}

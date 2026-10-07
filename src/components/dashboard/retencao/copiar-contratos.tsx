@@ -104,14 +104,22 @@ function CustomSelect({
   // O menu vive num portal (fora da ordem do formulário): o foco entra nele
   // ao abrir — busca (autoFocus) ou a opção marcada — e volta ao botão ao
   // escolher, no Esc e no Tab, para a sequência do formulário continuar.
+  // Foco na opção marcada só DEPOIS que o menu montou: o portal depende de
+  // menuRect (preenchido num efeito após abrir), então um
+  // requestAnimationFrame logo no abrir() rodava com o menu ainda ausente e
+  // o foco ficava no botão (auditoria 2026-10-07). Com busca, quem recebe o
+  // foco é o campo de busca (autoFocus).
+  const focarOpcaoAoMontarRef = useRef(false);
+  useEffect(() => {
+    if (!isOpen || !menuRect || !focarOpcaoAoMontarRef.current) return;
+    focarOpcaoAoMontarRef.current = false;
+    const i = Math.max(0, filteredOptions.findIndex((opt) => opt.value === value));
+    opcoesRef.current[i]?.focus();
+  }, [isOpen, menuRect, filteredOptions, value]);
+
   function abrir() {
+    focarOpcaoAoMontarRef.current = !searchable;
     setIsOpen(true);
-    if (!searchable) {
-      requestAnimationFrame(() => {
-        const i = Math.max(0, filteredOptions.findIndex((opt) => opt.value === value));
-        opcoesRef.current[i]?.focus();
-      });
-    }
   }
 
   function fechar() {
