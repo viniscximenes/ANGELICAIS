@@ -20,6 +20,7 @@ import type {
  */
 type Row = {
   operator_email: string;
+  gestor_id: string | null;
   supervisor: string | null;
   retidos: number | null;
   cancelados: number | null;
@@ -48,6 +49,12 @@ type GestorConsolidadoResult = {
   reportNomeSupervisor: string | null;
   /** Dias (YYYY-MM-DD, em ordem) da base do último upload — null em uploads antigos. */
   reportDatasBase: string[] | null;
+  /**
+   * true quando o banco falhou (equipe ou base do dia). A página mostra um
+   * erro em vez de "sem dados"/zeros, e o polling mantém o que já está na
+   * tela em vez de zerar.
+   */
+  erro: boolean;
 };
 
 const EMPTY_RESULT: GestorConsolidadoResult = {
@@ -58,6 +65,7 @@ const EMPTY_RESULT: GestorConsolidadoResult = {
   reportHora: null,
   reportNomeSupervisor: null,
   reportDatasBase: null,
+  erro: false,
 };
 
 /**
@@ -76,7 +84,20 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
   const admin = createAdminClient();
 
   const roster = await getRosterOperadoresGestor(gestorId);
-  if (roster.length === 0) return EMPTY_RESULT;
+  if (roster.length === 0) {
+    // getRosterOperadoresGestor devolve [] tanto pra equipe vazia quanto pra
+    // erro de banco (é compartilhado por várias telas, não mexemos nele).
+    // Só aqui, no caso vazio, confirma com uma contagem: se falhar, ou se
+    // houver operadores cadastrados, o [] veio de erro.
+    const { count, error: rosterErr } = await admin
+      .from("d1_operadores_gestor")
+      .select("id", { count: "exact", head: true })
+      .eq("gestor_id", gestorId);
+    if (rosterErr) {
+      console.error("[get-gestor-consolidado] erro ao conferir a equipe:", rosterErr.message);
+    }
+    return { ...EMPTY_RESULT, erro: Boolean(rosterErr) || (count ?? 0) > 0 };
+  }
 
   // Filtra por operator_email (via roster de d1_operadores_gestor), NÃO por
   // gestor_id — d1_consolidado tem índice único (data_ref, operator_email),
@@ -90,7 +111,7 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
     admin
       .from("d1_consolidado")
       .select(
-        "operator_email, supervisor, retidos, cancelados, pedidos, tx_retencao, motivos_retidos, motivos_cancelados, report_hora, report_nome_supervisor, report_datas_base",
+        "operator_email, gestor_id, supervisor, retidos, cancelados, pedidos, tx_retencao, motivos_retidos, motivos_cancelados, report_hora, report_nome_supervisor, report_datas_base",
       )
       .in("operator_email", emailsComVariantes)
       .eq("data_ref", dataRefHojeBR()),
@@ -98,7 +119,10 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
   ]);
 
   if (error) {
+    // Sem a base do dia, a tabela sairia toda zerada como se ninguém tivesse
+    // atendido — a página mostra erro em vez disso.
     console.error("[get-gestor-consolidado] erro ao buscar d1_consolidado:", error.message);
+    return { ...EMPTY_RESULT, erro: true };
   }
 
   const rows = (data ?? []) as Row[];
@@ -156,8 +180,16 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
   // PEDIDOS = RETIDOS + CANCELADOS também na linha "EQUIPE" (total geral).
   const totalPedidos = totalRetidos + totalCancelados;
 
+  // Cabeçalho (gestora, hora/autor/dias do report) a partir de uma linha
+  // DESTE gestor — não de rows[0], que pode ser de outro gestor quando o
+  // operador está nas duas equipes (a linha "dona" tem o gestor_id do outro,
+  // e o supervisor dela é o nome dele). Os campos report_* são iguais em
+  // todas as linhas do dia (vêm do mesmo upload), então rows[0] continua
+  // como fallback.
+  const linhaCabecalho = rows.find((row) => row.gestor_id === gestorId) ?? rows[0];
+
   const consolidado: GestorConsolidado = {
-    gestora: rows[0]?.supervisor ?? nomeGestor,
+    gestora: (linhaCabecalho?.gestor_id === gestorId ? linhaCabecalho.supervisor : null) || nomeGestor,
     retidos: totalRetidos,
     cancelados: totalCancelados,
     pedidos: totalPedidos,
@@ -166,13 +198,14 @@ export async function getGestorConsolidado(gestorId: string): Promise<GestorCons
 
   return {
     data: { operadores, consolidado },
-    reportHora: rows[0]?.report_hora ?? null,
-    reportDatasBase: rows[0]?.report_datas_base ?? null,
+    erro: false,
+    reportHora: linhaCabecalho?.report_hora ?? null,
+    reportDatasBase: linhaCabecalho?.report_datas_base ?? null,
     // Só formatação de exibição ("GABRIEL HENRIQUE XIMENES DA SILVA" →
     // "Gabriel Ximenes") — ver resolveNomeSupervisorReportExibicao.
     reportNomeSupervisor: await resolveNomeSupervisorReportExibicao(
       admin,
-      rows[0]?.report_nome_supervisor ?? null,
+      linhaCabecalho?.report_nome_supervisor ?? null,
     ),
   };
 }

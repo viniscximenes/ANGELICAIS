@@ -17,8 +17,8 @@ export function escapeHtml(str: string): string {
  * cai para ClipboardItem se o navegador não suportar/permitir.
  */
 export async function copyFormattedHtml(html: string): Promise<void> {
+  const container = document.createElement("div");
   try {
-    const container = document.createElement("div");
     container.setAttribute("contenteditable", "true");
     container.style.position = "fixed";
     container.style.top = "-9999px";
@@ -35,13 +35,14 @@ export async function copyFormattedHtml(html: string): Promise<void> {
       selection.addRange(range);
       const ok = document.execCommand("copy");
       selection.removeAllRanges();
-      document.body.removeChild(container);
       if (ok) return;
-    } else {
-      document.body.removeChild(container);
     }
   } catch (e) {
     console.warn("[copy-formatted-html] execCommand falhou, tentando ClipboardItem:", e);
+  } finally {
+    // Sempre sai do body — antes, se addRange/execCommand lançasse, o div
+    // contenteditable (com a imagem em base64) ficava pendurado na página.
+    container.remove();
   }
 
   await navigator.clipboard.write([

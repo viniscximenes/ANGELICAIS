@@ -26,13 +26,15 @@ export async function refreshConsolidadoAction(): Promise<RefreshConsolidadoResu
   const user = await getCurrentUser();
   if (!user || user.profile.role !== "GESTOR") return { success: false };
 
-  const [{ data, reportHora, reportNomeSupervisor, reportDatasBase }, nomeFantasiaConfig, rvFaixas] = await Promise.all([
+  const [{ data, reportHora, reportNomeSupervisor, reportDatasBase, erro }, nomeFantasiaConfig, rvFaixas] = await Promise.all([
     getGestorConsolidado(user.profile.id),
     getNomeFantasiaConfig(user.profile.id),
     getCurrentPerUnitFaixas(),
   ]);
 
-  if (data.operadores.length === 0) return { success: false };
+  // Erro de banco: success false mantém a tabela que já está na tela (o
+  // polling tenta de novo em 30s), em vez de trocá-la por tudo zerado.
+  if (erro || data.operadores.length === 0) return { success: false };
 
   const nomeFantasia = {
     ativo: nomeFantasiaConfig.ativo,

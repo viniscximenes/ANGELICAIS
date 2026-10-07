@@ -10,8 +10,9 @@ import {
   IconFaceId,
   IconTargetArrow,
 } from "@tabler/icons-react";
+import { useEffect, useState } from "react";
 import { getLenisInstance } from "@/lib/lenis/lenis-instance";
-import { requestScrollToCard } from "@/lib/retencao/scroll-to-card-event";
+import { onTrilhoDisponivel, requestScrollToCard } from "@/lib/retencao/scroll-to-card-event";
 import { FloatingNavSidebar } from "@/components/ui/floating-nav-sidebar";
 import { IconeNav, useSecaoAtiva } from "@/components/gestor/nav-secao-ativa";
 
@@ -58,6 +59,11 @@ const ICON_CLASS = "h-5 w-5 shrink-0";
  */
 export function ConsolidadoNavSidebar() {
   const ativo = useSecaoAtiva("equipe-section");
+
+  // Cards do Analítico existem? (RetencaoDetalheSection avisa.) Começa em
+  // false: o trilho só aparece depois da busca client-side do Analítico.
+  const [trilhoDisponivel, setTrilhoDisponivel] = useState(false);
+  useEffect(() => onTrilhoDisponivel(setTrilhoDisponivel), []);
 
   function scrollToEquipe() {
     const el = document.getElementById("equipe-section");
@@ -155,7 +161,9 @@ export function ConsolidadoNavSidebar() {
 
   return (
     <FloatingNavSidebar
-      links={links}
+      // Item 0 (tabela) sempre funciona; os do trilho ficam apagados e sem
+      // clique enquanto o Analítico carrega, está vazio ou deu erro.
+      links={links.map((link, i) => (i === 0 ? link : { ...link, desabilitado: !trilhoDisponivel }))}
       wrapperClassName="nav-secoes"
       dataPage="reports-consolidado"
       // Divisória entre a tabela do topo e os slides do Analítico.

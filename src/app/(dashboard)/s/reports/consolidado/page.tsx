@@ -63,7 +63,7 @@ export default async function ReportsConsolidadoPage() {
   // getGestorConsolidado roda UMA vez aqui: reportHora/reportNomeSupervisor
   // vão como prop pra GestorEquipeSection. Os e-mails da equipe NÃO são
   // buscados aqui — o Analítico já os recebe da própria action.
-  const [{ data, reportHora, reportNomeSupervisor, reportDatasBase }, nomeFantasiaConfig, configTabela, rvFaixas] =
+  const [{ data, reportHora, reportNomeSupervisor, reportDatasBase, erro }, nomeFantasiaConfig, configTabela, rvFaixas] =
     await Promise.all([
       getGestorConsolidado(user.profile.id),
       getNomeFantasiaConfig(user.profile.id),
@@ -87,7 +87,12 @@ export default async function ReportsConsolidadoPage() {
   // igual ao "Aguardando dados do dia" do Analítico) e, pra quem pode, o
   // anexo da base — antes a área de upload sumia justo quando a solução era
   // anexar a base. Após o upload, o UploadDropzone recarrega a página.
-  if (data.operadores.length === 0) {
+  //
+  // Erro de banco (erro=true): o MESMO card, com mensagem de erro e
+  // "Tentar novamente" — antes caía aqui como "sem dados" (ou, com equipe
+  // cadastrada, mostrava a tabela toda zerada). Sem o anexo nesse caso: com
+  // o banco falhando, o upload falharia também.
+  if (erro || data.operadores.length === 0) {
     return (
       <>
         <ConsolidadoScrollProgress />
@@ -108,15 +113,37 @@ export default async function ReportsConsolidadoPage() {
               withGradient
               className="flex min-h-[220px] flex-1 flex-col items-center justify-center gap-2 p-10 text-center"
             >
-              <h3 className="ds-h3 text-foreground font-semibold">Ainda não há dados da equipe</h3>
-              <p className="ds-body text-muted-foreground max-w-md text-sm">
-                {showUpload
-                  ? "Anexe a base do dia ao lado. Se ela já foi anexada, confira se há operadores cadastrados na sua equipe (Configurações → Operadores do D-1)."
-                  : "Confira se há operadores cadastrados na sua equipe (Configurações → Operadores do D-1) e se a base do dia já foi atualizada."}
-              </p>
+              {erro ? (
+                <>
+                  <h3 className="ds-h3 text-foreground font-semibold">
+                    Não foi possível carregar a equipe
+                  </h3>
+                  <p className="ds-body text-muted-foreground max-w-md text-sm">
+                    Houve uma falha ao consultar a base. Tente novamente em instantes.
+                  </p>
+                  {/* Link (não botão com JS): recarrega a rota pelo
+                      servidor, passando pelo loading.tsx de sempre. Mesmo
+                      visual do "Tentar novamente" do Analítico. */}
+                  <a
+                    href="/s/reports/consolidado"
+                    className="font-sans border-border text-foreground hover:bg-muted/40 mt-2 inline-flex h-8 cursor-pointer items-center rounded-md border bg-transparent px-3 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:outline-none"
+                  >
+                    Tentar novamente
+                  </a>
+                </>
+              ) : (
+                <>
+                  <h3 className="ds-h3 text-foreground font-semibold">Ainda não há dados da equipe</h3>
+                  <p className="ds-body text-muted-foreground max-w-md text-sm">
+                    {showUpload
+                      ? "Anexe a base do dia ao lado. Se ela já foi anexada, confira se há operadores cadastrados na sua equipe (Configurações → Operadores do D-1)."
+                      : "Confira se há operadores cadastrados na sua equipe (Configurações → Operadores do D-1) e se a base do dia já foi atualizada."}
+                  </p>
+                </>
+              )}
             </StyledCard>
 
-            {showUpload && (
+            {showUpload && !erro && (
               <div className="min-h-[220px] min-w-0 flex-1 self-stretch">
                 <UploadDropzone abrirEmDownloads recarregarComModalAberto />
               </div>

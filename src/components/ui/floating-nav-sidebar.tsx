@@ -8,6 +8,11 @@ interface FloatingNavLink {
   href: string;
   icon: React.JSX.Element | React.ReactNode;
   onClick?: () => void;
+  /**
+   * Item apagado e sem clique (ex.: card do trilho que ainda não existe).
+   * Opcional — sem ele o item fica como sempre.
+   */
+  desabilitado?: boolean;
 }
 
 interface FloatingNavSidebarProps {
@@ -65,7 +70,13 @@ export function FloatingNavSidebar({
         <SidebarBody className="border-border/60 h-auto justify-start gap-1 rounded-xl border py-4 shadow-lg">
           {links.map((link, i) => (
             <Fragment key={link.label}>
-              <SidebarLink link={link} />
+              <SidebarLink
+                // Desabilitado: onClick vazio (o SidebarLink só faz
+                // preventDefault quando há onClick — sem ele o href "#..."
+                // pularia a página) e sem ponteiro/realce.
+                link={link.desabilitado ? { ...link, onClick: () => {} } : link}
+                className={link.desabilitado ? "pointer-events-none opacity-40" : undefined}
+              />
               {divisoriasApos.includes(i) && (
                 <div aria-hidden="true" data-nav-divisoria className="bg-border my-1 h-px w-full shrink-0" />
               )}

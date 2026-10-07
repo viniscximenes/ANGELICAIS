@@ -23,3 +23,23 @@ export function onScrollToCardRequest(callback: (cardIndex: number) => void): ()
   window.addEventListener(SCROLL_TO_CARD_EVENT, handler);
   return () => window.removeEventListener(SCROLL_TO_CARD_EVENT, handler);
 }
+
+/**
+ * Sinal do sentido contrário: o bloco Analítico avisa se o trilho (os
+ * cards #trilho-card-N) existe agora. Enquanto carrega, está vazio ou deu
+ * erro, não há card pra onde rolar — a sidebar mostra esses itens apagados
+ * e sem clique, em vez de itens que não fazem nada.
+ */
+const TRILHO_DISPONIVEL_EVENT = "retencao-trilho-disponivel";
+
+export function notifyTrilhoDisponivel(disponivel: boolean): void {
+  window.dispatchEvent(new CustomEvent<boolean>(TRILHO_DISPONIVEL_EVENT, { detail: disponivel }));
+}
+
+export function onTrilhoDisponivel(callback: (disponivel: boolean) => void): () => void {
+  const handler = (event: Event) => {
+    callback((event as CustomEvent<boolean>).detail);
+  };
+  window.addEventListener(TRILHO_DISPONIVEL_EVENT, handler);
+  return () => window.removeEventListener(TRILHO_DISPONIVEL_EVENT, handler);
+}

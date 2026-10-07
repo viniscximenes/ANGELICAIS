@@ -30,6 +30,12 @@ export type ConfigTabela = {
   showRvDiario: boolean;
 };
 
-export const DEFAULT_META_TX_RETENCAO = 60;
+/**
+ * Meta padrão de TX Retenção (%) pra quem nunca salvou uma — gestor (tabela
+ * do Consolidado) e coordenador (meta do polo). O rótulo "Padrão N%" dos
+ * dois popovers lê daqui; a coluna gestor_config_fantasia.meta_tx_retencao
+ * tem o mesmo default no banco.
+ */
+export const DEFAULT_META_TX_RETENCAO = 63;
 export const DEFAULT_ORDEM_TABELA: OrdemTabela = "padrao";
 export const DEFAULT_SHOW_RV_DIARIO = false;

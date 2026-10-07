@@ -1,8 +1,10 @@
+import { DEFAULT_META_TX_RETENCAO } from "@/lib/gestor/config-tabela/types";
 import { createClient } from "@/lib/supabase/server";
 
 /**
  * Busca a meta de taxa de retenção personalizada do gestor.
- * Retorna o valor na escala 0-100. Default: 60.
+ * Retorna o valor na escala 0-100. Default: DEFAULT_META_TX_RETENCAO (o
+ * mesmo da tabela do Consolidado — antes era um 60 fixo aqui).
  */
 export async function getMetaTxRetencao(gestorId: string): Promise<number> {
   const supabase = await createClient();
@@ -15,10 +17,10 @@ export async function getMetaTxRetencao(gestorId: string): Promise<number> {
 
   if (error) {
     console.error("[getMetaTxRetencao] erro ao buscar meta:", error.message);
-    return 60;
+    return DEFAULT_META_TX_RETENCAO;
   }
 
   return data?.meta_tx_retencao !== null && data?.meta_tx_retencao !== undefined
     ? Number(data.meta_tx_retencao)
-    : 60;
+    : DEFAULT_META_TX_RETENCAO;
 }

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/popover";
 import { saveConfigTabelaAction } from "@/lib/gestor/config-tabela/actions/save-config-tabela-action";
 import {
+  DEFAULT_META_TX_RETENCAO,
   ORDEM_TABELA_OPTIONS,
   type OrdemTabela,
 } from "@/lib/gestor/config-tabela/types";
@@ -175,7 +176,7 @@ export function ConfigTabelaPopover({
                 htmlFor="config-meta-tx"
                 className="text-foreground text-xs font-medium"
               >
-                Meta Taxa Retenção - Padrão 65%
+                Meta Taxa Retenção - Padrão {DEFAULT_META_TX_RETENCAO}%
               </Label>
               <div className="relative flex items-center">
                 <Input

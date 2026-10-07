@@ -16,7 +16,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
  * requestAnimationFrame, se o scroll saiu de 0 sem o usuário ter mexido,
  * volta pro topo e chama ScrollTrigger.update() (só o PROGRESSO dos
  * triggers — .refresh() remediria o layout de todos e reflowava a página).
- * Desliga no primeiro gesto real (wheel/touch/tecla) ou depois de
+ * Desliga no primeiro gesto real (wheel/touch/tecla/clique) ou depois de
  * UNLOCK_MS — nunca prende um scroll manual. useLayoutEffect: a primeira
  * correção roda antes do primeiro paint, sem flash.
  */
@@ -36,6 +36,7 @@ export function useTopoAoCarregar() {
       window.removeEventListener("wheel", stop);
       window.removeEventListener("touchstart", stop);
       window.removeEventListener("keydown", stop);
+      window.removeEventListener("pointerdown", stop);
       window.clearTimeout(timeoutId);
     };
 
@@ -54,6 +55,10 @@ export function useTopoAoCarregar() {
     window.addEventListener("wheel", stop, { passive: true });
     window.addEventListener("touchstart", stop, { passive: true });
     window.addEventListener("keydown", stop);
+    // Clique também é gesto real: um clique na navegação lateral (que rola
+    // até a seção) ou na barra de rolagem nos primeiros 2s era desfeito pela
+    // guarda, que puxava a página de volta pro topo.
+    window.addEventListener("pointerdown", stop, { passive: true });
     const timeoutId = window.setTimeout(stop, UNLOCK_MS);
 
     return () => {

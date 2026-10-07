@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTopoAoCarregar } from "@/lib/lenis/use-topo-ao-carregar";
 import { fetchDashboardRetencaoAction } from "@/lib/retencao/actions";
 import { onBaseAtualizada } from "@/lib/retencao/base-cleared-event";
+import { notifyTrilhoDisponivel } from "@/lib/retencao/scroll-to-card-event";
 import type { VisaoGeralData } from "@/lib/retencao/get-visao-geral";
 import type { TemaData } from "@/lib/retencao/get-por-tema";
 import type { HoraEvolucaoData } from "@/lib/retencao/get-evolucao-hora";
@@ -152,6 +153,14 @@ export function RetencaoDetalheSection({
   }, [load]);
 
   const hasNoData = !data || data.visaoGeral.total === 0;
+
+  // Avisa a sidebar de navegação (ConsolidadoNavSidebar) se os cards do
+  // trilho existem — sem eles, os itens dela não têm pra onde rolar.
+  const trilhoDisponivel = !loading && !error && !hasNoData;
+  useEffect(() => {
+    notifyTrilhoDisponivel(trilhoDisponivel);
+  }, [trilhoDisponivel]);
+  useEffect(() => () => notifyTrilhoDisponivel(false), []);
 
   // Extraído pra prop: no estado "pronto" (trilho horizontal), este
   // cabeçalho vai DENTRO da área pinada do ScrollTrigger (ver

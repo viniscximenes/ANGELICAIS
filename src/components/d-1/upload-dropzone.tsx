@@ -8,7 +8,6 @@ import { toast } from "sonner";
 
 import { uploadConsolidadoAction } from "@/lib/d1-db/actions/upload-consolidado-action";
 import { useFaviconLoading } from "@/lib/favicon/use-favicon-loading";
-import { notifyBaseAtualizada } from "@/lib/retencao/base-cleared-event";
 import { ReactBitsFolder } from "@/components/ui/react-bits-folder";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 import { UploadProgressModal } from "./upload-progress-modal";
@@ -63,9 +62,9 @@ export function UploadDropzone({
 
   // Executa o upload de fato (etapas + action + reload).
   const processUpload = useCallback(async (csvText: string) => {
+    // Sem esperas artificiais entre as etapas (removidas a pedido): o modal
+    // acompanha o tempo real do servidor.
     setStep("deleting");
-    await new Promise((r) => setTimeout(r, 400));
-
     setStep("replacing");
 
     let uploadResult;
@@ -98,20 +97,15 @@ export function UploadDropzone({
     setRowsWritten(uploadResult.rowsWritten);
     setStep("done");
 
-    // Gatilho específico do upload concluído (não polling): uploadConsolidadoAction
-    // grava retencao_atendimentos E d1_consolidado na mesma chamada, mas só a
-    // EquipeTable tem polling próprio — o trilho horizontal (RetencaoDetalheSection)
-    // busca retencao_atendimentos uma única vez no mount e só refaria essa busca
-    // com um F5 manual (revalidatePath, chamado dentro da action, invalida cache de
-    // Server Component, não um fetch client-side feito à mão). Ver base-cleared-event.ts.
-    notifyBaseAtualizada();
+    // Sem notifyBaseAtualizada() aqui: a página inteira recarrega logo abaixo
+    // e o Analítico busca a base nova no mount. Avisar antes só disparava as
+    // 8 consultas pesadas do Analítico pra serem descartadas pelo reload.
 
     // Sem o popup de convite pro Comparativo (removido a pedido — as
-    // equipes já conhecem a página): todo upload segue direto pro reload.
-    setTimeout(() => {
-      if (!recarregarComModalAberto) setStep(null);
-      window.location.reload();
-    }, 3000);
+    // equipes já conhecem a página): todo upload segue direto pro reload,
+    // sem a pausa de 3s na tela de concluído (removida a pedido).
+    if (!recarregarComModalAberto) setStep(null);
+    window.location.reload();
   }, [recarregarComModalAberto]);
 
   const handleFile = useCallback(async (file: File) => {
@@ -160,9 +154,6 @@ export function UploadDropzone({
             toast.error("CSV vazio", { className: "reports-consolidado-toast" });
             return;
           }
-
-          // Delay pra UX mostrar a etapa "ANEXANDO"
-          await new Promise((r) => setTimeout(r, 600));
 
           await processUpload(csvText);
         },
