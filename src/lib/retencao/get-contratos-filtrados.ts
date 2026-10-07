@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { lerLoteRetencao } from "./ler-lote";
 import { getEmailVariants } from "@/lib/utils/email-variants";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
 import { dedupePorContrato } from "./dedupe-por-contrato";
@@ -74,8 +74,6 @@ function motivoCombina(motivo: string, filtro: string): boolean {
 }
 
 export async function getContratosFiltrados(filtros: FiltroContratos): Promise<ContratoFiltradoItem[]> {
-  const supabase = createAdminClient();
-
   // Busca SEM os filtros de status/período/motivo/submotivo na query SQL —
   // eles precisam ser aplicados DEPOIS da deduplicação por contrato (ver
   // dedupe-por-contrato.ts), não linha a linha. Motivo: um contrato com
@@ -87,25 +85,17 @@ export async function getContratosFiltrados(filtros: FiltroContratos): Promise<C
   // e motivo: o que importa é o valor da linha FINAL do contrato, não de
   // uma tentativa intermediária.
   //
-  // Paginação (.range, como os demais get-*.ts): sem isso, mais de 1000
-  // linhas no escopo cortariam contratos fora da dedupe silenciosamente.
-  let allData: LinhaCrua[] = [];
-  let page = 0;
-  const pageSize = 1000;
-  let hasMore = true;
-
-  while (hasMore) {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-
-    let query = supabase
-      .from("retencao_atendimentos")
-      .select(
-        "usuario_login, foi_cancelamento, motivo, submotivo, cod_air, status_retencao, primeiro_nivel, status_hora, hora_bucket",
-      )
-      .range(from, to);
-
-    query = aplicarFiltroEscopo(query, { emailsEquipe: filtros.emailsEquipe });
+  // Paginação por lote (ler-lote.ts): sem isso, mais de 1000 linhas no
+  // escopo cortariam contratos fora da dedupe silenciosamente.
+  const allData = await lerLoteRetencao<LinhaCrua>((supabase) => {
+    let query = aplicarFiltroEscopo(
+      supabase
+        .from("retencao_atendimentos")
+        .select(
+          "usuario_login, foi_cancelamento, motivo, submotivo, cod_air, status_retencao, primeiro_nivel, status_hora, hora_bucket",
+        ),
+      { emailsEquipe: filtros.emailsEquipe },
+    );
 
     // Filtro por Operador Específico (quando selecionado) — cobre as duas
     // variantes de domínio do mesmo operador. Seguro em SQL: não depende de
@@ -113,22 +103,8 @@ export async function getContratosFiltrados(filtros: FiltroContratos): Promise<C
     if (filtros.operador) {
       query = query.in("usuario_login", getEmailVariants(filtros.operador));
     }
-
-    const { data, error } = await query;
-    if (error) {
-      console.error("[getContratosFiltrados] erro ao buscar contratos:", error.message);
-      throw new Error(error.message);
-    }
-
-    const list = data || [];
-    allData = allData.concat(list);
-
-    if (list.length < pageSize) {
-      hasMore = false;
-    } else {
-      page++;
-    }
-  }
+    return query;
+  }, "getContratosFiltrados");
 
   const comContrato = allData.filter(
     (r): r is LinhaCrua & { cod_air: string } => typeof r.cod_air === "string" && r.cod_air.trim() !== "",

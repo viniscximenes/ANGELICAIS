@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { lerLoteRetencao } from "./ler-lote";
 import { dedupePorContrato } from "./dedupe-por-contrato";
 import { classificarAtendimento } from "./classificar-atendimento";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
@@ -84,34 +84,18 @@ function taxa(retidos: number, cancelados: number): number | null {
 export async function getPorOperadorIndividual(
   emailsEquipe: string[],
 ): Promise<OperadorIndividual[]> {
-  const supabase = createAdminClient();
-
-  let todas: Linha[] = [];
-  let page = 0;
-  const pageSize = 1000;
-  let hasMore = true;
-
-  while (hasMore) {
-    let query = supabase
-      .from("retencao_atendimentos")
-      .select(
-        "usuario_login, usuario_nome, cod_air, status_hora, motivo, hora_bucket, foi_cancelamento, status_retencao",
-      )
-      .range(page * pageSize, page * pageSize + pageSize - 1);
-
-    query = aplicarFiltroEscopo(query, { emailsEquipe });
-
-    const { data, error } = await query;
-    if (error) {
-      console.error("[getPorOperadorIndividual] erro ao consultar:", error.message);
-      throw new Error(error.message);
-    }
-
-    const lista = (data ?? []) as Linha[];
-    todas = todas.concat(lista);
-    if (lista.length < pageSize) hasMore = false;
-    else page++;
-  }
+  const todas = await lerLoteRetencao<Linha>(
+    (supabase) =>
+      aplicarFiltroEscopo(
+        supabase
+          .from("retencao_atendimentos")
+          .select(
+            "usuario_login, usuario_nome, cod_air, status_hora, motivo, hora_bucket, foi_cancelamento, status_retencao",
+          ),
+        { emailsEquipe },
+      ),
+    "getPorOperadorIndividual",
+  );
 
   // Chave por prefixo do email: o roster guarda @alloha.com, mas a base de
   // retenção pode trazer o mesmo operador sob @sumicity.net.br.

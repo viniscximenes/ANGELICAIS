@@ -34,7 +34,33 @@ type ParseResult = {
    * só pra isso).
    */
   formatoInvalido: boolean;
+  /** Colunas obrigatórias (COLUNAS_OBRIGATORIAS) ausentes no cabeçalho. */
+  colunasFaltando: string[];
+  /**
+   * Linhas recusadas, com o número da linha no arquivo (cabeçalho = 1) e o
+   * motivo. O upload só grava se esta lista vier vazia: a RPC substitui a
+   * base global inteira, então descartar linhas em silêncio trocaria a base
+   * por um lote incompleto.
+   */
+  linhasInvalidas: { linha: number; motivo: string }[];
 };
+
+/**
+ * Colunas sem as quais a classificação/agregação fica errada:
+ *  - COD_AIR / STATUS_HORA / USUARIO > LOGIN: chave da dedupe e do operador;
+ *  - FOI_CANCELAMENTO / STATUS_RETENCAO: classificação retido/cancelado/abortado
+ *    (sem FOI_CANCELAMENTO, todo cancelamento virava retenção);
+ *  - MOTIVO: buckets de motivo do D-1.
+ * DATA e DATA DE CRIACAO (DIA) ficam de fora: a base real não as preenche.
+ */
+const COLUNAS_OBRIGATORIAS = [
+  "COD_AIR",
+  "STATUS_HORA",
+  "FOI_CANCELAMENTO",
+  "STATUS_RETENCAO",
+  "USUARIO > LOGIN",
+  "MOTIVO",
+] as const;
 
 function normalizeHeader(h: string): string {
   return h
@@ -74,10 +100,15 @@ function parseTimestampBR(val: string | null | undefined): { status_hora: string
   return { status_hora: isoString, hora_bucket };
 }
 
-function parseBoolean(val: string | null | undefined): boolean {
-  if (!val) return false;
-  const cleaned = val.trim().toLowerCase();
-  return cleaned === "verdadeiro" || cleaned === "true" || cleaned === "sim" || cleaned === "1";
+const VALORES_VERDADEIRO = new Set(["verdadeiro", "true", "sim", "s", "1", "v", "yes"]);
+const VALORES_FALSO = new Set(["falso", "false", "nao", "não", "n", "0", "f", "no"]);
+
+/** null = vazio ou valor desconhecido (linha inválida, não vira `false`). */
+function parseBoolean(val: string | null | undefined): boolean | null {
+  const cleaned = (val ?? "").trim().toLowerCase();
+  if (VALORES_VERDADEIRO.has(cleaned)) return true;
+  if (VALORES_FALSO.has(cleaned)) return false;
+  return null;
 }
 
 const COLUMN_MAP: Record<string, keyof Omit<RetencaoAtendimentoInput, "foi_cancelamento" | "status_hora" | "hora_bucket" | "data_criacao" | "data_ref">> = {
@@ -102,24 +133,41 @@ export function parseBaseRetencao(csvText: string): ParseResult {
     skipEmptyLines: true,
   });
 
+  const vazio = {
+    linhas: [],
+    lidas: 0,
+    validas: 0,
+    puladas: 0,
+    formatoInvalido: false,
+    colunasFaltando: [],
+    linhasInvalidas: [],
+  };
+
   if (parsed.errors.length > 0) {
     console.error("[parse-base-retencao] erro no Papa.parse:", parsed.errors);
-    return { linhas: [], lidas: 0, validas: 0, puladas: 0, formatoInvalido: true };
+    return { ...vazio, formatoInvalido: true };
   }
 
   const rows = parsed.data;
   if (rows.length < 2) {
-    return { linhas: [], lidas: 0, validas: 0, puladas: 0, formatoInvalido: false };
+    return vazio;
   }
 
   const rawHeaders = rows[0];
   const normalizedHeaders = rawHeaders.map(normalizeHeader);
+
+  const colunasFaltando = COLUNAS_OBRIGATORIAS.filter((c) => !normalizedHeaders.includes(c));
+  if (colunasFaltando.length > 0) {
+    return { ...vazio, colunasFaltando };
+  }
 
   const colAirIndex = normalizedHeaders.indexOf("COD_AIR");
   const statusHoraIndex = normalizedHeaders.indexOf("STATUS_HORA");
   const dataCriacaoIndex = normalizedHeaders.indexOf("DATA DE CRIACAO (DIA)");
   const dataIndex = normalizedHeaders.indexOf("DATA");
   const foiCancelamentoIndex = normalizedHeaders.indexOf("FOI_CANCELAMENTO");
+  const statusRetencaoIndex = normalizedHeaders.indexOf("STATUS_RETENCAO");
+  const loginIndex = normalizedHeaders.indexOf("USUARIO > LOGIN");
 
   const mappedIndexes = normalizedHeaders.map((header) => {
     const key = COLUMN_MAP[header];
@@ -127,6 +175,7 @@ export function parseBaseRetencao(csvText: string): ParseResult {
   });
 
   const linhas: RetencaoAtendimentoInput[] = [];
+  const linhasInvalidas: { linha: number; motivo: string }[] = [];
   let lidas = 0;
   let validas = 0;
   let puladas = 0;
@@ -134,18 +183,43 @@ export function parseBaseRetencao(csvText: string): ParseResult {
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     lidas++;
-
-    const codAir = colAirIndex !== -1 ? (row[colAirIndex] || "").trim() : "";
-    const statusHoraRaw = statusHoraIndex !== -1 ? (row[statusHoraIndex] || "").trim() : "";
-
-    if (!codAir || !statusHoraRaw) {
+    // Número da linha no arquivo, como o usuário vê no Excel (cabeçalho = 1).
+    const numeroLinha = i + 1;
+    const recusar = (motivo: string) => {
       puladas++;
+      linhasInvalidas.push({ linha: numeroLinha, motivo });
+    };
+
+    const codAir = (row[colAirIndex] || "").trim();
+    const statusHoraRaw = (row[statusHoraIndex] || "").trim();
+
+    if (!codAir) {
+      recusar("COD_AIR vazio");
+      continue;
+    }
+    if (!(row[loginIndex] || "").trim()) {
+      recusar("USUARIO > LOGIN vazio");
+      continue;
+    }
+    if (!(row[statusRetencaoIndex] || "").trim()) {
+      recusar("STATUS_RETENCAO vazio");
       continue;
     }
 
     const { status_hora, hora_bucket } = parseTimestampBR(statusHoraRaw);
     if (!status_hora) {
-      puladas++;
+      recusar(statusHoraRaw ? `STATUS_HORA inválido ("${statusHoraRaw}")` : "STATUS_HORA vazio");
+      continue;
+    }
+
+    const foiCancelamentoRaw = (row[foiCancelamentoIndex] || "").trim();
+    const foi_cancelamento = parseBoolean(foiCancelamentoRaw);
+    if (foi_cancelamento === null) {
+      recusar(
+        foiCancelamentoRaw
+          ? `FOI_CANCELAMENTO inválido ("${foiCancelamentoRaw}")`
+          : "FOI_CANCELAMENTO vazio",
+      );
       continue;
     }
 
@@ -154,9 +228,6 @@ export function parseBaseRetencao(csvText: string): ParseResult {
 
     const data_criacao = parseDateBR(dataCriacaoRaw);
     const data_ref = parseDateBR(dataRaw);
-
-    const foiCancelamentoRaw = foiCancelamentoIndex !== -1 ? row[foiCancelamentoIndex] : null;
-    const foi_cancelamento = parseBoolean(foiCancelamentoRaw);
 
     const inputRow: RetencaoAtendimentoInput = {
       cod_air: codAir,
@@ -192,5 +263,13 @@ export function parseBaseRetencao(csvText: string): ParseResult {
     validas++;
   }
 
-  return { linhas, lidas, validas, puladas, formatoInvalido: false };
+  return {
+    linhas,
+    lidas,
+    validas,
+    puladas,
+    formatoInvalido: false,
+    colunasFaltando: [],
+    linhasInvalidas,
+  };
 }

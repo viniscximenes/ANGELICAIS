@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { lerLoteRetencao } from "./ler-lote";
 import { dedupePorContrato } from "./dedupe-por-contrato";
 import { classificarAtendimento } from "./classificar-atendimento";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
@@ -22,47 +22,25 @@ export async function getPorOperador(
   escopo: "equipe" | "empresa",
   emailsEquipe: string[],
 ): Promise<OperadorItem[]> {
-  const supabase = createAdminClient();
-  let allData: {
+  const allData = await lerLoteRetencao<{
     usuario_login: string | null;
     usuario_nome: string | null;
     cod_air: string | null;
     status_hora: string | null;
     foi_cancelamento: boolean | null;
     status_retencao: string | null;
-  }[] = [];
-  let page = 0;
-  const pageSize = 1000;
-  let hasMore = true;
-
-  while (hasMore) {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-
-    let query = supabase
-      .from("retencao_atendimentos")
-      .select(
-        "usuario_login, usuario_nome, cod_air, status_hora, foi_cancelamento, status_retencao",
-      )
-      .range(from, to);
-
-    query = aplicarFiltroEscopo(query, { escopo, emailsEquipe });
-
-    const { data, error } = await query;
-    if (error) {
-      console.error("[getPorOperador] erro ao buscar dados por operador:", error.message);
-      throw new Error(error.message);
-    }
-
-    const list = data || [];
-    allData = allData.concat(list);
-
-    if (list.length < pageSize) {
-      hasMore = false;
-    } else {
-      page++;
-    }
-  }
+  }>(
+    (supabase) =>
+      aplicarFiltroEscopo(
+        supabase
+          .from("retencao_atendimentos")
+          .select(
+            "usuario_login, usuario_nome, cod_air, status_hora, foi_cancelamento, status_retencao",
+          ),
+        { escopo, emailsEquipe },
+      ),
+    "getPorOperador",
+  );
 
   const list = dedupePorContrato(allData);
 

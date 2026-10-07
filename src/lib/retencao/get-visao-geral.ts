@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { lerLoteRetencao } from "./ler-lote";
 import { dedupePorContrato } from "./dedupe-por-contrato";
 import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
@@ -17,44 +17,22 @@ export type VisaoGeralData = {
 export async function getVisaoGeral(
   emailsEquipe: string[],
 ): Promise<VisaoGeralData> {
-  const supabase = createAdminClient();
-  let allData: {
+  const allData = await lerLoteRetencao<{
     usuario_login: string | null;
     cod_air: string | null;
     status_hora: string | null;
     foi_cancelamento: boolean | null;
     status_retencao: string | null;
-  }[] = [];
-  let page = 0;
-  const pageSize = 1000;
-  let hasMore = true;
-
-  while (hasMore) {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-
-    let query = supabase
-      .from("retencao_atendimentos")
-      .select("usuario_login, cod_air, status_hora, foi_cancelamento, status_retencao")
-      .range(from, to);
-
-    query = aplicarFiltroEscopo(query, { emailsEquipe });
-
-    const { data, error } = await query;
-    if (error) {
-      console.error("[getVisaoGeral] erro ao consultar visão geral no Supabase:", error.message);
-      throw new Error(error.message);
-    }
-
-    const list = data || [];
-    allData = allData.concat(list);
-
-    if (list.length < pageSize) {
-      hasMore = false;
-    } else {
-      page++;
-    }
-  }
+  }>(
+    (supabase) =>
+      aplicarFiltroEscopo(
+        supabase
+          .from("retencao_atendimentos")
+          .select("usuario_login, cod_air, status_hora, foi_cancelamento, status_retencao"),
+        { emailsEquipe },
+      ),
+    "getVisaoGeral",
+  );
 
   const linhasFinais = dedupePorContrato(allData);
 

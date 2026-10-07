@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { lerLoteRetencao } from "./ler-lote";
 import { BUCKETS, bucketDe } from "./buckets-hora";
 import { dedupePorContrato } from "./dedupe-por-contrato";
 import { classificarAtendimento } from "./classificar-atendimento";
@@ -70,11 +70,9 @@ export async function getEvolucaoHora(
   emailsEquipe: string[],
   opcoes: { porOperador?: boolean } = {},
 ): Promise<HoraEvolucaoData[]> {
-  const supabase = createAdminClient();
-
   // Sem recorte de horas: os buckets das pontas ("< 08" e "≥ 20") precisam
   // enxergar os atendimentos fora da janela de operação.
-  let allData: {
+  const allData = await lerLoteRetencao<{
     usuario_login: string | null;
     cod_air: string | null;
     status_hora: string | null;
@@ -82,39 +80,18 @@ export async function getEvolucaoHora(
     foi_cancelamento: boolean | null;
     motivo: string | null;
     status_retencao: string | null;
-  }[] = [];
-  let page = 0;
-  const pageSize = 1000;
-  let hasMore = true;
-
-  while (hasMore) {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-
-    let query = supabase
-      .from("retencao_atendimentos")
-      .select(
-        "usuario_login, cod_air, status_hora, hora_bucket, foi_cancelamento, motivo, status_retencao",
-      )
-      .range(from, to);
-
-    query = aplicarFiltroEscopo(query, { emailsEquipe });
-
-    const { data, error } = await query;
-    if (error) {
-      console.error("[getEvolucaoHora] erro ao buscar evolução por hora:", error.message);
-      throw new Error(error.message);
-    }
-
-    const list = data || [];
-    allData = allData.concat(list);
-
-    if (list.length < pageSize) {
-      hasMore = false;
-    } else {
-      page++;
-    }
-  }
+  }>(
+    (supabase) =>
+      aplicarFiltroEscopo(
+        supabase
+          .from("retencao_atendimentos")
+          .select(
+            "usuario_login, cod_air, status_hora, hora_bucket, foi_cancelamento, motivo, status_retencao",
+          ),
+        { emailsEquipe },
+      ),
+    "getEvolucaoHora",
+  );
 
   const map = new Map<
     number,

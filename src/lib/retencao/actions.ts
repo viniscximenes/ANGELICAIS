@@ -25,6 +25,7 @@ import {
 } from "./get-por-operador-individual";
 import { getImpactoFaceId, type ImpactoFaceIdData } from "./get-impacto-faceid";
 import { getEfetividadeArgumento, type ArgumentoItem } from "./get-efetividade-argumento";
+import { comLoteEstavel } from "./ler-lote";
 
 type DashboardRetencaoResult = {
   success: boolean;
@@ -66,6 +67,8 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
 
     // Só o que a tela usa. A meta vem do servidor da página (mesma da
     // EquipeTable) e o nome fantasia não é exibido no Analítico.
+    // comLoteEstavel: os indicadores são consultas separadas — se um upload
+    // trocar a base no meio, relê tudo para nenhum card mostrar outro lote.
     const [
       visaoGeral,
       porTema,
@@ -75,16 +78,18 @@ export async function fetchDashboardRetencaoAction(): Promise<DashboardRetencaoR
       quartilPoloAll,
       impactoFaceId,
       efetividadeArgumento,
-    ] = await Promise.all([
-      getVisaoGeral(emailsEquipe),
-      getPorTema(emailsEquipe),
-      getEvolucaoHora(emailsEquipe, { porOperador: true }),
-      getPorSegmento(emailsEquipe),
-      getQuartilOperadores("equipe", emailsEquipe),
-      getQuartilOperadores("empresa", []),
-      getImpactoFaceId(emailsEquipe),
-      getEfetividadeArgumento(emailsEquipe),
-    ]);
+    ] = await comLoteEstavel(() =>
+      Promise.all([
+        getVisaoGeral(emailsEquipe),
+        getPorTema(emailsEquipe),
+        getEvolucaoHora(emailsEquipe, { porOperador: true }),
+        getPorSegmento(emailsEquipe),
+        getQuartilOperadores("equipe", emailsEquipe),
+        getQuartilOperadores("empresa", []),
+        getImpactoFaceId(emailsEquipe),
+        getEfetividadeArgumento(emailsEquipe),
+      ]),
+    );
 
     // Operadores da equipe, mas com o rank/quartil calculado sobre o polo.
     // Por PREFIXO (sem domínio): getPorOperador agrupa por prefixo e guarda

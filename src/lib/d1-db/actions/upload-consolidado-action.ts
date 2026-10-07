@@ -54,6 +54,32 @@ export async function uploadConsolidadoAction(
     return { success: false, error: "Erro ao ler o CSV. Verifique o formato." };
   }
 
+  // A RPC substitui a base GLOBAL inteira: arquivo incompleto não pode
+  // entrar. Coluna obrigatória faltando (ex.: sem FOI_CANCELAMENTO todo
+  // cancelamento virava retenção) ou qualquer linha inválida recusa o
+  // arquivo todo — antes as linhas ruins eram descartadas em silêncio e o
+  // resto substituía a base.
+  if (parseResult.colunasFaltando.length > 0) {
+    return {
+      success: false,
+      error: `Coluna(s) obrigatória(s) ausente(s) no CSV: ${parseResult.colunasFaltando.join(", ")}.`,
+    };
+  }
+
+  if (parseResult.linhasInvalidas.length > 0) {
+    const exemplos = parseResult.linhasInvalidas
+      .slice(0, 5)
+      .map((l) => `linha ${l.linha}: ${l.motivo}`)
+      .join("; ");
+    const resto = parseResult.linhasInvalidas.length - 5;
+    return {
+      success: false,
+      error:
+        `${parseResult.linhasInvalidas.length.toLocaleString("pt-BR")} linha(s) inválida(s) — a base não foi alterada. ` +
+        `${exemplos}${resto > 0 ? ` (+${resto.toLocaleString("pt-BR")})` : ""}.`,
+    };
+  }
+
   if (parseResult.linhas.length === 0) {
     return { success: false, error: "Nenhuma linha válida encontrada no CSV." };
   }
@@ -232,6 +258,17 @@ export async function uploadConsolidadoAction(
       report_nome_supervisor: user.profile.fullName,
       report_datas_base: reportDatasBase,
     });
+  }
+
+  // Nenhum operador do CSV mapeado a gestor: gravar trocaria o Analítico
+  // (retencao_atendimentos) mas deixaria o d1_consolidado do lote anterior —
+  // as duas partes da tela mostrariam bases diferentes. Recusa sem gravar.
+  if (rows.length === 0) {
+    return {
+      success: false,
+      error:
+        "Nenhum operador do CSV está vinculado a um gestor — a base não foi alterada. Confira se o arquivo é a base certa.",
+    };
   }
 
   // 4. Grava tudo numa transação só (função substituir_base_consolidado,

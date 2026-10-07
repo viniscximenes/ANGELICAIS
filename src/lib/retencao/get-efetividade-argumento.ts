@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { lerLoteRetencao } from "./ler-lote";
 import { dedupePorContrato } from "./dedupe-por-contrato";
 import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
@@ -40,38 +40,16 @@ type LinhaCrua = {
  * técnica/origem entre as demais.
  */
 export async function getEfetividadeArgumento(emailsEquipe: string[]): Promise<ArgumentoItem[]> {
-  const supabase = createAdminClient();
-  let allData: LinhaCrua[] = [];
-  let page = 0;
-  const pageSize = 1000;
-  let hasMore = true;
-
-  while (hasMore) {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-
-    let query = supabase
-      .from("retencao_atendimentos")
-      .select("usuario_login, cod_air, status_hora, foi_cancelamento, status_retencao, primeiro_nivel")
-      .range(from, to);
-
-    query = aplicarFiltroEscopo(query, { emailsEquipe });
-
-    const { data, error } = await query;
-    if (error) {
-      console.error("[getEfetividadeArgumento] erro ao buscar dados:", error.message);
-      throw new Error(error.message);
-    }
-
-    const list = data || [];
-    allData = allData.concat(list);
-
-    if (list.length < pageSize) {
-      hasMore = false;
-    } else {
-      page++;
-    }
-  }
+  const allData = await lerLoteRetencao<LinhaCrua>(
+    (supabase) =>
+      aplicarFiltroEscopo(
+        supabase
+          .from("retencao_atendimentos")
+          .select("usuario_login, cod_air, status_hora, foi_cancelamento, status_retencao, primeiro_nivel"),
+        { emailsEquipe },
+      ),
+    "getEfetividadeArgumento",
+  );
 
   const linhasFinais = dedupePorContrato(allData);
 

@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { lerLoteRetencao } from "./ler-lote";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
 import { aplicarFiltroEscopo } from "./escopo";
 
@@ -40,38 +40,17 @@ const STATUS_REPROVADO = "Abortado - FaceID reprovado";
  * (usuario_login + status_retencao), não há cruzamento com outra equipe.
  */
 export async function getImpactoFaceId(emailsEquipe: string[]): Promise<ImpactoFaceIdData> {
-  const supabase = createAdminClient();
-  let allData: { usuario_login: string | null; status_retencao: string | null }[] = [];
-  let page = 0;
-  const pageSize = 1000;
-  let hasMore = true;
-
-  while (hasMore) {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-
-    let query = supabase
-      .from("retencao_atendimentos")
-      .select("usuario_login, status_retencao")
-      .range(from, to);
-
-    query = aplicarFiltroEscopo(query, { emailsEquipe });
-
-    const { data, error } = await query;
-    if (error) {
-      console.error("[getImpactoFaceId] erro ao buscar dados:", error.message);
-      throw new Error(error.message);
-    }
-
-    const list = data || [];
-    allData = allData.concat(list);
-
-    if (list.length < pageSize) {
-      hasMore = false;
-    } else {
-      page++;
-    }
-  }
+  const allData = await lerLoteRetencao<{
+    usuario_login: string | null;
+    status_retencao: string | null;
+  }>(
+    (supabase) =>
+      aplicarFiltroEscopo(
+        supabase.from("retencao_atendimentos").select("usuario_login, status_retencao"),
+        { emailsEquipe },
+      ),
+    "getImpactoFaceId",
+  );
 
   const porOperadorMap = new Map<string, { naoRealizado: number; reprovado: number }>();
   let naoRealizado = 0;

@@ -8,6 +8,7 @@ import { BUCKETS, bucketDe } from "@/lib/retencao/get-evolucao-hora";
 import { normalizarTema } from "@/lib/retencao/normalizar-tema";
 import { NOME_ESTADO, ufDaUnidade } from "@/lib/retencao/uf-por-unidade";
 import { getEmailPrefix } from "@/lib/utils/email-variants";
+import { lerLoteRetencao } from "@/lib/retencao/ler-lote";
 
 import {
   MIN_PEDIDOS_BAIXO_RENDIMENTO,
@@ -138,24 +139,23 @@ type AtendimentoRow = {
   unidade_nome: string | null;
 };
 
-async function buscarAtendimentos(admin: ReturnType<typeof createAdminClient>): Promise<AtendimentoRow[]> {
-  const pageSize = 1000;
-  let todas: AtendimentoRow[] = [];
-  for (let page = 0; ; page++) {
-    const { data, error } = await admin
-      .from("retencao_atendimentos")
-      .select(
-        "usuario_login, cod_air, status_hora, hora_bucket, foi_cancelamento, status_retencao, motivo, submotivo, comprador_nome, primeiro_nivel, marca, unidade_sigla, unidade_nome",
-      )
-      .range(page * pageSize, page * pageSize + pageSize - 1);
-    if (error) {
-      console.error("[get-coordenador-consolidado] retencao_atendimentos:", error.message);
-      break;
-    }
-    todas = todas.concat((data ?? []) as AtendimentoRow[]);
-    if (!data || data.length < pageSize) break;
+async function buscarAtendimentos(): Promise<AtendimentoRow[]> {
+  // Leitura por lote (ler-lote.ts): ordenada e sem misturar uploads. Erro
+  // continua sem derrubar a tela do coordenador — os blocos que dependem da
+  // base bruta ficam vazios, como antes.
+  try {
+    return await lerLoteRetencao<AtendimentoRow>(
+      (supabase) =>
+        supabase
+          .from("retencao_atendimentos")
+          .select(
+            "usuario_login, cod_air, status_hora, hora_bucket, foi_cancelamento, status_retencao, motivo, submotivo, comprador_nome, primeiro_nivel, marca, unidade_sigla, unidade_nome",
+          ),
+      "get-coordenador-consolidado",
+    );
+  } catch {
+    return [];
   }
-  return todas;
 }
 
 /**
@@ -194,7 +194,7 @@ export async function getCoordenadorConsolidado(metaTx: number): Promise<Coorden
       .select("id, full_name, email_corporativo, username")
       .eq("role", "GESTOR")
       .eq("is_active", true),
-    buscarAtendimentos(admin),
+    buscarAtendimentos(),
   ]);
 
   if (consolidadoRes.error) {
