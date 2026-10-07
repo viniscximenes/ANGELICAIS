@@ -4,6 +4,7 @@ import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
 import { dedupePorContrato } from "./dedupe-por-contrato";
 import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
+import { normalizarTema } from "./normalizar-tema";
 
 export type FiltroContratos = {
   emailsEquipe: string[];
@@ -36,41 +37,16 @@ type LinhaCrua = {
   hora_bucket: number | null;
 };
 
-/** Mesmos agrupamentos de motivo usados no filtro do popover "Copiar Contratos". */
+/**
+ * O filtro de motivo do "Copiar Contratos" usa os temas do bloco "Retenção
+ * por Tema". Agrupa pela MESMA regra (normalizarTema) em vez de manter uma
+ * lista própria — a cópia antiga estava desatualizada (sem "Cobranças e
+ * Taxas" em Mot. Financeiro nem "Ouvidoria" em Outros) e devolvia zero
+ * contratos para registros que apareciam no tema na tela. Motivo cru igual
+ * ao filtro continua valendo (motivo fora dos grupos vira tema próprio).
+ */
 function motivoCombina(motivo: string, filtro: string): boolean {
-  switch (filtro) {
-    case "Mud. Endereço":
-      return [
-        "Mud. Endereço Inviabilidade",
-        "Mud. Endereço Viabilidade / Parcial",
-        "Mudança de Endereço",
-      ].includes(motivo);
-    case "Mot. Financeiro":
-      return ["Problemas Financeiros", "Problemas Faturamento", "Reajuste de valor / NCC"].includes(
-        motivo,
-      );
-    case "Ins. Atendimento":
-      return motivo === "Insatisfação com o Atendimento";
-    case "Ins. Serviço":
-      return ["Insatisfação com o Serviço", "Insatisfação com o Produto"].includes(motivo);
-    case "Mud. Provedora":
-      return [
-        "Mudança de Provedor - Qualidade",
-        "Mudança de Provedor - Preço",
-        "Mudança de Provedor -Preço",
-      ].includes(motivo);
-    case "Outros":
-      return [
-        "Óbito do Titular",
-        "Cliente diz já ter cancelado",
-        "Fraude Contratual",
-        "Área de Risco",
-        "Cliente fez novo Plano com a Giga+",
-        "Cliente fez novo plano com a Giga+",
-      ].includes(motivo);
-    default:
-      return motivo === filtro;
-  }
+  return normalizarTema(motivo) === filtro || motivo === filtro;
 }
 
 export async function getContratosFiltrados(filtros: FiltroContratos): Promise<ContratoFiltradoItem[]> {

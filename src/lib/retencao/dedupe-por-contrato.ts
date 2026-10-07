@@ -1,3 +1,5 @@
+import { getEmailPrefix } from "@/lib/utils/email-variants";
+
 /**
  * Deduplica linhas de retencao_atendimentos por (operador, contrato) ANTES
  * de classificar/contar — causa raiz confirmada com dados reais (ver
@@ -35,7 +37,11 @@ export function dedupePorContrato<
       continue;
     }
 
-    const chave = `${(row.usuario_login ?? "").trim().toLowerCase()}::${codAir}`;
+    // Operador pelo PREFIXO do e-mail (sem domínio), a mesma chave da
+    // agregação (upload e indicadores): ana@alloha.com e ana@sumicity.net.br
+    // são a mesma pessoa — com o e-mail completo o mesmo contrato sobrevivia
+    // duas vezes e era somado em dobro pra ela.
+    const chave = `${getEmailPrefix(row.usuario_login ?? "")}::${codAir}`;
     const atual = porChave.get(chave);
     // Comparação lexicográfica de string: status_hora é ISO com offset fixo
     // (mesmo formato em toda a base), então ordena cronologicamente igual a

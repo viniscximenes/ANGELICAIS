@@ -259,6 +259,13 @@ export function parseBaseRetencao(csvText: string): ParseResult {
       }
     });
 
+    // Login em minúsculas já na gravação: as consultas do Analítico filtram
+    // com IN (variantes minúsculas, comparação exata). Login em caixa alta
+    // no CSV aparecia na tabela principal (que normaliza) e sumia do Analítico.
+    if (inputRow.usuario_login) {
+      inputRow.usuario_login = inputRow.usuario_login.toLowerCase();
+    }
+
     linhas.push(inputRow);
     validas++;
   }

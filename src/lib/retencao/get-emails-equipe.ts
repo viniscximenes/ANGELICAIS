@@ -7,25 +7,25 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * partir de `user.profile.id` (sessão já autenticada). Não re-resolve por
  * username/e-mail (ver `resolveGestorId`, deixado de ser usado aqui na fusão
  * de /s/reports/consolidado com /s/reports/consolidado/analitico).
+ *
+ * Erro de banco LANÇA (não devolve []): lista vazia é "equipe sem ninguém" e
+ * faria o Analítico responder sucesso com tudo zerado ("Aguardando dados")
+ * quando na verdade a consulta falhou. Os chamadores (actions.ts) já tratam
+ * a exceção como erro.
  */
 export async function getEmailsEquipe(gestorId: string): Promise<string[]> {
   if (!gestorId) return [];
 
-  try {
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("d1_operadores_gestor")
-      .select("operador_email")
-      .eq("gestor_id", gestorId);
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("d1_operadores_gestor")
+    .select("operador_email")
+    .eq("gestor_id", gestorId);
 
-    if (error) {
-      console.error("[getEmailsEquipe] erro ao buscar operadores do gestor:", error.message);
-      return [];
-    }
-
-    return (data ?? []).map((row) => row.operador_email.trim().toLowerCase());
-  } catch (err) {
-    console.error("[getEmailsEquipe] erro ao obter e-mails da equipe do gestor:", err);
-    return [];
+  if (error) {
+    console.error("[getEmailsEquipe] erro ao buscar operadores do gestor:", error.message);
+    throw new Error(error.message);
   }
+
+  return (data ?? []).map((row) => row.operador_email.trim().toLowerCase());
 }
