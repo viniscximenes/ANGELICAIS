@@ -1,6 +1,7 @@
 import { lerLoteOuFonte, type LinhaAtendimento } from "./ler-lote";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
 import { aplicarFiltroEscopo } from "./escopo";
+import { getEmailPrefix } from "@/lib/utils/email-variants";
 
 export type OperadorFaceIdItem = {
   /** SEMPRE "nome.sobrenome" real (nunca nome fantasia) — ver comentário na função. */
@@ -57,7 +58,10 @@ export async function getImpactoFaceId(
     "getImpactoFaceId",
   );
 
-  const porOperadorMap = new Map<string, { naoRealizado: number; reprovado: number }>();
+  // Chave = PREFIXO do e-mail (mesma identidade da dedupe/agregação):
+  // ana@alloha.com e ana@sumicity.net.br somam na mesma linha. `login` =
+  // primeira variante vista, só para o nome exibido.
+  const porOperadorMap = new Map<string, { login: string; naoRealizado: number; reprovado: number }>();
   let naoRealizado = 0;
   let reprovado = 0;
 
@@ -67,8 +71,9 @@ export async function getImpactoFaceId(
     const isReprovado = status === STATUS_REPROVADO;
     if (!isNaoRealizado && !isReprovado) continue;
 
-    const login = row.usuario_login ?? "";
-    const atual = porOperadorMap.get(login) ?? { naoRealizado: 0, reprovado: 0 };
+    const login = (row.usuario_login ?? "").trim().toLowerCase();
+    const chave = getEmailPrefix(login);
+    const atual = porOperadorMap.get(chave) ?? { login, naoRealizado: 0, reprovado: 0 };
     if (isNaoRealizado) {
       naoRealizado++;
       atual.naoRealizado++;
@@ -76,17 +81,14 @@ export async function getImpactoFaceId(
       reprovado++;
       atual.reprovado++;
     }
-    porOperadorMap.set(login, atual);
+    porOperadorMap.set(chave, atual);
   }
 
-  // nome.sobrenome real (NUNCA nome fantasia) — mesmo se duas variantes de
-  // domínio do mesmo operador aparecerem, formatNomeDotSobrenome normaliza
-  // pro mesmo texto, então agrupamentos por login "iguais na prática"
-  // acabam exibidos como linhas separadas só se o e-mail bruto for
-  // literalmente diferente (raro, mesmo padrão dos demais cards).
-  const porOperador: OperadorFaceIdItem[] = [...porOperadorMap.entries()]
-    .map(([login, v]) => ({
-      nomeSobrenome: formatNomeDotSobrenome(login),
+  // nome.sobrenome real (NUNCA nome fantasia). Variantes de domínio da mesma
+  // pessoa já foram somadas numa linha só (chave por prefixo, acima).
+  const porOperador: OperadorFaceIdItem[] = [...porOperadorMap.values()]
+    .map((v) => ({
+      nomeSobrenome: formatNomeDotSobrenome(v.login),
       naoRealizado: v.naoRealizado,
       reprovado: v.reprovado,
       total: v.naoRealizado + v.reprovado,

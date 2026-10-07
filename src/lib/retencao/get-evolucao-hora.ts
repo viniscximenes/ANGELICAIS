@@ -4,6 +4,7 @@ import { dedupePorContrato } from "./dedupe-por-contrato";
 import { classificarAtendimento } from "./classificar-atendimento";
 import { aplicarFiltroEscopo } from "./escopo";
 import { normalizarTema } from "./normalizar-tema";
+import { getEmailPrefix } from "@/lib/utils/email-variants";
 
 // Reexportados pra não mudar quem já importa daqui (código server).
 export { BUCKETS, bucketDe };
@@ -102,7 +103,7 @@ export async function getEvolucaoHora(
       retidos: number;
       cancelados: number;
       temas: Map<string, { total: number; retidos: number; cancelados: number }>;
-      operadores: Map<string, { retidos: number; cancelados: number }>;
+      operadores: Map<string, { login: string; retidos: number; cancelados: number }>;
     }
   >();
   for (const b of BUCKETS) {
@@ -145,11 +146,16 @@ export async function getEvolucaoHora(
     alvo.temas.set(tema, temaAgg);
 
     if (opcoes.porOperador && item.usuario_login) {
+      // Pessoa = PREFIXO do e-mail (mesma identidade da dedupe e do upload):
+      // ana@alloha.com e ana@sumicity.net.br são a mesma operadora. Por
+      // e-mail completo viravam duas entradas e o impacto dela saía
+      // dividido entre as duas (cada uma bem menor que o real).
       const login = item.usuario_login.trim().toLowerCase();
-      const opAgg = alvo.operadores.get(login) ?? { retidos: 0, cancelados: 0 };
+      const chave = getEmailPrefix(login);
+      const opAgg = alvo.operadores.get(chave) ?? { login, retidos: 0, cancelados: 0 };
       if (isCancelado) opAgg.cancelados++;
       else opAgg.retidos++;
-      alvo.operadores.set(login, opAgg);
+      alvo.operadores.set(chave, opAgg);
     }
   }
 
@@ -172,9 +178,9 @@ export async function getEvolucaoHora(
       tx: agg.total > 0 ? agg.retidos / agg.total : null,
       porTema,
       ...(opcoes.porOperador && {
-        operadores: [...agg.operadores.entries()]
-          .map(([login, o]) => ({
-            login,
+        operadores: [...agg.operadores.values()]
+          .map((o) => ({
+            login: o.login,
             retidos: o.retidos,
             cancelados: o.cancelados,
             impacto: impactoSemOperador(agg, o),
