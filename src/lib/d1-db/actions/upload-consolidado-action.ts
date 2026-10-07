@@ -64,6 +64,13 @@ export async function uploadConsolidadoAction(
     };
   }
 
+  if (parseResult.colunasDuplicadas.length > 0) {
+    return {
+      success: false,
+      error: `Coluna(s) repetida(s) no cabeçalho do CSV: ${parseResult.colunasDuplicadas.join(", ")}. A base não foi alterada.`,
+    };
+  }
+
   if (parseResult.linhasInvalidas.length > 0) {
     const exemplos = parseResult.linhasInvalidas
       .slice(0, 5)

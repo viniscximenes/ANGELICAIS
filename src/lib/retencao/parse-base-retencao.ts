@@ -37,6 +37,13 @@ type ParseResult = {
   /** Colunas obrigatórias (COLUNAS_OBRIGATORIAS) ausentes no cabeçalho. */
   colunasFaltando: string[];
   /**
+   * Colunas lidas pelo parser que aparecem mais de uma vez no cabeçalho.
+   * Recusa o arquivo: a validação olhava a 1ª ocorrência e o mapeamento
+   * gravava a última (auditoria 2026-10-07 — um "USUARIO > LOGIN" duplicado
+   * e vazio passava na validação e gravava login null).
+   */
+  colunasDuplicadas: string[];
+  /**
    * Linhas recusadas, com o número da linha no arquivo (cabeçalho = 1) e o
    * motivo. O upload só grava se esta lista vier vazia: a RPC substitui a
    * base global inteira, então descartar linhas em silêncio trocaria a base
@@ -128,6 +135,14 @@ const COLUMN_MAP: Record<string, keyof Omit<RetencaoAtendimentoInput, "foi_cance
   "CONTRATO > COMPRADOR > NOME": "comprador_nome",
 };
 
+/** Todas as colunas que o parser lê — nenhuma pode vir duplicada no cabeçalho. */
+const COLUNAS_LIDAS = new Set<string>([
+  ...COLUNAS_OBRIGATORIAS,
+  ...Object.keys(COLUMN_MAP),
+  "DATA",
+  "DATA DE CRIACAO (DIA)",
+]);
+
 export function parseBaseRetencao(csvText: string): ParseResult {
   const parsed = Papa.parse<string[]>(csvText, {
     skipEmptyLines: true,
@@ -140,6 +155,7 @@ export function parseBaseRetencao(csvText: string): ParseResult {
     puladas: 0,
     formatoInvalido: false,
     colunasFaltando: [],
+    colunasDuplicadas: [],
     linhasInvalidas: [],
   };
 
@@ -161,13 +177,18 @@ export function parseBaseRetencao(csvText: string): ParseResult {
     return { ...vazio, colunasFaltando };
   }
 
+  const colunasDuplicadas = [...COLUNAS_LIDAS].filter(
+    (c) => normalizedHeaders.filter((h) => h === c).length > 1,
+  );
+  if (colunasDuplicadas.length > 0) {
+    return { ...vazio, colunasDuplicadas };
+  }
+
   const colAirIndex = normalizedHeaders.indexOf("COD_AIR");
   const statusHoraIndex = normalizedHeaders.indexOf("STATUS_HORA");
   const dataCriacaoIndex = normalizedHeaders.indexOf("DATA DE CRIACAO (DIA)");
   const dataIndex = normalizedHeaders.indexOf("DATA");
   const foiCancelamentoIndex = normalizedHeaders.indexOf("FOI_CANCELAMENTO");
-  const statusRetencaoIndex = normalizedHeaders.indexOf("STATUS_RETENCAO");
-  const loginIndex = normalizedHeaders.indexOf("USUARIO > LOGIN");
 
   const mappedIndexes = normalizedHeaders.map((header) => {
     const key = COLUMN_MAP[header];
@@ -195,14 +216,6 @@ export function parseBaseRetencao(csvText: string): ParseResult {
 
     if (!codAir) {
       recusar("COD_AIR vazio");
-      continue;
-    }
-    if (!(row[loginIndex] || "").trim()) {
-      recusar("USUARIO > LOGIN vazio");
-      continue;
-    }
-    if (!(row[statusRetencaoIndex] || "").trim()) {
-      recusar("STATUS_RETENCAO vazio");
       continue;
     }
 
@@ -266,6 +279,22 @@ export function parseBaseRetencao(csvText: string): ParseResult {
       inputRow.usuario_login = inputRow.usuario_login.toLowerCase();
     }
 
+    // Obrigatórios conferidos no VALOR FINAL da linha (o que vai para o
+    // banco), não por um índice à parte — assim validação e gravação nunca
+    // olham colunas diferentes.
+    if (!inputRow.cod_air) {
+      recusar("COD_AIR vazio");
+      continue;
+    }
+    if (!inputRow.usuario_login) {
+      recusar("USUARIO > LOGIN vazio");
+      continue;
+    }
+    if (!inputRow.status_retencao) {
+      recusar("STATUS_RETENCAO vazio");
+      continue;
+    }
+
     linhas.push(inputRow);
     validas++;
   }
@@ -277,6 +306,7 @@ export function parseBaseRetencao(csvText: string): ParseResult {
     puladas,
     formatoInvalido: false,
     colunasFaltando: [],
+    colunasDuplicadas: [],
     linhasInvalidas,
   };
 }
