@@ -340,10 +340,14 @@ export function EquipeTable({
           — só a largura do track (--rv-col, acima) e a opacidade do
           conteúdo animam. overflow-hidden clipa o texto enquanto a
           coluna está estreita durante a transição.
+          aria-hidden com a coluna fechada: largura 0/opacidade não tiram o
+          conteúdo da árvore acessível — leitor de tela leria "RV Diário" e
+          os valores mesmo invisíveis (vale também para a célula e o total).
         */}
         <div
           className={cn(TABELA_HEADER_CELL_ULTIMA_CLASS, "overflow-hidden")}
           style={{ opacity: "var(--rv-op)" }}
+          aria-hidden={!showRvDiario || undefined}
         >
           RV Diário
         </div>
@@ -351,7 +355,6 @@ export function EquipeTable({
 
       {/* Linhas de Operadores */}
       {operadores.map((op, idx) => {
-        const isLast = idx === operadores.length - 1;
         const semAtendimentos = op.pedidos === 0 || op.txRetencao === null;
         const meetsM = op.txRetencao !== null && meetsMeta(op.txRetencao, metaTx);
         const belowMeta = !semAtendimentos && !meetsM;
@@ -410,8 +413,14 @@ export function EquipeTable({
             )}
             style={{
               background: fundoLinhaRuim(belowMeta),
-              borderBottom: isLast && hideTotais ? "none" : "1px solid var(--border)/40",
-              opacity: semAtendimentos ? 0.65 : 1,
+              // Sem borderBottom inline: o valor antigo ("1px solid
+              // var(--border)/40") era CSS inválido e o navegador o
+              // descartava — a tabela nunca teve essa linha entre operadores.
+              // Removido mantendo o visual (decisão do usuário, auditoria
+              // 2026-10-07); não é uma borda faltando.
+              // 0.85 (antes 0.65): a linha sem atendimento continua apagada,
+              // mas o texto muted não cai abaixo do contraste legível.
+              opacity: semAtendimentos ? 0.85 : 1,
               gridTemplateColumns,
             }}
           >
@@ -515,6 +524,7 @@ export function EquipeTable({
             <div
               className="ds-mono-sm min-w-0 overflow-hidden px-3 py-2 text-center"
               style={{ fontVariantNumeric: "tabular-nums", opacity: "var(--rv-op)" }}
+              aria-hidden={!showRvDiario || undefined}
             >
               {formatRv(op.rvDiario)}
             </div>
@@ -588,6 +598,7 @@ export function EquipeTable({
           <div
             className="min-w-0 overflow-hidden px-3 py-2.5 text-center"
             style={{ fontVariantNumeric: "tabular-nums", opacity: "var(--rv-op)" }}
+            aria-hidden={!showRvDiario || undefined}
           >
             {formatRv(equipe.rvDiario)}
           </div>

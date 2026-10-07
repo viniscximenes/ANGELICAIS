@@ -29,7 +29,7 @@
 
 import { cookies } from "next/headers";
 
-import { COOKIE_LINHAS, ConsolidadoSkeleton } from "./consolidado-skeleton";
+import { COOKIE_LINHAS, COOKIE_RV, ConsolidadoSkeleton } from "./consolidado-skeleton";
 
 // Script inline, síncrono — roda no PARSE do HTML deste fallback, antes de
 // qualquer hidratação React. A guarda em JS (useLayoutEffect, ver
@@ -51,13 +51,16 @@ try {
 export default async function LoadingReportsConsolidado() {
   // Nº de operadores da última tabela vista neste navegador (gravado por
   // GestorEquipeSection) — esqueleto com a mesma altura da tabela real.
-  const salvo = Number((await cookies()).get(COOKIE_LINHAS)?.value);
+  const jar = await cookies();
+  const salvo = Number(jar.get(COOKIE_LINHAS)?.value);
   const linhas = Number.isInteger(salvo) && salvo > 0 && salvo <= 200 ? salvo : undefined;
+  // Coluna RV aberta na última visita — esqueleto com a mesma largura.
+  const rvAberto = jar.get(COOKIE_RV)?.value === "1";
 
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: DESLIGAR_SCROLL_RESTORATION_SCRIPT }} />
-      <ConsolidadoSkeleton linhas={linhas} />
+      <ConsolidadoSkeleton linhas={linhas} rvAberto={rvAberto} />
     </>
   );
 }

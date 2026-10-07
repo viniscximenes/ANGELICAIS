@@ -34,6 +34,18 @@ const TABLE_ROWS_PADRAO = 20;
  */
 export const COOKIE_LINHAS = "consolidado_linhas";
 
+/**
+ * Cookie "1"/"0" com a coluna RV Diário aberta/fechada na última tabela vista
+ * (gravado por GestorEquipeSection). Sem ele o esqueleto assumia sempre RV
+ * fechado (784px) e, com RV salvo aberto, a página trocava para 944px ao
+ * carregar, deslocando o card de anexo.
+ */
+export const COOKIE_RV = "consolidado_rv";
+
+/** Card da tabela: 760px de colunas + 24px do KpiFrame; +160px com RV aberto (RV_COLUMN_PX). */
+const LARGURA_TABELA_PX = 784;
+const LARGURA_RV_PX = 160;
+
 function SkeletonBloco({ className }: { className: string }) {
   return <div className={`rounded-md bg-card ${className}`} aria-hidden="true" />;
 }
@@ -162,7 +174,13 @@ function SkeletonNavSidebar() {
  * carregamento ficam idênticas. Arquivo próprio (não dentro do loading.tsx)
  * porque o loading lê cookie no servidor e GestorEquipeSection é client.
  */
-export function ConsolidadoSkeleton({ linhas = TABLE_ROWS_PADRAO }: { linhas?: number }) {
+export function ConsolidadoSkeleton({
+  linhas = TABLE_ROWS_PADRAO,
+  rvAberto = false,
+}: {
+  linhas?: number;
+  rvAberto?: boolean;
+}) {
   return (
     <>
       <FonteInter dataPage="reports-consolidado" toastClass="reports-consolidado-toast" />
@@ -196,7 +214,7 @@ export function ConsolidadoSkeleton({ linhas = TABLE_ROWS_PADRAO }: { linhas?: n
                 <SkeletonBarraDeAcoes />
 
                 <div className="flex flex-col gap-4 pt-2 lg:flex-row lg:items-stretch">
-                  <div className="shrink-0" style={{ width: "784px", maxWidth: "100%" }}>
+                  <div className="shrink-0" style={{ width: `${LARGURA_TABELA_PX + (rvAberto ? LARGURA_RV_PX : 0)}px`, maxWidth: "100%" }}>
                     <SkeletonTabelaEquipe linhas={linhas} />
                   </div>
                   <SkeletonPainelAnexo />

@@ -43,6 +43,7 @@ import {
 } from "@/lib/retencao/metas-consolidado";
 import {
   COOKIE_LINHAS,
+  COOKIE_RV,
   ConsolidadoSkeleton,
 } from "@/app/(dashboard)/s/reports/consolidado/consolidado-skeleton";
 import { CursorCarregando } from "@/components/gestor/cursor-carregando";
@@ -519,11 +520,36 @@ export function GestorEquipeSection({
   const cardVisivelWrapperRef = useRef<HTMLDivElement>(null);
   const cardChromePx = useCardChromePx(cardVisivelWrapperRef);
 
+  // Rolagem horizontal da tabela também no desktop, mas SÓ quando ela não
+  // cabe (auditoria 2026-10-07: entre ~1024 e 1100px de janela, ou até
+  // ~1250px com RV aberto, o card era cortado sem rolagem). Mede a linha que
+  // contém o card; quando cabe, nada muda — inclusive a animação do toggle
+  // RV, que não pode ganhar barra de rolagem no meio. Abaixo de lg a rolagem
+  // continua sempre ligada, como antes.
+  const cardExternoRef = useRef<HTMLDivElement>(null);
+  const [tabelaNaoCabe, setTabelaNaoCabe] = useState(false);
+  const larguraTabelaPx = (showRvDiario ? 920 : 760) + cardChromePx;
+  useEffect(() => {
+    const linha = cardExternoRef.current?.parentElement;
+    if (!linha) return;
+    const medir = () => setTabelaNaoCabe(linha.clientWidth < larguraTabelaPx);
+    medir();
+    const observer = new ResizeObserver(medir);
+    observer.observe(linha);
+    return () => observer.disconnect();
+  }, [larguraTabelaPx]);
+
   // Guarda o nº de operadores pro esqueleto do próximo carregamento
   // (loading.tsx lê no servidor) ter a mesma altura da tabela real.
   useEffect(() => {
     document.cookie = `${COOKIE_LINHAS}=${operadores.length}; path=/; max-age=31536000; samesite=lax`;
   }, [operadores.length]);
+
+  // Idem para a coluna RV: o esqueleto do próximo carregamento sai com a
+  // mesma largura da tabela real (784px fechado / 944px aberto).
+  useEffect(() => {
+    document.cookie = `${COOKIE_RV}=${showRvDiario ? "1" : "0"}; path=/; max-age=31536000; samesite=lax`;
+  }, [showRvDiario]);
 
   const textoReport = formatCabecalhoReport(equipe.horaReport, nomeSupervisorReport, datasBaseReport);
 
@@ -549,7 +575,7 @@ export function GestorEquipeSection({
         // essa margem encurtava o overlay e os últimos 40px da tela mostravam
         // a tabela real por baixo do skeleton.
         <div className="fixed inset-x-0 top-[60px] bottom-0 z-[100] !mb-0 overflow-hidden lg:left-[240px]">
-          <ConsolidadoSkeleton linhas={operadores.length} />
+          <ConsolidadoSkeleton linhas={operadores.length} rvAberto={showRvDiario} />
         </div>
       )}
 
@@ -683,6 +709,7 @@ export function GestorEquipeSection({
         */}
         <div className="flex flex-col gap-4 pt-2 lg:flex-row lg:items-stretch">
           <div
+            ref={cardExternoRef}
             className={cn(
               "shrink-0 relative transition-[z-index] duration-0",
               // bg-background junto com o z-[45]: KpiFrame não tem fundo
@@ -718,12 +745,18 @@ export function GestorEquipeSection({
               Abaixo de lg (celular/tablet em pé) a tabela tem largura fixa
               de 760/920px e não cabe: antes as colunas da direita (Tx, RV)
               eram cortadas sem rolagem. Agora o card acompanha a largura
-              real da tabela (w-max) e esta caixa rola na horizontal. Só
-              abaixo de lg — no desktop nada muda (a animação de largura do
-              toggle RV não pode ganhar barra de rolagem no meio).
+              real da tabela (w-max) e esta caixa rola na horizontal. No
+              desktop, só quando a tabela não cabe (tabelaNaoCabe) — com
+              espaço sobrando nada muda (a animação de largura do toggle RV
+              não pode ganhar barra de rolagem no meio).
             */}
-            <div ref={cardVisivelWrapperRef} className="h-full max-lg:overflow-x-auto">
-              <KpiFrame className="h-full max-lg:w-max max-lg:min-w-full">
+            <div
+              ref={cardVisivelWrapperRef}
+              className={cn("h-full max-lg:overflow-x-auto", tabelaNaoCabe && "overflow-x-auto")}
+            >
+              <KpiFrame
+                className={cn("h-full max-lg:w-max max-lg:min-w-full", tabelaNaoCabe && "w-max min-w-full")}
+              >
                 <EquipeTable
                   key="gestor-equipe-visible"
                   operadores={operadoresOrdenados}
