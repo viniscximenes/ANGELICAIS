@@ -133,6 +133,36 @@ export async function getGestorConsolidado(
   // o dado sumir pro segundo gestor. Inclui as variantes de domínio do
   // roster (@alloha.com/@sumicity.net.br) pra não perder linhas do CSV.
   const emailsComVariantes = roster.flatMap(getEmailVariants);
+  const dataRef = dataRefHojeBR();
+
+  // Versão: muda com a equipe (roster), com linhas entrando/saindo (upload,
+  // Limpar Base) e com qualquer linha regravada (updated_at do upsert).
+  const calcularVersao = (linhas: { updated_at: string | null }[]) => {
+    const ultimoUpdate = linhas.reduce(
+      (max, row) => (row.updated_at && row.updated_at > max ? row.updated_at : max),
+      "",
+    );
+    return `${hashRoster(roster)}:${linhas.length}:${ultimoUpdate}`;
+  };
+
+  // Polling: confere a versão só com as colunas que a compõem. Antes a
+  // checagem já trazia todas as colunas (inclusive os JSON de motivos) de
+  // todas as linhas, mesmo quando a resposta era "sem mudança".
+  if (versaoConhecida) {
+    const { data: leve, error: leveErr } = await admin
+      .from("d1_consolidado")
+      .select("updated_at")
+      .in("operator_email", emailsComVariantes)
+      .eq("data_ref", dataRef);
+    if (leveErr) {
+      console.error("[get-gestor-consolidado] erro ao conferir a versão:", leveErr.message);
+      return { ...EMPTY_RESULT, erro: true };
+    }
+    const versaoLeve = calcularVersao((leve ?? []) as { updated_at: string | null }[]);
+    if (versaoLeve === versaoConhecida) {
+      return { ...EMPTY_RESULT, versao: versaoLeve, semMudanca: true };
+    }
+  }
 
   const { data, error } = await admin
     .from("d1_consolidado")
@@ -140,7 +170,7 @@ export async function getGestorConsolidado(
       "operator_email, gestor_id, supervisor, retidos, cancelados, pedidos, tx_retencao, motivos_retidos, motivos_cancelados, report_hora, report_nome_supervisor, report_datas_base, updated_at",
     )
     .in("operator_email", emailsComVariantes)
-    .eq("data_ref", dataRefHojeBR());
+    .eq("data_ref", dataRef);
 
   if (error) {
     // Sem a base do dia, a tabela sairia toda zerada como se ninguém tivesse
@@ -151,10 +181,9 @@ export async function getGestorConsolidado(
 
   const rows = (data ?? []) as Row[];
 
-  // Versão: muda com a equipe (roster), com linhas entrando/saindo (upload,
-  // Limpar Base) e com qualquer linha regravada (updated_at do upsert).
-  const ultimoUpdate = rows.reduce((max, row) => (row.updated_at && row.updated_at > max ? row.updated_at : max), "");
-  const versao = `${hashRoster(roster)}:${rows.length}:${ultimoUpdate}`;
+  const versao = calcularVersao(rows);
+  // Corrida rara: mudou entre a checagem leve e esta leitura e voltou a
+  // bater — mantém o atalho.
   if (versaoConhecida && versaoConhecida === versao) {
     return { ...EMPTY_RESULT, versao, semMudanca: true };
   }

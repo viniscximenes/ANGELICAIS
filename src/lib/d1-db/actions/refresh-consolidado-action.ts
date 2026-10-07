@@ -39,6 +39,14 @@ type RefreshConsolidadoResult =
  * pequenas, em paralelo com a base) — antes ficavam fora da versão e uma
  * mudança neles nunca chegava a uma aba aberta. Perfil e nome do supervisor
  * continuam só quando a base mudou.
+ *
+ * CUSTO POR CICLO É INTENCIONAL (auditoria 2026-10-07): sem mudança, um
+ * ciclo faz roster + checagem leve da versão (só updated_at) + nome fantasia
+ * + faixas de RV, em paralelo, mais as 2 chamadas ao Auth (middleware +
+ * getCurrentUser). As de Auth são da sessão do app inteiro, não desta tela.
+ * Nome fantasia/RV entram de propósito: sem eles a aba aberta mostrava
+ * nomes e valores de RV antigos. O polling já pausa com a aba oculta e não
+ * sobrepõe buscas (GestorEquipeSection).
  */
 export async function refreshConsolidadoAction(
   versaoConhecida?: string,

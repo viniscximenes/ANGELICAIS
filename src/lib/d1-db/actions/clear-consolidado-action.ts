@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -35,7 +33,10 @@ export async function clearConsolidadoAction(): Promise<ClearConsolidadoResult> 
     const { error } = await admin.rpc("limpar_base_consolidado", { p_data_ref: dataRef });
     if (error) throw new Error(error.message);
 
-    revalidatePath("/s/reports/consolidado");
+    // Sem revalidatePath: o gestor recarrega tabela e Analítico pelo próprio
+    // refetch (handleBaseCleared) e o coordenador chama router.refresh()
+    // (ClearBaseButton). Revalidar refazia a página do gestor inteira dentro
+    // da resposta, antes do refetch que já ia acontecer.
     return { success: true };
   } catch (err) {
     // Detalhe (mensagem do Postgres/PostgREST) só no log do servidor — o

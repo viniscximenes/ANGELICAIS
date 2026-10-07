@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -35,7 +33,9 @@ export async function toggleShowRvDiarioAction(
     return { success: false, error: "Erro ao salvar" };
   }
 
-  revalidatePath("/s/reports/consolidado");
+  // Sem revalidatePath: o switch já mudou na tela (estado local em
+  // GestorEquipeSection). Revalidar refazia a página inteira (~9 consultas)
+  // dentro da resposta da action só pra ser descartada.
 
   return { success: true };
 }

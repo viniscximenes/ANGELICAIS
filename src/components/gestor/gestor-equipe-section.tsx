@@ -65,6 +65,11 @@ const POLL_INTERVAL_MS = 30_000;
 // MIN_REFRESH_LOADING_MS, pra não "piscar". Só cobre o refetch DISPARADO
 // PELO USUÁRIO (handleBaseCleared) — o polling silencioso de 30s continua
 // sem overlay nenhum, não faria sentido cobrir a tabela a cada meio minuto.
+//
+// DECISÃO DE PRODUTO (não é falha de desempenho): piso pedido pelo usuário,
+// mantido nas auditorias de 2026-10-07. Só afeta o overlay do "Limpar Base"
+// — a limpeza no banco e o refetch não esperam por ele. Não remover sem
+// pedido explícito.
 const MIN_REFRESH_LOADING_MS = 1_000;
 
 /** Classe dos toasts desta rota (ver .reports-consolidado-toast no CSS). */
@@ -457,9 +462,48 @@ export function GestorEquipeSection({
     () => ordenarOperadores(operadoresParaTela, ordemTabela),
     [operadoresParaTela, ordemTabela],
   );
-  // Tabela oculta do "Copiar imagem" sob demanda (ver o wrapper no JSX).
+  // Tabela oculta do "Copiar imagem" sob demanda (ver o wrapper no JSX):
+  // monta com ponteiro em cima/foco no botão e desmonta quando os dois saem
+  // e não há captura em andamento — antes ficava montada até sair da página,
+  // recebendo toda atualização depois de um simples hover no botão.
   const [tabelaPngMontada, setTabelaPngMontada] = useState(false);
-  const montarTabelaPng = useCallback(() => setTabelaPngMontada(true), []);
+  const pngPonteiroRef = useRef(false);
+  const pngFocoRef = useRef(false);
+  const pngCapturandoRef = useRef(false);
+  const desmontarTabelaPngSePossivel = useCallback(() => {
+    if (!pngPonteiroRef.current && !pngFocoRef.current && !pngCapturandoRef.current) {
+      setTabelaPngMontada(false);
+    }
+  }, []);
+  const pngHandlers = useMemo(
+    () => ({
+      onPointerOver: () => {
+        pngPonteiroRef.current = true;
+        setTabelaPngMontada(true);
+      },
+      onPointerLeave: () => {
+        pngPonteiroRef.current = false;
+        desmontarTabelaPngSePossivel();
+      },
+      onFocus: () => {
+        pngFocoRef.current = true;
+        setTabelaPngMontada(true);
+      },
+      onBlur: () => {
+        pngFocoRef.current = false;
+        desmontarTabelaPngSePossivel();
+      },
+      // Captura: o clique sempre vem depois do hover/foco (tabela já montada).
+      onClickCapture: () => {
+        pngCapturandoRef.current = true;
+      },
+    }),
+    [desmontarTabelaPngSePossivel],
+  );
+  const handleCapturaPngFim = useCallback(() => {
+    pngCapturandoRef.current = false;
+    desmontarTabelaPngSePossivel();
+  }, [desmontarTabelaPngSePossivel]);
 
   const operadoresPngOrdenados = useMemo(
     () => ordenarOperadores(operadores, ordemTabela),
@@ -567,12 +611,13 @@ export function GestorEquipeSection({
           {/* display:contents — não muda o layout da linha de controles.
               Ponteiro em cima ou foco no botão monta a tabela oculta do PNG
               (ver tabelaPngMontada); o clique vem sempre depois disso. */}
-          <span className="contents" onPointerOver={montarTabelaPng} onFocus={montarTabelaPng}>
+          <span className="contents" {...pngHandlers}>
             <CopyTableButton
               operadores={operadores}
               equipe={equipe}
               supervisor={gestora}
               nomeSupervisorReport={nomeSupervisorReport}
+              onCapturaFim={handleCapturaPngFim}
             />
           </span>
 
@@ -590,9 +635,10 @@ export function GestorEquipeSection({
           porque o gestor tinha o nome fantasia temporariamente aberto na
           tela no momento do clique.
           O CopyTableButton procura por [data-tabela-png].
-          Só montado depois do primeiro hover/foco no "Copiar imagem" (e
-          fica montado dali em diante) — antes era uma 2ª tabela inteira no
-          DOM o tempo todo, re-renderizando a cada poll e animação.
+          Só montado enquanto o ponteiro/foco está no "Copiar imagem" ou uma
+          captura está em andamento (ver pngHandlers) — antes era uma 2ª
+          tabela inteira no DOM o tempo todo, re-renderizando a cada poll e
+          animação.
         */}
         {tabelaPngMontada && (
           <div

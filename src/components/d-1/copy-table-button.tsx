@@ -63,9 +63,14 @@ interface CopyTableButtonProps {
   supervisor?: string;
   /** Nome do supervisor que fez o último report (BASE - 1!S2, junto com a hora). */
   nomeSupervisorReport?: string | null;
+  /**
+   * Chamado quando a captura termina (sucesso ou erro). Opcional — usado por
+   * GestorEquipeSection pra desmontar a tabela oculta do PNG depois do uso.
+   */
+  onCapturaFim?: () => void;
 }
 
-export function CopyTableButton({ equipe }: CopyTableButtonProps) {
+export function CopyTableButton({ equipe, onCapturaFim }: CopyTableButtonProps) {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
 
   async function handleCopy() {
@@ -116,6 +121,8 @@ export function CopyTableButton({ equipe }: CopyTableButtonProps) {
         description: "Tente em outro navegador (Chrome/Edge)",
         className: "reports-consolidado-toast",
       });
+    } finally {
+      onCapturaFim?.();
     }
   }
 

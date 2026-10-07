@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -51,7 +49,9 @@ export async function saveConfigTabelaAction(
     return { success: false, error: "Erro ao salvar configuração." };
   }
 
-  revalidatePath("/s/reports/consolidado");
+  // Sem revalidatePath: o popover já aplica meta/ordem na tela (onSaved em
+  // GestorEquipeSection). Revalidar refazia a página inteira (~9 consultas)
+  // dentro da resposta da action só pra ser descartada.
 
   return { success: true };
 }

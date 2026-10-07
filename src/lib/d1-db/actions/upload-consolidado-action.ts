@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { dedupePorContrato } from "@/lib/retencao/dedupe-por-contrato";
@@ -298,8 +296,9 @@ export async function uploadConsolidadoAction(
     );
   }
 
-  revalidatePath("/s/reports/consolidado");
-  revalidatePath("/c/reports/consolidado");
+  // Sem revalidatePath: o UploadDropzone (único chamador, nas duas telas)
+  // faz window.location.reload() logo depois — revalidar só refazia a
+  // página dentro da resposta pra ela ser jogada fora pelo reload.
 
   return {
     success: true,
