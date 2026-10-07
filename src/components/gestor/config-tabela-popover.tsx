@@ -75,7 +75,9 @@ export function ConfigTabelaPopover({
   function handleSave() {
     const valor = Number(metaTx.replace(",", "."));
 
-    if (Number.isNaN(valor) || valor < 0 || valor > 100) {
+    // Vazio recusado como nos campos por tema: Number("") é 0 e salvaria
+    // meta 0% (equipe toda "dentro da meta") por uma edição incompleta.
+    if (metaTx.trim() === "" || Number.isNaN(valor) || valor < 0 || valor > 100) {
       toast.error("Meta inválida", {
         description: "Informe um valor entre 0 e 100.",
         className: "reports-consolidado-toast",

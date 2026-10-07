@@ -167,17 +167,30 @@ export const MobileSidebar = ({
 export const SidebarLink = ({
   link,
   className,
+  desabilitado = false,
   ...props
 }: {
   link: Links;
   className?: string;
+  /**
+   * Item sem ação: fora da ordem do Tab, anunciado como desabilitado
+   * (aria-disabled) e sem navegação — não basta pointer-events-none, que
+   * só bloqueia o mouse e deixa o link "funcionando" para o teclado.
+   */
+  desabilitado?: boolean;
   props?: LinkProps;
 }) => {
   const { open, animate } = useSidebar();
   return (
     <Link
       href={link.href}
+      aria-disabled={desabilitado || undefined}
+      tabIndex={desabilitado ? -1 : undefined}
       onClick={(e) => {
+        if (desabilitado) {
+          e.preventDefault();
+          return;
+        }
         if (link.onClick) {
           e.preventDefault();
           link.onClick();

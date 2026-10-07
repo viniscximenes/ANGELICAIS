@@ -71,10 +71,11 @@ export function FloatingNavSidebar({
           {links.map((link, i) => (
             <Fragment key={link.label}>
               <SidebarLink
-                // Desabilitado: onClick vazio (o SidebarLink só faz
-                // preventDefault quando há onClick — sem ele o href "#..."
-                // pularia a página) e sem ponteiro/realce.
-                link={link.desabilitado ? { ...link, onClick: () => {} } : link}
+                // Desabilitado: SidebarLink tira do Tab, marca aria-disabled
+                // e bloqueia a navegação; aqui só o visual (apagado, sem
+                // ponteiro/realce).
+                link={link}
+                desabilitado={link.desabilitado}
                 className={link.desabilitado ? "pointer-events-none opacity-40" : undefined}
               />
               {divisoriasApos.includes(i) && (
