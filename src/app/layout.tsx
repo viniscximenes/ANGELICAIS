@@ -5,6 +5,7 @@ import "./palettes/vercel.css";
 import "./palettes/claude-amber.css";
 import "./palettes/sage-garden.css";
 import { Geist, Geist_Mono, Instrument_Sans } from "next/font/google";
+import { headers } from "next/headers";
 import Script from "next/script";
 import { Toaster } from "sonner";
 
@@ -52,6 +53,10 @@ export default async function RootLayout({
 }>) {
   const user = await getCurrentUser();
   const theme = user?.profile.themePreference ?? "dark";
+  // Nonce da CSP, gerado por request no middleware (src/middleware.ts). Os
+  // scripts do próprio Next recebem o nonce sozinhos; os dois inline abaixo
+  // precisam dele explícito, senão o navegador os bloqueia.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
     <html
@@ -71,14 +76,14 @@ export default async function RootLayout({
       <head>
         {/* <script> cru (não next/script): precisa rodar no parse, antes do
             primeiro paint — ver PALETTE_EARLY_SCRIPT. */}
-        <script dangerouslySetInnerHTML={{ __html: PALETTE_EARLY_SCRIPT }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: PALETTE_EARLY_SCRIPT }} />
       </head>
       <body>
         {/* beforeInteractive: injetado no <head> e executado durante o parse
             do HTML, antes do bundle React carregar/hidratar — ver
             favicon-early-script.ts pro porquê. Next.js exige que scripts
             beforeInteractive fiquem no root layout. */}
-        <Script id="favicon-early" strategy="beforeInteractive">
+        <Script id="favicon-early" strategy="beforeInteractive" nonce={nonce}>
           {FAVICON_EARLY_SCRIPT}
         </Script>
         <FaviconNavigationBridge />

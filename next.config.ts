@@ -2,16 +2,10 @@ import type { NextConfig } from "next";
 
 // Headers de segurança aplicados a todas as rotas.
 //
-// A CSP aqui é propositalmente só "estrutural" (sem script-src/style-src):
-// o layout injeta scripts inline antes da hidratação (paleta e favicon) e o
-// Next também gera scripts inline — restringir script-src exigiria nonce por
-// request. O que entra já fecha clickjacking (frame-ancestors), injeção de
-// <base> e plugins (<object>/<embed>), e envio de formulários pra fora.
+// A Content-Security-Policy NÃO fica aqui: ela precisa de um nonce novo por
+// request (script-src), então é montada em src/middleware.ts. Repetir uma
+// CSP fixa aqui geraria dois headers com o mesmo nome na resposta.
 const securityHeaders = [
-  {
-    key: "Content-Security-Policy",
-    value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
-  },
   // Equivalente ao frame-ancestors pra navegadores antigos.
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
