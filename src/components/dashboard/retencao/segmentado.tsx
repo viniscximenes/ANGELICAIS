@@ -35,10 +35,26 @@ export function Segmentado<T extends string | number>({
   tamanho?: "padrao" | "grande";
 }) {
   const grande = tamanho === "grande";
+  // Padrão radiogroup (WAI-ARIA): só a opção marcada entra no Tab; setas
+  // escolhem e focam a vizinha (com volta circular). useSetasRolagem ignora
+  // setas dentro de [role="radiogroup"], então elas não rolam a página.
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const passo =
+      e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    if (passo === 0 || opcoes.length === 0) return;
+    e.preventDefault();
+    const atual = Math.max(0, opcoes.findIndex((op) => op.valor === valor));
+    const proximo = (atual + passo + opcoes.length) % opcoes.length;
+    onChange(opcoes[proximo].valor);
+    const botoes = e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+    botoes[proximo]?.focus();
+  }
+
   return (
     <div
       role="radiogroup"
       aria-label={ariaLabel}
+      onKeyDown={handleKeyDown}
       className={`inline-flex items-center gap-0.5 rounded-md border border-[var(--seg-track-border)] bg-[var(--seg-track)] ${grande ? "h-9 p-0.5" : "h-8 p-0.5"}`}
     >
       {opcoes.map((op) => {
@@ -49,6 +65,7 @@ export function Segmentado<T extends string | number>({
             type="button"
             role="radio"
             aria-checked={ativo}
+            tabIndex={ativo ? 0 : -1}
             onClick={() => onChange(op.valor)}
             className={`relative h-full cursor-pointer rounded-[var(--seg-thumb-radius,5px)] outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${
               grande ? "min-w-12 px-4 text-sm font-semibold" : "min-w-10 px-3 text-xs font-medium"

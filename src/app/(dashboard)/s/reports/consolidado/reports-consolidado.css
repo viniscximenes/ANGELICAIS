@@ -138,6 +138,15 @@
   box-shadow: none;
 }
 
+/* Foco por teclado (auditoria 2026-10-07): sem o contorno preto acima, mas
+ * com uma borda sutil na cor --ring — só em :focus-visible, então o clique
+ * com mouse continua com a borda neutra de sempre. Vence o
+ * focus-visible:border-input dos componentes (utilitário do Tailwind). */
+[data-page="reports-consolidado"] #config-meta-tx:focus-visible,
+[data-page="reports-consolidado"] input[id^="meta-"]:focus-visible {
+  border-color: var(--ring);
+}
+
 /* ───────── Barra lateral do card "Taxa de Retenção" (Analítico) ─────────
  * Antes sempre var(--primary) (preta no claro). Agora acompanha a meta, com
  * as mesmas cores do valor do card: verde dentro da meta, vermelho abaixo.

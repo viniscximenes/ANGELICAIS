@@ -168,12 +168,25 @@ export function TabelaTemas({
                           gira em vez de trocar de ícone, transição mais clara
                           entre aberto/fechado.
                         */}
-                        <div className="flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-colors">
+                        {/*
+                          button (não div): alcançável por Tab e anuncia
+                          aberto/fechado (aria-expanded). Sem onClick próprio —
+                          o clique (e o Enter/Espaço do teclado, que geram
+                          click) sobe para o onClick da <tr>, o mesmo caminho
+                          do mouse, sem alternar duas vezes.
+                        */}
+                        <button
+                          type="button"
+                          aria-expanded={isExpanded}
+                          aria-label={`${isExpanded ? "Recolher" : "Expandir"} submotivos de ${tema.motivo}`}
+                          className="flex w-full cursor-pointer items-center justify-center rounded text-muted-foreground outline-none transition-colors group-hover:text-foreground focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                        >
                           <IconChevronRight
                             size={16}
+                            aria-hidden="true"
                             className={`transition-transform duration-200 ${isExpanded ? "rotate-90" : "rotate-0"}`}
                           />
-                        </div>
+                        </button>
                       </td>
                       <td
                         className={`py-3 px-4 align-middle ds-body font-semibold text-foreground whitespace-nowrap ${refinado ? "text-sm" : "text-xs"}`}

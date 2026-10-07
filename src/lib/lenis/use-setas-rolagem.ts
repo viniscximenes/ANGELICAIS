@@ -6,7 +6,7 @@ import { getLenisInstance } from "./lenis-instance";
 
 // Camadas "donas" das setas do teclado (ver handleKeyDown).
 const SELETOR_CAMADA_ABERTA =
-  '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [role="combobox"], [data-radix-popper-content-wrapper]';
+  '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [role="combobox"], [role="radiogroup"], [data-radix-popper-content-wrapper]';
 const SELETOR_CAMADA_ABERTA_DOC =
   '[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"], [data-radix-popper-content-wrapper]';
 
@@ -20,6 +20,17 @@ const SELETOR_CAMADA_ABERTA_DOC =
  * página de volta. Passar pelo Lenis mantém os dois em sincronia (e evita
  * pular um trecho do trilho horizontal pinado pelo ScrollTrigger).
  */
+/** true se algum ancestral (até o body) rola na vertical e tem conteúdo para rolar. */
+function temAncestralComRolagem(el: HTMLElement): boolean {
+  for (let atual = el.parentElement; atual && atual !== document.body; atual = atual.parentElement) {
+    const { overflowY } = getComputedStyle(atual);
+    if ((overflowY === "auto" || overflowY === "scroll") && atual.scrollHeight > atual.clientHeight) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function useSetasRolagem() {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -42,6 +53,10 @@ export function useSetasRolagem() {
       if (active?.closest(SELETOR_CAMADA_ABERTA) || document.querySelector(SELETOR_CAMADA_ABERTA_DOC)) {
         return;
       }
+
+      // Foco dentro de uma caixa com rolagem vertical própria (lista longa,
+      // painel com overflow): as setas rolam ela, não a página.
+      if (active && temAncestralComRolagem(active)) return;
 
       e.preventDefault();
       const delta = e.key === "ArrowDown" ? 120 : -120;

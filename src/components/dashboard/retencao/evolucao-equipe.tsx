@@ -403,6 +403,46 @@ export function EvolucaoEquipe({
             />
           </ComposedChart>
         </ResponsiveContainer>
+        {/*
+          Alternativa ao gráfico para leitor de tela/teclado (auditoria
+          2026-10-07): o detalhe por hora e "quem derrubou" só existia no
+          tooltip do ponteiro. accessibilityLayer continua desligado de
+          propósito (evita o gráfico virar alvo de foco/contorno ao clicar);
+          esta tabela é sr-only — não muda nada no visual. Fica DENTRO do
+          contêiner do gráfico: como irmã no space-y-3, o gráfico deixaria de
+          ser o último filho e ganharia margem embaixo.
+        */}
+        <table className="sr-only">
+          <caption>{titulo ?? "Evolução por hora"}: taxa de retenção, pedidos e quem derrubou a taxa em cada faixa</caption>
+          <thead>
+            <tr>
+              <th scope="col">Faixa</th>
+              <th scope="col">Taxa de retenção</th>
+              <th scope="col">Pedidos</th>
+              <th scope="col">Retidos</th>
+              <th scope="col">Cancelados</th>
+              <th scope="col">Quem derrubou nesta hora</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((d) => (
+              <tr key={d.label}>
+                <th scope="row">{d.total ? "Total geral do dia" : formatFaixa(d.label)}</th>
+                <td>{formatTx(d.txRetencao)}</td>
+                <td>{d.pedidos}</td>
+                <td>{d.retidos}</td>
+                <td>{d.cancelados}</td>
+                <td>
+                  {d.operadores
+                    .filter((o) => (o.impacto ?? 0) > 0.0005)
+                    .slice(0, 3)
+                    .map((o) => `${deriveNomeOperador(o.login)} (${formatImpacto(o.impacto)})`)
+                    .join(", ") || "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

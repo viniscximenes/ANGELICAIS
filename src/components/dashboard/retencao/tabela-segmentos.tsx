@@ -147,12 +147,21 @@ export function TabelaSegmentos({ segmentos, meta }: TabelaSegmentosProps) {
                         onClick={() => setAbertos((prev) => ({ ...prev, [estado.uf]: !prev[estado.uf] }))}
                       >
                         <td className="py-3 px-4 text-center align-middle">
-                          <div className="text-muted-foreground group-hover:text-foreground flex items-center justify-center transition-colors">
+                          {/* button (não div): Tab + aria-expanded. Clique e
+                              Enter/Espaço sobem para o onClick da <tr> —
+                              mesmo caminho do mouse (ver tabela-temas.tsx). */}
+                          <button
+                            type="button"
+                            aria-expanded={aberto}
+                            aria-label={`${aberto ? "Recolher" : "Expandir"} unidades de ${estado.nome}`}
+                            className="text-muted-foreground group-hover:text-foreground flex w-full cursor-pointer items-center justify-center rounded outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                          >
                             <IconChevronRight
                               size={16}
+                              aria-hidden="true"
                               className={`transition-transform duration-200 ${aberto ? "rotate-90" : "rotate-0"}`}
                             />
-                          </div>
+                          </button>
                         </td>
                         <td className="text-foreground py-3 px-4 text-sm font-semibold whitespace-nowrap">
                           {estado.nome}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { IconCheck, IconChevronDown, IconLoader2, IconSettings } from "@tabler/icons-react";
 import { toast } from "sonner";
@@ -122,6 +122,37 @@ export function ConfigTabelaPopover({
 
   const selectedOption = ORDEM_TABELA_OPTIONS.find((opt) => opt.value === ordem);
 
+  // Seletor de ordenação (listbox): foco vai para a opção marcada ao abrir e
+  // volta para o botão ao escolher/Esc.
+  const ordemBotaoRef = useRef<HTMLButtonElement>(null);
+  const ordemOpcoesRef = useRef<(HTMLButtonElement | null)[]>([]);
+
+  function abrirOrdem() {
+    setDropdownOpen(true);
+    const i = Math.max(0, ORDEM_TABELA_OPTIONS.findIndex((opt) => opt.value === ordem));
+    requestAnimationFrame(() => ordemOpcoesRef.current[i]?.focus());
+  }
+
+  function fecharOrdem(devolverFoco: boolean) {
+    setDropdownOpen(false);
+    if (devolverFoco) ordemBotaoRef.current?.focus();
+  }
+
+  function handleOrdemListaKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const opcoes = ordemOpcoesRef.current.filter((el): el is HTMLButtonElement => el !== null);
+    const atual = opcoes.indexOf(document.activeElement as HTMLButtonElement);
+    let proximo: number | null = null;
+    if (e.key === "ArrowDown") proximo = Math.min(opcoes.length - 1, atual + 1);
+    else if (e.key === "ArrowUp") proximo = Math.max(0, atual - 1);
+    else if (e.key === "Home") proximo = 0;
+    else if (e.key === "End") proximo = opcoes.length - 1;
+    else if (e.key === "Tab") setDropdownOpen(false);
+    if (proximo !== null) {
+      e.preventDefault();
+      opcoes[proximo]?.focus();
+    }
+  }
+
   return (
     <>
       {mounted &&
@@ -156,6 +187,14 @@ export function ConfigTabelaPopover({
           // Sem auto-foco ao abrir: o Radix foca (e seleciona) o primeiro
           // campo — o valor da meta aparecia já selecionado.
           onOpenAutoFocus={(e) => e.preventDefault()}
+          // Esc com o seletor de ordenação aberto fecha só o seletor (o Radix
+          // escuta o Esc no documento, antes do onKeyDown da lista).
+          onEscapeKeyDown={(e) => {
+            if (dropdownOpen) {
+              e.preventDefault();
+              fecharOrdem(true);
+            }
+          }}
           // gap-0 + pt-3: remove o gap-2.5 padrão do PopoverContent (somado
           // ao pt do bloco de campos) e o respiro extra acima do título.
           className="bg-popover text-popover-foreground border-border w-80 gap-0 rounded-2xl border p-4 pt-3 shadow-2xl"
@@ -202,37 +241,64 @@ export function ConfigTabelaPopover({
 
             <div className="space-y-1.5">
               <Label
+                id="config-ordem-label"
                 htmlFor="config-ordem"
                 className="text-foreground text-xs font-medium"
               >
                 Ordenação Dos Operadores
               </Label>
+              {/* Seletor no padrão listbox (WAI-ARIA): botão anuncia
+                  aberto/fechado e a lista; ↑/↓/Home/End movem entre as
+                  opções, Enter/Espaço escolhem, Esc fecha só o seletor (ver
+                  onEscapeKeyDown no PopoverContent) e Tab sai fechando. */}
               <div className="relative">
                 <button
+                  ref={ordemBotaoRef}
                   type="button"
                   id="config-ordem"
                   disabled={isPending}
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  aria-haspopup="listbox"
+                  aria-expanded={dropdownOpen}
+                  aria-controls={dropdownOpen ? "config-ordem-lista" : undefined}
+                  onClick={() => (dropdownOpen ? fecharOrdem(false) : abrirOrdem())}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                      e.preventDefault();
+                      abrirOrdem();
+                    }
+                  }}
                   className="border-border bg-transparent text-foreground w-full flex items-center justify-between rounded-lg border px-3.5 py-2.5 text-xs font-medium transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus:outline-none cursor-pointer"
                 >
                   <span>{selectedOption?.label ?? "Selecione..."}</span>
-                  <IconChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", dropdownOpen && "rotate-180")} />
+                  <IconChevronDown size={14} aria-hidden="true" className={cn("text-muted-foreground transition-transform duration-200", dropdownOpen && "rotate-180")} />
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute left-0 right-0 z-50 mt-1.5 rounded-lg border border-border bg-popover text-popover-foreground p-1 shadow-2xl">
-                    {ORDEM_TABELA_OPTIONS.map((opt) => {
+                  <div
+                    id="config-ordem-lista"
+                    role="listbox"
+                    aria-labelledby="config-ordem-label"
+                    onKeyDown={handleOrdemListaKeyDown}
+                    className="absolute left-0 right-0 z-50 mt-1.5 rounded-lg border border-border bg-popover text-popover-foreground p-1 shadow-2xl"
+                  >
+                    {ORDEM_TABELA_OPTIONS.map((opt, i) => {
                       const isSelected = opt.value === ordem;
                       return (
                         <button
                           key={opt.value}
+                          ref={(el) => {
+                            ordemOpcoesRef.current[i] = el;
+                          }}
                           type="button"
+                          role="option"
+                          aria-selected={isSelected}
+                          tabIndex={-1}
                           onClick={() => {
                             setOrdem(opt.value);
-                            setDropdownOpen(false);
+                            fecharOrdem(true);
                           }}
                           className={cn(
-                            "w-full flex items-center justify-between rounded-md px-3 py-2 text-xs font-medium transition-colors text-left cursor-pointer",
+                            "w-full flex items-center justify-between rounded-md px-3 py-2 text-xs font-medium transition-colors text-left cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                             isSelected
                               ? "bg-primary text-primary-foreground font-semibold shadow-sm"
                               : "text-foreground hover:bg-accent"
@@ -256,7 +322,7 @@ export function ConfigTabelaPopover({
                 {TEMAS_META.map((tema) => (
                   <div key={tema} className="grid grid-cols-[1fr_84px] items-center gap-2 px-1 py-0.5">
                     <Label
-                      htmlFor={`meta-${tema}`}
+                      htmlFor={idMetaTema(tema)}
                       className="text-muted-foreground truncate text-xs font-normal"
                       title={tema}
                     >
@@ -264,7 +330,7 @@ export function ConfigTabelaPopover({
                     </Label>
                     <div className="relative flex items-center">
                       <Input
-                        id={`meta-${tema}`}
+                        id={idMetaTema(tema)}
                         type="number"
                         inputMode="decimal"
                         min={0}
@@ -311,4 +377,19 @@ export function ConfigTabelaPopover({
 
 function metasParaTexto(metas: Record<string, number>): Record<string, string> {
   return Object.fromEntries(TEMAS_META.map((tema) => [tema, String(metas[tema] ?? 60)]));
+}
+
+/**
+ * id válido em HTML para o campo de meta de um tema ("Mot. Financeiro" →
+ * "meta-mot-financeiro"): antes era `meta-${tema}`, com espaço (id inválido).
+ * Mantém o prefixo "meta-" — o CSS da rota seleciona por input[id^="meta-"].
+ */
+function idMetaTema(tema: string): string {
+  const slug = tema
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `meta-${slug}`;
 }

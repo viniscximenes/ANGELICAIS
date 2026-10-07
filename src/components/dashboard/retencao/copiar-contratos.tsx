@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useId } from "react";
 import { createPortal } from "react-dom";
 import { IconCopy, IconCheck, IconFilter, IconChevronDown, IconTrash, IconLoader2, IconSearch } from "@tabler/icons-react";
 import { fetchContratosFiltradosAction } from "@/lib/retencao/actions";
@@ -42,6 +42,16 @@ function CustomSelect({
   );
   const triggerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const botaoRef = useRef<HTMLButtonElement>(null);
+  const opcoesRef = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Ids para o padrão listbox (WAI-ARIA): rótulo associado ao botão, botão
+  // apontando para a lista. Auditoria 2026-10-07: antes o rótulo era solto,
+  // o botão não anunciava aberto/fechado e a lista não tinha teclado.
+  const idBase = useId();
+  const idRotulo = `${idBase}-rotulo`;
+  const idBotao = `${idBase}-botao`;
+  const idLista = `${idBase}-lista`;
 
   // Menu renderizado via portal em document.body (ver comentário acima do
   // return) — precisa recalcular a posição toda vez que abre, e reagir a
@@ -91,20 +101,80 @@ function CustomSelect({
     return options.filter((opt) => opt.label.toLowerCase().includes(query));
   }, [options, searchable, searchQuery]);
 
+  // O menu vive num portal (fora da ordem do formulário): o foco entra nele
+  // ao abrir — busca (autoFocus) ou a opção marcada — e volta ao botão ao
+  // escolher, no Esc e no Tab, para a sequência do formulário continuar.
+  function abrir() {
+    setIsOpen(true);
+    if (!searchable) {
+      requestAnimationFrame(() => {
+        const i = Math.max(0, filteredOptions.findIndex((opt) => opt.value === value));
+        opcoesRef.current[i]?.focus();
+      });
+    }
+  }
+
+  function fechar() {
+    setIsOpen(false);
+    botaoRef.current?.focus();
+  }
+
+  function handleMenuKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const opcoes = opcoesRef.current.filter((el): el is HTMLButtonElement => el !== null);
+    const atual = opcoes.indexOf(document.activeElement as HTMLButtonElement);
+    let proximo: number | null = null;
+    if (e.key === "ArrowDown") proximo = atual < 0 ? 0 : Math.min(opcoes.length - 1, atual + 1);
+    else if (e.key === "ArrowUp") proximo = atual <= 0 ? 0 : atual - 1;
+    else if ((e.key === "Home" || e.key === "End") && (e.target as HTMLElement).tagName === "INPUT") return;
+    else if (e.key === "Home") proximo = 0;
+    else if (e.key === "End") proximo = opcoes.length - 1;
+    else if (e.key === "Escape" || e.key === "Tab") {
+      e.preventDefault();
+      fechar();
+      return;
+    }
+    if (proximo !== null && opcoes.length > 0) {
+      e.preventDefault();
+      opcoes[proximo]?.focus();
+    }
+  }
+
+  opcoesRef.current = [];
+
   return (
     <div className={`relative space-y-1.5 ${className ?? "w-full"}`} ref={triggerRef}>
       {/* Rótulo e campo no padrão do seletor "Ordenação Dos Operadores"
           (config-tabela-popover.tsx): rótulo text-xs medium sem caixa alta,
           campo com borda fina, sem hover e 32px de altura. */}
-      <label className="text-foreground block text-sm font-medium">{label}</label>
+      <label id={idRotulo} htmlFor={idBotao} className="text-foreground block text-sm font-medium">
+        {label}
+      </label>
       <button
+        ref={botaoRef}
+        id={idBotao}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="border-border text-foreground flex h-9 w-full cursor-pointer items-center justify-between rounded-lg border bg-transparent px-3 text-left text-sm font-medium outline-none select-none"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? idLista : undefined}
+        aria-labelledby={`${idRotulo} ${idBotao}`}
+        onClick={() => (isOpen ? setIsOpen(false) : abrir())}
+        onKeyDown={(e) => {
+          if (!isOpen && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+            e.preventDefault();
+            abrir();
+          } else if (isOpen && e.key === "Escape") {
+            e.preventDefault();
+            fechar();
+          }
+        }}
+        // Sem o contorno global de foco (outline/box-shadow inline), mas com
+        // borda sutil --ring no foco por teclado — mesmo tratamento dos
+        // campos de meta (reports-consolidado.css).
+        className="border-border text-foreground flex h-9 w-full cursor-pointer items-center justify-between rounded-lg border bg-transparent px-3 text-left text-sm font-medium outline-none select-none focus-visible:border-[var(--ring)]"
         style={{ outline: "none", boxShadow: "none" }}
       >
         <span className="truncate">{selectedOption ? selectedOption.label : placeholder || "Selecione..."}</span>
-        <IconChevronDown size={14} className={`text-muted-foreground transition-transform shrink-0 ml-1 ${isOpen ? "rotate-180" : ""}`} />
+        <IconChevronDown size={14} aria-hidden="true" className={`text-muted-foreground transition-transform shrink-0 ml-1 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
       {/*
@@ -124,6 +194,7 @@ function CustomSelect({
           // fica fixa no topo; só a lista de opções rola.
           <div
             ref={menuRef}
+            onKeyDown={handleMenuKeyDown}
             data-page="reports-consolidado"
             className="bg-popover text-popover-foreground border-border fixed z-[100] flex max-h-64 flex-col overflow-hidden rounded-lg border shadow-2xl"
             style={{ top: menuRect.top, left: menuRect.left, width: menuRect.width }}
@@ -136,6 +207,8 @@ function CustomSelect({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Buscar operador..."
+                  aria-label={`Buscar em ${label}`}
+                  aria-controls={idLista}
                   className="copiar-contratos-busca text-foreground placeholder:text-muted-foreground h-9 w-full bg-transparent text-xs outline-none"
                   style={{ outline: "none", boxShadow: "none" }}
                   autoFocus
@@ -143,23 +216,39 @@ function CustomSelect({
               </div>
             )}
 
-            <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain p-1 scrollbar-tema">
+            <div
+              id={idLista}
+              role="listbox"
+              aria-labelledby={idRotulo}
+              className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain p-1 scrollbar-tema"
+            >
               {filteredOptions.length === 0 ? (
-                <div className="text-muted-foreground px-3 py-2 text-center text-xs italic">
+                <div
+                  role="option"
+                  aria-disabled="true"
+                  aria-selected="false"
+                  className="text-muted-foreground px-3 py-2 text-center text-xs italic"
+                >
                   Nenhum operador encontrado
                 </div>
               ) : (
-                filteredOptions.map((opt) => {
+                filteredOptions.map((opt, i) => {
                   const selecionado = opt.value === value;
                   return (
                     <button
                       key={opt.value}
+                      ref={(el) => {
+                        opcoesRef.current[i] = el;
+                      }}
                       type="button"
+                      role="option"
+                      aria-selected={selecionado}
+                      tabIndex={-1}
                       onClick={() => {
                         onChange(opt.value);
-                        setIsOpen(false);
+                        fechar();
                       }}
-                      className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-xs font-medium transition-colors ${
+                      className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${
                         selecionado
                           ? "bg-primary text-primary-foreground font-semibold shadow-sm"
                           : "text-foreground hover:bg-accent"
