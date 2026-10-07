@@ -29,11 +29,21 @@ function calcularRvDiario(
  * cima da tx média do time — soma os valores individuais, já que as faixas
  * são por pessoa). Usado tanto na carga inicial da página quanto no polling
  * (refreshConsolidadoAction), pra não duplicar o cálculo nos dois lugares.
+ *
+ * `faixas === null` = falha ao ler as regras de RV: todo mundo fica com
+ * rvDiario null ("—"), nunca R$ 0,00 como se fosse um valor calculado.
  */
 export function aplicarRvDiarioNaEquipe(
   operadores: OperadorConsolidado[],
-  faixas: PerUnitFaixa[],
+  faixas: PerUnitFaixa[] | null,
 ): { operadores: OperadorConsolidado[]; rvDiarioEquipe: number | null } {
+  if (faixas === null) {
+    return {
+      operadores: operadores.map((op) => ({ ...op, rvDiario: null })),
+      rvDiarioEquipe: null,
+    };
+  }
+
   let soma = 0;
   let temAlgum = false;
 

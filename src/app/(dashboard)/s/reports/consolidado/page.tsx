@@ -21,6 +21,7 @@ import { getNomeFantasiaConfig } from "@/lib/gestor/nome-fantasia/get-config";
 import { resolverNomeExibicao } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { aplicarRvDiarioNaEquipe } from "@/lib/rv/calculate-rv-diario";
 import { getCurrentPerUnitFaixas } from "@/lib/rv/get-current-per-unit-faixas";
+import { montarVersaoConsolidado, versaoExtrasConsolidado } from "@/lib/d1-db/versao-consolidado";
 
 export const metadata: Metadata = {
   title: "Reports - Consolidado",
@@ -244,7 +245,7 @@ export default async function ReportsConsolidadoPage() {
               olhoInicial={nomeFantasiaConfig.olhoConsolidado}
               nomeSupervisorReport={reportNomeSupervisor}
               datasBaseReport={reportDatasBase}
-              versaoInicial={versao}
+              versaoInicial={montarVersaoConsolidado(versao, versaoExtrasConsolidado(nomeFantasiaConfig, rvFaixas))}
               metaTxInicial={configTabela.metaTxRetencao}
               ordemTabelaInicial={configTabela.ordemTabela}
               showRvDiarioInicial={configTabela.showRvDiario}

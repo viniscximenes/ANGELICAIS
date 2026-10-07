@@ -13,6 +13,7 @@ import { ConfigTabelaPopover } from "@/components/gestor/config-tabela-popover";
 import { LabeledSwitch } from "@/components/gestor/labeled-switch";
 import { clearConsolidadoAction } from "@/lib/d1-db/actions/clear-consolidado-action";
 import { refreshConsolidadoAction } from "@/lib/d1-db/actions/refresh-consolidado-action";
+import { separarVersaoConsolidado } from "@/lib/d1-db/versao-consolidado";
 import type { OperadorConsolidado, ResumoEquipe } from "@/lib/d1-db/types";
 import { deriveNomeOperador } from "@/lib/gestor/derive-nome-operador";
 import {
@@ -284,15 +285,13 @@ export function GestorEquipeSection({
   // nem quando a aba volta a ficar visível.
   const pararPollingRef = useRef(false);
 
-  // Carimbo do último report conhecido (hora + nome do supervisor), pra
-  // detectar barato — sem query pesada nenhuma — quando outro gestor subiu
-  // uma base nova. O polling de 30s já busca esses dois campos de qualquer
-  // forma pra EquipeTable; só reaproveitamos o resultado e comparamos.
-  // Inicializado com os valores vindos do servidor pra não disparar um
+  // Versão da BASE (roster + linhas + último updated_at de d1_consolidado)
+  // do último dado conhecido, pra detectar quando outro gestor subiu uma
+  // base nova. Antes comparava "hora|autor" do report — hora em HH:MM, então
+  // dois uploads do mesmo autor no mesmo minuto não avisavam o Analítico.
+  // Inicializada com a versão vinda do servidor pra não disparar um
   // notifyBaseAtualizada falso no primeiro poll após o mount.
-  const lastReportSignatureRef = useRef(
-    `${equipeInicial.horaReport}|${nomeSupervisorReportInicial ?? ""}`,
-  );
+  const lastVersaoBaseRef = useRef(separarVersaoConsolidado(versaoInicial).base ?? "");
 
   // Evita duas buscas sobrepostas (polling + volta da aba + "Limpar base").
   const refetchEmVooRef = useRef<Promise<boolean> | null>(null);
@@ -313,14 +312,14 @@ export function GestorEquipeSection({
         setNomeSupervisorReport(result.nomeSupervisorReport);
         setDatasBaseReport(result.datasBaseReport);
 
-        // Base nova detectada (report mudou) — avisa a árvore irmã
+        // Base nova detectada (versão da base mudou) — avisa a árvore irmã
         // (RetencaoDetalheSection, bloco Analítico) pra refazer sua busca
         // pesada. Sem isso, qualquer gestor que NÃO fez o upload continua
         // vendo o Analítico desatualizado até dar F5, mesmo com a
         // EquipeTable já refletindo a base nova — ver base-cleared-event.ts.
-        const signature = `${result.equipe.horaReport}|${result.nomeSupervisorReport ?? ""}`;
-        if (signature !== lastReportSignatureRef.current) {
-          lastReportSignatureRef.current = signature;
+        // Mudança só de nome fantasia/RV não muda a base: não recarrega.
+        if (result.versaoBase !== lastVersaoBaseRef.current) {
+          lastVersaoBaseRef.current = result.versaoBase;
           notifyBaseAtualizada();
           return true;
         }

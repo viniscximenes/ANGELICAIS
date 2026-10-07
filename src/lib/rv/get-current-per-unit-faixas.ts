@@ -12,8 +12,13 @@ import type { PerUnitFaixa } from "./types";
  * Hoje só existe uma mecânica per-unit configurada (ver comentário em
  * PerUnitIndicatorCard); se um dia houver mais de uma, pega a de menor
  * display_order.
+ *
+ * Retorna `null` em ERRO de banco (≠ `[]`, que é "sem regra cadastrada"):
+ * aplicarRvDiarioNaEquipe mostra "—" nesse caso, em vez de R$ 0,00 como se
+ * fosse resultado válido. O polling refaz a consulta enquanto vier null (ver
+ * versaoExtrasConsolidado).
  */
-export async function getCurrentPerUnitFaixas(): Promise<PerUnitFaixa[]> {
+export async function getCurrentPerUnitFaixas(): Promise<PerUnitFaixa[] | null> {
   const supabase = createAdminClient();
 
   const { data: ruleSet, error: ruleSetError } = await supabase
@@ -22,12 +27,11 @@ export async function getCurrentPerUnitFaixas(): Promise<PerUnitFaixa[]> {
     .eq("scope", "current")
     .maybeSingle();
 
-  if (ruleSetError || !ruleSet) {
-    if (ruleSetError) {
-      console.error("[getCurrentPerUnitFaixas] erro ao buscar rule_set:", ruleSetError.message);
-    }
-    return [];
+  if (ruleSetError) {
+    console.error("[getCurrentPerUnitFaixas] erro ao buscar rule_set:", ruleSetError.message);
+    return null;
   }
+  if (!ruleSet) return [];
 
   const { data: indicator, error: indicatorError } = await supabase
     .from("rv_per_unit_indicators")
@@ -39,7 +43,7 @@ export async function getCurrentPerUnitFaixas(): Promise<PerUnitFaixa[]> {
 
   if (indicatorError) {
     console.error("[getCurrentPerUnitFaixas] erro ao buscar per_unit_indicators:", indicatorError.message);
-    return [];
+    return null;
   }
 
   return (indicator?.faixas as PerUnitFaixa[]) ?? [];
