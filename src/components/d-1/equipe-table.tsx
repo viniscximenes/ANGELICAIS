@@ -423,9 +423,11 @@ export function EquipeTable({
               // descartava — a tabela nunca teve essa linha entre operadores.
               // Removido mantendo o visual (decisão do usuário, auditoria
               // 2026-10-07); não é uma borda faltando.
-              // 0.85 (antes 0.65): a linha sem atendimento continua apagada,
-              // mas o texto muted não cai abaixo do contraste legível.
-              opacity: semAtendimentos ? 0.85 : 1,
+              // Sem opacidade na linha sem atendimento (antes 0.65, depois
+              // 0.85): sobre o texto muted, qualquer opacidade derrubava o
+              // contraste abaixo de 4,5:1 no tema claro (decisão do usuário,
+              // auditoria 2026-10-07). A linha continua "apagada" pelo texto
+              // muted do tema e pelos números zerados/—.
               gridTemplateColumns,
             }}
           >

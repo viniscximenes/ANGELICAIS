@@ -706,7 +706,11 @@ export function GestorEquipeSection({
           igual ao respiro entre cabeçalho e controles (mb-4 = 16px logo
           acima), em vez do bloco antigo de 32px + linha tracejada.
         */}
-        <div className="flex flex-col gap-4 pt-2 lg:flex-row lg:items-stretch">
+        {/* lg:flex-wrap + anexo com mínimo de 260px: em desktop estreito
+            (ou com RV aberto), quando não sobra espaço ao lado da tabela o
+            anexo desce para a linha de baixo em largura cheia (empilhado) —
+            antes ficava com largura zero ao lado. Com espaço, nada muda. */}
+        <div className="flex flex-col gap-4 pt-2 lg:flex-row lg:flex-wrap lg:items-stretch">
           <div
             ref={cardExternoRef}
             className={cn(
@@ -789,7 +793,7 @@ export function GestorEquipeSection({
           </div>
 
           {showUpload && (
-            <div className="min-h-[180px] min-w-0 flex-1 self-stretch">
+            <div className="min-h-[180px] min-w-0 flex-1 self-stretch lg:min-w-[260px]">
               <UploadDropzone abrirEmDownloads recarregarComModalAberto />
             </div>
           )}

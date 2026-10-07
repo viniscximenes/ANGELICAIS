@@ -131,7 +131,7 @@ function SkeletonTabelaEquipe({ linhas }: { linhas: number }) {
  * (min-h-[180px], flex-1, borda tracejada). */
 function SkeletonPainelAnexo() {
   return (
-    <div className="min-h-[180px] min-w-0 flex-1 self-stretch">
+    <div className="min-h-[180px] min-w-0 flex-1 self-stretch lg:min-w-[260px]">
       <div className="flex h-full min-h-[180px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card/40 p-6">
         {/* Pasta central do UploadDropzone (≈68×60px), sem texto embaixo. */}
         <SkeletonBloco className="h-[60px] w-[68px] rounded-lg bg-muted-foreground/15" />
@@ -213,7 +213,9 @@ export function ConsolidadoSkeleton({
 
                 <SkeletonBarraDeAcoes />
 
-                <div className="flex flex-col gap-4 pt-2 lg:flex-row lg:items-stretch">
+                {/* Mesma quebra do real (GestorEquipeSection): sem espaço
+                    ao lado da tabela, o anexo desce. */}
+                <div className="flex flex-col gap-4 pt-2 lg:flex-row lg:flex-wrap lg:items-stretch">
                   <div className="shrink-0" style={{ width: `${LARGURA_TABELA_PX + (rvAberto ? LARGURA_RV_PX : 0)}px`, maxWidth: "100%" }}>
                     <SkeletonTabelaEquipe linhas={linhas} />
                   </div>
