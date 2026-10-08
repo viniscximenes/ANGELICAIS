@@ -47,13 +47,12 @@ interface RetencaoDetalheSectionProps {
  * via `fetchDashboardRetencaoAction`, sem bloquear o SSR/paint da tabela
  * principal (d1_consolidado) que já veio pronta do Server Component pai.
  *
- * Metas: a geral vem do servidor (mesma da EquipeTable) e as por tema do
- * localStorage; as duas são editadas no "Configurações da Tabela" do topo da
- * página e chegam aqui pelo evento de metas-consolidado.ts.
- *
- * TODO: metas por tema ainda em localStorage — migrar pra
- * `gestor_config_fantasia` (precisa de coluna nova) pra valerem em qualquer
- * navegador.
+ * Metas: a geral e as por tema vêm do servidor (gestor_config_fantasia:
+ * meta_tx_retencao e meta_temas), as mesmas da EquipeTable. São editadas no
+ * "Configurações da Tabela" do topo da página (saveConfigTabelaAction grava
+ * no banco) e chegam aqui pelo evento de metas-consolidado.ts. Enquanto
+ * meta_temas for null (gestor nunca salvou no banco), vale a leitura de
+ * transição do localStorage (lerThemeMetasLegado).
  */
 export function RetencaoDetalheSection({
   gestorId,

@@ -28,7 +28,12 @@ import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 interface ConfigTabelaPopoverProps {
   metaTxInicial: number;
   ordemInicial: OrdemTabela;
-  /** Metas por tema do Analítico (localStorage — o pai persiste no onSaved). */
+  /**
+   * Metas por tema do Analítico. Este popover grava no banco
+   * (saveConfigTabelaAction → meta_temas) junto com a meta geral; o onSaved
+   * do pai só atualiza o estado, avisa o Analítico e apaga a cópia legada do
+   * localStorage.
+   */
   themeMetasInicial: Record<string, number>;
   /** Atualiza o estado do pai (GestorEquipeSection) após salvar com sucesso. */
   onSaved: (metaTx: number, ordem: OrdemTabela, themeMetas: Record<string, number>) => void;
