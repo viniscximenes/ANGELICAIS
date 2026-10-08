@@ -201,7 +201,10 @@ export function GraficoEvolucao({
       {/* Container do gráfico removido a pedido (sem StyledCard/borda) —
           só o wrapper com a altura fixa que o ResponsiveContainer precisa. */}
       <div className={visualDetalhado ? "grafico-evolucao-chart w-full h-[320px]" : "w-full h-[280px]"}>
-        <ResponsiveContainer width="100%" height="100%">
+        {/* initialDimension: o Recharts mede o contêiner depois de montar; com o
+            padrão (-1) avisava "width(-1) and height(-1)" no console quando o
+            gráfico nasce num slide/diálogo ainda sem tamanho. */}
+        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }}>
           <ComposedChart
             data={chartData}
             margin={{ top: 10, right: 10, left: -20, bottom: 0 }}

@@ -16,6 +16,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -264,6 +265,13 @@ export function OperadorDetalheDialog({
           showSuccessToast={false}
         />
 
+        {/* Descrição para leitor de tela (o Radix avisa "Missing Description"
+            sem ela). sr-only e FORA do pngRef — não aparece na tela nem no
+            PNG exportado. */}
+        <DialogDescription className="sr-only">
+          Detalhe do operador: taxa de retenção, pedidos, evolução por hora e retenção por tema.
+        </DialogDescription>
+
         {/*
           Sem template separado pra exportação: o PNG captura este mesmo
           wrapper (via pngRef + ExportPopupPngButton), com background
@@ -344,7 +352,10 @@ export function OperadorDetalheDialog({
               <EvolucaoEquipe evolucao={operador.porHora} meta={meta} altura={300} />
             ) : (
             <div className="grafico-evolucao-chart w-full h-[220px]">
-                <ResponsiveContainer width="100%" height="100%">
+                {/* initialDimension: o Recharts mede o contêiner depois de montar; com o
+            padrão (-1) avisava "width(-1) and height(-1)" no console quando o
+            gráfico nasce num slide/diálogo ainda sem tamanho. */}
+        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }}>
                   <ComposedChart
                     data={chartData}
                     margin={{ top: 10, right: 10, left: -20, bottom: 0 }}

@@ -241,6 +241,19 @@ export function EvolucaoEquipe({
   const corSucesso = resolverTokenCss("--success", "#16a34a", escopo);
   const corPerigo = resolverTokenCss("--danger", "#dc2626", escopo);
 
+  // Linha da taxa RETA (todas as horas com o mesmo valor — ex.: operador com
+  // 100% ou 0% o dia todo): a caixa do path tem altura zero e o SVG não
+  // desenha um gradiente em objectBoundingBox nela — a linha entre as horas
+  // sumia. Nesse caso usa a cor sólida que o gradiente daria (verde na meta
+  // ou acima, vermelho abaixo); com variação, segue o gradiente.
+  const txHoras = chartData.map((d) => d.txHora).filter((v): v is number => v !== null);
+  const linhaReta = txHoras.length > 0 && txHoras.every((v) => v === txHoras[0]);
+  const strokeTaxa = linhaReta
+    ? txHoras[0] < meta
+      ? corPerigo
+      : corSucesso
+    : `url(#${gradId})`;
+
   // Duas faixas sem sobreposição: a linha da taxa ocupa a metade de cima e as
   // barras a metade de baixo. Eixos Y ocultos — todo valor já vem escrito.
   const minTx = Math.min(meta, ...valores);
@@ -290,7 +303,10 @@ export function EvolucaoEquipe({
         className="grafico-evolucao-chart w-full [&_*:focus:not(:focus-visible)]:outline-none"
         style={{ height: altura }}
       >
-        <ResponsiveContainer width="100%" height="100%">
+        {/* initialDimension: o Recharts mede o contêiner depois de montar; com o
+            padrão (-1) avisava "width(-1) and height(-1)" no console quando o
+            gráfico nasce num slide/diálogo ainda sem tamanho. */}
+        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }}>
           <ComposedChart
             // Teclado: Tab foca o gráfico e ←/→ percorrem as horas mostrando
             // o mesmo tooltip do ponteiro (antes desligado — só o mouse via
@@ -345,7 +361,7 @@ export function EvolucaoEquipe({
               type="linear"
               dataKey="txHora"
               name="% Retenção"
-              stroke={`url(#${gradId})`}
+              stroke={strokeTaxa}
               strokeWidth={2.5}
               connectNulls={false}
               isAnimationActive={false}
