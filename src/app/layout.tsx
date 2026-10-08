@@ -76,13 +76,24 @@ export default async function RootLayout({
       <head>
         {/* <script> cru (não next/script): precisa rodar no parse, antes do
             primeiro paint — ver PALETTE_EARLY_SCRIPT. */}
-        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: PALETTE_EARLY_SCRIPT }} />
+        {/* suppressHydrationWarning: o navegador esconde o valor do nonce do
+            DOM após o parse (proteção da CSP), e o React em dev acusava
+            "nonce" diferente entre servidor e cliente. A CSP não muda — é só
+            o aviso de hidratação. */}
+        <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: PALETTE_EARLY_SCRIPT }} />
       </head>
       <body>
         {/* beforeInteractive: injetado no <head> e executado durante o parse
             do HTML, antes do bundle React carregar/hidratar — ver
             favicon-early-script.ts pro porquê. Next.js exige que scripts
             beforeInteractive fiquem no root layout. */}
+        {/* O mesmo aviso de "nonce" (só em dev) ainda aparece para ESTE
+            script e é esperado: o <script> é gerado pelo next/script, que com
+            beforeInteractive não repassa suppressHydrationWarning ao elemento
+            (as props extras vão para o JSON do self.__next_s). Trocar por um
+            <script> cru o faria rodar antes de o <link rel="icon"> existir,
+            quebrando o favicon de carregamento no F5. Decisão mantida na
+            auditoria de 2026-10-07 — não é falha. */}
         <Script id="favicon-early" strategy="beforeInteractive" nonce={nonce}>
           {FAVICON_EARLY_SCRIPT}
         </Script>
