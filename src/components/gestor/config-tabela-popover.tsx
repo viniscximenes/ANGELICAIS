@@ -190,9 +190,14 @@ export function ConfigTabelaPopover({
         <PopoverContent
           data-page="reports-consolidado"
           align="end"
-          // Sem auto-foco ao abrir: o Radix foca (e seleciona) o primeiro
-          // campo — o valor da meta aparecia já selecionado.
-          onOpenAutoFocus={(e) => e.preventDefault()}
+          // O Radix focaria (e selecionaria) o primeiro campo — o valor da
+          // meta aparecia já selecionado. Em vez disso o foco vai para o
+          // próprio conteúdo (tabIndex -1 do FocusScope, sem anel): o próximo
+          // Tab entra nos campos em vez de sair do popover e fechá-lo.
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement | null)?.focus({ preventScroll: true });
+          }}
           // Esc com o seletor de ordenação aberto fecha só o seletor (o Radix
           // escuta o Esc no documento, antes do onKeyDown da lista).
           onEscapeKeyDown={(e) => {

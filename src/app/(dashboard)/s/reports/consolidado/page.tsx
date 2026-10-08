@@ -42,10 +42,12 @@ export const metadata: Metadata = {
 const MIN_LOADING_MS = 1_000;
 
 async function aguardarPisoMinimo(desde: number) {
-  // Re-render disparado por Server Action (revalidatePath no toggle RV,
-  // salvar configuração, Limpar Base): a página é refeita DENTRO da resposta
-  // da action, sem loading.tsx na tela — o piso aqui só atrasava a action em
-  // 1s. O Next marca essas requisições com o header `next-action`.
+  // Re-render disparado por Server Action: a página é refeita DENTRO da
+  // resposta da action, sem loading.tsx na tela — o piso aqui só atrasaria a
+  // action em 1s. Hoje nenhuma action desta rota chama revalidatePath (toggle
+  // RV, configuração, Limpar Base e upload atualizam a tela por conta
+  // própria); a guarda fica para o caso de alguma voltar a revalidar. O Next
+  // marca essas requisições com o header `next-action`.
   if ((await headers()).has("next-action")) return;
   const faltam = MIN_LOADING_MS - (Date.now() - desde);
   if (faltam > 0) {

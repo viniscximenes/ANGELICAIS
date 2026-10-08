@@ -1,18 +1,19 @@
 /**
  * Sinal cross-tree pra avisar o bloco Analítico (RetencaoDetalheSection) que
- * `retencao_atendimentos` mudou — hoje disparado em dois pontos: "Limpar
- * Base" (ClearBaseButton, dentro de GestorEquipeSection) e upload de uma
- * base nova (UploadDropzone), já que uploadConsolidadoAction grava tanto
- * `retencao_atendimentos` quanto `d1_consolidado` na mesma chamada.
+ * `retencao_atendimentos` mudou. Hoje é disparado só por GestorEquipeSection,
+ * em dois pontos: no polling, quando a versão da base muda (outro gestor
+ * subiu ou limpou a base), e ao concluir o "Limpar Base" (handleBaseCleared),
+ * se o refetch ainda não tiver avisado. O upload feito nesta aba não dispara o
+ * evento: o UploadDropzone recarrega a página inteira e o Analítico busca a
+ * base nova no mount.
  *
  * As duas árvores são decoupled de propósito (d1_consolidado é a fonte
  * principal/viva, carregada de cara; retencao_atendimentos é detalhe sob
  * demanda, buscado uma vez após o mount) — não há estado React compartilhado
- * entre elas. `revalidatePath` (chamado nas Server Actions de upload/clear)
- * só invalida o cache de Server Components — não afeta um fetch client-side
- * feito manualmente via Server Action dentro de um useEffect, que só roda de
- * novo se alguém disparar isso explicitamente. Um evento simples de `window`
- * evita ter que introduzir Context/lift de estado só pra essa sincronização.
+ * entre elas, e as actions de upload/limpeza não chamam revalidatePath (que
+ * de qualquer forma não refaria um fetch client-side feito via Server Action
+ * dentro de um useEffect). Um evento simples de `window` evita ter que
+ * introduzir Context/lift de estado só pra essa sincronização.
  */
 const BASE_ATUALIZADA_EVENT = "retencao-base-atualizada";
 

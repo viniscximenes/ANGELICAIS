@@ -147,6 +147,19 @@
   border-color: var(--ring);
 }
 
+/* ───────── Popover "Configurações da Tabela" ─────────
+ * Ao abrir, o foco vai para o próprio conteúdo (onOpenAutoFocus em
+ * config-tabela-popover.tsx). Aberto pelo teclado, esse foco casa com
+ * :focus-visible e a regra global unlayered (globals.css) aplicava contorno
+ * primário e border-radius 4px ao popover inteiro. revert-layer devolve o
+ * outline-hidden/rounded-2xl dos utilitários do componente. O conteúdo com
+ * tabIndex -1 não é parada de Tab: o foco visível fica nos campos.
+ */
+[data-page="reports-consolidado"][data-slot="popover-content"]:focus-visible {
+  outline: revert-layer;
+  border-radius: revert-layer;
+}
+
 /* ───────── Barra lateral do card "Taxa de Retenção" (Analítico) ─────────
  * Antes sempre var(--primary) (preta no claro). Agora acompanha a meta, com
  * as mesmas cores do valor do card: verde dentro da meta, vermelho abaixo.

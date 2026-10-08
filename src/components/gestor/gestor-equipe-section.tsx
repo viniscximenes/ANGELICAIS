@@ -252,7 +252,8 @@ export function GestorEquipeSection({
     const novoValor = !olhoAberto;
     setOlhoAberto(novoValor);
     // A action devolve { success: false } em vez de lançar — sem checar isso a
-    // tela ficava com o valor novo e o banco com o antigo (volta no F5).
+    // tela ficava com o valor novo e o banco com o antigo (volta no F5). Falha
+    // de rede (promise rejeitada) também desfaz: a preferência não foi salva.
     toggleOlhoAction("consolidado", novoValor)
       .then((r) => {
         if (!r.success) {
@@ -261,8 +262,10 @@ export function GestorEquipeSection({
         }
       })
       .catch((err) => {
+        setOlhoAberto(!novoValor);
         if (!handleStaleActionError(err)) {
           console.error("[GestorEquipeSection] erro ao salvar preferência de olho:", err);
+          toast.error("Não foi possível salvar a preferência", { className: TOAST_CLASS });
         }
       });
   }
@@ -273,7 +276,8 @@ export function GestorEquipeSection({
   // switch, ver LabeledSwitch), pra bater com "Exibir RV" de /kpi/operadores.
   function handleToggleRvDiario(novoValor: boolean) {
     setShowRvDiario(novoValor);
-    // Mesmo cuidado do handleToggleOlho: { success: false } desfaz o toggle.
+    // Mesmo cuidado do handleToggleOlho: { success: false } ou rejeição
+    // desfazem o toggle.
     toggleShowRvDiarioAction(novoValor)
       .then((r) => {
         if (!r.success) {
@@ -282,8 +286,10 @@ export function GestorEquipeSection({
         }
       })
       .catch((err) => {
+        setShowRvDiario(!novoValor);
         if (!handleStaleActionError(err)) {
           console.error("[GestorEquipeSection] erro ao salvar preferência de RV Diário:", err);
+          toast.error("Não foi possível salvar a preferência", { className: TOAST_CLASS });
         }
       });
   }

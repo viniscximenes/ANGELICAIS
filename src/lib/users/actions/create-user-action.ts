@@ -57,6 +57,10 @@ export async function createUserAction(
         "Email corporativo inválido (use apenas letras, números, ponto e hífen)",
     };
   }
+  // RISCO-ACEITO: senhas já expostas em vazamentos (HaveIBeenPwned) não são barradas ao criar/trocar senha.
+  // Motivo: a proteção "Leaked password protection" do Supabase Auth exige plano Pro; o projeto está no Free.
+  // Mitigação: mínimo de 8 caracteres aqui e em set-user-password-action.ts; senhas definidas só por ADM/admin skill; rate limit de login (login-rate-limit.ts).
+  // Revisar quando: o projeto migrar para o plano Pro (ativar em Supabase > Authentication > Password Security).
   if (!input.password || input.password.length < 8) {
     return { success: false, error: "Senha deve ter pelo menos 8 caracteres" };
   }

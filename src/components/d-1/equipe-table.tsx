@@ -274,9 +274,16 @@ export function EquipeTable({
     // TABELA_CONTAINER_CLASS aqui recriaria esse container. `data-equipe-table`
     // preservado (gancho do seletor global em globals.css pro fundo/borda
     // do cabeçalho no tema claro — não depende da borda externa removida).
+    // Semântica de tabela via ARIA (role=table/row/columnheader/rowheader/
+    // cell) nos mesmos <div> do grid: leitor de tela navega por colunas e
+    // associa cada número ao cabeçalho e ao operador. Mantém a estrutura de
+    // divs porque o grid com a 6ª coluna animada e os seletores CSS das rotas
+    // (`[data-equipe-table] > div...`) dependem dela.
     <div
       ref={tabelaRef}
       data-equipe-table
+      role="table"
+      aria-label="Retenção por operador"
       className="overflow-hidden"
       // Valores iniciais das variáveis da coluna RV; dali em diante quem as
       // atualiza é o spring (useEffect acima). Como estes valores não mudam
@@ -305,6 +312,7 @@ export function EquipeTable({
         precisar repetir a classe em cada uma — igual à linha EQUIPE.
       */}
       <div
+        role="row"
         className="ds-body grid gap-0 bg-muted/40 font-bold text-foreground tracking-wide uppercase"
         style={{
           ...TABELA_HEADER_BORDA,
@@ -325,19 +333,19 @@ export function EquipeTable({
           linha, text-align:center centraliza o PAR inteiro como uma
           unidade só, igual fazia com o texto sozinho antes.
         */}
-        <div className={TABELA_HEADER_CELL_CLASS}>
+        <div role="columnheader" className={TABELA_HEADER_CELL_CLASS}>
           Operador
           {headerButton}
         </div>
-        <div className={TABELA_HEADER_CELL_CLASS}>Retidos</div>
-        <div className={TABELA_HEADER_CELL_CLASS}>Cancelados</div>
-        <div className={TABELA_HEADER_CELL_CLASS}>Pedidos</div>
+        <div role="columnheader" className={TABELA_HEADER_CELL_CLASS}>Retidos</div>
+        <div role="columnheader" className={TABELA_HEADER_CELL_CLASS}>Cancelados</div>
+        <div role="columnheader" className={TABELA_HEADER_CELL_CLASS}>Pedidos</div>
         {/*
           border-r some quando a coluna RV está fechada (rvVisivel false) —
           Tx Retenção volta a ser a última coluna visualmente nesse caso,
           igual antes de existir a coluna RV.
         */}
-        <div className={cn(TABELA_HEADER_CELL_CLASS, !rvVisivel && "border-r-0")}>
+        <div role="columnheader" className={cn(TABELA_HEADER_CELL_CLASS, !rvVisivel && "border-r-0")}>
           Tx Retenção
         </div>
         {/*
@@ -350,6 +358,7 @@ export function EquipeTable({
           os valores mesmo invisíveis (vale também para a célula e o total).
         */}
         <div
+          role="columnheader"
           className={cn(TABELA_HEADER_CELL_ULTIMA_CLASS, "overflow-hidden")}
           style={{ opacity: "var(--rv-op)" }}
           aria-hidden={!showRvDiario || undefined}
@@ -393,19 +402,12 @@ export function EquipeTable({
             // media todas as linhas a cada render (poll, flash de valor).
             layoutDependency={idx}
             transition={{ layout: { duration: 0.3, ease: "easeInOut" } }}
+            // Clique do mouse em qualquer parte da linha. O teclado usa o
+            // <button> do nome (abaixo): Enter/Espaço nele geram um click
+            // que sobe até aqui — a linha não pode ser role=button e row ao
+            // mesmo tempo.
             onClick={clicavel ? () => onOperadorClick!(emailOriginal) : undefined}
-            onKeyDown={
-              clicavel
-                ? (e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      onOperadorClick!(emailOriginal);
-                    }
-                  }
-                : undefined
-            }
-            role={clicavel ? "button" : undefined}
-            tabIndex={clicavel ? 0 : undefined}
+            role="row"
             data-sem-dados={semAtendimentos ? "true" : undefined}
             // Gancho do hover verde/vermelho pela meta (globals.css,
             // .pagina-padrao [data-meta-linha]) — sem estilo próprio aqui.
@@ -433,23 +435,35 @@ export function EquipeTable({
           >
             {/*
               Clique abre o dialog em QUALQUER parte da linha (handler no
-              motion.div acima) — o nome não tem mais onClick próprio.
+              motion.div acima). O <button> do nome não tem onClick próprio:
+              existe só pro foco/teclado, e o click dele sobe até a linha
+              (sem stopPropagation, senão o dialog não abriria pelo teclado).
               SEM sublinhado em nenhum estado (removido a pedido) — o
               hover da linha inteira (fundo + borda esquerda) já sinaliza
               clicabilidade sozinho, não precisa do nome sublinhar junto.
-              Não há outro elemento interativo na linha que precisasse
-              de stopPropagation.
             */}
             <div
+              role="rowheader"
               className={cn(TABELA_NOME_CELL_CLASS, "no-underline")}
               style={{
                 color: corNomeOperador({ semDado: semAtendimentos, ruim: belowMeta }),
                 textDecoration: "none",
               }}
             >
-              {formatOperatorLabel(op.email)}
+              {clicavel ? (
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  className="block w-full min-w-0 cursor-pointer truncate"
+                >
+                  {formatOperatorLabel(op.email)}
+                </button>
+              ) : (
+                formatOperatorLabel(op.email)
+              )}
             </div>
             <div
+              role="cell"
               className={TABELA_VALOR_CELL_CLASS}
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
@@ -458,6 +472,7 @@ export function EquipeTable({
               </FlashValue>
             </div>
             <div
+              role="cell"
               className={TABELA_VALOR_CELL_CLASS}
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
@@ -466,6 +481,7 @@ export function EquipeTable({
               </FlashValue>
             </div>
             <div
+              role="cell"
               className={TABELA_VALOR_CELL_CLASS}
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
@@ -474,6 +490,7 @@ export function EquipeTable({
               </FlashValue>
             </div>
             <div
+              role="cell"
               className={cn(
                 "ds-mono-sm min-w-0 flex flex-col items-center justify-center gap-1 px-3 py-2",
                 rvVisivel && "border-r border-border/30",
@@ -529,6 +546,7 @@ export function EquipeTable({
               )}
             </div>
             <div
+              role="cell"
               className="ds-mono-sm min-w-0 overflow-hidden px-3 py-2 text-center"
               style={{ fontVariantNumeric: "tabular-nums", opacity: "var(--rv-op)" }}
               aria-hidden={!showRvDiario || undefined}
@@ -542,6 +560,7 @@ export function EquipeTable({
       {/* Linha de Totais (Equipe) - Fechamento Contábil / Excel */}
       {!hideTotais && (
         <div
+          role="row"
           className="ds-body grid items-center gap-0 bg-muted/20 font-bold"
           style={{
             borderTop: "2px solid var(--border)",
@@ -550,29 +569,34 @@ export function EquipeTable({
           }}
         >
           <div
+            role="rowheader"
             className="min-w-0 truncate px-3 py-2.5 text-center border-r border-border/40 text-foreground tracking-wide"
           >
             EQUIPE
           </div>
           <div
+            role="cell"
             className="min-w-0 px-3 py-2.5 text-center border-r border-border/40"
             style={{ fontVariantNumeric: "tabular-nums" }}
           >
             {equipe.retidos}
           </div>
           <div
+            role="cell"
             className="min-w-0 px-3 py-2.5 text-center border-r border-border/40"
             style={{ fontVariantNumeric: "tabular-nums" }}
           >
             {equipe.cancelados}
           </div>
           <div
+            role="cell"
             className="min-w-0 px-3 py-2.5 text-center border-r border-border/40"
             style={{ fontVariantNumeric: "tabular-nums" }}
           >
             {equipe.pedidos}
           </div>
           <div
+            role="cell"
             className={cn(
               "min-w-0 flex items-center justify-center gap-1.5 px-3 py-2.5",
               rvVisivel && "border-r border-border/40",
@@ -603,6 +627,7 @@ export function EquipeTable({
             )}
           </div>
           <div
+            role="cell"
             className="min-w-0 overflow-hidden px-3 py-2.5 text-center"
             style={{ fontVariantNumeric: "tabular-nums", opacity: "var(--rv-op)" }}
             aria-hidden={!showRvDiario || undefined}

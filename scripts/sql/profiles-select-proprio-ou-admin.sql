@@ -33,6 +33,10 @@ as $$
   );
 $$;
 
+-- RISCO-ACEITO: função SECURITY DEFINER executável por authenticated via /rest/v1/rpc/pode_ver_todos_profiles (advisor 0029).
+-- Motivo: a policy de SELECT em profiles roda como o usuário logado e precisa de EXECUTE; revogar quebra a policy.
+-- Mitigação: sem argumentos, search_path vazio, só lê a linha de auth.uid() e devolve um booleano sobre o próprio chamador; anon sem EXECUTE.
+-- Revisar quando: a função ganhar argumentos ou passar a devolver dados de outros usuários (aí mover para um schema não exposto).
 revoke execute on function public.pode_ver_todos_profiles() from public, anon;
 grant execute on function public.pode_ver_todos_profiles() to authenticated, service_role;
 
