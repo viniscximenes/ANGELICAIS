@@ -312,9 +312,11 @@ export function EvolucaoEquipe({
             // o mesmo tooltip do ponteiro (antes desligado — só o mouse via
             // "Quem derrubou nesta hora"). Anel de foco só no teclado
             // (reports-consolidado.css, .grafico-evolucao-chart).
+            // Sem title/desc: o Recharts os vira <title>/<desc> do SVG e o
+            // navegador mostrava o title como dica nativa por cima do tooltip
+            // ao passar o mouse. A descrição para leitor de tela fica na
+            // tabela sr-only abaixo.
             accessibilityLayer
-            title={titulo ?? "Evolução por hora"}
-            desc="Use as setas esquerda e direita para ver os detalhes de cada hora."
             data={chartData}
             margin={{ top: 16, right: 8, left: 8, bottom: 0 }}
             barGap={2}
