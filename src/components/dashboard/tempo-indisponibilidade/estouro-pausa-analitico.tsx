@@ -64,7 +64,7 @@ export function EstouroPausaAnalitico({ operadores }: Props) {
 
   function celulaEstouro(segundos: number) {
     return (
-      <div
+      <div role="cell"
         className={cn(VALOR_CELL_CLASS, "tabular-nums", segundos <= 0 && "text-muted-foreground")}
         style={{ color: segundos > 0 ? "var(--danger)" : undefined }}
       >
@@ -90,13 +90,17 @@ export function EstouroPausaAnalitico({ operadores }: Props) {
         />
       ) : (
         <div className={ROLAGEM_CLASS}>
-          <div className="min-w-fit">
-            <div className={HEADER_ROW_CLASS} style={{ gridTemplateColumns: GRID_COLS }}>
-              <div className={cn(HEADER_CELL_CLASS, STICKY_HEADER_CELL_CLASS)}>
+          {/* Semântica de tabela via ARIA (role=table/row/columnheader/
+              rowheader/cell) nos mesmos <div> do grid — mesmo padrão da
+              tabela principal (TempoIndispTabela) e da EquipeTable do
+              Consolidado. */}
+          <div role="table" aria-label="Estouro de NR17 por operador" className="min-w-fit">
+            <div role="row" className={HEADER_ROW_CLASS} style={{ gridTemplateColumns: GRID_COLS }}>
+              <div role="columnheader" className={cn(HEADER_CELL_CLASS, STICKY_HEADER_CELL_CLASS)}>
                 Operador
               </div>
               {COLUNAS.map((c) => (
-                <div key={c} className={HEADER_CELL_CLASS}>
+                <div key={c} role="columnheader" className={HEADER_CELL_CLASS}>
                   {c}
                 </div>
               ))}
@@ -105,15 +109,16 @@ export function EstouroPausaAnalitico({ operadores }: Props) {
             {linhas.map(({ op, estouroP10, estouroP20 }, idx) => (
               <div
                 key={op.email}
+                role="row"
                 className={cn(LINHA_CLASS, idx < linhas.length - 1 && "border-b border-border/30")}
                 style={{ gridTemplateColumns: GRID_COLS }}
               >
-                <div className={cn(NOME_CELL_CLASS, STICKY_NOME_CELL_CLASS)}>
+                <div role="rowheader" className={cn(NOME_CELL_CLASS, STICKY_NOME_CELL_CLASS)}>
                   {formatNomeDotSobrenome(op.email)}
                 </div>
-                <div className={cn(VALOR_CELL_CLASS, "tabular-nums text-foreground")}>{op.pausas.pausa10}</div>
+                <div role="cell" className={cn(VALOR_CELL_CLASS, "tabular-nums text-foreground")}>{op.pausas.pausa10}</div>
                 {celulaEstouro(estouroP10)}
-                <div className={cn(VALOR_CELL_CLASS, "tabular-nums text-foreground")}>{op.pausas.pausa20}</div>
+                <div role="cell" className={cn(VALOR_CELL_CLASS, "tabular-nums text-foreground")}>{op.pausas.pausa20}</div>
                 {celulaEstouro(estouroP20)}
               </div>
             ))}

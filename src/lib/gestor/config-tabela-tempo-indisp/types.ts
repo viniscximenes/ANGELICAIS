@@ -25,6 +25,6 @@ export type ConfigTabelaTempoIndisp = {
   ordemTabela: OrdemTabelaTempoIndisp;
 };
 
-/** Mesmo valor de META_INDISPONIBILIDADE (src/lib/d1-db/types.ts) — default da coluna gestor_config_fantasia.meta_indisponibilidade. */
+/** Meta padrão de Indisp. % (cumpre se indisponibilidade < meta) — fonte única; mesmo valor do default da coluna gestor_config_fantasia.meta_indisponibilidade. */
 export const DEFAULT_META_INDISPONIBILIDADE = 14.5;
 export const DEFAULT_ORDEM_TABELA_TEMPO_INDISP: OrdemTabelaTempoIndisp = "padrao";

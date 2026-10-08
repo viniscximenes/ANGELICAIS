@@ -131,8 +131,8 @@ export type GestorTempoLogadoData = {
 // ═══════════════════════════════════════════════════════════════════
 // Indisponibilidade — visão do GESTOR
 // ═══════════════════════════════════════════════════════════════════
-
-export const META_INDISPONIBILIDADE = 14.5; // %; cumpriu se indisponibilidade < 14.5
+// Meta de Indisp. %: DEFAULT_META_INDISPONIBILIDADE
+// (lib/gestor/config-tabela-tempo-indisp/types.ts) — fonte única.
 
 /**
  * Detalhamento de pausas — mantido no formato histórico (16 campos) por
@@ -188,8 +188,8 @@ export const PAUSAS_ZERADAS: PausasDetalhe = {
 
 export type GestorIndispLinha = {
   email: string;
+  /** Indisp. % do upload. O veredito da meta é da tela (mergeOperadoresTempoIndisp). */
   indisponibilidade: number | null;
-  cumpriuMeta: boolean;
   nr17Pct: number | null;
   pausaParticularPct: number | null;
   /**
@@ -218,4 +218,10 @@ export type GestorIndispData = {
   operadores: GestorIndispLinha[];
   /** Falha de banco (roster, d1_indisponibilidade ou d1_tempo_logado) — a página mostra erro, não "sem dados". */
   erro: boolean;
+  /**
+   * As duas leituras pegaram lotes diferentes (upload ou "Limpar Base"
+   * confirmado entre o SELECT de d1_tempo_logado e o de d1_indisponibilidade).
+   * Vem junto com `erro: true`; a action de refetch lê de novo.
+   */
+  loteDivergente?: boolean;
 };

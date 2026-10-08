@@ -51,6 +51,14 @@ type ParseTempoLogadoCsvResult = {
   lidas: number;
   validas: number;
   puladas: number;
+  /**
+   * Linhas recusadas, com o número da linha no arquivo (cabeçalho = 1) e o
+   * motivo — mesmo formato de parse-base-retencao.ts (Consolidado). O upload
+   * só grava se esta lista vier vazia: a RPC substitui a base do dia inteira
+   * (remove quem não veio no lote), então descartar linhas em silêncio
+   * apagaria os dados de quem estava nelas.
+   */
+  linhasInvalidas: { linha: number; motivo: string }[];
   /** false em export antigo sem a coluna TIMESTAMP — sem ela não dá pra conferir o logout. */
   temColunaTimestamp: boolean;
 };
@@ -123,7 +131,7 @@ export function parseTempoLogadoCsv(csvText: string): ParseTempoLogadoCsvResult 
 
   const rows = parsed.data;
   if (rows.length < 2) {
-    return { linhas: [], lidas: 0, validas: 0, puladas: 0, temColunaTimestamp: false };
+    return { linhas: [], lidas: 0, validas: 0, puladas: 0, linhasInvalidas: [], temColunaTimestamp: false };
   }
 
   const normalizedHeaders = rows[0].map(normalizeHeader);
@@ -131,9 +139,9 @@ export function parseTempoLogadoCsv(csvText: string): ParseTempoLogadoCsvResult 
 
   const missing = REQUIRED_COLUMNS.filter((c) => colIndex(c) === -1);
   if (missing.length > 0) {
-    throw new Error(
-      `[parse-tempo-logado-csv] colunas obrigatórias não encontradas no CSV: ${missing.join(", ")}`,
-    );
+    // Mensagem vai direto pro usuário (toast + aviso do anexo): sem etiqueta
+    // técnica do módulo, mesma redação do upload do Consolidado.
+    throw new Error(`Coluna(s) obrigatória(s) ausente(s) no CSV: ${missing.join(", ")}.`);
   }
 
   const idxAgentName = colIndex("AGENT NAME");
@@ -153,6 +161,7 @@ export function parseTempoLogadoCsv(csvText: string): ParseTempoLogadoCsvResult 
   const idxHour = colIndex("HOUR");
 
   const linhas: TempoLogadoCsvRow[] = [];
+  const linhasInvalidas: { linha: number; motivo: string }[] = [];
   let lidas = 0;
   let validas = 0;
   let puladas = 0;
@@ -160,20 +169,38 @@ export function parseTempoLogadoCsv(csvText: string): ParseTempoLogadoCsvResult 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     lidas++;
+    // Número da linha no arquivo, como o usuário vê no Excel (cabeçalho = 1).
+    const numeroLinha = i + 1;
+    const recusar = (motivo: string) => {
+      puladas++;
+      linhasInvalidas.push({ linha: numeroLinha, motivo });
+    };
 
     const agentName = (row[idxAgentName] ?? "").trim();
     const agentEmail = (row[idxAgent] ?? "").trim();
     const state = (row[idxState] ?? "").trim();
     const dataRef = parseDataFlexivel(row[idxDate]);
 
-    if (!agentName || !agentEmail || !state || !dataRef) {
-      puladas++;
+    if (!agentName) {
+      recusar("AGENT NAME vazio");
+      continue;
+    }
+    if (!agentEmail) {
+      recusar("AGENT vazio");
+      continue;
+    }
+    if (!state) {
+      recusar("STATE vazio");
+      continue;
+    }
+    if (!dataRef) {
+      recusar("DATE inválida");
       continue;
     }
 
     const agentUser = agentEmail.split("@")[0]?.trim().toLowerCase() ?? "";
     if (!agentUser) {
-      puladas++;
+      recusar("AGENT sem e-mail válido");
       continue;
     }
 
@@ -205,5 +232,12 @@ export function parseTempoLogadoCsv(csvText: string): ParseTempoLogadoCsvResult 
     validas++;
   }
 
-  return { linhas, lidas, validas, puladas, temColunaTimestamp: idxTimestamp !== -1 };
+  return {
+    linhas,
+    lidas,
+    validas,
+    puladas,
+    linhasInvalidas,
+    temColunaTimestamp: idxTimestamp !== -1,
+  };
 }

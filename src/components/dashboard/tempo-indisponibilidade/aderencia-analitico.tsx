@@ -109,13 +109,17 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador, tolerancia
         />
       ) : (
         <div className={ROLAGEM_CLASS}>
-          <div className="min-w-fit">
-            <div className={HEADER_ROW_CLASS} style={{ gridTemplateColumns: GRID_COLS }}>
-              <div className={cn(HEADER_CELL_CLASS, STICKY_HEADER_CELL_CLASS)}>
+          {/* Semântica de tabela via ARIA (role=table/row/columnheader/
+              rowheader/cell) nos mesmos <div> do grid — mesmo padrão da
+              tabela principal (TempoIndispTabela) e da EquipeTable do
+              Consolidado. */}
+          <div role="table" aria-label="Aderência de login e pausas por operador" className="min-w-fit">
+            <div role="row" className={HEADER_ROW_CLASS} style={{ gridTemplateColumns: GRID_COLS }}>
+              <div role="columnheader" className={cn(HEADER_CELL_CLASS, STICKY_HEADER_CELL_CLASS)}>
                 Operador
               </div>
               {COLUNAS_HORARIO.map((col, i) => (
-                <div key={i} className={HEADER_CELL_CLASS}>
+                <div key={i} role="columnheader" className={HEADER_CELL_CLASS}>
                   {LABELS_ITEM[col.key]} {col.sufixo}
                 </div>
               ))}
@@ -124,10 +128,11 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador, tolerancia
             {linhas.map(({ op, aderencia }, idx) => (
               <div
                 key={op.email}
+                role="row"
                 className={cn(LINHA_CLASS, idx < linhas.length - 1 && "border-b border-border/30")}
                 style={{ gridTemplateColumns: GRID_COLS }}
               >
-                <div className={cn(NOME_CELL_CLASS, STICKY_NOME_CELL_CLASS)}>
+                <div role="rowheader" className={cn(NOME_CELL_CLASS, STICKY_NOME_CELL_CLASS)}>
                   {formatNomeDotSobrenome(op.email)}
                 </div>
                 {COLUNAS_HORARIO.map((col, i) => {
@@ -144,7 +149,7 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador, tolerancia
                         ? "var(--success)"
                         : "var(--danger)";
                   return (
-                    <div
+                    <div role="cell"
                       key={i}
                       className={cn(
                         VALOR_CELL_CLASS,
@@ -154,6 +159,13 @@ export function AderenciaAnalitico({ operadores, forecastPorOperador, tolerancia
                       style={{ color: cor, fontWeight: cor ? 600 : undefined }}
                     >
                       {val ?? "—"}
+                      {/* O veredito não fica só na cor: texto para leitor
+                          de tela (a tela segue só com verde/vermelho). */}
+                      {cor && (
+                        <span className="sr-only">
+                          {item.dentroTolerancia ? " (dentro da tolerância)" : " (fora da tolerância)"}
+                        </span>
+                      )}
                     </div>
                   );
                 })}

@@ -29,10 +29,16 @@ export type OperadorAnaliticoTempoIndisp = {
 /**
  * Junta d1_tempo_logado e d1_indisponibilidade (mesmo roster, chaveado por
  * e-mail) num único registro por operador — usado só pela UI do analítico.
+ *
+ * `cumpriuMetaIndisp` é calculado AQUI, com a meta atual da tela
+ * (indisponibilidade < meta, estrito) — único lugar do veredito. Antes vinha
+ * pronto do servidor e, logo depois de salvar uma meta nova, ainda era o da
+ * meta anterior: a tabela/dialog divergiam do card de resumo.
  */
 export function mergeOperadoresTempoIndisp(
   operadoresTL: GestorTempoLogadoLinha[],
   operadoresIndisp: GestorIndispLinha[],
+  metaIndisponibilidade: number,
 ): OperadorAnaliticoTempoIndisp[] {
   const indispPorEmail = new Map(operadoresIndisp.map((op) => [op.email, op]));
 
@@ -47,7 +53,8 @@ export function mergeOperadoresTempoIndisp(
       horaLogin: tl.horaLogin,
       horaLogout: tl.horaLogout,
       indisponibilidade: indisp?.indisponibilidade ?? null,
-      cumpriuMetaIndisp: indisp?.cumpriuMeta ?? false,
+      cumpriuMetaIndisp:
+        indisp?.indisponibilidade != null && indisp.indisponibilidade < metaIndisponibilidade,
       nr17Pct: indisp?.nr17Pct ?? null,
       pausaParticularPct: indisp?.pausaParticularPct ?? null,
       outrasPausasPct: indisp?.outrasPausasPct ?? null,

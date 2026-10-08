@@ -65,13 +65,12 @@ export default async function ReportsTempoIndisponibilidadePage() {
 
   const gestorId = user.profile.id;
 
-  // Uma onda só de buscas: a indisponibilidade espera só a config (precisa
-  // da meta pra calcular cumpriuMeta) e as pausas programadas só o roster —
-  // o resto não espera nada. O roster e o d1_tempo_logado de hoje são
+  // Uma onda só de buscas: só as pausas programadas esperam o roster — o
+  // resto não espera nada (o veredito da meta de Indisp. é calculado na
+  // tela, então a indisponibilidade não espera a config da tabela). O roster e o d1_tempo_logado de hoje são
   // memoizados por requisição (cache() em get-roster-gestor.ts e
   // getTempoLogadoHojeEquipe), então getGestorTempoLogado/Indisponibilidade
   // não os consultam de novo.
-  const configTabelaP = getConfigTabelaTempoIndisp(gestorId);
   const [
     dataTempoLogado,
     dataIndisponibilidade,
@@ -81,7 +80,7 @@ export default async function ReportsTempoIndisponibilidadePage() {
     configTabelaTempoIndisp,
   ] = await Promise.all([
     getGestorTempoLogado(gestorId),
-    configTabelaP.then((config) => getGestorIndisponibilidade(gestorId, config.metaIndisponibilidade)),
+    getGestorIndisponibilidade(gestorId),
     getNomeFantasiaConfig(gestorId),
     // Variante que LANÇA: falha na base de pausas vira erro da página (abaixo),
     // não "Sem horários programados" na Aderência e no dialog.
@@ -92,7 +91,7 @@ export default async function ReportsTempoIndisponibilidadePage() {
       ),
     ),
     getConfigAderencia(gestorId),
-    configTabelaP,
+    getConfigTabelaTempoIndisp(gestorId),
   ]);
 
   // Piso mínimo aplicado depois de TODAS as buscas, nos dois caminhos.

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   IconCalendarX,
   IconClockCheck,
@@ -8,7 +9,7 @@ import {
   IconUsersGroup,
 } from "@tabler/icons-react";
 import { getLenisInstance } from "@/lib/lenis/lenis-instance";
-import { requestScrollToCard } from "@/lib/retencao/scroll-to-card-event";
+import { onTrilhoDisponivel, requestScrollToCard } from "@/lib/retencao/scroll-to-card-event";
 import { FloatingNavSidebar } from "@/components/ui/floating-nav-sidebar";
 import { IconeNav, useSecaoAtiva } from "@/components/gestor/nav-secao-ativa";
 
@@ -39,6 +40,11 @@ const ID_TOPO = "tempo-indisp-section";
  */
 export function TempoIndispNavSidebar() {
   const ativo = useSecaoAtiva(ID_TOPO);
+
+  // Cards do Analítico existem? (TempoIndispSection avisa.) Começa em false,
+  // como no Consolidado: a seção avisa logo depois de montar.
+  const [trilhoDisponivel, setTrilhoDisponivel] = useState(false);
+  useEffect(() => onTrilhoDisponivel(setTrilhoDisponivel), []);
 
   function scrollToTabela() {
     const el = document.getElementById(ID_TOPO);
@@ -106,7 +112,10 @@ export function TempoIndispNavSidebar() {
 
   return (
     <FloatingNavSidebar
-      links={links}
+      // Sem trilho (equipe sem dados do dia), os itens do Analítico ficam
+      // desabilitados — não há card pra onde rolar. Mesmo padrão do
+      // ConsolidadoNavSidebar; o 1º item (tabela) sempre existe.
+      links={links.map((link, i) => (i === 0 ? link : { ...link, desabilitado: !trilhoDisponivel }))}
       wrapperClassName="nav-secoes"
       dataPage="reports-tempo-indisponibilidade"
       // Divisória entre a tabela do topo e os slides do Analítico.

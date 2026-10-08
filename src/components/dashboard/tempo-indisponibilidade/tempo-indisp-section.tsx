@@ -27,6 +27,7 @@ import type { OrdemTabelaTempoIndisp } from "@/lib/gestor/config-tabela-tempo-in
 import type { NomeFantasiaSerial } from "@/lib/gestor/nome-fantasia/aplicar-fantasia";
 import { toggleOlhoAction } from "@/lib/gestor/nome-fantasia/toggle-olho-action";
 import { useSetasRolagem } from "@/lib/lenis/use-setas-rolagem";
+import { notifyTrilhoDisponivel } from "@/lib/retencao/scroll-to-card-event";
 import { useTopoAoCarregar } from "@/lib/lenis/use-topo-ao-carregar";
 import { cn } from "@/lib/utils";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
@@ -150,21 +151,21 @@ export function TempoIndispSection({
       });
   }
 
-  // Nº da última busca disparada: dois refetches seguidos (ex.: salvar a
-  // config duas vezes) podem responder fora de ordem — só a resposta da
+  // Nº da última busca disparada: dois refetches seguidos (ex.: "Limpar
+  // Base" duas vezes) podem responder fora de ordem — só a resposta da
   // busca MAIS RECENTE é aplicada, a anterior é descartada.
   const refetchSeqRef = useRef(0);
 
   // Sem polling nesta página (só o Consolidado reconsulta a cada 30s):
-  // refetch é MANUAL, disparado pelo "Limpar Base" e pelo popover de
-  // configurações. `metaOverride`: logo após salvar uma meta nova o state
-  // ainda não a reflete — passa o valor recém-salvo direto.
-  async function refetch(metaOverride?: number) {
+  // refetch é MANUAL, disparado pelo "Limpar Base". Salvar a config não
+  // precisa dele: o veredito da meta é recalculado na tela (ver
+  // mergeOperadoresTempoIndisp).
+  async function refetch() {
     const seq = ++refetchSeqRef.current;
     try {
       // Uma action só (tabela + Analítico): cada leitura acontece uma vez
       // no servidor, e a tela recebe tudo junto ou nada.
-      const result = await refreshTempoIndispAction(metaOverride ?? metaIndisponibilidade);
+      const result = await refreshTempoIndispAction();
       if (seq !== refetchSeqRef.current) return;
       if (result.success) {
         setOperadoresTL(result.operadoresTempoLogado);
@@ -234,16 +235,24 @@ export function TempoIndispSection({
   const operadoresMerged = useMemo(
     () =>
       ordenarOperadoresTempoIndisp(
-        mergeOperadoresTempoIndisp(operadoresTL, operadoresIndisp),
+        mergeOperadoresTempoIndisp(operadoresTL, operadoresIndisp, metaIndisponibilidade),
         ordemTabela,
       ),
-    [operadoresTL, operadoresIndisp, ordemTabela],
+    [operadoresTL, operadoresIndisp, ordemTabela, metaIndisponibilidade],
   );
 
   const hasDados = useMemo(
     () => operadoresMerged.some((op) => op.tempoLogadoSegundos > 0 || op.indisponibilidade !== null),
     [operadoresMerged],
   );
+
+  // Avisa a barra lateral (TempoIndispNavSidebar) se o trilho do Analítico
+  // existe — sem dados ele não é montado e os itens dela não têm pra onde
+  // rolar. Mesmo padrão de RetencaoDetalheSection (Consolidado).
+  useEffect(() => {
+    notifyTrilhoDisponivel(hasDados);
+  }, [hasDados]);
+  useEffect(() => () => notifyTrilhoDisponivel(false), []);
 
   // Tabela oculta do "Copiar imagem" sob demanda — mesmo padrão do
   // Consolidado (GestorEquipeSection): monta com ponteiro em cima/foco no
@@ -372,11 +381,11 @@ export function TempoIndispSection({
                 metaIndisponibilidadeInicial={metaIndisponibilidade}
                 ordemInicial={ordemTabela}
                 onSaved={(meta, ordem) => {
+                  // Sem refetch: o veredito da meta (cumpriuMetaIndisp) é
+                  // recalculado na tela a partir do percentual, e a ordem é
+                  // aplicada aqui mesmo — tabela, dialog e cards mudam juntos.
                   setMetaIndisponibilidade(meta);
                   setOrdemTabela(ordem);
-                  // cumpriuMeta é recalculado no servidor — refetch na hora
-                  // com a meta recém-salva.
-                  void refetch(meta);
                 }}
                 onOpenChange={setConfigPopoverOpen}
               />

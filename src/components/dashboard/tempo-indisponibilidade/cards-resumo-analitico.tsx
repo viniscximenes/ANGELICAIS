@@ -58,8 +58,8 @@ export function CardsResumoAnalitico({
       ? "text-success"
       : "text-danger";
 
-  // < meta = verde — MESMA comparação de cumpriuMeta em
-  // get-gestor-indisponibilidade.ts (indisp_percent < metaIndisponibilidade,
+  // < meta = verde — MESMA comparação de cumpriuMetaIndisp em
+  // merge-tempo-indisp.ts (indisponibilidade < metaIndisponibilidade,
   // estrito). Repare: a tabela usa "<" pra cumprir, não "<="; alinhado aqui
   // de propósito (ver relatório da tarefa).
   const indispClass =

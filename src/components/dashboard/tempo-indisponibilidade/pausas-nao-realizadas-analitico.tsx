@@ -50,6 +50,15 @@ interface Props {
 export function PausasNaoRealizadasAnalitico({ operadores, forecastPorOperador }: Props) {
   const logados = operadores.filter((op) => !!op.horaLogin);
 
+  // Só dá pra avaliar quem tem ao menos uma pausa com horário previsto
+  // cadastrado. Sem nenhum avaliável, o estado vazio NÃO pode dizer "todas
+  // as pausas foram tiradas" — falta programação, não sobra cumprimento.
+  const avaliaveis = logados.filter((op) => {
+    const forecast = forecastPorOperador.get(getEmailPrefix(op.email));
+    return !!forecast && PAUSAS.some(({ previstoKey }) => !!forecast[previstoKey]);
+  });
+  const semProgramacao = logados.length - avaliaveis.length;
+
   const linhas = logados
     .map((op) => {
       const forecast = forecastPorOperador.get(getEmailPrefix(op.email)) ?? null;
@@ -74,26 +83,42 @@ export function PausasNaoRealizadasAnalitico({ operadores, forecastPorOperador }
         <h3 className="ds-h3 font-semibold text-foreground">Pausas NR17 não tiradas</h3>
         <p className="ds-small text-muted-foreground mt-1">
           {linhas.length > 0
-            ? `${linhas.length} de ${logados.length} operadores que logaram hoje têm pelo menos uma pausa obrigatória não realizada. `
+            ? `${linhas.length} de ${avaliaveis.length} operadores com horários programados que logaram hoje têm pelo menos uma pausa obrigatória não realizada. `
             : ""}
-          Operadores sem login no dia não entram nesta lista.
+          Operadores sem login no dia ou sem horários programados não entram nesta lista.
         </p>
       </div>
 
-      {linhas.length === 0 ? (
+      {avaliaveis.length === 0 ? (
+        <GraficoVazio
+          titulo={logados.length === 0 ? "Nenhum operador logou hoje" : "Sem horários programados"}
+          descricao={
+            logados.length === 0
+              ? "Ainda não há login registrado pra sua equipe hoje."
+              : "Nenhum operador que logou hoje tem horários de pausa programados — não dá pra saber se as pausas foram tiradas."
+          }
+        />
+      ) : linhas.length === 0 ? (
         <GraficoVazio
           titulo="Todas as pausas foram tiradas"
-          descricao="Nenhum operador que logou hoje deixou de tirar uma pausa obrigatória."
+          descricao={
+            `Nenhum dos ${avaliaveis.length} operadores com horários programados deixou de tirar uma pausa obrigatória.` +
+            (semProgramacao > 0 ? ` ${semProgramacao} sem horários programados não foram avaliados.` : "")
+          }
         />
       ) : (
         <div className={ROLAGEM_CLASS}>
-          <div className="min-w-fit">
-            <div className={HEADER_ROW_CLASS} style={{ gridTemplateColumns: GRID_COLS }}>
-              <div className={cn(HEADER_CELL_CLASS, STICKY_HEADER_CELL_CLASS)}>
+          {/* Semântica de tabela via ARIA (role=table/row/columnheader/
+              rowheader/cell) nos mesmos <div> do grid — mesmo padrão da
+              tabela principal (TempoIndispTabela) e da EquipeTable do
+              Consolidado. */}
+          <div role="table" aria-label="Pausas NR17 não tiradas por operador" className="min-w-fit">
+            <div role="row" className={HEADER_ROW_CLASS} style={{ gridTemplateColumns: GRID_COLS }}>
+              <div role="columnheader" className={cn(HEADER_CELL_CLASS, STICKY_HEADER_CELL_CLASS)}>
                 Operador
               </div>
               {PAUSAS.map((p) => (
-                <div key={p.label} className={HEADER_CELL_CLASS}>
+                <div key={p.label} role="columnheader" className={HEADER_CELL_CLASS}>
                   {p.label}
                 </div>
               ))}
@@ -102,23 +127,24 @@ export function PausasNaoRealizadasAnalitico({ operadores, forecastPorOperador }
             {linhas.map(({ op, status }, idx) => (
               <div
                 key={op.email}
+                role="row"
                 className={cn(LINHA_CLASS, idx < linhas.length - 1 && "border-b border-border/30")}
                 style={{ gridTemplateColumns: GRID_COLS }}
               >
-                <div className={cn(NOME_CELL_CLASS, STICKY_NOME_CELL_CLASS)}>
+                <div role="rowheader" className={cn(NOME_CELL_CLASS, STICKY_NOME_CELL_CLASS)}>
                   {formatNomeDotSobrenome(op.email)}
                 </div>
                 {status.map((s, i) =>
                   !s.aplica ? (
-                    <div key={i} className={cn(VALOR_CELL_CLASS, "text-muted-foreground")}>
+                    <div role="cell" key={i} className={cn(VALOR_CELL_CLASS, "text-muted-foreground")}>
                       —
                     </div>
                   ) : s.naoRealizada ? (
-                    <div key={i} className={VALOR_CELL_CLASS} style={{ color: "var(--danger)" }}>
+                    <div role="cell" key={i} className={VALOR_CELL_CLASS} style={{ color: "var(--danger)" }}>
                       Não realizada
                     </div>
                   ) : (
-                    <div key={i} className={cn(VALOR_CELL_CLASS, "tabular-nums text-foreground")}>
+                    <div role="cell" key={i} className={cn(VALOR_CELL_CLASS, "tabular-nums text-foreground")}>
                       {formatarHoraCurta(s.real) ?? "—"}
                     </div>
                   ),

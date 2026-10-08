@@ -36,9 +36,7 @@ function statusDe(horaLogin: string | null, horaLogout: string | null): StatusPr
  * "ausente") quando o banco é que tinha falhado. Mesma ideia do `erro` de
  * getGestorConsolidado.
  */
-export const getTempoLogadoHojeEquipe = cache(async function getTempoLogadoHojeEquipe(
-  gestorId: string,
-) {
+export async function lerTempoLogadoHojeEquipe(gestorId: string) {
   let roster: string[];
   try {
     roster = await getRosterOperadoresGestorOuErro(gestorId);
@@ -64,7 +62,14 @@ export const getTempoLogadoHojeEquipe = cache(async function getTempoLogadoHojeE
   }
 
   return { roster, rows: data ?? [], erro: false };
-});
+}
+
+/**
+ * Versão memoizada por requisição de lerTempoLogadoHojeEquipe (página). A
+ * action de refetch usa a não memoizada quando precisa ler de novo (ver
+ * conferência de lote em getGestorIndisponibilidade).
+ */
+export const getTempoLogadoHojeEquipe = cache(lerTempoLogadoHojeEquipe);
 
 /** Resultado de getTempoLogadoHojeEquipe — roster + linhas de hoje + erro. */
 export type TempoLogadoHojeEquipe = Awaited<ReturnType<typeof getTempoLogadoHojeEquipe>>;

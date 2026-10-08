@@ -5,7 +5,7 @@ import { getPausasProgramadasOuErro } from "@/lib/bases/pausas-programadas/actio
 import type { PausaProgramadaDb } from "@/lib/bases/pausas-programadas/types";
 import { getConfigAderencia } from "@/lib/gestor/config-aderencia/get-config-aderencia";
 import { getGestorIndisponibilidade } from "../get-gestor-indisponibilidade";
-import { getGestorTempoLogado, getTempoLogadoHojeEquipe } from "../get-gestor-tempo-logado";
+import { getGestorTempoLogado, lerTempoLogadoHojeEquipe } from "../get-gestor-tempo-logado";
 import type { GestorIndispLinha, GestorTempoLogadoLinha } from "../types";
 
 type RefreshTempoIndispResult =
@@ -29,8 +29,8 @@ type RefreshTempoIndispResult =
 
 /**
  * Refetch da página inteira (tabela unificada + Analítico) numa action só —
- * usado pelo refetch manual de TempoIndispSection (após "Limpar Base" e
- * salvar a config; esta página não tem polling). Antes eram duas actions em
+ * usado pelo refetch manual de TempoIndispSection (após "Limpar Base";
+ * esta página não tem polling). Antes eram duas actions em
  * paralelo (tempo logado e indisponibilidade), cada uma numa requisição
  * própria: autenticação, roster e d1_tempo_logado eram lidos duas vezes.
  *
@@ -40,55 +40,55 @@ type RefreshTempoIndispResult =
  * Qualquer falha (inclusive erro de banco) devolve success:false e a tela
  * mantém o que já mostrava, com aviso — sem aplicar metade dos dados.
  *
- * @param metaIndisponibilidade Meta ATUAL do gestor (estado do client, não
- * relida do banco aqui) — precisa ser repassada a cada refetch, senão o
- * recálculo de `cumpriuMeta` ignoraria a meta configurada e voltaria pro
- * default (ver comentário em getGestorIndisponibilidade). Validada aqui com
- * a mesma faixa de saveConfigTabelaTempoIndispAction (0 a 100).
+ * Sem parâmetros: o veredito da meta de Indisp. é calculado na tela
+ * (mergeOperadoresTempoIndisp), então a action não recebe nada do client.
  */
-export async function refreshTempoIndispAction(
-  metaIndisponibilidade?: number,
-): Promise<RefreshTempoIndispResult> {
+export async function refreshTempoIndispAction(): Promise<RefreshTempoIndispResult> {
   const user = await getCurrentUser();
   if (!user || user.profile.role !== "GESTOR") return { success: false };
 
-  // Server Action é endpoint público: o tipo do TS não chega em runtime.
-  if (
-    metaIndisponibilidade !== undefined &&
-    (typeof metaIndisponibilidade !== "number" ||
-      !Number.isFinite(metaIndisponibilidade) ||
-      metaIndisponibilidade < 0 ||
-      metaIndisponibilidade > 100)
-  ) {
-    return { success: false };
-  }
-
   const gestorId = user.profile.id;
 
+  // Config de aderência em paralelo com a 1ª leitura do lote (é config do
+  // gestor, não entra na conferência de lote). .catch: a promise só é
+  // aguardada depois do loop, que pode sair antes por erro — sem ele, uma
+  // rejeição ficaria sem tratamento.
+  const configAderenciaP = getConfigAderencia(gestorId).catch(() => null);
+
   // Roster + d1_tempo_logado de hoje: uma leitura, repassada às duas bases.
-  const [tempoLogadoHoje, configAderencia] = await Promise.all([
-    getTempoLogadoHojeEquipe(gestorId),
-    getConfigAderencia(gestorId),
-  ]);
-  if (tempoLogadoHoje.erro || configAderencia.erro || tempoLogadoHoje.roster.length === 0) {
+  // Se as leituras pegarem lotes diferentes (upload/"Limpar Base" confirmado
+  // no meio — ver conferência em getGestorIndisponibilidade), lê tudo de
+  // novo: até TENTATIVAS_LOTE vezes, depois desiste com success:false.
+  // Leitura NÃO memoizada (lerTempoLogadoHojeEquipe): cada tentativa vai ao
+  // banco de verdade.
+  const TENTATIVAS_LOTE = 3;
+  let pausasProgramadas: PausaProgramadaDb[] = [];
+  let dataTempoLogado: Awaited<ReturnType<typeof getGestorTempoLogado>> | null = null;
+  let dataIndisponibilidade: Awaited<ReturnType<typeof getGestorIndisponibilidade>> | null = null;
+  for (let tentativa = 1; tentativa <= TENTATIVAS_LOTE; tentativa++) {
+    const tempoLogadoHoje = await lerTempoLogadoHojeEquipe(gestorId);
+    if (tempoLogadoHoje.erro || tempoLogadoHoje.roster.length === 0) return { success: false };
+
+    try {
+      [dataTempoLogado, dataIndisponibilidade, pausasProgramadas] = await Promise.all([
+        getGestorTempoLogado(gestorId, tempoLogadoHoje),
+        getGestorIndisponibilidade(gestorId, tempoLogadoHoje),
+        getPausasProgramadasOuErro(tempoLogadoHoje.roster, user),
+      ]);
+    } catch {
+      // Só getPausasProgramadasOuErro lança (erro de banco, já logado lá).
+      return { success: false };
+    }
+
+    if (!dataIndisponibilidade.loteDivergente) break;
+  }
+
+  if (!dataTempoLogado || !dataIndisponibilidade || dataTempoLogado.erro || dataIndisponibilidade.erro) {
     return { success: false };
   }
 
-  let pausasProgramadas: PausaProgramadaDb[];
-  let dataTempoLogado: Awaited<ReturnType<typeof getGestorTempoLogado>>;
-  let dataIndisponibilidade: Awaited<ReturnType<typeof getGestorIndisponibilidade>>;
-  try {
-    [dataTempoLogado, dataIndisponibilidade, pausasProgramadas] = await Promise.all([
-      getGestorTempoLogado(gestorId, tempoLogadoHoje),
-      getGestorIndisponibilidade(gestorId, metaIndisponibilidade, tempoLogadoHoje),
-      getPausasProgramadasOuErro(tempoLogadoHoje.roster, user),
-    ]);
-  } catch {
-    // Só getPausasProgramadasOuErro lança (erro de banco, já logado lá).
-    return { success: false };
-  }
-
-  if (dataTempoLogado.erro || dataIndisponibilidade.erro) return { success: false };
+  const configAderencia = await configAderenciaP;
+  if (!configAderencia || configAderencia.erro) return { success: false };
 
   return {
     success: true,

@@ -78,13 +78,17 @@ export function PausasDetalhadasAnalitico({ operadores }: Props) {
         />
       ) : (
         <div className={ROLAGEM_CLASS}>
-          <div className="min-w-fit">
-            <div className={HEADER_ROW_CLASS} style={{ gridTemplateColumns: GRID_COLS }}>
-              <div className={cn(HEADER_CELL_CLASS, STICKY_HEADER_CELL_CLASS)}>
+          {/* Semântica de tabela via ARIA (role=table/row/columnheader/
+              rowheader/cell) nos mesmos <div> do grid — mesmo padrão da
+              tabela principal (TempoIndispTabela) e da EquipeTable do
+              Consolidado. */}
+          <div role="table" aria-label="Pausas detalhadas por operador" className="min-w-fit">
+            <div role="row" className={HEADER_ROW_CLASS} style={{ gridTemplateColumns: GRID_COLS }}>
+              <div role="columnheader" className={cn(HEADER_CELL_CLASS, STICKY_HEADER_CELL_CLASS)}>
                 Operador
               </div>
               {COLUNAS.map((col) => (
-                <div key={col.key} className={HEADER_CELL_CLASS}>
+                <div key={col.key} role="columnheader" className={HEADER_CELL_CLASS}>
                   {col.label}
                 </div>
               ))}
@@ -93,16 +97,17 @@ export function PausasDetalhadasAnalitico({ operadores }: Props) {
             {comDados.map((op, idx) => (
               <div
                 key={op.email}
+                role="row"
                 className={cn(LINHA_CLASS, idx < comDados.length - 1 && "border-b border-border/30")}
                 style={{ gridTemplateColumns: GRID_COLS }}
               >
-                <div className={cn(NOME_CELL_CLASS, STICKY_NOME_CELL_CLASS)}>
+                <div role="rowheader" className={cn(NOME_CELL_CLASS, STICKY_NOME_CELL_CLASS)}>
                   {formatNomeDotSobrenome(op.email)}
                 </div>
                 {COLUNAS.map((col) => {
                   const val = fmt(op.pausas[col.key]);
                   return (
-                    <div
+                    <div role="cell"
                       key={col.key}
                       className={cn(VALOR_CELL_CLASS, "tabular-nums", val === "—" ? "text-muted-foreground" : "text-foreground")}
                     >

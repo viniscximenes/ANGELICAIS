@@ -123,6 +123,24 @@ export async function uploadTempoLogadoAction(
     `[upload-tempo-logado] parse concluído. Lidas: ${parseResult.lidas}, válidas: ${parseResult.validas}, puladas: ${parseResult.puladas}`,
   );
 
+  // Linha descartada = base incompleta: a RPC remove do dia quem não veio
+  // no lote, então seguir com o resto apagaria os dados de quem estava nas
+  // linhas ruins (e subcontaria sessões/pausas de quem ficou). Recusa tudo,
+  // com o mesmo formato de mensagem do upload do Consolidado.
+  if (parseResult.linhasInvalidas.length > 0) {
+    const exemplos = parseResult.linhasInvalidas
+      .slice(0, 5)
+      .map((l) => `linha ${l.linha}: ${l.motivo}`)
+      .join("; ");
+    const resto = parseResult.linhasInvalidas.length - 5;
+    return {
+      success: false,
+      error:
+        `${parseResult.linhasInvalidas.length.toLocaleString("pt-BR")} linha(s) inválida(s) — a base não foi alterada. ` +
+        `${exemplos}${resto > 0 ? ` (+${resto.toLocaleString("pt-BR")})` : ""}.`,
+    };
+  }
+
   if (parseResult.linhas.length === 0) {
     return { success: false, error: "Nenhuma linha válida encontrada no CSV." };
   }

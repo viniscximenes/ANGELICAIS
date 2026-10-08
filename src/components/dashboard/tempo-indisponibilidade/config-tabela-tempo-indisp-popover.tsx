@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/popover";
 import { saveConfigTabelaTempoIndispAction } from "@/lib/gestor/config-tabela-tempo-indisp/actions/save-config-tabela-tempo-indisp-action";
 import {
+  DEFAULT_META_INDISPONIBILIDADE,
   ORDEM_TABELA_TEMPO_INDISP_OPTIONS,
   type OrdemTabelaTempoIndisp,
 } from "@/lib/gestor/config-tabela-tempo-indisp/types";
@@ -208,7 +209,9 @@ export function ConfigTabelaTempoIndispPopover({
                 htmlFor="config-meta-indisp"
                 className="text-foreground text-xs font-medium"
               >
-                Meta Indisp. % - Padrão 14,5%
+                {/* Padrão vem da constante (fonte única, mesmo padrão do
+                    rótulo do Consolidado); pt-BR mantém a vírgula: "14,5". */}
+                Meta Indisp. % - Padrão {DEFAULT_META_INDISPONIBILIDADE.toLocaleString("pt-BR")}%
               </Label>
               <div className="relative flex items-center">
                 <Input

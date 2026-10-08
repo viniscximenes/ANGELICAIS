@@ -4,7 +4,6 @@ import { getRosterOperadoresGestorOuErro } from "./get-roster-gestor";
 import { getTempoLogadoHojeEquipe, type TempoLogadoHojeEquipe } from "./get-gestor-tempo-logado";
 import { dataRefHojeBR, horaParaSegundos } from "./parse";
 import {
-  META_INDISPONIBILIDADE,
   PAUSAS_ZERADAS,
   type GestorIndispData,
   type GestorIndispLinha,
@@ -28,13 +27,9 @@ function pct(numerador: number, denominador: number): number | null {
  * retorna `operadores: []` quando o roster está vazio ou numa falha de
  * banco (aí com `erro: true`).
  *
- * @param metaIndisponibilidade Meta configurável do gestor (config
- * `gestor_config_fantasia.meta_indisponibilidade`, via
- * getConfigTabelaTempoIndisp) — usada só pra `cumpriuMeta` (indisp_percent <
- * meta). Fallback META_INDISPONIBILIDADE (14.5%) se omitido. Quem chama no
- * refetch (refreshTempoIndispAction) precisa passar a meta ATUAL do
- * gestor, senão o refetch recalcularia cumpriuMeta com o default,
- * descartando silenciosamente a meta configurada.
+ * Sem veredito de meta aqui: "dentro/fora da meta de Indisp." é calculado
+ * na tela, com a meta atual (mergeOperadoresTempoIndisp) — por isso esta
+ * leitura não depende da config da tabela.
  *
  * NR17%/Particular%/Outras Pausas% são percentuais ABSOLUTOS — cada um é o
  * tempo daquela(s) pausa(s) ÷ tempo logado, não ÷ tempo indisponível (isso
@@ -63,7 +58,6 @@ function pct(numerador: number, denominador: number): number | null {
  */
 export async function getGestorIndisponibilidade(
   gestorId: string,
-  metaIndisponibilidade: number = META_INDISPONIBILIDADE,
   /**
    * Roster + d1_tempo_logado de hoje já lidos por quem chama
    * (refreshTempoIndispAction) — dentro de Server Action o cache() do React
@@ -107,7 +101,7 @@ export async function getGestorIndisponibilidade(
     admin
       .from("d1_indisponibilidade")
       .select(
-        "operator_email, indisp_percent, pausa10, pausa20, pausa_particular, pausa_mon_taref, pausa_treinamento, pausa_feedback, pausa_pre_pausa, pausa_ativo, pausa_take_blip, pausa_email, pausa_indisponivel, pausa_sistema, pausa_operacional, pausa10_1_hora_inicio, pausa10_2_hora_inicio, pausa20_hora_inicio",
+        "operator_email, indisp_percent, pausa10, pausa20, pausa_particular, pausa_mon_taref, pausa_treinamento, pausa_feedback, pausa_pre_pausa, pausa_ativo, pausa_take_blip, pausa_email, pausa_indisponivel, pausa_sistema, pausa_operacional, pausa10_1_hora_inicio, pausa10_2_hora_inicio, pausa20_hora_inicio, report_hora",
       )
       .in("operator_email", emailsComVariantes)
       .eq("data_ref", dataRefHojeBR()),
@@ -124,6 +118,27 @@ export async function getGestorIndisponibilidade(
   if (erroTempoLogado) return { operadores: [], erro: true };
 
   const rows = data ?? [];
+
+  // Conferência do lote: os dois SELECTs são requisições separadas, e o lock
+  // das funções de escrita não os protege. Upload e "Limpar Base" gravam as
+  // duas tabelas na mesma transação, com os MESMOS operadores e o MESMO
+  // report_hora — então, lidas do mesmo lote, as duas listas de
+  // (operador, report_hora) são iguais. Diferentes = um upload/limpeza
+  // confirmou entre as leituras: devolve erro em vez de misturar tempo logado
+  // de um lote com pausas de outro (a action de refetch lê de novo).
+  const loteTempoLogado = new Set(
+    tempoLogadoRows.map((r) => `${getEmailPrefix(r.operator_email)}|${r.report_hora ?? ""}`),
+  );
+  const loteIndisp = new Set(
+    rows.map((r) => `${getEmailPrefix(r.operator_email)}|${r.report_hora ?? ""}`),
+  );
+  if (
+    loteTempoLogado.size !== loteIndisp.size ||
+    [...loteIndisp].some((chave) => !loteTempoLogado.has(chave))
+  ) {
+    console.warn("[get-gestor-indisponibilidade] leituras de lotes diferentes (upload/limpeza no meio)");
+    return { operadores: [], erro: true, loteDivergente: true };
+  }
   // Chave por PREFIXO — mesma pessoa pode vir @alloha.com ou
   // @sumicity.net.br no CSV; o roster só guarda @alloha.com.
   const rowPorPrefixo = new Map(rows.map((row) => [getEmailPrefix(row.operator_email), row]));
@@ -140,7 +155,6 @@ export async function getGestorIndisponibilidade(
       return {
         email,
         indisponibilidade: null,
-        cumpriuMeta: false,
         nr17Pct: null,
         pausaParticularPct: null,
         outrasPausasPct: null,
@@ -195,7 +209,6 @@ export async function getGestorIndisponibilidade(
       // uploads mesmo se o CSV variar de domínio.
       email,
       indisponibilidade: row.indisp_percent,
-      cumpriuMeta: row.indisp_percent !== null && row.indisp_percent < metaIndisponibilidade,
       nr17Pct: pct(pausa10Seg + pausa20Seg, tempoLogadoSeg),
       pausaParticularPct: pct(particularSeg, tempoLogadoSeg),
       outrasPausasPct: pct(outrasPausasSeg, tempoLogadoSeg),
