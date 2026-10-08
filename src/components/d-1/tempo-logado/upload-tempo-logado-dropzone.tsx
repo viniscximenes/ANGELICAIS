@@ -6,9 +6,11 @@ import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
 import { UploadProgressModal } from "@/components/d-1/upload-progress-modal";
+import { TOAST_CLASS } from "@/components/dashboard/tempo-indisponibilidade/constantes";
 import { ReactBitsFolder } from "@/components/ui/react-bits-folder";
 import { uploadTempoLogadoAction } from "@/lib/d1-db/actions/upload-tempo-logado-action";
 import { useFaviconLoading } from "@/lib/favicon/use-favicon-loading";
+import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 
 type UploadStep =
   | "attaching"
@@ -84,25 +86,37 @@ export function UploadTempoLogadoDropzone({
       if (firstLineBreak === -1 || csvText.length < 50) {
         setStep(null);
         setErrorMessage("CSV vazio ou inválido.");
-        toast.error("CSV vazio", { className: "toast-padrao" });
+        toast.error("CSV vazio", { className: TOAST_CLASS });
         return;
       }
 
-      await new Promise((r) => setTimeout(r, 600));
-
+      // Sem esperas artificiais entre as etapas (mesmo padrão do UploadDropzone
+      // do Consolidado): o modal acompanha o tempo real do servidor.
       setStep("deleting");
-      await new Promise((r) => setTimeout(r, 400));
-
       setStep("replacing");
 
-      const uploadResult = await uploadTempoLogadoAction(csvText);
+      // try próprio em volta da action (mesmo padrão do UploadDropzone do
+      // Consolidado): falha da action não é "erro ao ler arquivo". Server
+      // Action de um build anterior (hot reload em dev, ou deploy novo com a
+      // aba aberta) avisa e recarrega, em vez do toast de leitura.
+      let uploadResult;
+      try {
+        uploadResult = await uploadTempoLogadoAction(csvText);
+      } catch (err) {
+        setStep(null);
+        if (handleStaleActionError(err)) return;
+        setErrorMessage("Erro inesperado ao enviar a base.");
+        toast.error("Falha ao atualizar base", { className: TOAST_CLASS });
+        console.error("[upload-tempo-logado] action error:", err);
+        return;
+      }
 
       if (!uploadResult.success) {
         setStep(null);
         setErrorMessage(uploadResult.error);
         toast.error("Falha ao atualizar base", {
           description: uploadResult.error,
-          className: "toast-padrao",
+          className: TOAST_CLASS,
         });
         return;
       }
@@ -110,14 +124,15 @@ export function UploadTempoLogadoDropzone({
       setRowsWritten(uploadResult.rowsWritten);
       setStep("done");
 
-      setTimeout(() => {
-        if (!recarregarComModalAberto) setStep(null);
-        window.location.reload();
-      }, 3000);
+      // Direto pro reload, sem a pausa de 3s na tela de concluído (mesmo
+      // padrão do UploadDropzone do Consolidado). O piso de 1s do
+      // carregamento da página continua (RISCO-ACEITO em page.tsx).
+      if (!recarregarComModalAberto) setStep(null);
+      window.location.reload();
     } catch (err) {
       setStep(null);
       setErrorMessage("Erro ao ler arquivo");
-      toast.error("Não foi possível ler o arquivo", { className: "toast-padrao" });
+      toast.error("Não foi possível ler o arquivo", { className: TOAST_CLASS });
       console.error("[upload-tempo-logado] read error:", err);
     }
   }, [recarregarComModalAberto]);

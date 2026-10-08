@@ -28,6 +28,22 @@ export type TempoLogadoCsvRow = {
    * aderência de pausas usa pra comparar horário real vs. programado.
    */
   hora_inicio: string | null;
+  /**
+   * TIMESTAMP completo DESTA linha, normalizado (trim + espaços colapsados) —
+   * ex.: "Wed, 7 Oct 2026 20:59:59". null quando o CSV não traz a coluna.
+   * Usado pra casar a linha de estado "Logout" com o fim da sessão de login
+   * (ver logout_timestamp_bruto).
+   */
+  timestamp_bruto: string | null;
+  /**
+   * LOGOUT TIMESTAMP completo, normalizado do mesmo jeito — só em linhas
+   * "login". Um logout de verdade sempre tem uma linha de estado "Logout" do
+   * mesmo operador começando nesse instante; a sessão ainda aberta no
+   * momento da extração vem com o logout = fim da janela do relatório e SEM
+   * essa linha (conferido na base de 2026-10-07: 912 de 912 logouts reais
+   * com a linha, 0 de 80 sessões cortadas).
+   */
+  logout_timestamp_bruto: string | null;
 };
 
 type ParseTempoLogadoCsvResult = {
@@ -35,7 +51,15 @@ type ParseTempoLogadoCsvResult = {
   lidas: number;
   validas: number;
   puladas: number;
+  /** false em export antigo sem a coluna TIMESTAMP — sem ela não dá pra conferir o logout. */
+  temColunaTimestamp: boolean;
 };
+
+/** Trim + espaços colapsados, pra comparar timestamps vindos de colunas diferentes. */
+function normalizarTimestamp(val: string | undefined | null): string | null {
+  const limpo = (val ?? "").trim().replace(/\s+/g, " ");
+  return limpo || null;
+}
 
 const REQUIRED_COLUMNS = [
   "AGENT NAME",
@@ -99,7 +123,7 @@ export function parseTempoLogadoCsv(csvText: string): ParseTempoLogadoCsvResult 
 
   const rows = parsed.data;
   if (rows.length < 2) {
-    return { linhas: [], lidas: 0, validas: 0, puladas: 0 };
+    return { linhas: [], lidas: 0, validas: 0, puladas: 0, temColunaTimestamp: false };
   }
 
   const normalizedHeaders = rows[0].map(normalizeHeader);
@@ -175,9 +199,11 @@ export function parseTempoLogadoCsv(csvText: string): ParseTempoLogadoCsvResult 
       login_timestamp_hora: isLogin ? extrairHoraDoTimestamp(row[idxLoginTimestamp]) : null,
       logout_timestamp_hora: isLogin ? extrairHoraDoTimestamp(row[idxLogoutTimestamp]) : null,
       hora_inicio: horaInicio,
+      timestamp_bruto: idxTimestamp === -1 ? null : normalizarTimestamp(row[idxTimestamp]),
+      logout_timestamp_bruto: isLogin ? normalizarTimestamp(row[idxLogoutTimestamp]) : null,
     });
     validas++;
   }
 
-  return { linhas, lidas, validas, puladas };
+  return { linhas, lidas, validas, puladas, temColunaTimestamp: idxTimestamp !== -1 };
 }

@@ -1,8 +1,9 @@
-import type {
-  GestorIndispLinha,
-  GestorTempoLogadoLinha,
-  PausasDetalhe,
-  StatusPresenca,
+import {
+  PAUSAS_ZERADAS,
+  type GestorIndispLinha,
+  type GestorTempoLogadoLinha,
+  type PausasDetalhe,
+  type StatusPresenca,
 } from "@/lib/d1-db/types";
 
 export type OperadorAnaliticoTempoIndisp = {
@@ -23,25 +24,6 @@ export type OperadorAnaliticoTempoIndisp = {
   pausa10PrimeiraHora: string | null;
   pausa10SegundaHora: string | null;
   pausa20Hora: string | null;
-};
-
-const PAUSAS_ZERADAS: PausasDetalhe = {
-  pausa10: "00:00:00",
-  pausa20: "00:00:00",
-  pausaParticular: "00:00:00",
-  monOuTaref: "00:00:00",
-  trenOuReun: "00:00:00",
-  feedback: "00:00:00",
-  prePausa: "00:00:00",
-  ativo: "00:00:00",
-  takeBlip: "00:00:00",
-  pausa15: "00:00:00",
-  pausa40: "00:00:00",
-  operacional: "00:00:00",
-  email: "00:00:00",
-  indisponivel: "00:00:00",
-  sistema: "00:00:00",
-  pausaSemMotivo: "00:00:00",
 };
 
 /**

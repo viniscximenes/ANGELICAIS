@@ -45,14 +45,18 @@ export function CardsResumoAnalitico({
   const nr17Media = media(operadores, (op) => op.nr17Pct);
   const particularMedia = media(operadores, (op) => op.pausaParticularPct);
 
+  // Sempre com veredito pela meta geral (06:20:00), inclusive com operador
+  // ainda logado — a escala é fixa, então a meta vale o dia todo (pedido do
+  // usuário, 2026-10-08). Neutro só sem dado.
+  const semVereditoTL = tempoLogadoMedioSegundos === null;
+
   // >= 06:20:00 = verde — MESMA comparação de cumpriuMetaTL
   // (get-gestor-tempo-logado.ts: tempoLogadoSegundos >= META_TEMPO_LOGADO_SEGUNDOS).
-  const tempoLogadoClass =
-    tempoLogadoMedioSegundos === null
-      ? "text-foreground"
-      : tempoLogadoMedioSegundos >= META_TEMPO_LOGADO_SEGUNDOS
-        ? "text-success"
-        : "text-danger";
+  const tempoLogadoClass = semVereditoTL
+    ? "text-foreground"
+    : tempoLogadoMedioSegundos >= META_TEMPO_LOGADO_SEGUNDOS
+      ? "text-success"
+      : "text-danger";
 
   // < meta = verde — MESMA comparação de cumpriuMeta em
   // get-gestor-indisponibilidade.ts (indisp_percent < metaIndisponibilidade,
@@ -87,7 +91,7 @@ export function CardsResumoAnalitico({
             // dado: mantém var(--primary).
             style={{
               background:
-                tempoLogadoMedioSegundos === null
+                semVereditoTL
                   ? "var(--primary)"
                   : tempoLogadoMedioSegundos >= META_TEMPO_LOGADO_SEGUNDOS
                     ? "var(--success)"

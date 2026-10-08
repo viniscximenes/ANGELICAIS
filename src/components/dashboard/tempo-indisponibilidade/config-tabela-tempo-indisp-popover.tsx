@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { IconCheck, IconChevronDown, IconLoader2, IconSettings } from "@tabler/icons-react";
 import { toast } from "sonner";
@@ -22,6 +22,8 @@ import {
 } from "@/lib/gestor/config-tabela-tempo-indisp/types";
 import { cn } from "@/lib/utils";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
+
+import { TOAST_CLASS } from "./constantes";
 
 interface ConfigTabelaTempoIndispPopoverProps {
   metaIndisponibilidadeInicial: number;
@@ -71,10 +73,13 @@ export function ConfigTabelaTempoIndispPopover({
   function handleSave() {
     const valor = Number(meta.replace(",", "."));
 
-    if (Number.isNaN(valor) || valor < 0 || valor > 100) {
+    // Vazio recusado (mesma regra do ConfigTabelaPopover do Consolidado):
+    // Number("") é 0 e salvaria meta 0% (equipe toda "acima da meta") por
+    // uma edição incompleta.
+    if (meta.trim() === "" || Number.isNaN(valor) || valor < 0 || valor > 100) {
       toast.error("Meta inválida", {
         description: "Informe um valor entre 0 e 100.",
-        className: "toast-padrao",
+        className: TOAST_CLASS,
       });
       return;
     }
@@ -83,25 +88,57 @@ export function ConfigTabelaTempoIndispPopover({
       try {
         const result = await saveConfigTabelaTempoIndispAction(valor, ordem);
         if (result.success) {
-          toast.success("Configurações salvas", { className: "toast-padrao" });
+          toast.success("Configurações salvas", { className: TOAST_CLASS });
           onSaved(valor, ordem);
           setOpen(false);
           onOpenChange?.(false);
         } else {
           toast.error("Erro ao salvar", {
             description: result.error,
-            className: "toast-padrao",
+            className: TOAST_CLASS,
           });
         }
       } catch (err) {
         if (handleStaleActionError(err)) return;
-        toast.error("Erro inesperado ao salvar", { className: "toast-padrao" });
+        toast.error("Erro inesperado ao salvar", { className: TOAST_CLASS });
         console.error("[ConfigTabelaTempoIndispPopover] erro:", err);
       }
     });
   }
 
   const selectedOption = ORDEM_TABELA_TEMPO_INDISP_OPTIONS.find((opt) => opt.value === ordem);
+
+  // Seletor de ordenação (listbox) — mesmo padrão do ConfigTabelaPopover do
+  // Consolidado: foco vai para a opção marcada ao abrir e volta para o botão
+  // ao escolher/Esc.
+  const ordemBotaoRef = useRef<HTMLButtonElement>(null);
+  const ordemOpcoesRef = useRef<(HTMLButtonElement | null)[]>([]);
+
+  function abrirOrdem() {
+    setDropdownOpen(true);
+    const i = Math.max(0, ORDEM_TABELA_TEMPO_INDISP_OPTIONS.findIndex((opt) => opt.value === ordem));
+    requestAnimationFrame(() => ordemOpcoesRef.current[i]?.focus());
+  }
+
+  function fecharOrdem(devolverFoco: boolean) {
+    setDropdownOpen(false);
+    if (devolverFoco) ordemBotaoRef.current?.focus();
+  }
+
+  function handleOrdemListaKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const opcoes = ordemOpcoesRef.current.filter((el): el is HTMLButtonElement => el !== null);
+    const atual = opcoes.indexOf(document.activeElement as HTMLButtonElement);
+    let proximo: number | null = null;
+    if (e.key === "ArrowDown") proximo = Math.min(opcoes.length - 1, atual + 1);
+    else if (e.key === "ArrowUp") proximo = Math.max(0, atual - 1);
+    else if (e.key === "Home") proximo = 0;
+    else if (e.key === "End") proximo = opcoes.length - 1;
+    else if (e.key === "Tab") setDropdownOpen(false);
+    if (proximo !== null) {
+      e.preventDefault();
+      opcoes[proximo]?.focus();
+    }
+  }
 
   return (
     <>
@@ -136,9 +173,23 @@ export function ConfigTabelaTempoIndispPopover({
         <PopoverContent
           data-page="reports-tempo-indisponibilidade"
           align="end"
-          // Sem auto-foco ao abrir (mesmo do consolidado): o Radix foca (e
-          // seleciona) o primeiro campo.
-          onOpenAutoFocus={(e) => e.preventDefault()}
+          // O Radix focaria (e selecionaria) o campo da meta. Em vez disso o
+          // foco vai para o próprio conteúdo (mesmo padrão do Consolidado):
+          // fica DENTRO do popover, então o próximo Tab entra nos campos —
+          // antes só cancelava o auto-foco e o foco ficava fora, sem acesso
+          // aos controles pelo teclado.
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement | null)?.focus({ preventScroll: true });
+          }}
+          // Esc com o seletor de ordenação aberto fecha só o seletor (o Radix
+          // escuta o Esc no documento, antes do onKeyDown da lista).
+          onEscapeKeyDown={(e) => {
+            if (dropdownOpen) {
+              e.preventDefault();
+              fecharOrdem(true);
+            }
+          }}
           // gap-0 + pt-3: mesmo espaçamento do ConfigTabelaPopover (consolidado).
           className="bg-popover text-popover-foreground border-border w-72 gap-0 rounded-2xl border p-4 pt-3 shadow-2xl"
         >
@@ -178,37 +229,65 @@ export function ConfigTabelaTempoIndispPopover({
 
             <div className="space-y-1.5">
               <Label
+                id="config-ordem-tempo-indisp-label"
                 htmlFor="config-ordem-tempo-indisp"
                 className="text-foreground text-xs font-medium"
               >
                 Ordenação Dos Operadores
               </Label>
+              {/* Seletor no padrão listbox (WAI-ARIA), igual ao do Consolidado:
+                  botão anuncia aberto/fechado e a lista; ↑/↓/Home/End movem
+                  entre as opções, Enter/Espaço escolhem, Esc fecha só o
+                  seletor (ver onEscapeKeyDown no PopoverContent) e Tab sai
+                  fechando. */}
               <div className="relative">
                 <button
+                  ref={ordemBotaoRef}
                   type="button"
                   id="config-ordem-tempo-indisp"
                   disabled={isPending}
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  aria-haspopup="listbox"
+                  aria-expanded={dropdownOpen}
+                  aria-controls={dropdownOpen ? "config-ordem-tempo-indisp-lista" : undefined}
+                  onClick={() => (dropdownOpen ? fecharOrdem(false) : abrirOrdem())}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                      e.preventDefault();
+                      abrirOrdem();
+                    }
+                  }}
                   className="border-border bg-transparent text-foreground w-full flex items-center justify-between rounded-lg border px-3.5 py-2.5 text-xs font-medium transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus:outline-none cursor-pointer"
                 >
                   <span>{selectedOption?.label ?? "Selecione..."}</span>
-                  <IconChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", dropdownOpen && "rotate-180")} />
+                  <IconChevronDown size={14} aria-hidden="true" className={cn("text-muted-foreground transition-transform duration-200", dropdownOpen && "rotate-180")} />
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute left-0 right-0 z-50 mt-1.5 rounded-lg border border-border bg-popover text-popover-foreground p-1 shadow-2xl">
-                    {ORDEM_TABELA_TEMPO_INDISP_OPTIONS.map((opt) => {
+                  <div
+                    id="config-ordem-tempo-indisp-lista"
+                    role="listbox"
+                    aria-labelledby="config-ordem-tempo-indisp-label"
+                    onKeyDown={handleOrdemListaKeyDown}
+                    className="absolute left-0 right-0 z-50 mt-1.5 rounded-lg border border-border bg-popover text-popover-foreground p-1 shadow-2xl"
+                  >
+                    {ORDEM_TABELA_TEMPO_INDISP_OPTIONS.map((opt, i) => {
                       const isSelected = opt.value === ordem;
                       return (
                         <button
                           key={opt.value}
+                          ref={(el) => {
+                            ordemOpcoesRef.current[i] = el;
+                          }}
                           type="button"
+                          role="option"
+                          aria-selected={isSelected}
+                          tabIndex={-1}
                           onClick={() => {
                             setOrdem(opt.value);
-                            setDropdownOpen(false);
+                            fecharOrdem(true);
                           }}
                           className={cn(
-                            "w-full flex items-center justify-between rounded-md px-3 py-2 text-xs font-medium transition-colors text-left cursor-pointer",
+                            "w-full flex items-center justify-between rounded-md px-3 py-2 text-xs font-medium transition-colors text-left cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                             isSelected
                               ? "bg-primary text-primary-foreground font-semibold shadow-sm"
                               : "text-foreground hover:bg-accent"

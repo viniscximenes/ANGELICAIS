@@ -15,8 +15,14 @@ import {
  * dedicadas a esta página. Não reaproveita `meta_tx_retencao`/`ordem_tabela`
  * (exclusivas do consolidado) nem `kpi_gestor_metas.indisp_total` (KPI
  * mensal, domínio diferente).
+ *
+ * `erro`: a leitura falhou e meta/ordem vieram no padrão — a página trata
+ * como erro (mesmo campo de getConfigTabela, do Consolidado), em vez de
+ * classificar a equipe por uma meta que não é a do gestor sem avisar.
  */
-export async function getConfigTabelaTempoIndisp(gestorId: string): Promise<ConfigTabelaTempoIndisp> {
+export async function getConfigTabelaTempoIndisp(
+  gestorId: string,
+): Promise<ConfigTabelaTempoIndisp & { erro: boolean }> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -39,5 +45,5 @@ export async function getConfigTabelaTempoIndisp(gestorId: string): Promise<Conf
       ? data.ordem_tabela_tempo_indisp
       : DEFAULT_ORDEM_TABELA_TEMPO_INDISP;
 
-  return { metaIndisponibilidade, ordemTabela };
+  return { metaIndisponibilidade, ordemTabela, erro: Boolean(error) };
 }

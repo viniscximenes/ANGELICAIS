@@ -5,6 +5,7 @@ import { useRef } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -20,6 +21,7 @@ import {
   formatLogout,
 } from "./format-operador-analitico";
 import type { OperadorAnaliticoTempoIndisp } from "./merge-tempo-indisp";
+import { TOAST_CLASS } from "./constantes";
 
 interface Props {
   operador: OperadorAnaliticoTempoIndisp | null;
@@ -47,9 +49,10 @@ export function OperadorAnaliticoDialog({
   // Cor semântica nos valores com meta — igual à TX RETENÇÃO do modal do
   // Consolidado (verde dentro, vermelho fora). MESMOS critérios da tabela
   // principal (tempo-indisp-tabela.tsx: belowMetaTL / acimaMetaIndisp): Tempo
-  // Logado só é avaliado com o dia completo; sem dado fica neutro.
+  // Logado avaliado pra quem já logou, inclusive "ainda logado" (escala
+  // fixa); ausente fica neutro.
   const corTempoLogado =
-    operador.statusTL !== "completo" ? "text-foreground" : operador.cumpriuMetaTL ? "text-success" : "text-danger";
+    operador.statusTL === "ausente" ? "text-foreground" : operador.cumpriuMetaTL ? "text-success" : "text-danger";
   const corIndisp =
     operador.indisponibilidade === null
       ? "text-foreground"
@@ -84,9 +87,16 @@ export function OperadorAnaliticoDialog({
           filename={`${nomeReal}_${dataFile}.png`}
           className="absolute top-2 right-10"
           corDeFundoDoAlvo
-          toastClassName="toast-padrao"
+          toastClassName={TOAST_CLASS}
           showSuccessToast={false}
         />
+
+        {/* Descrição para leitor de tela (o Radix avisa "Missing Description"
+            sem ela) — mesmo padrão do OperadorDetalheDialog do Consolidado.
+            sr-only e FORA do pngRef: não aparece na tela nem no PNG. */}
+        <DialogDescription className="sr-only">
+          Detalhe do operador: tempo logado, indisponibilidade, aderência aos horários programados e pausas do dia.
+        </DialogDescription>
 
         {/*
           Sem template separado pra exportação: o PNG captura este mesmo

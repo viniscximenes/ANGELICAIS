@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { toast } from "sonner";
 
 import { TempoIndispSkeleton, COOKIE_LINHAS } from "@/app/(dashboard)/s/reports/tempo-indisponibilidade/tempo-indisp-skeleton";
@@ -17,8 +18,7 @@ import {
   calcularAderenciaOperador,
 } from "@/lib/d1-db/calcular-aderencia";
 import { clearTempoLogadoAction } from "@/lib/d1-db/actions/clear-tempo-logado-action";
-import { refreshIndisponibilidadeAction } from "@/lib/d1-db/actions/refresh-indisponibilidade-action";
-import { refreshTempoLogadoAction } from "@/lib/d1-db/actions/refresh-tempo-logado-action";
+import { refreshTempoIndispAction } from "@/lib/d1-db/actions/refresh-tempo-indisp-action";
 import type { GestorIndispLinha, GestorTempoLogadoLinha } from "@/lib/d1-db/types";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
 import { formatCabecalhoReport } from "@/lib/gestor/format-cabecalho-report";
@@ -33,6 +33,7 @@ import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 
 import { AderenciaAnalitico } from "./aderencia-analitico";
 import { CardsResumoAnalitico } from "./cards-resumo-analitico";
+import { TOAST_CLASS } from "./constantes";
 import { ConfigTabelaTempoIndispPopover } from "./config-tabela-tempo-indisp-popover";
 import { CopyTempoIndispButton } from "./copy-tempo-indisp-button";
 import { EstouroPausaAnalitico } from "./estouro-pausa-analitico";
@@ -43,11 +44,28 @@ import { PausasNaoRealizadasAnalitico } from "./pausas-nao-realizadas-analitico"
 import { TempoIndispTabela } from "./tempo-indisp-tabela";
 
 // Piso mínimo (ms) do esqueleto no refresh MANUAL ("Limpar base") — mesma
-// duração do piso do carregamento inicial (MIN_LOADING_MS em page.tsx).
+// duração do piso do carregamento inicial (MIN_LOADING_MS em page.tsx): se
+// o refetch já demorou mais que isso, não espera nada extra; se voltou
+// rápido, segura o esqueleto até completar, pra não "piscar".
+//
+// RISCO-ACEITO: depois do "Limpar base", o esqueleto fica no mínimo 1s na tela mesmo com o refetch pronto.
+// Motivo: decisão de produto — mesmo piso do overlay do "Limpar Base" do Consolidado, mantido nas auditorias de 2026-10-07.
+// Mitigação: só afeta o overlay; a limpeza no banco e o refetch não esperam por ele, e se o refetch passar de 1s não há espera extra.
+// Revisar quando: o usuário pedir pra remover o piso, ou o "Limpar base" deixar de mostrar o esqueleto.
 const MIN_REFRESH_LOADING_MS = 1_000;
 
-/** Classe dos toasts desta rota (.toast-padrao, globals.css). */
-const TOAST_CLASS = "toast-padrao";
+/**
+ * Título da página — um só para os dois caminhos de page.tsx (estado
+ * vazio/erro, renderizado lá) e a página com dados (renderizado aqui), em
+ * vez do mesmo <h1> copiado nos dois arquivos.
+ */
+export function TituloTempoIndisp() {
+  return (
+    <h1 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+      Tempo Logado &amp; Indisponibilidade
+    </h1>
+  );
+}
 
 interface TempoIndispSectionProps {
   operadoresTempoLogadoIniciais: GestorTempoLogadoLinha[];
@@ -103,39 +121,75 @@ export function TempoIndispSection({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [limpandoBase, setLimpandoBase] = useState(false);
 
-  const [selecionado, setSelecionado] = useState<OperadorAnaliticoTempoIndisp | null>(null);
+  // Só o e-mail: o operador do dialog é lido da lista ATUAL a cada render
+  // (ver `selecionado` abaixo) — guardar o objeto deixava o dialog aberto
+  // com os números de antes de um refetch.
+  const [selecionadoEmail, setSelecionadoEmail] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  // Mesmo padrão do handleToggleOlho do Consolidado (GestorEquipeSection):
+  // atualização otimista, desfeita se a action devolver { success: false } OU
+  // se a promise rejeitar (falha de rede) — nos dois casos a preferência não
+  // foi salva.
   function handleToggleOlho() {
     const novoValor = !olhoAberto;
     setOlhoAberto(novoValor);
-    void toggleOlhoAction("tempo_indisponibilidade", novoValor);
+    toggleOlhoAction("tempo_indisponibilidade", novoValor)
+      .then((r) => {
+        if (!r.success) {
+          setOlhoAberto(!novoValor);
+          toast.error("Não foi possível salvar a preferência", { className: TOAST_CLASS });
+        }
+      })
+      .catch((err) => {
+        setOlhoAberto(!novoValor);
+        if (!handleStaleActionError(err)) {
+          console.error("[TempoIndispSection] erro ao salvar preferência de olho:", err);
+          toast.error("Não foi possível salvar a preferência", { className: TOAST_CLASS });
+        }
+      });
   }
+
+  // Nº da última busca disparada: dois refetches seguidos (ex.: salvar a
+  // config duas vezes) podem responder fora de ordem — só a resposta da
+  // busca MAIS RECENTE é aplicada, a anterior é descartada.
+  const refetchSeqRef = useRef(0);
 
   // Sem polling nesta página (só o Consolidado reconsulta a cada 30s):
   // refetch é MANUAL, disparado pelo "Limpar Base" e pelo popover de
   // configurações. `metaOverride`: logo após salvar uma meta nova o state
   // ainda não a reflete — passa o valor recém-salvo direto.
   async function refetch(metaOverride?: number) {
+    const seq = ++refetchSeqRef.current;
     try {
-      const [tlResult, indispResult] = await Promise.all([
-        refreshTempoLogadoAction(),
-        refreshIndisponibilidadeAction(metaOverride ?? metaIndisponibilidade),
-      ]);
-      if (tlResult.success) {
-        setOperadoresTL(tlResult.operadores);
-        setHoraReport(tlResult.horaReport);
-        setNomeSupervisorReport(tlResult.nomeSupervisorReport);
-        setDatasBaseReport(tlResult.datasBaseReport);
-      }
-      if (indispResult.success) {
-        setOperadoresIndisp(indispResult.operadores);
-        setPausasProgramadas(indispResult.pausasProgramadas);
-        setToleranciaMin(indispResult.toleranciaMin);
+      // Uma action só (tabela + Analítico): cada leitura acontece uma vez
+      // no servidor, e a tela recebe tudo junto ou nada.
+      const result = await refreshTempoIndispAction(metaOverride ?? metaIndisponibilidade);
+      if (seq !== refetchSeqRef.current) return;
+      if (result.success) {
+        setOperadoresTL(result.operadoresTempoLogado);
+        setOperadoresIndisp(result.operadoresIndisponibilidade);
+        setHoraReport(result.horaReport);
+        setNomeSupervisorReport(result.nomeSupervisorReport);
+        setDatasBaseReport(result.datasBaseReport);
+        setPausasProgramadas(result.pausasProgramadas);
+        setToleranciaMin(result.toleranciaMin);
+      } else {
+        // Falha (inclusive erro de banco, que a action devolve como
+        // success:false): a tela mantém o que já mostrava, mas avisa.
+        toast.error("Não foi possível atualizar a tabela", {
+          description: "Os dados exibidos podem estar desatualizados. Tente novamente.",
+          className: TOAST_CLASS,
+        });
       }
     } catch (err) {
+      if (seq !== refetchSeqRef.current) return;
       if (!handleStaleActionError(err)) {
         console.error("[TempoIndispSection] erro ao atualizar a tabela:", err);
+        toast.error("Não foi possível atualizar a tabela", {
+          description: "Os dados exibidos podem estar desatualizados. Tente novamente.",
+          className: TOAST_CLASS,
+        });
       }
     }
   }
@@ -173,14 +227,71 @@ export function TempoIndispSection({
     }
   }
 
-  const operadoresMerged = ordenarOperadoresTempoIndisp(
-    mergeOperadoresTempoIndisp(operadoresTL, operadoresIndisp),
-    ordemTabela,
+  // Memoizados: a seção re-renderiza por estado que não muda os dados
+  // (popover, dialog, olho, hover no "Copiar imagem"...). Referência estável
+  // também evita que os cards do Analítico refaçam os cálculos deles
+  // (ver useMemo em AderenciaAnalitico).
+  const operadoresMerged = useMemo(
+    () =>
+      ordenarOperadoresTempoIndisp(
+        mergeOperadoresTempoIndisp(operadoresTL, operadoresIndisp),
+        ordemTabela,
+      ),
+    [operadoresTL, operadoresIndisp, ordemTabela],
   );
 
-  const hasDados = operadoresMerged.some(
-    (op) => op.tempoLogadoSegundos > 0 || op.indisponibilidade !== null,
+  const hasDados = useMemo(
+    () => operadoresMerged.some((op) => op.tempoLogadoSegundos > 0 || op.indisponibilidade !== null),
+    [operadoresMerged],
   );
+
+  // Tabela oculta do "Copiar imagem" sob demanda — mesmo padrão do
+  // Consolidado (GestorEquipeSection): monta com ponteiro em cima/foco no
+  // botão e desmonta quando os dois saem e não há captura em andamento.
+  // Antes era uma 2ª tabela inteira no DOM o tempo todo, re-renderizando a
+  // cada mudança de estado da página.
+  const [tabelaPngMontada, setTabelaPngMontada] = useState(false);
+  const pngPonteiroRef = useRef(false);
+  const pngFocoRef = useRef(false);
+  const pngCapturandoRef = useRef(false);
+  const desmontarTabelaPngSePossivel = useCallback(() => {
+    if (!pngPonteiroRef.current && !pngFocoRef.current && !pngCapturandoRef.current) {
+      setTabelaPngMontada(false);
+    }
+  }, []);
+  const pngHandlers = useMemo(
+    () => ({
+      onPointerOver: () => {
+        pngPonteiroRef.current = true;
+        setTabelaPngMontada(true);
+      },
+      onPointerLeave: () => {
+        pngPonteiroRef.current = false;
+        desmontarTabelaPngSePossivel();
+      },
+      onFocus: () => {
+        pngFocoRef.current = true;
+        setTabelaPngMontada(true);
+      },
+      onBlur: () => {
+        pngFocoRef.current = false;
+        desmontarTabelaPngSePossivel();
+      },
+      // Captura: além de marcar a captura, garante a tabela no DOM ANTES do
+      // onClick do botão (flushSync aplica na hora). Diferença do
+      // Consolidado: no toque, o pointerleave dispara antes do click e já
+      // teria desmontado a tabela — lá o clique confia só no hover/foco.
+      onClickCapture: () => {
+        pngCapturandoRef.current = true;
+        flushSync(() => setTabelaPngMontada(true));
+      },
+    }),
+    [desmontarTabelaPngSePossivel],
+  );
+  const handleCapturaPngFim = useCallback(() => {
+    pngCapturandoRef.current = false;
+    desmontarTabelaPngSePossivel();
+  }, [desmontarTabelaPngSePossivel]);
 
   // Guarda o nº de operadores pro esqueleto do próximo carregamento
   // (loading.tsx lê no servidor) ter a mesma altura da tabela real.
@@ -194,23 +305,31 @@ export function TempoIndispSection({
   );
 
   function abrirDialog(op: OperadorAnaliticoTempoIndisp) {
-    setSelecionado(op);
+    setSelecionadoEmail(op.email);
     setDialogOpen(true);
   }
 
-  const aderenciaSelecionado = selecionado
-    ? calcularAderenciaOperador(
-        selecionado.email,
-        {
-          login: selecionado.horaLogin,
-          pausa10Primeira: selecionado.pausa10PrimeiraHora,
-          pausa20: selecionado.pausa20Hora,
-          pausa10Segunda: selecionado.pausa10SegundaHora,
-        },
-        forecastPorOperador,
-        toleranciaMinState,
-      )
-    : { forecast: null, items: [], percentualTotal: null };
+  const selecionado = selecionadoEmail
+    ? (operadoresMerged.find((op) => op.email === selecionadoEmail) ?? null)
+    : null;
+
+  const aderenciaSelecionado = useMemo(
+    () =>
+      selecionado
+        ? calcularAderenciaOperador(
+            selecionado.email,
+            {
+              login: selecionado.horaLogin,
+              pausa10Primeira: selecionado.pausa10PrimeiraHora,
+              pausa20: selecionado.pausa20Hora,
+              pausa10Segunda: selecionado.pausa10SegundaHora,
+            },
+            forecastPorOperador,
+            toleranciaMinState,
+          )
+        : { forecast: null, items: [] },
+    [selecionado, forecastPorOperador, toleranciaMinState],
+  );
 
   // "... fez um report às HH:MM  -   (base do dia DD/MM)" — mesma regra do
   // Consolidado, inclusive "(bases do dia ...)" com mais de um dia na base.
@@ -238,9 +357,7 @@ export function TempoIndispSection({
         <section id="tempo-indisp-section" className="space-y-4">
           <div>
             <div className="pt-4">
-              <h1 className="font-sans text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                Tempo Logado &amp; Indisponibilidade
-              </h1>
+              <TituloTempoIndisp />
 
               {textoReport && (
                 <p className="font-sans text-muted-foreground pt-3 text-sm font-normal whitespace-pre-wrap">
@@ -268,7 +385,15 @@ export function TempoIndispSection({
                 <LimparBaseExpandButton onConfirm={handleLimparBase} pending={limpandoBase} />
               )}
 
-              <CopyTempoIndispButton horaReport={horaReport ?? "—"} />
+              {/* display:contents — não muda o layout da linha de controles.
+                  Ponteiro/foco no botão monta a tabela oculta do PNG (ver
+                  tabelaPngMontada). */}
+              <span className="contents" {...pngHandlers}>
+                <CopyTempoIndispButton
+                  horaReport={horaReport ?? "—"}
+                  onCapturaFim={handleCapturaPngFim}
+                />
+              </span>
             </div>
 
             {/*
@@ -277,17 +402,21 @@ export function TempoIndispSection({
               sempre usa o nome fantasia. Sem `width`: position fixed só com
               top/left faz shrink-wrap na largura real do conteúdo, sem
               rolagem horizontal na captura.
+              Só montado enquanto o ponteiro/foco está no "Copiar imagem" ou
+              uma captura está em andamento (ver pngHandlers).
             */}
-            <div
-              aria-hidden="true"
-              style={{ position: "fixed", top: "-99999px", left: "-99999px" }}
-            >
-              <div data-tempo-indisp-png>
-                <KpiFrame>
-                  <TempoIndispTabela operadores={operadoresMerged} nomeFantasia={nomeFantasia} />
-                </KpiFrame>
+            {tabelaPngMontada && (
+              <div
+                aria-hidden="true"
+                style={{ position: "fixed", top: "-99999px", left: "-99999px" }}
+              >
+                <div data-tempo-indisp-png>
+                  <KpiFrame>
+                    <TempoIndispTabela operadores={operadoresMerged} nomeFantasia={nomeFantasia} />
+                  </KpiFrame>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Anexo em largura cheia ACIMA da tabela: a tabela (8 colunas,
                 ≥1190px) não cabe com o anexo ao lado. */}
@@ -350,12 +479,13 @@ export function TempoIndispSection({
                         metaIndisponibilidade={metaIndisponibilidade}
                       />
                     </div>
-                    <PausasDetalhadasAnalitico operadores={operadoresIndisp} />
+                    <PausasDetalhadasAnalitico operadores={operadoresMerged} />
                   </div>,
                   <AderenciaAnalitico
                     key="aderencia"
                     operadores={operadoresMerged}
                     forecastPorOperador={forecastPorOperador}
+                    toleranciaMin={toleranciaMinState}
                   />,
                   <PausasNaoRealizadasAnalitico
                     key="pausas-nao-realizadas"

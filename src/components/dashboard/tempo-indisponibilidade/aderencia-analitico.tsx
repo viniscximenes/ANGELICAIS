@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+
 import { GraficoVazio } from "@/components/dashboard/retencao/analitico-skeleton";
 import {
   buildForecastPorOperador,
@@ -21,13 +23,6 @@ import {
   STICKY_NOME_CELL_CLASS,
   VALOR_CELL_CLASS,
 } from "@/components/gestor/tabela-analitico";
-
-/**
- * Tolerância FIXA deste card — 10 minutos para mais e para menos, pedido
- * explícito pra esta tabela. Independente de config_aderencia.toleranciaMin
- * (o valor configurável que o OperadorAnaliticoDialog usa).
- */
-const ADERENCIA_CARD_TOLERANCIA_MIN = 10;
 
 const COLUNAS_HORARIO: { key: 0 | 1 | 2 | 3; sufixo: "Prev." | "Real" }[] = [
   { key: 0, sufixo: "Prev." },
@@ -58,6 +53,13 @@ interface Props {
   operadores: OperadorAnaliticoTempoIndisp[];
   /** Mesmo Map já construído em TempoIndispSection (buildForecastPorOperador). */
   forecastPorOperador: ReturnType<typeof buildForecastPorOperador>;
+  /**
+   * Tolerância em minutos, para mais e para menos — a MESMA
+   * config_aderencia.toleranciaMin do OperadorAnaliticoDialog, pra card e
+   * dialog nunca darem veredito diferente pro mesmo horário. Antes era fixa
+   * em 10 aqui (o valor da config hoje, pra todos os gestores).
+   */
+  toleranciaMin: number;
 }
 
 /**
@@ -66,30 +68,37 @@ interface Props {
  * (calcularAderenciaOperador, a mesma do dialog). A aderência de cada pausa
  * aparece só na cor do valor "Real" (verde dentro, vermelho fora).
  */
-export function AderenciaAnalitico({ operadores, forecastPorOperador }: Props) {
-  const linhas = operadores
-    .map((op) => {
-      const aderencia = calcularAderenciaOperador(
-        op.email,
-        {
-          login: op.horaLogin,
-          pausa10Primeira: op.pausa10PrimeiraHora,
-          pausa20: op.pausa20Hora,
-          pausa10Segunda: op.pausa10SegundaHora,
-        },
-        forecastPorOperador,
-        ADERENCIA_CARD_TOLERANCIA_MIN,
-      );
-      return { op, aderencia };
-    })
-    .filter(({ aderencia }) => aderencia.forecast !== null);
+export function AderenciaAnalitico({ operadores, forecastPorOperador, toleranciaMin }: Props) {
+  // Memoizado: a seção re-renderiza por estado que não muda estes dados
+  // (popover, dialog, olho...) — `operadores` e `forecastPorOperador` chegam
+  // com referência estável (useMemo em TempoIndispSection).
+  const linhas = useMemo(
+    () =>
+      operadores
+        .map((op) => {
+          const aderencia = calcularAderenciaOperador(
+            op.email,
+            {
+              login: op.horaLogin,
+              pausa10Primeira: op.pausa10PrimeiraHora,
+              pausa20: op.pausa20Hora,
+              pausa10Segunda: op.pausa10SegundaHora,
+            },
+            forecastPorOperador,
+            toleranciaMin,
+          );
+          return { op, aderencia };
+        })
+        .filter(({ aderencia }) => aderencia.forecast !== null),
+    [operadores, forecastPorOperador, toleranciaMin],
+  );
 
   return (
     <div className={CARD_CLASS}>
       <div className="shrink-0">
         <h3 className="ds-h3 font-semibold text-foreground">Aderência de login e pausas</h3>
         <p className="ds-small text-muted-foreground mt-1">
-          Aderência avaliada com tolerância de 10 minutos para mais ou para menos em cada horário (login e pausas).
+          Aderência avaliada com tolerância de {toleranciaMin} minutos para mais ou para menos em cada horário (login e pausas).
         </p>
       </div>
 

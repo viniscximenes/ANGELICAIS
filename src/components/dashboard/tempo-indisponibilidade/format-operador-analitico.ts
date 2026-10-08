@@ -14,6 +14,7 @@ export const PAUSA_FIELDS: { key: keyof PausasDetalhe; label: string }[] = [
   { key: "takeBlip", label: "Take Blip" },
   { key: "email", label: "E-mail" },
   { key: "indisponivel", label: "Indisponível" },
+  { key: "operacional", label: "Operacional" },
   { key: "sistema", label: "Sistema" },
 ];
 

@@ -28,6 +28,30 @@
   outline: none;
   box-shadow: none;
 }
+
+/* Foco por teclado (mesma regra do #config-meta-tx do Consolidado): sem o
+ * contorno preto acima, mas com uma borda sutil na cor --ring — só em
+ * :focus-visible, então o clique com mouse continua com a borda neutra de
+ * sempre. Vence o focus-visible:border-input do componente (utilitário do
+ * Tailwind). Antes o campo ficava sem nenhum indicador de foco. */
+[data-page="reports-tempo-indisponibilidade"] #config-meta-indisp:focus-visible {
+  border-color: var(--ring);
+}
 [data-theme="light"] [data-page="reports-tempo-indisponibilidade"] #config-meta-indisp {
   background-color: color-mix(in oklab, var(--input) 30%, transparent);
+}
+
+/* ───────── Popover "Configurações da Tabela" ─────────
+ * Mesma correção do Consolidado (reports-consolidado.css): ao abrir, o foco
+ * vai para o próprio conteúdo (onOpenAutoFocus em
+ * config-tabela-tempo-indisp-popover.tsx). Aberto pelo teclado, esse foco
+ * casa com :focus-visible e a regra global unlayered (globals.css) aplicava
+ * contorno primário e border-radius 4px ao popover inteiro. revert-layer
+ * devolve o outline-hidden/rounded-2xl dos utilitários do componente. O
+ * conteúdo com tabIndex -1 não é parada de Tab: o foco visível fica nos
+ * campos.
+ */
+[data-page="reports-tempo-indisponibilidade"][data-slot="popover-content"]:focus-visible {
+  outline: revert-layer;
+  border-radius: revert-layer;
 }

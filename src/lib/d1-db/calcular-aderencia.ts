@@ -36,14 +36,11 @@ export type AderenciaOperador = {
   /** null quando o operador não está cadastrado em base_pausas_programadas. */
   forecast: PausaProgramadaDb | null;
   items: AderenciaItem[];
-  /** % dos items calculáveis dentro da tolerância. null se nenhum item é calculável. */
-  percentualTotal: number | null;
 };
 
 const ADERENCIA_VAZIA: AderenciaOperador = {
   forecast: null,
   items: [],
-  percentualTotal: null,
 };
 
 /** Índice de forecasts por PREFIXO de e-mail — mesma convenção de get-gestor-*.ts. */
@@ -143,11 +140,5 @@ export function calcularAderenciaOperador(
     calcularItem("2ª Pausa 10", horasReais.pausa10Segunda, forecast.descanso2, toleranciaMin),
   ];
 
-  const calculaveis = items.filter((i) => i.dentroTolerancia !== null);
-  const percentualTotal =
-    calculaveis.length > 0
-      ? (calculaveis.filter((i) => i.dentroTolerancia).length / calculaveis.length) * 100
-      : null;
-
-  return { forecast, items, percentualTotal };
+  return { forecast, items };
 }

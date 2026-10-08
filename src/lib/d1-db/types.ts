@@ -110,11 +110,9 @@ export type StatusPresenca = "completo" | "ainda_logado" | "ausente";
 
 export type GestorTempoLogadoLinha = {
   email: string;
-  gestor: string;
   tempoLogado: string; // "HH:MM:SS"
   tempoLogadoSegundos: number;
   cumpriuMeta: boolean;
-  logoutEstimado: string;
   horaLogin: string | null;
   horaLogout: string | null;
   status: StatusPresenca;
@@ -122,6 +120,8 @@ export type GestorTempoLogadoLinha = {
 
 export type GestorTempoLogadoData = {
   operadores: GestorTempoLogadoLinha[];
+  /** Falha de banco (roster ou d1_tempo_logado) — a página mostra erro, não "sem dados". */
+  erro: boolean;
   horaReport?: string;
   nomeSupervisorReport?: string | null;
   /** Dias (YYYY-MM-DD) da base do último upload — coluna DATE da base, não o dia do upload. */
@@ -137,11 +137,11 @@ export const META_INDISPONIBILIDADE = 14.5; // %; cumpriu se indisponibilidade <
 /**
  * Detalhamento de pausas — mantido no formato histórico (16 campos) por
  * compatibilidade com IndisponibilidadePausasTable. A tabela nova
- * (d1_indisponibilidade) NÃO tem coluna própria para pausa15, pausa40,
- * operacional e pausaSemMotivo (existiam no Sheets antigo, sem
- * equivalente no schema atual) — ficam sempre "00:00:00" até o schema
- * ganhar essas colunas, se algum dia for preciso. Ver observação no
- * relatório de migração.
+ * (d1_indisponibilidade) NÃO tem coluna própria para pausa15, pausa40 e
+ * pausaSemMotivo (existiam no Sheets antigo, sem equivalente no schema
+ * atual) — ficam sempre "00:00:00" até o schema ganhar essas colunas, se
+ * algum dia for preciso. `operacional` vem de pausa_operacional (coluna
+ * criada em 2026-10-08; uploads anteriores ficam null → "00:00:00").
  */
 export type PausasDetalhe = {
   pausa10: string;
@@ -162,9 +162,32 @@ export type PausasDetalhe = {
   pausaSemMotivo: string;
 };
 
+/**
+ * Pausas de quem não tem linha em d1_indisponibilidade hoje — fonte única,
+ * usada pela leitura do servidor (get-gestor-indisponibilidade.ts) e pelo
+ * merge da UI (merge-tempo-indisp.ts).
+ */
+export const PAUSAS_ZERADAS: PausasDetalhe = {
+  pausa10: "00:00:00",
+  pausa20: "00:00:00",
+  pausaParticular: "00:00:00",
+  monOuTaref: "00:00:00",
+  trenOuReun: "00:00:00",
+  feedback: "00:00:00",
+  prePausa: "00:00:00",
+  ativo: "00:00:00",
+  takeBlip: "00:00:00",
+  pausa15: "00:00:00",
+  pausa40: "00:00:00",
+  operacional: "00:00:00",
+  email: "00:00:00",
+  indisponivel: "00:00:00",
+  sistema: "00:00:00",
+  pausaSemMotivo: "00:00:00",
+};
+
 export type GestorIndispLinha = {
   email: string;
-  gestor?: string;
   indisponibilidade: number | null;
   cumpriuMeta: boolean;
   nr17Pct: number | null;
@@ -172,7 +195,7 @@ export type GestorIndispLinha = {
   /**
    * % de todas as pausas que não são NR17 (pausa10+pausa20) nem Particular
    * — treinamento, feedback, pré-pausa, ativo, take blip, email,
-   * indisponível, sistema e monitoramento/tarefa — sobre o tempo logado.
+   * indisponível, sistema, monitoramento/tarefa e operacional — sobre o tempo logado.
    * Usada pela coluna "Outras Pausas" da tabela unificada; o detalhamento
    * por pausa individual (Monitoramento, Feedback etc.) continua em
    * `pausas` abaixo.
@@ -190,8 +213,9 @@ export type GestorIndispLinha = {
   pausa20Hora: string | null;
 };
 
+/** Hora/nome do report ficam em GestorTempoLogadoData (mesmo upload, mesmos valores). */
 export type GestorIndispData = {
   operadores: GestorIndispLinha[];
-  horaReport?: string;
-  nomeSupervisorReport?: string | null;
+  /** Falha de banco (roster, d1_indisponibilidade ou d1_tempo_logado) — a página mostra erro, não "sem dados". */
+  erro: boolean;
 };

@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -25,6 +23,12 @@ type UploadTempoLogadoResult =
       operadoresSemGestor: number;
     }
   | { success: false; error: string };
+
+/** Teto de linhas do CSV — o mesmo número dito no aria-label do UploadTempoLogadoDropzone. */
+const MAX_LINHAS_CSV = 50_000;
+
+/** Mensagem genérica pro cliente: o erro cru do banco fica só no log do servidor. */
+const ERRO_GRAVAR_BASE = "Não foi possível gravar a base. Tente novamente.";
 
 type Agregado = {
   email: string;
@@ -54,11 +58,18 @@ function novoAgregado(email: string, nome: string): Agregado {
   };
 }
 
-function aplicarLinha(agg: Agregado, linha: TempoLogadoCsvRow) {
+/**
+ * `logoutConfirmado`: o LOGOUT TIMESTAMP da sessão tem uma linha de estado
+ * "Logout" do mesmo operador começando no mesmo instante. Sem ela, o logout
+ * é só o fim da janela do relatório (operador ainda logado quando a base foi
+ * extraída) e a sessão conta como aberta — a tabela mostra "Ainda logado"
+ * em vez da hora da extração.
+ */
+function aplicarLinha(agg: Agregado, linha: TempoLogadoCsvRow, logoutConfirmado: boolean) {
   if (linha.state.trim().toLowerCase() === "login") {
     agg.tempoLogadoSeg += linha.login_time_seg ?? 0;
     if (linha.login_timestamp_hora) agg.loginHoras.push(linha.login_timestamp_hora);
-    if (linha.logout_timestamp_hora) {
+    if (linha.logout_timestamp_hora && logoutConfirmado) {
       agg.logoutHoras.push(linha.logout_timestamp_hora);
     } else {
       agg.sessaoAberta = true;
@@ -93,6 +104,11 @@ export async function uploadTempoLogadoAction(
     return { success: false, error: "Sem permissão para atualizar a base" };
   }
 
+  // Server Action é endpoint público: o tipo do TS não chega em runtime.
+  if (typeof csvText !== "string" || csvText.length === 0) {
+    return { success: false, error: "Arquivo vazio ou inválido." };
+  }
+
   let parseResult;
   try {
     parseResult = parseTempoLogadoCsv(csvText);
@@ -111,6 +127,34 @@ export async function uploadTempoLogadoAction(
     return { success: false, error: "Nenhuma linha válida encontrada no CSV." };
   }
 
+  // Mesmo limite anunciado na área de anexo (aria-label do dropzone) — antes
+  // só existia no texto. Conta as linhas lidas (válidas + puladas), não só
+  // as válidas: o teto barra arquivo errado/gigante antes de gravar no banco.
+  if (parseResult.lidas > MAX_LINHAS_CSV) {
+    return {
+      success: false,
+      error: `O arquivo tem ${parseResult.lidas.toLocaleString("pt-BR")} linhas — o limite é ${MAX_LINHAS_CSV.toLocaleString("pt-BR")}.`,
+    };
+  }
+
+  // Logouts de verdade: toda saída real gera uma linha de estado "Logout"
+  // do operador começando no instante do logout. A sessão que ainda estava
+  // aberta quando a base foi extraída vem com LOGOUT TIMESTAMP = fim da
+  // janela do relatório (ex.: 20:59:59 pra todo mundo logado) e sem essa
+  // linha — antes ela virava um logout falso, na hora da extração.
+  const logoutsRegistrados = new Set<string>();
+  for (const linha of parseResult.linhas) {
+    if (linha.state.trim().toLowerCase() === "logout" && linha.timestamp_bruto) {
+      logoutsRegistrados.add(`${linha.agent_user}|${linha.timestamp_bruto}`);
+    }
+  }
+  // Export antigo sem a coluna TIMESTAMP: não dá pra conferir, mantém o
+  // comportamento anterior (confia no LOGOUT TIMESTAMP).
+  const logoutConfirmado = (linha: TempoLogadoCsvRow) =>
+    !parseResult.temColunaTimestamp ||
+    (linha.logout_timestamp_bruto !== null &&
+      logoutsRegistrados.has(`${linha.agent_user}|${linha.logout_timestamp_bruto}`));
+
   // 1. Agrega por operador (agent_user)
   const porOperador = new Map<string, Agregado>();
   for (const linha of parseResult.linhas) {
@@ -119,7 +163,7 @@ export async function uploadTempoLogadoAction(
       agg = novoAgregado(linha.agent_email.trim().toLowerCase(), linha.agent_name);
       porOperador.set(linha.agent_user, agg);
     }
-    aplicarLinha(agg, linha);
+    aplicarLinha(agg, linha, logoutConfirmado(linha));
   }
 
   const admin = createAdminClient();
@@ -231,33 +275,41 @@ export async function uploadTempoLogadoAction(
     });
   }
 
-  if (rowsTempoLogado.length > 0) {
-    const { error: upsertErr1 } = await admin
-      .from("d1_tempo_logado")
-      .upsert(rowsTempoLogado, { onConflict: "data_ref,operator_email" });
+  // Grava as duas tabelas numa transação só (função
+  // substituir_base_tempo_logado, scripts/sql/upload-tempo-logado-atomico.sql)
+  // — mesmo padrão do upload do Consolidado. Ou grava tudo, ou nada: antes
+  // eram dois upserts separados e uma falha no segundo deixava a tabela com
+  // a base nova e o Analítico (pausas/aderência) com a velha. A função também
+  // pega o mesmo advisory lock do "Limpar Base": um espera o outro terminar.
+  // Cada upload é a base completa do dia: quem tinha linha hoje e não veio
+  // neste CSV sai das duas tabelas (mesma regra de substituir_base_consolidado
+  // — antes ficava com os números do upload anterior).
+  //
+  // RISCO-ACEITO: um CSV com só parte da operação (ex.: uma equipe) apaga as linhas de hoje de todas as outras equipes.
+  // Motivo: decisão do usuário (2026-10-08) — a base é única/compartilhada e cada upload deve ser a base completa do dia, como no Consolidado.
+  // Mitigação: lote sem nenhum operador mapeado é recusado (aqui e na função do banco); a base fica salva no sistema externo e basta colar a completa de novo.
+  // Revisar quando: houver upload por equipe, ou a base deixar de ser exportada inteira (regra no Supabase: substituir_base_tempo_logado, scripts/sql/upload-tempo-logado-atomico.sql).
+  //
+  // Nenhum operador do CSV mapeado a gestor (arquivo errado, ou base de
+  // outra operação): nada seria gravado e a tela mostraria "concluído" sem
+  // mudar nada. Recusa com a mesma mensagem do upload do Consolidado.
+  if (rowsTempoLogado.length === 0) {
+    return {
+      success: false,
+      error:
+        "Nenhum operador do CSV está vinculado a um gestor — a base não foi alterada. Confira se o arquivo é a base certa.",
+    };
+  }
 
-    if (upsertErr1) {
-      console.error("[upload-tempo-logado] erro no upsert de d1_tempo_logado:", upsertErr1.message);
-      return {
-        success: false,
-        error: `Erro ao gravar d1_tempo_logado: ${upsertErr1.message}`,
-      };
-    }
+  const { error: rpcErr } = await admin.rpc("substituir_base_tempo_logado", {
+    p_tempo_logado: rowsTempoLogado,
+    p_indisponibilidade: rowsIndisp,
+    p_data_ref: dataRef,
+  });
 
-    const { error: upsertErr2 } = await admin
-      .from("d1_indisponibilidade")
-      .upsert(rowsIndisp, { onConflict: "data_ref,operator_email" });
-
-    if (upsertErr2) {
-      console.error(
-        "[upload-tempo-logado] erro no upsert de d1_indisponibilidade:",
-        upsertErr2.message,
-      );
-      return {
-        success: false,
-        error: `Erro ao gravar d1_indisponibilidade: ${upsertErr2.message}`,
-      };
-    }
+  if (rpcErr) {
+    console.error("[upload-tempo-logado] erro ao gravar a base:", rpcErr.message);
+    return { success: false, error: ERRO_GRAVAR_BASE };
   }
 
   if (operadoresSemGestor > 0) {
@@ -266,7 +318,10 @@ export async function uploadTempoLogadoAction(
     );
   }
 
-  revalidatePath("/s/reports/tempo-indisponibilidade");
+  // Sem revalidatePath (mesmo motivo do upload do Consolidado): o
+  // UploadTempoLogadoDropzone (único chamador) faz window.location.reload()
+  // logo depois — revalidar só refazia a página dentro da resposta pra ela
+  // ser jogada fora pelo reload.
 
   return {
     success: true,

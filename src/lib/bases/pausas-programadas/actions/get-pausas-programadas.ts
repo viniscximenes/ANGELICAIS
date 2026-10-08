@@ -1,4 +1,8 @@
-"use server";
+// Leitura só de servidor (páginas e outras actions) — NÃO é Server Action:
+// sem "use server", não vira endpoint chamável do navegador com um
+// `rosterEmails` escolhido pelo cliente. server-only quebra o build se
+// algum componente client importar este módulo.
+import "server-only";
 
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
@@ -9,25 +13,41 @@ import type { PausaProgramadaDb } from "../types";
 
 /**
  * Lê a base de pausas programadas (base_pausas_programadas), ordenada por
- * e-mail do operador. Retorna [] sem permissão ou em caso de erro — quem
- * chama (a página) já fez o próprio gate de acesso.
+ * e-mail do operador. Retorna [] sem permissão. Erro de banco LANÇA — mesmo
+ * par de get-roster-gestor.ts (getRosterOperadoresGestorOuErro): o painel
+ * do gestor trata a falha como erro da página, em vez de mostrar "Sem
+ * horários programados". Quem chama (a página) já fez o próprio gate de
+ * acesso.
  *
  * @param rosterEmails Quando informado, filtra só os operadores desse roster
  * (expandindo por variantes de domínio, mesmo padrão de get-gestor-*.ts) —
  * usado pelo painel do gestor (Tempo Logado & Indisponibilidade), que só
- * precisa da própria equipe. Omitido, busca a base inteira — usado pela tela
- * administrativa (/s/bases/pausas), que precisa ver/editar todo mundo.
+ * precisa da própria equipe. Roster vazio → []. Omitido, busca a base
+ * inteira — só para quem tem manage_system (tela administrativa
+ * /s/bases/pausas, que precisa ver/editar todo mundo).
  */
-export async function getPausasProgramadas(
+export async function getPausasProgramadasOuErro(
   rosterEmails?: string[],
+  /**
+   * Usuário já autenticado por quem chama (refreshTempoIndispAction): o
+   * cache() de getCurrentUser não deduplica dentro de Server Action, e sem
+   * isto a action autenticaria duas vezes. Módulo server-only — não chega
+   * do navegador. Omitido, autentica aqui.
+   */
+  usuario?: Awaited<ReturnType<typeof getCurrentUser>>,
 ): Promise<PausaProgramadaDb[]> {
-  const user = await getCurrentUser();
+  const user = usuario === undefined ? await getCurrentUser() : usuario;
   if (!user) return [];
 
-  if (
-    !can(user.profile.role, "manage_system", user.profile.isAdminSkill) &&
-    !can(user.profile.role, "view_gestor_panel")
-  ) {
+  const podeVerBaseInteira = can(user.profile.role, "manage_system", user.profile.isAdminSkill);
+
+  if (!podeVerBaseInteira && !can(user.profile.role, "view_gestor_panel")) {
+    return [];
+  }
+
+  // Gestor só lê a própria equipe: sem roster, nada (antes, roster vazio ou
+  // omitido devolvia a base inteira).
+  if (rosterEmails === undefined ? !podeVerBaseInteira : rosterEmails.length === 0) {
     return [];
   }
 
@@ -39,7 +59,7 @@ export async function getPausasProgramadas(
     )
     .order("operator_email", { ascending: true });
 
-  if (rosterEmails && rosterEmails.length > 0) {
+  if (rosterEmails !== undefined) {
     query = query.in("operator_email", rosterEmails.flatMap(getEmailVariants));
   }
 
@@ -47,7 +67,7 @@ export async function getPausasProgramadas(
 
   if (error) {
     console.error("[get-pausas-programadas] erro:", error.message);
-    return [];
+    throw new Error(error.message);
   }
 
   return (data ?? []).map((row) => ({
@@ -61,4 +81,18 @@ export async function getPausasProgramadas(
     descanso2: row.descanso_2 ?? "",
     updatedAt: row.updated_at,
   }));
+}
+
+/**
+ * Mesma leitura, mas erro de banco vira [] — contrato de sempre da tela
+ * administrativa (/s/bases/pausas), que não mudou.
+ */
+export async function getPausasProgramadas(
+  rosterEmails?: string[],
+): Promise<PausaProgramadaDb[]> {
+  try {
+    return await getPausasProgramadasOuErro(rosterEmails);
+  } catch {
+    return [];
+  }
 }

@@ -2,8 +2,10 @@
 
 import { GraficoVazio } from "@/components/dashboard/retencao/analitico-skeleton";
 import { formatNomeDotSobrenome } from "@/lib/gestor/derive-nome-operador";
-import type { GestorIndispLinha, PausasDetalhe } from "@/lib/d1-db/types";
+import type { PausasDetalhe } from "@/lib/d1-db/types";
 import { cn } from "@/lib/utils";
+
+import type { OperadorAnaliticoTempoIndisp } from "./merge-tempo-indisp";
 
 import {
   CARD_CLASS,
@@ -31,11 +33,12 @@ const COLUNAS: { key: keyof PausasDetalhe; label: string }[] = [
   { key: "takeBlip", label: "Take Blip" },
   { key: "email", label: "E-mail" },
   { key: "indisponivel", label: "Indisp." },
+  { key: "operacional", label: "Operacional" },
   { key: "sistema", label: "Sistema" },
 ];
 
-// Piso único das colunas de dado: maior título ("PARTICULAR", ~100px) + px-4.
-const GRID_COLS = gridColunas(COLUNAS.length, 132);
+// Piso único das colunas de dado: maior título ("OPERACIONAL", ~110px) + px-4.
+const GRID_COLS = gridColunas(COLUNAS.length, 144);
 
 function fmt(s: string): string {
   if (!s || s === "00:00:00") return "—";
@@ -43,7 +46,12 @@ function fmt(s: string): string {
 }
 
 interface Props {
-  operadores: GestorIndispLinha[];
+  /**
+   * MESMA lista (já ordenada pela config do gestor) da tabela principal —
+   * antes recebia a lista crua da indisponibilidade, na ordem do roster,
+   * ignorando a ordenação escolhida.
+   */
+  operadores: OperadorAnaliticoTempoIndisp[];
 }
 
 /**

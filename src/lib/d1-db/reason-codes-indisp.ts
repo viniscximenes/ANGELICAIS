@@ -5,9 +5,10 @@
  * Uma definição só — se a lista mudar, o upload e o analítico mudam juntos.
  *
  * Ficam DE FORA (não somam indisponibilidade): "No Reason", "Not Ready",
- * "Forced", "Pausa 1h", "Pausa 15", "Pausa 40" e "Operacional" — os quatro
- * últimos por não terem coluna própria no schema novo (gap conhecido,
- * documentado em d1-db/types.ts).
+ * "Forced", "Pausa 1h", "Pausa 15" e "Pausa 40" — os três últimos por não
+ * terem coluna própria no schema novo (gap conhecido, documentado em
+ * d1-db/types.ts). "Operacional" entrou em 2026-10-08 (coluna
+ * pausa_operacional, categoria "Outras Pausas").
  */
 export const REASON_TO_COLUNA: Record<string, string> = {
   "pausa 10": "pausa10",
@@ -22,6 +23,7 @@ export const REASON_TO_COLUNA: Record<string, string> = {
   "e-mail": "pausa_email",
   "indisp.": "pausa_indisponivel",
   "system": "pausa_sistema",
+  "operacional": "pausa_operacional",
 };
 
 export const COLUNAS_PAUSA = Array.from(new Set(Object.values(REASON_TO_COLUNA)));

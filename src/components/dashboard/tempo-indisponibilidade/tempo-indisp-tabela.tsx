@@ -76,8 +76,7 @@ export function TempoIndispTabela({
   const cfgDisplay: NomeFantasiaSerial = olhoAberto && cfg.ativo ? { ...cfg, ativo: false } : cfg;
 
   return (
-    // data-tempo-indisp-tabela: gancho neutro, análogo a data-equipe-table.
-    <div data-tempo-indisp-tabela className="overflow-hidden">
+    <div className="overflow-hidden">
       {/* overflow-x-auto: abaixo da soma das colunas, rola na horizontal
           (nenhum título é cortado). */}
       <div className="overflow-x-auto scrollbar-tema">
@@ -87,31 +86,45 @@ export function TempoIndispTabela({
           abre barra de rolagem. Cabeçalho e linhas com o mesmo border-l-2
           (transparente) pra larguras idênticas.
         */}
-        <div className="min-w-fit pr-[2px]">
+        {/*
+          Semântica de tabela via ARIA (role=table/row/columnheader/rowheader/
+          cell) nos mesmos <div> do grid — mesmo padrão da EquipeTable do
+          Consolidado: leitor de tela navega por colunas e associa cada valor
+          ao cabeçalho e ao operador, sem mudar o layout.
+        */}
+        <div
+          role="table"
+          aria-label="Tempo logado e indisponibilidade por operador"
+          className="min-w-fit pr-[2px]"
+        >
           <div
+            role="row"
             className="cabecalho-tabela grid gap-0 border-l-2 border-l-transparent"
             style={{ gridTemplateColumns: GRID_COLS }}
           >
             {/* SEM flex: o olho é conteúdo inline depois do texto, pra ficar
                 centralizado junto com "Operador" (como em EquipeTable). */}
-            <div className={TABELA_HEADER_CELL_CLASS}>
+            <div role="columnheader" className={TABELA_HEADER_CELL_CLASS}>
               {COLUNAS[0].label}
               {onToggleOlho && cfg.ativo && (
                 <OlhoToggleButton olhoAberto={!!olhoAberto} onToggle={onToggleOlho} />
               )}
             </div>
             {COLUNAS.slice(1, -1).map((col) => (
-              <div key={col.label} className={TABELA_HEADER_CELL_CLASS}>
+              <div key={col.label} role="columnheader" className={TABELA_HEADER_CELL_CLASS}>
                 {col.label}
               </div>
             ))}
-            <div className={TABELA_HEADER_CELL_ULTIMA_CLASS}>{COLUNAS[COLUNAS.length - 1].label}</div>
+            <div role="columnheader" className={TABELA_HEADER_CELL_ULTIMA_CLASS}>
+              {COLUNAS[COLUNAS.length - 1].label}
+            </div>
           </div>
 
           {operadores.map((op) => {
-            const belowMetaTL = op.statusTL === "completo" && !op.cumpriuMetaTL;
+            // Meta de Tempo Logado (06:20:00) vale pra quem já logou, inclusive
+            // "ainda logado" — escala fixa (pedido do usuário, 2026-10-08).
+            const belowMetaTL = op.statusTL !== "ausente" && !op.cumpriuMetaTL;
             const isAusente = op.statusTL === "ausente";
-            const isAindaLogado = op.statusTL === "ainda_logado";
             const semDadosIndisp = op.indisponibilidade === null;
             const acimaMetaIndisp = !semDadosIndisp && !op.cumpriuMetaIndisp;
             const ruimNaLinha = belowMetaTL || acimaMetaIndisp;
@@ -133,8 +146,12 @@ export function TempoIndispTabela({
             return (
               <div
                 key={op.email}
-                role={clicavel ? "button" : undefined}
-                tabIndex={clicavel ? 0 : undefined}
+                // Clique do mouse em qualquer parte da linha. O teclado usa o
+                // <button> do nome (abaixo): Enter/Espaço nele geram um click
+                // que sobe até aqui — mesmo padrão da EquipeTable. Antes a
+                // linha era role=button com foco, mas sem tratar Enter/Espaço
+                // (e não pode ser button e row ao mesmo tempo).
+                role="row"
                 data-sem-dados={semDados ? "true" : undefined}
                 data-meta-linha={clicavel ? (ruimNaLinha ? "abaixo" : "dentro") : undefined}
                 onClick={clicavel ? () => onRowClick!(op) : undefined}
@@ -147,26 +164,43 @@ export function TempoIndispTabela({
                 style={{
                   gridTemplateColumns: GRID_COLS,
                   background: fundoLinhaRuim(ruimNaLinha),
-                  opacity: isAusente ? 0.4 : 1,
+                  // Sem opacidade na linha do ausente (antes 0.4): sobre o
+                  // texto muted, derrubava o contraste abaixo de 4,5:1 —
+                  // mesma decisão da EquipeTable do Consolidado. A linha
+                  // continua "apagada" pelo nome em --muted-foreground
+                  // (corNomeOperador semDado) e pelos valores "—".
                   minHeight: LINHA_MIN_HEIGHT_PX,
                 }}
               >
                 <div
+                  role="rowheader"
                   className={TABELA_NOME_CELL_CLASS}
-                  style={{ color: corNomeOperador({ ruim: ruimNaLinha }) }}
+                  style={{ color: corNomeOperador({ semDado: isAusente, ruim: ruimNaLinha }) }}
                 >
-                  {resolverNomeExibicao(op.email, cfgDisplay)}
+                  {/* O <button> não tem onClick próprio: existe só pro
+                      foco/teclado, e o click dele sobe até a linha (sem
+                      stopPropagation). Sem botão no PNG (sem onRowClick). */}
+                  {clicavel ? (
+                    <button
+                      type="button"
+                      aria-haspopup="dialog"
+                      className="block w-full min-w-0 cursor-pointer truncate"
+                    >
+                      {resolverNomeExibicao(op.email, cfgDisplay)}
+                    </button>
+                  ) : (
+                    resolverNomeExibicao(op.email, cfgDisplay)
+                  )}
                 </div>
-                <div className={TABELA_VALOR_BULLET_CLASS}>
+                <div role="cell" className={TABELA_VALOR_BULLET_CLASS}>
                   {isAusente ? (
                     <ValorSemDado />
-                  ) : isAindaLogado ? (
-                    <span style={{ color: "var(--foreground)" }}>{op.tempoLogado}</span>
                   ) : (
                     <ValorSemantico ruim={belowMetaTL}>{op.tempoLogado}</ValorSemantico>
                   )}
                 </div>
                 <div
+                  role="cell"
                   className={cn(
                     TABELA_VALOR_CELL_CLASS,
                     op.horaLogin === null ? "text-muted-foreground" : "text-foreground",
@@ -175,6 +209,7 @@ export function TempoIndispTabela({
                   {formatLogin(op.horaLogin)}
                 </div>
                 <div
+                  role="cell"
                   className={cn(
                     TABELA_VALOR_CELL_CLASS,
                     formatLogout(op.statusTL, op.horaLogout) === "—" ? "text-muted-foreground" : "text-foreground",
@@ -182,7 +217,7 @@ export function TempoIndispTabela({
                 >
                   {formatLogout(op.statusTL, op.horaLogout)}
                 </div>
-                <div className={TABELA_VALOR_BULLET_CLASS}>
+                <div role="cell" className={TABELA_VALOR_BULLET_CLASS}>
                   {semDadosIndisp ? (
                     <ValorSemDado />
                   ) : (
@@ -190,6 +225,7 @@ export function TempoIndispTabela({
                   )}
                 </div>
                 <div
+                  role="cell"
                   className={cn(
                     TABELA_VALOR_CELL_CLASS,
                     op.nr17Pct === null ? "text-muted-foreground" : "text-foreground",
@@ -198,6 +234,7 @@ export function TempoIndispTabela({
                   {fmtPct(op.nr17Pct)}
                 </div>
                 <div
+                  role="cell"
                   className={cn(
                     TABELA_VALOR_CELL_CLASS,
                     op.pausaParticularPct === null ? "text-muted-foreground" : "text-foreground",
@@ -208,6 +245,7 @@ export function TempoIndispTabela({
                 {/* Última coluna: sem border-r; min-w-0 igual ao cabeçalho
                     (grids separados precisam do mesmo min-width). */}
                 <div
+                  role="cell"
                   className={cn(
                     "ds-mono-sm min-w-0 overflow-hidden px-3 py-2 text-center",
                     op.outrasPausasPct === null ? "text-muted-foreground" : "text-foreground",

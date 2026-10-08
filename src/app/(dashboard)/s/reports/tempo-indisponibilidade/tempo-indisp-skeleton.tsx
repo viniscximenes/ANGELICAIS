@@ -10,6 +10,7 @@
 
 import "./reports-tempo-indisp.css";
 import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
+import { TOAST_CLASS } from "@/components/dashboard/tempo-indisponibilidade/constantes";
 import { FonteInter } from "@/components/gestor/fonte-inter";
 
 // Larguras reais das colunas da TempoIndispTabela (COLUNAS em
@@ -164,7 +165,7 @@ function SkeletonNavSidebar() {
 export function TempoIndispSkeleton({ linhas = TABLE_ROWS_PADRAO }: { linhas?: number }) {
   return (
     <>
-      <FonteInter dataPage="reports-tempo-indisponibilidade" toastClass="toast-padrao" />
+      <FonteInter dataPage="reports-tempo-indisponibilidade" toastClass={TOAST_CLASS} />
       <SkeletonNavSidebar />
 
       {/* skeleton-tom: tom dos blocos (globals.css) — bg-card sozinho é

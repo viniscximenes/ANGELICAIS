@@ -6,7 +6,9 @@ import { toast } from "sonner";
 
 import { capturarComoPng } from "@/lib/utils/capturar-como-png";
 import { copyFormattedHtml, escapeHtml } from "@/lib/utils/copy-formatted-html";
-import { cn } from "@/lib/utils";
+
+import { TOAST_CLASS } from "./constantes";
+
 
 /**
  * HTML colado — MESMO formato de formatReportHtml em copy-table-button.tsx
@@ -30,6 +32,12 @@ function formatReportHtml(hora: string, pngDataUrl: string): string {
 
 interface CopyTempoIndispButtonProps {
   horaReport: string;
+  /**
+   * Fim da captura (sucesso, erro ou tabela ausente) — o pai desmonta a
+   * tabela oculta do PNG, que só fica montada enquanto é necessária. Mesma
+   * prop do CopyTableButton do Consolidado.
+   */
+  onCapturaFim?: () => void;
 }
 
 /**
@@ -41,13 +49,14 @@ interface CopyTempoIndispButtonProps {
  * que já força o nome fantasia (não recebe olhoAberto) — ver comentário em
  * tempo-indisp-section.tsx.
  */
-export function CopyTempoIndispButton({ horaReport }: CopyTempoIndispButtonProps) {
+export function CopyTempoIndispButton({ horaReport, onCapturaFim }: CopyTempoIndispButtonProps) {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
 
   async function handleCopy() {
     const target = document.querySelector<HTMLElement>("[data-tempo-indisp-png]");
     if (!target) {
-      toast.error("Tabela não encontrada", { className: "toast-padrao" });
+      toast.error("Tabela não encontrada", { className: TOAST_CLASS });
+      onCapturaFim?.();
       return;
     }
 
@@ -78,8 +87,10 @@ export function CopyTempoIndispButton({ horaReport }: CopyTempoIndispButtonProps
       setState("idle");
       toast.error("Não foi possível copiar", {
         description: "Tente em outro navegador (Chrome/Edge)",
-        className: "toast-padrao",
+        className: TOAST_CLASS,
       });
+    } finally {
+      onCapturaFim?.();
     }
   }
 
@@ -91,9 +102,7 @@ export function CopyTempoIndispButton({ horaReport }: CopyTempoIndispButtonProps
       type="button"
       onClick={handleCopy}
       disabled={state === "copying"}
-      className={cn(
-        "font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 min-w-[140px] items-center justify-center gap-1.5 rounded-md border bg-transparent px-3 text-sm font-medium outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]",
-      )}
+      className="font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 inline-flex h-8 min-w-[140px] items-center justify-center gap-1.5 rounded-md border bg-transparent px-3 text-sm font-medium outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]"
     >
       {state === "copying" && (
         <span className="inline-flex items-center gap-1.5">

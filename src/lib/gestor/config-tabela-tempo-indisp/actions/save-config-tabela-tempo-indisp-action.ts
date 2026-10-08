@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -58,7 +56,10 @@ export async function saveConfigTabelaTempoIndispAction(
     return { success: false, error: "Erro ao salvar configuração." };
   }
 
-  revalidatePath("/s/reports/tempo-indisponibilidade");
+  // Sem revalidatePath (mesmo motivo do saveConfigTabelaAction do
+  // Consolidado): o popover aplica meta/ordem na tela (onSaved em
+  // TempoIndispSection) e dispara o refetch. Revalidar refazia a página
+  // inteira dentro da resposta da action só pra ser descartada.
 
   return { success: true };
 }
