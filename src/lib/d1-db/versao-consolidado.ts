@@ -15,8 +15,8 @@ import type { PerUnitFaixa } from "@/lib/rv/types";
 
 type NomeFantasiaVersao = { ativo: boolean; mapa: Map<string, string> };
 
-/** djb2 curto — o cliente só compara igualdade. */
-function hashCurto(texto: string): string {
+/** djb2 curto — o cliente só compara igualdade. Também usado pela versão do TMA (get-gestor-tma.ts). */
+export function hashCurto(texto: string): string {
   let h = 5381;
   for (const ch of texto) h = ((h << 5) + h + ch.charCodeAt(0)) | 0;
   return (h >>> 0).toString(36);

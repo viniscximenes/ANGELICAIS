@@ -1,0 +1,5 @@
+# Script inline liberado pela CSP por hash (SCRIPT_TOPO_HASH em
+# src/middleware.ts): o hash é do texto exato, com quebras de linha LF.
+# Checkout com CRLF (core.autocrlf no Windows) mudaria o texto e o navegador
+# bloquearia o script. Força LF neste arquivo em qualquer máquina.
+src/lib/scroll-restoration-script.ts text eol=lf

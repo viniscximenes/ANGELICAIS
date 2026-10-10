@@ -15,7 +15,7 @@ const SKILLS_RETENCAO_RAW = [
 ];
 
 /** lowercase, sem acento, sem "-"/"_" — pra comparação tolerante a variação de grafia. */
-export function normalizeSkill(raw: string): string {
+function normalizeSkill(raw: string): string {
   return raw
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")

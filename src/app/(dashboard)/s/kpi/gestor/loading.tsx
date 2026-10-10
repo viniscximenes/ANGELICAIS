@@ -12,6 +12,7 @@ import { Instrument_Sans } from "next/font/google";
 
 import "./kpi-gestor.css";
 import { KpiGestorLoadingScreen } from "@/components/gestor/kpi-gestor/kpi-gestor-loading-screen";
+import { DESLIGAR_SCROLL_RESTORATION_SCRIPT } from "@/lib/scroll-restoration-script";
 
 // MESMA fonte/variável de page.tsx — loading.tsx monta antes de page.tsx
 // resolver, então precisa importar de novo.
@@ -21,17 +22,9 @@ const zenSans = Instrument_Sans({
   variable: "--font-zen-sans",
 });
 
-// Script inline, síncrono — mesma correção de /s/reports/consolidado (e
-// /kpi/operadores): roda no PARSE do HTML deste fallback, antes de qualquer
-// hidratação, desligando a restauração nativa de scroll e forçando o topo
-// antes do primeiro paint. A segunda camada (guarda por frames) fica no
-// useLayoutEffect de KpiGestorSection.
-const DESLIGAR_SCROLL_RESTORATION_SCRIPT = `
-try {
-  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-  window.scrollTo(0, 0);
-} catch (e) {}
-`;
+// Script de scroll do fallback (desliga a restauração nativa e força o
+// topo antes do primeiro paint) — texto em src/lib/scroll-restoration-script.ts.
+// A segunda camada (guarda por frames) fica no useLayoutEffect de KpiGestorSection.
 
 export default function LoadingKpiGestor() {
   return (

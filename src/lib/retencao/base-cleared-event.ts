@@ -7,6 +7,11 @@
  * evento: o UploadDropzone recarrega a página inteira e o Analítico busca a
  * base nova no mount.
  *
+ * Também usado em /s/reports/tma-peso: GestorTmaSection dispara quando a
+ * versão da base do TMA muda (polling, "Limpar Base" ou meta salva) e
+ * AnaliticoTmaSection recarrega. Cada página só monta o próprio Analítico,
+ * então os dois usos não se cruzam.
+ *
  * As duas árvores são decoupled de propósito (d1_consolidado é a fonte
  * principal/viva, carregada de cara; retencao_atendimentos é detalhe sob
  * demanda, buscado uma vez após o mount) — não há estado React compartilhado

@@ -33,7 +33,7 @@ function CelulaAtendimento({ emailLocal, hora }: { emailLocal: string; hora: str
 
 /**
  * "Rechamada" — percentual de clientes (telefone) que ligaram mais de uma
- * vez no dia e a lista COMPLETA das recorrências (pedido explícito: expõe
+ * vez no dia e a lista COMPLETA das recorrências (decisão do usuário: expõe
  * telefone e horário).
  *
  * Nome em cada linha: e-mail LITERAL (parte local, minúsculo) — mesma
@@ -83,7 +83,7 @@ export function CardRechamada({ clientesDistintos, clientesRecorrentes, percentu
                 >
                   <CelulaAtendimento emailLocal={item.emailLocalPrimeiro} hora={item.horaPrimeiro} />
                   <div className={cn(VALOR_CELL_CLASS, "tabular-nums text-foreground")}>{item.telefoneCliente}</div>
-                  <CelulaAtendimento emailLocal={item.emailLocalUltimo} hora={item.horaUltimo} />
+                  <CelulaAtendimento emailLocal={item.emailLocalSegundo} hora={item.horaSegundo} />
                 </div>
               ))}
             </div>

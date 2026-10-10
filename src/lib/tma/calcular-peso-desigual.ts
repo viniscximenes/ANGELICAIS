@@ -8,8 +8,8 @@ export type OperadorPesoDesigual = {
   percentual: number; // 0-100
 };
 
-/** Piso mínimo de atendimentos pra entrar na lista — evita falso positivo de baixo volume (ex.: 1 atendimento sempre dá 100%). Decidido em rodada anterior com dado real (piso 3 e 5 dão o mesmo resultado hoje; 5 é o mais seguro). */
-export const PISO_MINIMO_ATENDIMENTOS_PESO_DESIGUAL = 5;
+/** Piso mínimo de atendimentos pra entrar na lista — evita falso positivo de baixo volume (ex.: 1 atendimento sempre dá 100%). Escolhido com dado real: na época, piso 3 e 5 davam o mesmo resultado; 5 é o mais seguro. */
+const PISO_MINIMO_ATENDIMENTOS_PESO_DESIGUAL = 5;
 
 /** Limiar de concentração num único tema pra entrar na lista. */
 const LIMIAR_PCT_PESO_DESIGUAL = 0.6;

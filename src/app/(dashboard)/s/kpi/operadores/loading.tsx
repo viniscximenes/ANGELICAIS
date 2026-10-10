@@ -6,6 +6,7 @@ import { Instrument_Sans } from "next/font/google";
 
 import "./kpi-operadores.css";
 import { KpiTabelaSkeleton } from "./_components/kpi-tabela-skeleton";
+import { DESLIGAR_SCROLL_RESTORATION_SCRIPT } from "@/lib/scroll-restoration-script";
 
 const zenSans = Instrument_Sans({
   subsets: ["latin", "latin-ext"],
@@ -34,13 +35,6 @@ function SkeletonAcoes() {
     </div>
   );
 }
-
-const DESLIGAR_SCROLL_RESTORATION_SCRIPT = `
-try {
-  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-  window.scrollTo(0, 0);
-} catch (e) {}
-`;
 
 export default function LoadingKpiOperadores() {
   return (

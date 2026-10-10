@@ -29,15 +29,21 @@ function formatReportHtml(hora: string, pngDataUrl: string): string {
 
 interface CopyTmaButtonProps {
   horaReport: string;
+  /**
+   * Chamado quando a captura termina (sucesso ou erro) — GestorTmaSection
+   * desmonta a tabela oculta do PNG depois do uso (mesmo do CopyTableButton).
+   */
+  onCapturaFim?: () => void;
 }
 
-export function CopyTmaButton({ horaReport }: CopyTmaButtonProps) {
+export function CopyTmaButton({ horaReport, onCapturaFim }: CopyTmaButtonProps) {
   const [state, setState] = useState<"idle" | "copying" | "done">("idle");
 
   async function handleCopy() {
     const target = document.querySelector<HTMLElement>("[data-tma-png]");
     if (!target) {
       toast.error("Tabela não encontrada", { className: "toast-padrao" });
+      onCapturaFim?.();
       return;
     }
 
@@ -67,6 +73,8 @@ export function CopyTmaButton({ horaReport }: CopyTmaButtonProps) {
         description: "Tente em outro navegador (Chrome/Edge)",
         className: "toast-padrao",
       });
+    } finally {
+      onCapturaFim?.();
     }
   }
 

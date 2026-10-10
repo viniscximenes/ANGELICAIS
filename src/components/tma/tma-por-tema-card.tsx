@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import { SKILL_BUCKET_LABELS, SKILL_BUCKET_ORDER, type SkillBucket } from "@/lib/tma/skills-retencao";
-import { useSkillColors } from "./use-skill-colors";
 
 interface TmaPorTemaCardProps {
   /** TMA médio (segundos) de TODA a equipe, por bucket — bucket sem nenhum atendimento: null. */
@@ -25,15 +24,26 @@ interface TmaPorTemaCardProps {
  * valor entre os 7 buckets (não a uma escala fixa, já que segundos não têm
  * teto natural de 100% como uma taxa).
  *
- * Cor de cada barra: useSkillColors() — MESMA paleta do donut de
- * tma-detalhe-dialog.tsx (tokens --tma-*), pra ficar consistente entre o
- * modal de detalhe por operador e este card de equipe.
+ * Cor de cada barra: tokens --tma-* (globals.css, tons próprios no claro e
+ * no escuro) usados direto via var(), então acompanham a troca de tema e de
+ * paleta sem JS. Antes um hook lia os valores computados uma vez no mount e
+ * o card ficava com as cores do tema anterior.
  *
  * Sempre mostra os 7 buckets (nunca esconde linha) — bucket sem nenhum
  * atendimento na equipe inteira: "—", sem barra.
  */
+/** Token de cor de cada tema (definidos em globals.css). */
+const COR_POR_BUCKET: Record<SkillBucket, string> = {
+  outros: "var(--tma-outros)",
+  criticos: "var(--tma-criticos)",
+  mudEndereco: "var(--tma-mud-endereco)",
+  financeiro: "var(--tma-financeiro)",
+  qualidade: "var(--tma-qualidade)",
+  concorrencia: "var(--tma-concorrencia)",
+  hotlineChurn: "var(--tma-hotline-churn)",
+};
+
 export function TmaPorTemaCard({ tmaPorBucketEquipe }: TmaPorTemaCardProps) {
-  const cores = useSkillColors();
 
   const valores = SKILL_BUCKET_ORDER.map((b) => tmaPorBucketEquipe[b]).filter(
     (v): v is number => v !== null,
@@ -61,11 +71,11 @@ export function TmaPorTemaCard({ tmaPorBucketEquipe }: TmaPorTemaCardProps) {
 
       {/* Linhas separadas só por border/30 (sem hover — card de consulta),
           mesmo ritmo das tabelas do Analítico. */}
-      <div data-tma-por-tema-lista className="divide-y divide-border/30">
+      <div className="divide-y divide-border/30">
         {SKILL_BUCKET_ORDER.map((bucket, idx) => {
           const valor = tmaPorBucketEquipe[bucket];
           const largura = valor !== null && maiorValor > 0 ? Math.min(100, (valor / maiorValor) * 100) : 0;
-          const cor = cores[bucket];
+          const cor = COR_POR_BUCKET[bucket];
 
           return (
             <div key={bucket} className="space-y-2 py-3 first:pt-1 last:pb-1">

@@ -75,7 +75,7 @@ function TabelaForaDaCurva({ titulo, total, itens }: { titulo: string; total: nu
 
 /**
  * "Fora da curva" — contagens (Curtas/Longas) + as duas listas COMPLETAS
- * (pedido explícito: expõe telefone). Coluna de valor = TMA daquele
+ * (decisão do usuário: expõe telefone). Coluna de valor = TMA daquele
  * atendimento (MM:SS).
  */
 export function CardForaDaCurva({ curtas, longas, curtasLista, longasLista }: CardForaDaCurvaProps) {

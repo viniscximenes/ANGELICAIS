@@ -54,21 +54,25 @@
 }
 
 /* ───────── Capturas (Copiar imagem e PNG do modal do operador) ─────────
- * A tabela e o detalhe saem com o tema da tela, sem barra de rolagem nem
- * anel de foco de estados transitórios. O botão de exportar do modal não
- * desenha a borda de foco (o Dialog foca esse botão sozinho ao abrir).
+ * A tabela e o detalhe saem com o tema da tela, sem barra de rolagem.
+ *
+ * Sem regra de foco aqui (antes: outline/box-shadow/border-color com
+ * !important): escondia o foco do teclado no modal e no botão de exportar.
+ * Não é preciso — a cópia oculta do "Copiar imagem" não tem nada focável e,
+ * no modal, quem está focado durante a captura é o próprio botão de
+ * exportar, que fica FORA da área capturada (pngRef). Aberto com o mouse,
+ * o foco automático do Radix nesse botão não casa com :focus-visible, então
+ * o anel só aparece pra quem usa o teclado.
  */
 [data-page="reports-tma-peso"] :is([data-tma-png], [data-tma-detalhe-png]),
 [data-page="reports-tma-peso"] :is([data-tma-png], [data-tma-detalhe-png]) * {
   scrollbar-width: none;
 }
-[data-page="reports-tma-peso"] :is([data-tma-png], [data-tma-detalhe-png]) :focus {
-  outline: none !important;
-  box-shadow: none !important;
-}
-[data-page="reports-tma-peso"] .tma-detalhe-export-btn,
-[data-page="reports-tma-peso"] .tma-detalhe-export-btn:is(:focus, :focus-visible) {
-  outline: none !important;
-  box-shadow: none !important;
-  border-color: transparent !important;
+
+/* Foco por teclado no campo da meta (mesmo do Consolidado, #config-meta-tx):
+ * sem o contorno global (regra acima), mas com borda na cor --ring — só em
+ * :focus-visible, então o clique continua com a borda neutra de sempre.
+ * Vence o focus-visible:border-input do componente. */
+[data-page="reports-tma-peso"] #config-meta-tma:focus-visible {
+  border-color: var(--ring);
 }

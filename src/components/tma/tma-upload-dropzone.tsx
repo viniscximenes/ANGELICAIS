@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { ReactBitsFolder } from "@/components/ui/react-bits-folder";
 import { getTmaRosterAction } from "@/lib/tma/actions/get-tma-roster-action";
 import { uploadTmaAction } from "@/lib/tma/actions/upload-tma-action";
-import { parseTmaNoClient } from "@/lib/tma/parse-tma-client";
+import { lerCsvTma, montarPayloadTma, partesLocaisDoCsv } from "@/lib/tma/parse-tma-client";
 import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 import { TmaUploadProgressModal, type TmaUploadStep } from "./tma-upload-progress-modal";
 
@@ -41,16 +41,21 @@ export function TmaUploadDropzone() {
   const handleFile = useCallback(async (file: File) => {
     setErrorMessage(null);
     setResumoFinal(null);
-    setStep("reading-roster");
+    setStep("parsing");
 
     try {
-      // Roster (só email + gestor_id, payload pequeno) — usado pro matching
-      // client-side. O CSV em si (~10MB em dia cheio) NUNCA sai do
-      // navegador como arquivo bruto: o parse + matching + agregação rodam
-      // aqui, e só o resultado processado (pequeno) vai pro servidor. Ver
-      // parse-tma-client.ts — mandar o File/FormData bruto pra uma Server
-      // Action estoura o limite de payload (413 em produção).
-      const rosterResult = await getTmaRosterAction();
+      // O CSV (~10MB em dia cheio) NUNCA sai do navegador como arquivo
+      // bruto: o parse + matching rodam aqui, e só os atendimentos válidos
+      // vão pro servidor. Ver parse-tma-client.ts — mandar o File/FormData
+      // bruto pra uma Server Action estoura o limite de payload (413 em
+      // produção).
+      const leitura = await lerCsvTma(file);
+
+      // Roster só dos operadores que aparecem no arquivo (só e-mail) — usado
+      // pro matching por parte local. O gestor de cada um é resolvido no
+      // servidor, no upload.
+      setStep("reading-roster");
+      const rosterResult = await getTmaRosterAction(partesLocaisDoCsv(leitura));
       if (!rosterResult.success) {
         setStep(null);
         setErrorMessage(rosterResult.error);
@@ -58,8 +63,7 @@ export function TmaUploadDropzone() {
         return;
       }
 
-      setStep("parsing");
-      const payload = await parseTmaNoClient(file, rosterResult.roster);
+      const payload = montarPayloadTma(leitura, rosterResult.roster);
 
       setStep("uploading");
       let result;
@@ -156,7 +160,9 @@ export function TmaUploadDropzone() {
     }),
   });
   const accessibleName =
-    "Anexar base CSV. Arraste um arquivo ou clique para selecionar. Apenas arquivos .csv, limite de 50.000 linhas.";
+    // Limite aplicado em uploadTmaAction (MAX_LINHAS_CSV): conta os
+    // atendimentos de retenção válidos do arquivo, não as linhas brutas.
+    "Anexar base CSV. Arraste um arquivo ou clique para selecionar. Apenas arquivos .csv, limite de 50.000 atendimentos.";
 
   return (
     <>

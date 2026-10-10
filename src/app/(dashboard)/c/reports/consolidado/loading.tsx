@@ -15,6 +15,7 @@ import { Instrument_Sans } from "next/font/google";
 
 import "../../../s/reports/consolidado/reports-consolidado.css";
 import "./coordenador-consolidado.css";
+import { DESLIGAR_SCROLL_RESTORATION_SCRIPT } from "@/lib/scroll-restoration-script";
 
 // MESMA fonte/variável de page.tsx — loading.tsx monta antes do page.tsx
 // resolver; sem ela, título/subtítulo medem diferente da versão real.
@@ -80,13 +81,6 @@ function SkeletonCardTaxa({ destaque = false }: { destaque?: boolean }) {
     </div>
   );
 }
-
-const DESLIGAR_SCROLL_RESTORATION_SCRIPT = `
-try {
-  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-  window.scrollTo(0, 0);
-} catch (e) {}
-`;
 
 export default function LoadingCoordenadorConsolidado() {
   return (

@@ -6,6 +6,16 @@ export type TmaThresholdConfig = {
   direction: "lower_better" | "higher_better";
 };
 
+/**
+ * Meta digitada no popover é válida? "MM:SS" com segundos de 00 a 59 e maior
+ * que 00:00 — usada no popover (client) e em saveConfigTabelaTmaAction (servidor).
+ * Antes "12:99" e "0:00" passavam e pintavam a tabela toda de vermelho.
+ */
+export function metaTmaValida(meta: string): boolean {
+  const m = meta.trim().match(/^(\d{1,3}):([0-5]\d)$/);
+  return m !== null && parseInt(m[1], 10) * 60 + parseInt(m[2], 10) > 0;
+}
+
 /** "MM:SS" -> segundos. Formato inválido/nulo -> null. */
 export function metaMmSsParaSegundos(meta: unknown): number | null {
   if (typeof meta !== "string") return null;

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import {
   IconArrowsMaximize,
   IconChartBar,
@@ -10,23 +12,21 @@ import {
   IconUsersGroup,
 } from "@tabler/icons-react";
 import { getLenisInstance } from "@/lib/lenis/lenis-instance";
-import { requestScrollToCard } from "@/lib/retencao/scroll-to-card-event";
+import { onTrilhoDisponivel, requestScrollToCard } from "@/lib/retencao/scroll-to-card-event";
 import { FloatingNavSidebar } from "@/components/ui/floating-nav-sidebar";
 import { IconeNav, useSecaoAtiva } from "@/components/gestor/nav-secao-ativa";
 
 /**
- * Índices dos cards no trilho horizontal — precisam bater com a ordem real
- * do array `slides` em analitico-tma-section.tsx (REORDENADA nesta rodada,
- * NÃO reaproveita os índices antigos):
- * 0 = "Visão Geral" (cards grandes + gráfico "Evolução do TMA"),
- * 1 = "TMA por Tema" (tabela Operador × Bucket — ERA o último slide),
- * 2 = "TMA por Tema (Gestor)" (card agregado por equipe — ERA o 2º slide),
- * 3 = Rechamada, 4 = Fora da Curva (ERA depois de Peso Desigual, agora antes),
- * 5 = Peso Desigual (ERA antes de Fora da Curva, agora por último).
+ * Índices dos cards no trilho horizontal — precisam bater com a ordem do
+ * array `slides` em analitico-tma-section.tsx (mudou a ordem lá, muda aqui):
+ * 0 = cards (TMA/Atendidos) + "Evolução da equipe",
+ * 1 = "TMA por tema - Operador" (tabela Operador × tema),
+ * 2 = "TMA por tema - Supervisor" (card agregado da equipe),
+ * 3 = Rechamada, 4 = Fora da curva, 5 = Peso desigual.
  *
- * ATENÇÃO: dois rótulos parecidos, donos TROCADOS nesta rodada — "TMA por
- * Tema" (sem sufixo) agora é a TABELA (índice 1); "TMA por Tema (Gestor)" é
- * o card agregado (índice 2). Não inverter.
+ * ATENÇÃO: os dois "TMA por tema" têm rótulos parecidos — o de Operador é a
+ * TABELA (índice 1) e o de Supervisor é o card agregado (índice 2). Não
+ * inverter.
  */
 const TRILHO_CARD = {
   visaoGeral: 0,
@@ -50,6 +50,13 @@ const ICON_CLASS = "h-5 w-5 shrink-0";
  */
 export function TmaNavSidebar() {
   const ativo = useSecaoAtiva("equipe-section");
+
+  // Cards do Analítico existem? (AnaliticoTmaSection avisa.) Sem dados do
+  // dia ou com erro não há card pra onde rolar: os itens do trilho ficam
+  // apagados e sem clique — mesmo mecanismo do ConsolidadoNavSidebar.
+  // Começa em false; a seção avisa logo após montar.
+  const [trilhoDisponivel, setTrilhoDisponivel] = useState(false);
+  useEffect(() => onTrilhoDisponivel(setTrilhoDisponivel), []);
 
   function scrollToEquipe() {
     const el = document.getElementById("equipe-section");
@@ -137,7 +144,7 @@ export function TmaNavSidebar() {
 
   return (
     <FloatingNavSidebar
-      links={links}
+      links={links.map((link, i) => (i === 0 ? link : { ...link, desabilitado: !trilhoDisponivel }))}
       wrapperClassName="nav-secoes"
       dataPage="reports-tma-peso"
       // Divisória entre a tabela do topo e os slides do Analítico.

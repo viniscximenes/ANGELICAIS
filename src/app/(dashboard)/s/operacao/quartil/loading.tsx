@@ -14,6 +14,7 @@ import "./operacao-quartil.css";
 // import de page.tsx.
 import "../../reports/consolidado/reports-consolidado.css";
 import { StyledCard } from "@/components/gestor/styled-card";
+import { DESLIGAR_SCROLL_RESTORATION_SCRIPT } from "@/lib/scroll-restoration-script";
 
 // MESMA fonte/variável de page.tsx — o fallback monta antes de page.tsx.
 const zenSans = Instrument_Sans({
@@ -61,14 +62,8 @@ function SkeletonLinhaSupervisor() {
   );
 }
 
-// Mesmo script do loading do Consolidado: desliga a restauração de scroll
-// nativa e força o topo antes do primeiro paint.
-const DESLIGAR_SCROLL_RESTORATION_SCRIPT = `
-try {
-  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-  window.scrollTo(0, 0);
-} catch (e) {}
-`;
+// Script de scroll do fallback (desliga a restauração nativa e força o
+// topo antes do primeiro paint) — texto em src/lib/scroll-restoration-script.ts.
 
 export default function LoadingQuartilOperacao() {
   return (

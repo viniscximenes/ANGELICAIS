@@ -23,6 +23,7 @@ import { Instrument_Sans } from "next/font/google";
 
 import "./kpi-detalhado-polo.css";
 import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
+import { DESLIGAR_SCROLL_RESTORATION_SCRIPT } from "@/lib/scroll-restoration-script";
 
 // MESMA fonte/variável de page.tsx — o fallback monta antes de page.tsx.
 const zenSans = Instrument_Sans({
@@ -98,13 +99,6 @@ function SkeletonTabela() {
     </KpiFrame>
   );
 }
-
-const DESLIGAR_SCROLL_RESTORATION_SCRIPT = `
-try {
-  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-  window.scrollTo(0, 0);
-} catch (e) {}
-`;
 
 export default function LoadingKpiDetalhadoPolo() {
   return (

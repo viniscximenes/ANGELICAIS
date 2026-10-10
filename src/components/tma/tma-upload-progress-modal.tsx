@@ -8,19 +8,17 @@ const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 /**
  * Etapas REAIS de TmaUploadDropzone.handleFile — cada uma corresponde a uma
  * chamada de verdade no código, não a um fluxo inventado:
- *   1. "reading-roster" → getTmaRosterAction() (busca o roster pra o
- *      matching client-side).
- *   2. "parsing" → parseTmaNoClient(file, roster) (parse do CSV + matching
- *      + agregação, tudo no navegador).
- *   3. "uploading" → uploadTmaAction(payload) (grava d1_tma +
- *      d1_tma_atendimentos no servidor).
+ *   1. "parsing" → lerCsvTma(file) (parse do CSV no navegador).
+ *   2. "reading-roster" → getTmaRosterAction(partesLocais) (busca só os
+ *      operadores do arquivo pro matching client-side) + montarPayloadTma.
+ *   3. "uploading" → uploadTmaAction(payload) (substitui a base do dia
+ *      inteira — d1_tma + d1_tma_atendimentos — numa transação só, a função
+ *      substituir_base_tma, como o upload do Consolidado).
  *   4. "done" → sucesso confirmado pela Server Action.
- * SEM etapa de "apagando base antiga"/"substituindo": uploadTmaAction faz
- * upsert (por data_ref+operator_email / data_ref+call_segment_id), não
- * delete+insert como o Consolidado — replicar aquelas etapas aqui mentiria
- * sobre o que o backend da TMA realmente faz.
+ * A troca da base acontece dentro de "Enviando" (uma chamada só ao banco),
+ * por isso não há etapa separada de "apagando base antiga".
  */
-export type TmaUploadStep = "reading-roster" | "parsing" | "uploading" | "done" | null;
+export type TmaUploadStep = "parsing" | "reading-roster" | "uploading" | "done" | null;
 
 interface TmaUploadProgressModalProps {
   step: TmaUploadStep;
@@ -35,15 +33,15 @@ const STEPS: Array<{
   color: string;
 }> = [
   {
-    id: "reading-roster",
-    label: "Lendo roster",
-    description: "Buscando os operadores cadastrados da sua equipe",
+    id: "parsing",
+    label: "Processando CSV",
+    description: "Lendo o arquivo no navegador",
     color: "var(--primary)",
   },
   {
-    id: "parsing",
-    label: "Processando CSV",
-    description: "Lendo o arquivo e cruzando com o roster no navegador",
+    id: "reading-roster",
+    label: "Lendo roster",
+    description: "Conferindo os operadores do arquivo no cadastro",
     color: "var(--primary)",
   },
   {

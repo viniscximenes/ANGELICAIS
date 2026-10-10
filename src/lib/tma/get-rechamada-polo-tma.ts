@@ -1,20 +1,13 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { horaCurta } from "./format-tma";
+import { lerAtendimentosTma } from "./ler-atendimentos-tma";
 import type { RechamadaItem } from "./get-gestor-tma-analitico";
 
-/** "HH:MM:SS" -> "HH:MM". Formato inesperado: devolve a string original. */
-function horaCurta(hora: string | null): string {
-  if (!hora) return "—";
-  const partes = hora.split(":");
-  return partes.length >= 2 ? `${partes[0]}:${partes[1]}` : hora;
-}
-
 /**
- * Rechamada do card do Analítico da TMA — escopo mudou nesta rodada: conta
- * como rechamada quando a PRIMEIRA ligação do dia daquele telefone foi
- * atendida por um operador do gestorId logado, INDEPENDENTE de qual equipe
- * atendeu a(s) ligação(ões) seguinte(s) (pode ser a mesma equipe ou outra —
- * fila/skill roteia entre equipes, então isso é esperado). Antes o cálculo
- * só enxergava telefones repetidos DENTRO da própria equipe.
+ * Rechamada do card do Analítico da TMA: conta quando a PRIMEIRA ligação do
+ * dia daquele telefone foi atendida por um operador do gestorId logado,
+ * INDEPENDENTE de qual equipe atendeu a(s) seguinte(s) — a fila/skill roteia
+ * entre equipes, então a volta do cliente pode cair em outra. (Uma versão
+ * anterior só enxergava telefones repetidos DENTRO da própria equipe.)
  *
  * Por isso busca d1_tma_atendimentos SEM filtro de gestor_id — precisa
  * enxergar o polo inteiro pra saber se um telefone voltou em OUTRA equipe.
@@ -22,51 +15,33 @@ function horaCurta(hora: string | null): string {
  * confiável (o pipeline de upload descarta quem não bate com o roster antes
  * de gravar — zero atendimentos órfãos, confirmado no banco).
  */
-export async function getRechamadaPoloTma(gestorId: string, dataRef: string): Promise<RechamadaItem[]> {
-  const admin = createAdminClient();
-
-  // Paginado em blocos de 1000 — o polo inteiro passa fácil de 1000 linhas
-  // num dia cheio (~1600-3000), e o limite padrão do Supabase/PostgREST é
-  // 1000 linhas por request; sem paginação a query trunca silenciosamente
-  // (bug real, encontrado e corrigido nesta rodada — comparado com uma
-  // contagem direta no banco). MESMO padrão já usado em
-  // get-visao-geral.ts/get-evolucao-hora.ts (Consolidado) para o mesmo
-  // problema, com tabelas igualmente grandes.
+export async function getRechamadaPoloTma(gestorId: string, dataRef: string): Promise<RechamadaItem[] | null> {
+  // Paginado com ordenação estável e conferência do lote
+  // (lerAtendimentosTma) — o polo inteiro passa fácil de 1000 linhas num dia
+  // cheio (~1600-3000), o limite do PostgREST por request. Antes paginava
+  // com .range() SEM ordem: o Postgres não garante a mesma ordem entre
+  // requests, então páginas podiam repetir/pular linhas (auditoria
+  // 2026-10-09). Erro: null — o Analítico mostra o estado de erro.
   type LinhaAtendimento = {
     telefone_cliente: string | null;
     operator_email: string;
     hora: string | null;
     gestor_id: string;
   };
-  let atendimentos: LinhaAtendimento[] = [];
-  let page = 0;
-  const pageSize = 1000;
-  let hasMore = true;
-
-  while (hasMore) {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-
-    const { data, error } = await admin
-      .from("d1_tma_atendimentos")
-      .select("telefone_cliente, operator_email, hora, gestor_id")
-      .eq("data_ref", dataRef)
-      .not("telefone_cliente", "is", null)
-      .range(from, to);
-
-    if (error) {
-      console.error("[get-rechamada-polo-tma] erro:", error.message);
-      return [];
-    }
-
-    const lista = data ?? [];
-    atendimentos = atendimentos.concat(lista);
-
-    if (lista.length < pageSize) {
-      hasMore = false;
-    } else {
-      page++;
-    }
+  let atendimentos: LinhaAtendimento[];
+  try {
+    atendimentos = await lerAtendimentosTma<LinhaAtendimento>(
+      (supabase) =>
+        supabase
+          .from("d1_tma_atendimentos")
+          .select("telefone_cliente, operator_email, hora, gestor_id")
+          .not("telefone_cliente", "is", null),
+      dataRef,
+      "get-rechamada-polo-tma",
+    );
+  } catch (err) {
+    console.error("[get-rechamada-polo-tma] erro:", err instanceof Error ? err.message : err);
+    return null;
   }
 
   const porTelefone = new Map<string, typeof atendimentos>();
@@ -81,9 +56,17 @@ export async function getRechamadaPoloTma(gestorId: string, dataRef: string): Pr
   for (const [telefone, doTelefoneBruto] of porTelefone) {
     if (doTelefoneBruto.length <= 1) continue;
 
-    const doTelefone = [...doTelefoneBruto].sort((a, b) => (a.hora ?? "").localeCompare(b.hora ?? ""));
+    // Atendimento sem horário vai pro FIM: antes "" ordenava antes de
+    // qualquer hora e virava o "1º atendimento" do telefone.
+    const doTelefone = [...doTelefoneBruto].sort((a, b) => {
+      if (a.hora === null || b.hora === null) return a.hora === b.hora ? 0 : a.hora === null ? 1 : -1;
+      return a.hora.localeCompare(b.hora);
+    });
     const primeiro = doTelefone[0];
-    const ultimo = doTelefone[doTelefone.length - 1];
+    // 2º atendimento = a primeira vez que o cliente voltou a ligar (é a
+    // rechamada em si). Antes mostrava o ÚLTIMO, que com 3+ ligações não era
+    // o 2º, embora a coluna se chamasse "2º Atendimento".
+    const segundo = doTelefone[1];
 
     // Só entra se o PRIMEIRO atendimento do dia foi do gestor logado —
     // critério confirmado (não importa quem atendeu depois).
@@ -93,8 +76,8 @@ export async function getRechamadaPoloTma(gestorId: string, dataRef: string): Pr
       telefoneCliente: telefone,
       emailLocalPrimeiro: primeiro.operator_email.split("@")[0] ?? primeiro.operator_email,
       horaPrimeiro: horaCurta(primeiro.hora),
-      emailLocalUltimo: ultimo.operator_email.split("@")[0] ?? ultimo.operator_email,
-      horaUltimo: horaCurta(ultimo.hora),
+      emailLocalSegundo: segundo.operator_email.split("@")[0] ?? segundo.operator_email,
+      horaSegundo: horaCurta(segundo.hora),
     });
   }
 

@@ -1,9 +1,10 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import { dataRefHojeBR } from "@/lib/d1-db/parse";
-import { getRosterOperadoresGestor } from "@/lib/d1-db/get-roster-gestor";
+import { getRosterOperadoresGestorOuErro } from "@/lib/d1-db/get-roster-gestor";
 import { bucketDaSkill, zeroSkillBuckets, type SkillBucket } from "@/lib/tma/skills-retencao";
 import { calcularEvolucaoTmaPorHora, type TmaHoraData } from "./get-gestor-tma-evolucao-hora";
+import { horaCurta } from "./format-tma";
 import { getRechamadaPoloTma } from "./get-rechamada-polo-tma";
+import { lerAtendimentosTma } from "./ler-atendimentos-tma";
 import { getTmaThresholdConfig, statusTmaDe, type TmaStatus, type TmaThresholdConfig } from "./tma-status";
 
 const LIMIAR_CURTA_SEGUNDOS = 30;
@@ -14,9 +15,9 @@ export type RechamadaItem = {
   emailLocalPrimeiro: string;
   /** "HH:MM" do 1º atendimento daquele telefone no dia. */
   horaPrimeiro: string;
-  emailLocalUltimo: string;
-  /** "HH:MM" do último atendimento daquele telefone no dia. */
-  horaUltimo: string;
+  emailLocalSegundo: string;
+  /** "HH:MM" do 2º atendimento daquele telefone no dia (a primeira vez que o cliente voltou a ligar). */
+  horaSegundo: string;
 };
 
 export type ForaDaCurvaItem = {
@@ -26,19 +27,6 @@ export type ForaDaCurvaItem = {
   hora: string;
   duracaoSegundos: number;
 };
-
-/**
- * "HH:MM:SS" -> "HH:MM". Formato inesperado: devolve a string original.
- * Duplicada (não exportada/importada) em get-rechamada-polo-tma.ts de
- * propósito — evita um import circular entre os dois arquivos (este importa
- * getRechamadaPoloTma; se aquele importasse esta função de volta, os dois
- * módulos dependeriam um do outro em tempo de execução).
- */
-function horaCurta(hora: string | null): string {
-  if (!hora) return "—";
-  const partes = hora.split(":");
-  return partes.length >= 2 ? `${partes[0]}:${partes[1]}` : hora;
-}
 
 export type GestorTmaAnaliticoResult = {
   /** Média PONDERADA pelo volume: soma de duracao_segundos ÷ contagem total de atendimentos (não é a média das médias por operador). null se não houver nenhum atendimento na base atual. */
@@ -55,35 +43,33 @@ export type GestorTmaAnaliticoResult = {
   evolucaoPorHora: TmaHoraData[];
   /**
    * Rechamada: clientes (telefone) que ligaram mais de uma vez no dia.
-   * `lista` expõe telefone + horário — REVERSÃO deliberada de uma decisão
-   * anterior (evitar dado individual sensível); pedido explícito do usuário
-   * nesta rodada. `emailLocal*` é o e-mail LITERAL (parte local, minúsculo)
-   * — mesma exceção já documentada no tooltip de EvolucaoTmaChart, não o
-   * nome fantasia padrão do resto da página.
    *
-   * ESCOPO MUDOU nesta rodada: `lista` (via getRechamadaPoloTma) cruza
-   * TODO O POLO — conta como rechamada quando a 1ª ligação do telefone foi
-   * atendida por este gestor, mesmo que a ligação seguinte tenha caído em
-   * OUTRA equipe (fila/skill roteia entre equipes). `clientesDistintos`
-   * continua no escopo de sempre (só os telefones que passaram pela
-   * própria equipe) — é o denominador "quantos clientes minha equipe
-   * atendeu hoje"; `clientesRecorrentes` agora é `lista.length` (o
-   * numerador cruzando equipes).
+   * Decisão do usuário: `lista` mostra telefone e horário de cada cliente
+   * (antes só havia a contagem, para não expor dado individual). O nome em
+   * `emailLocal*` é o e-mail LITERAL (parte local, minúsculo), não o nome
+   * fantasia — mesma exceção do tooltip de EvolucaoTmaChart.
+   *
+   * Escopo (getRechamadaPoloTma): `lista` cruza o POLO inteiro — conta quando
+   * a 1ª ligação do telefone foi atendida por esta equipe, mesmo que a
+   * seguinte tenha caído em outra (a fila/skill roteia entre equipes).
+   * `clientesDistintos` é só da própria equipe (denominador: "quantos
+   * clientes minha equipe atendeu hoje"); `clientesRecorrentes` é
+   * `lista.length` (numerador, cruzando equipes).
    */
   rechamada: {
     clientesDistintos: number;
     clientesRecorrentes: number;
     /** 0-100. null se não houver nenhum cliente na base atual. */
     percentual: number | null;
-    /** Lista COMPLETA (sem limite/truncamento) — 1º atendimento → último atendimento daquele telefone no dia, ordenada pelo horário do 1º. */
+    /** Lista COMPLETA (sem limite/truncamento) — 1º atendimento → 2º atendimento daquele telefone no dia, ordenada pelo horário do 1º. */
     lista: RechamadaItem[];
   };
   /**
-   * "Fora da curva" — limiar fixo (<30s curta, >1800s longa). `curtasLista`/
-   * `longasLista` expõem telefone+horário — REVERSÃO deliberada da decisão
-   * de "só contagem, sem lista individual" de uma rodada anterior; pedido
-   * explícito do usuário nesta rodada. Mesma exceção de nome literal do
-   * item acima.
+   * "Fora da curva" — limiar fixo (<30s curta, >1800s longa).
+   *
+   * Decisão do usuário: `curtasLista`/`longasLista` mostram telefone e
+   * horário de cada chamada (antes só havia a contagem). Mesma exceção de
+   * nome literal (e-mail) da Rechamada, acima.
    */
   foraDaCurva: {
     curtas: number;
@@ -95,10 +81,16 @@ export type GestorTmaAnaliticoResult = {
   };
   /** Threshold/direção efetivos do TMA (getTmaThresholdConfig) — exposto pra EvolucaoTmaChart não precisar buscar de novo. */
   thresholdConfig: TmaThresholdConfig;
+  /**
+   * true quando alguma leitura falhou (atendimentos, rechamada do polo,
+   * roster ou meta). Os demais campos vêm vazios e a seção mostra o estado
+   * de erro, não "Aguardando dados do dia".
+   */
+  erro: boolean;
 };
 
 /**
- * Dados do Analítico da TMA (/reports/tma): 2 cards grandes (TMA/Atendidos) +
+ * Dados do Analítico da TMA (/s/reports/tma-peso): 2 cards grandes (TMA/Atendidos) +
  * card "TMA por Tema" + gráfico "Evolução do TMA" + cards de Rechamada, Peso
  * Desigual (calculado à parte, ver calcular-peso-desigual.ts, a partir de
  * d1_tma via getGestorTma — não deste arquivo) e Fora da Curva + tabela
@@ -110,30 +102,62 @@ export type GestorTmaAnaliticoResult = {
  * polo inteiro) pra cruzar equipes; ver comentário no campo `rechamada`
  * abaixo e em get-rechamada-polo-tma.ts. Roster completo (mesma fonte de
  * getGestorTma), não só quem tem atendimento — operador sem nenhum
- * atendimento aparece com tudo null/"—". Sem polling: chamada uma vez na
- * carga da página (page.tsx), como o resto da seção Analítico desta página.
+ * atendimento aparece com tudo null/"—". Sem polling próprio: chamada na
+ * carga da página (page.tsx) e de novo por refreshAnaliticoTmaAction quando
+ * a tabela avisa que a versão da base mudou.
  */
 export async function getGestorTmaAnalitico(gestorId: string): Promise<GestorTmaAnaliticoResult> {
-  const admin = createAdminClient();
   const dataRef = dataRefHojeBR();
 
-  const [{ data: rows, error }, roster, thresholdConfig, rechamadaPolo] = await Promise.all([
-    admin
-      .from("d1_tma_atendimentos")
-      .select("operator_email, skill, duracao_segundos, hora, telefone_cliente")
-      .eq("gestor_id", gestorId)
-      .eq("data_ref", dataRef),
-    getRosterOperadoresGestor(gestorId),
+  type Linha = {
+    operator_email: string;
+    skill: string | null;
+    duracao_segundos: number;
+    hora: string | null;
+    telefone_cliente: string | null;
+  };
+
+  const [rows, roster, thresholdConfigLido, rechamadaPolo] = await Promise.all([
+    // Paginado (lerAtendimentosTma): sem isso o PostgREST cortaria em 1000
+    // linhas em silêncio. Erro: null → estado de erro (abaixo).
+    lerAtendimentosTma<Linha>(
+      (supabase) =>
+        supabase
+          .from("d1_tma_atendimentos")
+          .select("operator_email, skill, duracao_segundos, hora, telefone_cliente")
+          .eq("gestor_id", gestorId),
+      dataRef,
+      "get-gestor-tma-analitico",
+    ).catch((err: unknown) => {
+      console.error("[get-gestor-tma-analitico] erro:", err instanceof Error ? err.message : err);
+      return null;
+    }),
+    getRosterOperadoresGestorOuErro(gestorId).catch(() => null),
     getTmaThresholdConfig(gestorId),
     // SEM filtro de gestor_id — precisa do polo inteiro pra cruzar equipes. Ver comentário em get-rechamada-polo-tma.ts.
     getRechamadaPoloTma(gestorId, dataRef),
   ]);
 
-  if (error) {
-    console.error("[get-gestor-tma-analitico] erro:", error.message);
+  const { erro: erroThreshold, ...thresholdConfig } = thresholdConfigLido;
+
+  // Erro de banco: estado de erro na seção, e não "Aguardando dados do dia"
+  // (antes qualquer falha virava zero atendimentos).
+  if (rows === null || roster === null || rechamadaPolo === null || erroThreshold) {
+    return {
+      tmaMedioPonderado: null,
+      tmaStatus: "neutral",
+      totalAtendidos: 0,
+      porOperadorPorBucket: new Map(),
+      tmaPorBucketEquipe: {} as Record<SkillBucket, number | null>,
+      evolucaoPorHora: [],
+      rechamada: { clientesDistintos: 0, clientesRecorrentes: 0, percentual: null, lista: [] },
+      foraDaCurva: { curtas: 0, longas: 0, curtasLista: [], longasLista: [] },
+      thresholdConfig,
+      erro: true,
+    };
   }
 
-  const atendimentos = rows ?? [];
+  const atendimentos = rows;
 
   const totalAtendidos = atendimentos.length;
   const somaDuracao = atendimentos.reduce((soma, at) => soma + at.duracao_segundos, 0);
@@ -248,5 +272,6 @@ export async function getGestorTmaAnalitico(gestorId: string): Promise<GestorTma
     rechamada,
     foraDaCurva,
     thresholdConfig,
+    erro: false,
   };
 }

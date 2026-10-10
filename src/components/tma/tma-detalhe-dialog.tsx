@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -16,7 +16,7 @@ import {
 
 import { ExportPopupPngButton } from "@/components/dashboard/export-popup-png-button";
 import { formatFaixaHora } from "@/components/dashboard/retencao/grafico-evolucao";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import {
   bucketDaSkill,
@@ -25,31 +25,11 @@ import {
   type SkillBucket,
 } from "@/lib/tma/skills-retencao";
 import type { AtendimentoTma } from "@/lib/tma/get-gestor-tma-atendimentos";
+import { classeStatusTma, corStatusTma, formatDistanciaMetaTma, formatEixoLabelTma } from "@/lib/tma/format-tma";
 import { calcularEvolucaoTmaPorHora, type TmaHoraData } from "@/lib/tma/get-gestor-tma-evolucao-hora";
-import { statusTmaDe, type TmaStatus, type TmaThresholdConfig } from "@/lib/tma/tma-status-pure";
+import { statusTmaDe, type TmaThresholdConfig } from "@/lib/tma/tma-status-pure";
 import { resolverTokenCss } from "@/lib/utils/resolver-token-css";
 import type { TmaLinha } from "./tma-table";
-
-// Rótulos das pontas do eixo — mesmo texto do modal do Consolidado
-// (operador-detalhe-dialog.tsx): sem os símbolos `<`/`≥`.
-function formatEixoLabel(label: string): string {
-  if (label === "< 08") return "Até 08h";
-  if (label === "≥ 20") return "Após 20h";
-  return label;
-}
-
-/** Distância da meta em texto — "01:23 acima da meta" / "00:40 abaixo da meta" (mesma ideia do tooltip do Consolidado, em MM:SS). */
-function formatDistanciaMetaTma(tmaSegundos: number, metaSegundos: number): string {
-  const diff = tmaSegundos - metaSegundos;
-  if (Math.abs(diff) < 1) return "na meta";
-  return `${formatKpiValue(Math.abs(diff), "time")} ${diff < 0 ? "abaixo" : "acima"} da meta`;
-}
-
-function classeStatus(status: TmaStatus): string {
-  if (status === "danger") return "text-danger";
-  if (status === "success") return "text-success";
-  return "text-foreground";
-}
 
 /** Título de bloco + linha até a borda — mesmo padrão do modal do Consolidado. */
 function TituloBloco({ children }: { children: string }) {
@@ -63,18 +43,24 @@ function TituloBloco({ children }: { children: string }) {
 
 interface TmaDetalheDialogProps {
   operador: TmaLinha | null;
-  atendimentos: AtendimentoTma[];
+  /** Atendimentos do operador; null enquanto carregam (busca sob demanda em TmaTable). */
+  atendimentos: AtendimentoTma[] | null;
+  /** true quando a busca dos atendimentos falhou. */
+  erroAtendimentos: boolean;
   /** Threshold/direção efetivos do TMA (getTmaThresholdConfig) — MESMO usado na tabela principal e no Analítico, pra referência de meta no gráfico "TMA por Hora" deste operador. */
   thresholdConfig: TmaThresholdConfig;
   onOpenChange: (open: boolean) => void;
 }
 
-export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOpenChange }: TmaDetalheDialogProps) {
+export function TmaDetalheDialog({
+  operador,
+  atendimentos: atendimentosOuNull,
+  erroAtendimentos,
+  thresholdConfig,
+  onOpenChange,
+}: TmaDetalheDialogProps) {
   const pngRef = useRef<HTMLDivElement>(null);
-  const temaTma =
-    typeof document === "undefined"
-      ? null
-      : document.querySelector<HTMLElement>('[data-page="reports-tma-peso"]');
+  const atendimentos = atendimentosOuNull ?? [];
 
   // 7 buckets (Hotline + Reversão Churn somadas), espelhando as colunas de
   // "queda por skill" da tabela principal — não as 8 skills cruas.
@@ -127,14 +113,26 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
   // importado) — um <linearGradient> único cobrindo a linha inteira, com
   // stops calculados pra trocar de cor EXATAMENTE no ponto (fracionário, por
   // interpolação linear) em que o traço cruza a meta, não arredondado pra
-  // uma ponta do segmento. Cores INVERTIDAS em relação ao Consolidado: lá é
-  // retenção (higher_better — abaixo da meta é ruim/vermelho), aqui é TMA
-  // (lower_better — abaixo da meta é bom/verde). Cores via resolverTokenCss
+  // uma ponta do segmento. Verde = dentro da meta pela MESMA regra de
+  // statusTmaDe (respeita `direction`; no TMA, lower_better, abaixo da meta é
+  // bom), vermelho = fora. Cores via resolverTokenCss
   // (valor COMPUTADO, não a string "var()" crua): o export em PNG clona
   // este SVG num <img> isolado, onde var() não resolve sem acesso ao :root
   // da página.
-  const corAbaixoMeta = resolverTokenCss("--success", "#16a34a", temaTma);
-  const corAcimaMeta = resolverTokenCss("--danger", "#dc2626", temaTma);
+  // Lidas uma vez por operador aberto (não a cada render): querySelector +
+  // getComputedStyle rodavam em todo render do modal.
+  // Relê ao abrir outro operador (o tema pode ter mudado entre aberturas);
+  // fechado, não lê nada.
+  const { corAbaixoMeta, corAcimaMeta } = useMemo(() => {
+    const temaTma =
+      operador === null || typeof document === "undefined"
+        ? null
+        : document.querySelector<HTMLElement>('[data-page="reports-tma-peso"]');
+    return {
+      corAbaixoMeta: temaTma ? resolverTokenCss("--success", "#16a34a", temaTma) : "#16a34a",
+      corAcimaMeta: temaTma ? resolverTokenCss("--danger", "#dc2626", temaTma) : "#dc2626",
+    };
+  }, [operador]);
   const TMA_META_GRADIENT_ID = "linha-tma-meta-gradient";
 
   const indicesComDado = evolucaoPorHora
@@ -155,9 +153,14 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
   if (threshold !== null) {
     // Um stop na cor do próprio ponto, pra cada ponto com dado — cobre os
     // trechos que NÃO cruzam a meta (as duas pontas na mesma cor).
+    // "Dentro da meta" = statusTmaDe (direção + igualdade), a MESMA regra das
+    // bolinhas e da tabela — antes era `< threshold` fixo, que ignorava a
+    // direção e pintava o valor igual à meta de vermelho.
+    const dentroDaMeta = (valor: number) => statusTmaDe(valor, thresholdConfig) === "success";
+
     indicesComDado.forEach((idx) => {
-      const abaixo = evolucaoPorHora[idx].tmaMedioSegundos! < threshold;
-      stopsGradiente.push({ offset: offsetDoIndice(idx), cor: abaixo ? corAbaixoMeta : corAcimaMeta });
+      const dentro = dentroDaMeta(evolucaoPorHora[idx].tmaMedioSegundos!);
+      stopsGradiente.push({ offset: offsetDoIndice(idx), cor: dentro ? corAbaixoMeta : corAcimaMeta });
     });
 
     // Pra cada trecho que CRUZA a meta, insere dois stops bem próximos no
@@ -169,8 +172,8 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
       const proxIdx = indicesComDado[i + 1];
       const valorInicial = evolucaoPorHora[idx].tmaMedioSegundos!;
       const valorFinal = evolucaoPorHora[proxIdx].tmaMedioSegundos!;
-      const inicioAbaixo = valorInicial < threshold;
-      const fimAbaixo = valorFinal < threshold;
+      const inicioAbaixo = dentroDaMeta(valorInicial);
+      const fimAbaixo = dentroDaMeta(valorFinal);
       if (inicioAbaixo === fimAbaixo) return;
 
       const fracaoCruzamento = (threshold - valorInicial) / (valorFinal - valorInicial);
@@ -190,14 +193,11 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
 
   const temGradiente = threshold !== null && stopsGradiente.length > 0;
 
-  // Título do modal: e-mail LITERAL (parte local, minúsculo, sem
-  // formatação) — exceção deliberada à convenção geral do site (nome
-  // fantasia sempre), na mesma família de exceções já documentadas neste
-  // modal (nome REAL em vez de nomeExibicao). Diferença desta rodada: antes
-  // mostrava "Nome Sobrenome" (formatNomeProprio + deriveNomeOperador),
-  // agora é o e-mail cru (ex.: "vitoria.dsantos") — pedido explícito do
-  // usuário. Vale pro PNG exportado também (nome do arquivo abaixo). Não
-  // trocar de volta numa manutenção futura sem confirmar com o usuário.
+  // Título do modal: e-mail LITERAL (parte local, minúsculo, ex.:
+  // "vitoria.dsantos"), não o nome fantasia nem "Nome Sobrenome" — decisão
+  // do usuário, exceção deliberada à convenção do site. Vale também pro PNG
+  // exportado (nome do arquivo abaixo). Não trocar sem confirmar com o
+  // usuário.
   const emailLocal = operador ? (operador.operatorEmail.split("@")[0] ?? operador.operatorEmail).toLowerCase() : "";
 
   return (
@@ -221,11 +221,18 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
             <ExportPopupPngButton
               contentRef={pngRef}
               filename={`tma_${emailLocal}.png`}
-              className="tma-detalhe-export-btn absolute top-2 right-10"
+              className="absolute top-2 right-10"
               corDeFundoDoAlvo
               toastClassName="toast-padrao"
               showSuccessToast={false}
             />
+
+            {/* Descrição para leitor de tela (o Radix avisa "Missing
+                Description" sem ela) — mesmo do modal do Consolidado. sr-only
+                e FORA do pngRef: não aparece na tela nem no PNG exportado. */}
+            <DialogDescription className="sr-only">
+              Detalhe do operador: TMA, atendimentos, evolução por hora e TMA por tema.
+            </DialogDescription>
 
             {/*
               Sem template separado: o PNG captura este mesmo wrapper (via
@@ -248,7 +255,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div data-neu-tile className="flex flex-col justify-center gap-1 px-4 py-3.5">
                   <p className="ds-small text-muted-foreground mb-1 font-bold tracking-wider uppercase">TMA</p>
-                  <p className={`ds-display text-2xl font-bold tabular-nums ${classeStatus(operador.status)}`}>
+                  <p className={`ds-display text-2xl font-bold tabular-nums ${classeStatusTma(operador.status)}`}>
                     {formatKpiValue(operador.tmaSegundos, "time")}
                   </p>
                 </div>
@@ -260,11 +267,24 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                 </div>
               </div>
 
+              {/* Atendimentos do operador vêm sob demanda (TmaTable busca ao
+                  abrir): enquanto chegam, ou se falharem, os três blocos
+                  abaixo dão lugar a um aviso — o resumo acima já vem da linha. */}
+              {erroAtendimentos ? (
+                <p role="alert" className="ds-small p-6 text-center text-xs" style={{ color: "var(--danger)" }}>
+                  Não foi possível carregar os atendimentos deste operador. Feche e abra de novo.
+                </p>
+              ) : atendimentos === null ? (
+                <p role="status" className="ds-small text-muted-foreground p-6 text-center text-xs">
+                  Carregando atendimentos...
+                </p>
+              ) : (
+              <>
               {/* ── Evolução por hora ──────────────────────────────── */}
               <div className="space-y-2">
                 <TituloBloco>Evolução por hora</TituloBloco>
-                {/* Sem a borda de foco ao clicar no gráfico, igual ao Consolidado. */}
-                <div className="grafico-evolucao-chart w-full h-[220px] [&_*:focus]:outline-none [&_*:focus-visible]:outline-none">
+                {/* Sem a borda de foco ao CLICAR no gráfico; pelo teclado (:focus-visible) ela aparece. */}
+                <div className="grafico-evolucao-chart w-full h-[220px] [&_*:focus:not(:focus-visible)]:outline-none">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={evolucaoPorHora} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         {temGradiente && (
@@ -281,7 +301,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
 
                         <XAxis
                           dataKey="label"
-                          tickFormatter={formatEixoLabel}
+                          tickFormatter={formatEixoLabelTma}
                           tickLine={false}
                           axisLine={false}
                           tick={{ fill: "var(--muted-foreground)", fontSize: 10 }}
@@ -312,7 +332,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                             // destaque (com a distância da meta) e o resto em
                             // texto normal. Hora sem atendimento não mostra.
                             if (info.total === 0 || info.tmaMedioSegundos === null) return null;
-                            const cor = classeStatus(info.status);
+                            const cor = classeStatusTma(info.status);
                             return (
                               <div className="bg-popover border border-border/80 w-64 rounded-lg p-3 shadow-md font-sans">
                                 <p className="text-muted-foreground text-[11px] tracking-wider uppercase">
@@ -338,7 +358,13 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
 
                         <Bar yAxisId="right" dataKey="total" barSize={24} radius={[4, 4, 0, 0]} animationDuration={300} animationEasing="ease-out">
                           {evolucaoPorHora.map((entry, index) => {
-                            const cellColor = entry.status === "danger" ? "var(--danger)" : "var(--success)";
+                            // Sem meta/sem dado (neutral): cor neutra, não verde.
+                            const cellColor =
+                              entry.status === "danger"
+                                ? "var(--danger)"
+                                : entry.status === "success"
+                                  ? "var(--success)"
+                                  : "var(--muted-foreground)";
                             return <Cell key={`cell-${index}`} fill={cellColor} opacity={0.15} />;
                           })}
                         </Bar>
@@ -363,7 +389,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
 
                         {/*
                           Linha RETA (type="linear", segmentos retos entre
-                          buckets — pedido explícito, não curva suave), com
+                          buckets — decisão do usuário, não curva suave), com
                           o MESMO gradiente SVG do Consolidado (stopsGradiente
                           acima): a cor troca exatamente no ponto de
                           cruzamento com a meta, não numa transição suave ao
@@ -386,8 +412,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                           dot={(props: { cx?: number; cy?: number; payload?: TmaHoraData }) => {
                             const { cx, cy, payload } = props;
                             if (!cx || !cy || payload?.tmaMedioSegundos === null || payload?.tmaMedioSegundos === undefined) return null;
-                            const dotColor =
-                              payload.status === "danger" ? "var(--danger)" : payload.status === "success" ? "var(--success)" : "var(--foreground)";
+                            const dotColor = corStatusTma(payload.status);
                             return (
                               <circle
                                 key={`dot-${payload.label}`}
@@ -403,8 +428,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                           activeDot={(props: { cx?: number; cy?: number; payload?: TmaHoraData }) => {
                             const { cx, cy, payload } = props;
                             if (!cx || !cy || payload?.tmaMedioSegundos === null || payload?.tmaMedioSegundos === undefined) return null;
-                            const dotColor =
-                              payload.status === "danger" ? "var(--danger)" : payload.status === "success" ? "var(--success)" : "var(--foreground)";
+                            const dotColor = corStatusTma(payload.status);
                             return (
                               <circle
                                 key={`active-dot-${payload.label}`}
@@ -457,7 +481,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                               <td className="text-muted-foreground ds-mono-sm px-4 py-2.5 text-center text-xs tabular-nums">
                                 {linha.pct.toFixed(1)}%
                               </td>
-                              <td className={`ds-mono-sm px-4 py-2.5 text-center text-xs font-semibold tabular-nums ${classeStatus(linha.status)}`}>
+                              <td className={`ds-mono-sm px-4 py-2.5 text-center text-xs font-semibold tabular-nums ${classeStatusTma(linha.status)}`}>
                                 {formatKpiValue(linha.tma, "time")}
                               </td>
                             </tr>
@@ -486,7 +510,7 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                       {atendimentos.map((at, i) => (
                         <tr key={i} className="border-border/20 border-b last:border-0">
                           <td
-                            className={`ds-mono-sm px-4 py-2.5 text-center text-xs font-semibold tabular-nums ${classeStatus(
+                            className={`ds-mono-sm px-4 py-2.5 text-center text-xs font-semibold tabular-nums ${classeStatusTma(
                               statusTmaDe(at.duracaoSegundos, thresholdConfig),
                             )}`}
                           >
@@ -507,6 +531,8 @@ export function TmaDetalheDialog({ operador, atendimentos, thresholdConfig, onOp
                   </table>
                 </div>
               </div>
+              </>
+              )}
               </div>
             </div>
           </>

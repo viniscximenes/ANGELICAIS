@@ -10,6 +10,7 @@ import { Instrument_Sans } from "next/font/google";
 
 import "./operacao-diario.css";
 import { KpiFrame } from "@/app/(dashboard)/s/kpi/operadores/_components/kpi-frame";
+import { DESLIGAR_SCROLL_RESTORATION_SCRIPT } from "@/lib/scroll-restoration-script";
 
 const zenSans = Instrument_Sans({
   subsets: ["latin", "latin-ext"],
@@ -96,14 +97,8 @@ function SkeletonTabelaReports() {
   );
 }
 
-// Mesmo script de /s/reports/consolidado: desliga a restauração nativa de
-// scroll e força o topo antes do primeiro paint do fallback.
-const DESLIGAR_SCROLL_RESTORATION_SCRIPT = `
-try {
-  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-  window.scrollTo(0, 0);
-} catch (e) {}
-`;
+// Script de scroll do fallback (desliga a restauração nativa e força o
+// topo antes do primeiro paint) — texto em src/lib/scroll-restoration-script.ts.
 
 export default function LoadingOperacaoDiario() {
   return (

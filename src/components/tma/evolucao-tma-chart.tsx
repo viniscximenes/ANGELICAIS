@@ -16,6 +16,7 @@ import {
 import { GraficoVazio } from "@/components/dashboard/retencao/analitico-skeleton";
 import { formatFaixaHora } from "@/components/dashboard/retencao/grafico-evolucao";
 import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
+import { classeStatusTma, corStatusTma, formatDistanciaMetaTma, formatEixoLabelTma } from "@/lib/tma/format-tma";
 import type { TmaHoraData } from "@/lib/tma/get-gestor-tma-evolucao-hora";
 import type { TmaThresholdConfig } from "@/lib/tma/tma-status";
 
@@ -50,32 +51,6 @@ function Titulo() {
 
 /** Abaixo disso, o TMA da hora é marcado como amostra pequena (mesmo piso do Consolidado). */
 const MIN_ATENDIMENTOS_AMOSTRA = 10;
-
-// Rótulos das pontas do eixo — mesmo texto do Consolidado (grafico-evolucao.tsx).
-function formatEixoLabel(label: string): string {
-  if (label === "< 08") return "Até 08h";
-  if (label === "≥ 20") return "Após 20h";
-  return label;
-}
-
-/** Distância da meta em texto — "01:23 acima da meta" / "00:40 abaixo da meta" (versão MM:SS do formatDistanciaMeta do Consolidado). */
-function formatDistanciaMeta(tmaSegundos: number, metaSegundos: number): string {
-  const diff = tmaSegundos - metaSegundos;
-  if (Math.abs(diff) < 1) return "na meta";
-  return `${formatKpiValue(Math.abs(diff), "time")} ${diff < 0 ? "abaixo" : "acima"} da meta`;
-}
-
-function corDoStatus(status: TmaHoraData["status"]): string {
-  if (status === "danger") return "var(--danger)";
-  if (status === "success") return "var(--success)";
-  return "var(--foreground)";
-}
-
-function classeDoStatus(status: TmaHoraData["status"]): string {
-  if (status === "danger") return "text-danger";
-  if (status === "success") return "text-success";
-  return "text-foreground";
-}
 
 /**
  * Cursor do tooltip (linha vertical) que some em horas sem atendimento —
@@ -215,9 +190,9 @@ export function EvolucaoTmaChart({ dados, thresholdConfig }: EvolucaoTmaChartPro
         </span>
       </div>
 
-      {/* Sem a borda de foco ao clicar no gráfico (o Recharts o deixa focável). */}
+      {/* Sem a borda de foco ao CLICAR no gráfico (o Recharts o deixa focável); pelo teclado (:focus-visible) ela aparece. */}
       <div
-        className="grafico-evolucao-chart w-full [&_*:focus]:outline-none [&_*:focus-visible]:outline-none"
+        className="grafico-evolucao-chart w-full [&_*:focus:not(:focus-visible)]:outline-none"
         style={{ height: ALTURA_GRAFICO }}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -237,7 +212,7 @@ export function EvolucaoTmaChart({ dados, thresholdConfig }: EvolucaoTmaChartPro
 
             <XAxis
               dataKey="label"
-              tickFormatter={formatEixoLabel}
+              tickFormatter={formatEixoLabelTma}
               tickLine={false}
               axisLine={false}
               tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
@@ -269,7 +244,7 @@ export function EvolucaoTmaChart({ dados, thresholdConfig }: EvolucaoTmaChartPro
                 if (!active || !payload || !payload.length) return null;
                 const info = payload[0].payload as TmaHoraData;
                 if (info.total === 0 || info.tmaMedioSegundos === null) return null;
-                const cor = classeDoStatus(info.status);
+                const cor = classeStatusTma(info.status);
                 const foraDaMeta = [...info.abaixoDaMeta].sort(
                   (a, b) => (b.tmaMedioSegundos ?? 0) - (a.tmaMedioSegundos ?? 0),
                 );
@@ -285,7 +260,7 @@ export function EvolucaoTmaChart({ dados, thresholdConfig }: EvolucaoTmaChartPro
                       </span>
                       {threshold !== null && (
                         <span className={`text-xs ${cor}`}>
-                          {formatDistanciaMeta(info.tmaMedioSegundos, threshold)}
+                          {formatDistanciaMetaTma(info.tmaMedioSegundos, threshold)}
                         </span>
                       )}
                     </p>
@@ -374,7 +349,7 @@ export function EvolucaoTmaChart({ dados, thresholdConfig }: EvolucaoTmaChartPro
               dot={(props: { cx?: number; cy?: number; payload?: TmaHoraData }) => {
                 const { cx, cy, payload } = props;
                 if (!cx || !cy || payload?.tmaMedioSegundos === null || payload?.tmaMedioSegundos === undefined) return null;
-                const dotColor = corDoStatus(payload.status);
+                const dotColor = corStatusTma(payload.status);
                 // Amostra pequena: ponto vazado (só contorno na cor do status).
                 if (payload.total < MIN_ATENDIMENTOS_AMOSTRA) {
                   return (
@@ -412,7 +387,7 @@ export function EvolucaoTmaChart({ dados, thresholdConfig }: EvolucaoTmaChartPro
                     r={7}
                     stroke="var(--background)"
                     strokeWidth={2}
-                    fill={corDoStatus(payload.status)}
+                    fill={corStatusTma(payload.status)}
                   />
                 );
               }}

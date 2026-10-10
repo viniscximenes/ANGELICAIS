@@ -7,18 +7,11 @@
 import { cookies } from "next/headers";
 
 import { COOKIE_LINHAS, TmaPesoSkeleton } from "./tma-peso-skeleton";
+import { DESLIGAR_SCROLL_RESTORATION_SCRIPT } from "@/lib/scroll-restoration-script";
 
-// Script inline, síncrono — roda no PARSE do HTML deste fallback, antes de
-// qualquer hidratação. A guarda em JS (useTopoAoCarregar) só age depois que
-// o bundle carrega; nesse intervalo o navegador já pode ter restaurado e
-// PINTADO a posição de scroll salva. Este script fecha essa janela,
-// desligando a restauração nativa e forçando o topo antes do primeiro paint.
-const DESLIGAR_SCROLL_RESTORATION_SCRIPT = `
-try {
-  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-  window.scrollTo(0, 0);
-} catch (e) {}
-`;
+// Script de scroll do fallback (desliga a restauração nativa e força o
+// topo antes do primeiro paint) — texto em src/lib/scroll-restoration-script.ts.
+// A segunda camada (guarda em JS) é o useTopoAoCarregar.
 
 export default async function LoadingReportsTmaPeso() {
   // Nº de operadores da última tabela vista neste navegador (gravado por

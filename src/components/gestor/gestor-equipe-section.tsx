@@ -54,8 +54,8 @@ import { CursorCarregando } from "@/components/gestor/cursor-carregando";
 // Analítico compartilhando o mesmo state/poll) — removido a pedido
 // explícito, refetch() lá virou só manual (ClearBaseButton/popover). A
 // tabela principal da TMA (gestor-tma-section.tsx) mantém o PRÓPRIO polling,
-// à parte — não fazia parte dessa decisão. A seção Analítico da TMA
-// (analitico-tma-tabela.tsx/cards-resumo-tma.tsx) nunca teve polling.
+// à parte — não fazia parte dessa decisão. A seção Analítico da TMA não tem
+// polling próprio: recarrega quando a tabela avisa que a base mudou.
 const POLL_INTERVAL_MS = 30_000;
 
 // Piso mínimo (ms) da tela de loading exibida durante o refresh MANUAL

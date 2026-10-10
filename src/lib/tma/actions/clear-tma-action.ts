@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { can } from "@/lib/auth/permissions";
 import { dataRefHojeBR } from "@/lib/d1-db/parse";
@@ -9,7 +7,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 type ClearTmaResult = { success: true } | { success: false; error: string };
 
-/** Limpa o TMA de HOJE (data_ref) da equipe do gestor logado. */
+/**
+ * Limpa o TMA de HOJE (data_ref) — todas as equipes, já que a base é
+ * única/compartilhada (mesmo comportamento do Limpar Base do Consolidado).
+ */
 export async function clearTmaAction(): Promise<ClearTmaResult> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "Não autenticado" };
@@ -21,27 +22,26 @@ export async function clearTmaAction(): Promise<ClearTmaResult> {
     const admin = createAdminClient();
     const dataRef = dataRefHojeBR();
 
-    const { error: erroTma } = await admin
-      .from("d1_tma")
-      .delete()
-      .eq("data_ref", dataRef)
-      .eq("gestor_id", user.profile.id);
-    if (erroTma) throw new Error(erroTma.message);
+    // Limpa as duas tabelas numa transação só (função limpar_base_tma,
+    // scripts/sql/upload-tma-atomico.sql): d1_tma (tabela) e
+    // d1_tma_atendimentos (modal e Analítico) do dia. Antes eram dois
+    // deletes separados, só da equipe de quem clicou, e uma falha no segundo
+    // deixava o Analítico com a base velha. Usa o mesmo lock do upload: não
+    // corre junto com um upload em andamento.
+    const { error } = await admin.rpc("limpar_base_tma", { p_data_ref: dataRef });
+    if (error) throw new Error(error.message);
 
-    const { error: erroAtendimentos } = await admin
-      .from("d1_tma_atendimentos")
-      .delete()
-      .eq("data_ref", dataRef)
-      .eq("gestor_id", user.profile.id);
-    if (erroAtendimentos) throw new Error(erroAtendimentos.message);
-
-    revalidatePath("/s/reports/tma-peso");
+    // Sem revalidatePath (mesmo do clearConsolidadoAction): a tela recarrega
+    // tabela e Analítico pelo próprio refetch (handleBaseCleared). Revalidar
+    // refazia a página inteira dentro da resposta, antes desse refetch.
     return { success: true };
   } catch (err) {
+    // Detalhe (mensagem do Postgres/PostgREST) só no log do servidor — o
+    // toast do cliente não deve expor nome de tabela/coluna/constraint.
     console.error("[clear-tma] erro:", err);
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Erro desconhecido",
+      error: "Não foi possível limpar a base. Tente novamente.",
     };
   }
 }

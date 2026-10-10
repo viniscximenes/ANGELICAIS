@@ -22,6 +22,7 @@ import {
 } from "@/components/operacional/analise-operadores/relatorio-fantasma";
 import { PRINCIPAIS_SLUGS } from "@/lib/kpi/analise-operadores/constants";
 import { MESES_JANELA, PERIODO_PADRAO } from "@/lib/kpi/analise-operadores/periodo";
+import { DESLIGAR_SCROLL_RESTORATION_SCRIPT } from "@/lib/scroll-restoration-script";
 
 // MESMA fonte/variável de page.tsx — o fallback monta antes de page.tsx.
 const zenSans = Instrument_Sans({
@@ -29,13 +30,6 @@ const zenSans = Instrument_Sans({
   weight: "variable",
   variable: "--font-zen-sans",
 });
-
-const DESLIGAR_SCROLL_RESTORATION_SCRIPT = `
-try {
-  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-  window.scrollTo(0, 0);
-} catch (e) {}
-`;
 
 export default function LoadingKpiEvolucao() {
   return (

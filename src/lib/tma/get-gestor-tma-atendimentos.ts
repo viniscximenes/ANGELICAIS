@@ -1,5 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import { dataRefHojeBR } from "@/lib/d1-db/parse";
+import { lerAtendimentosTma } from "./ler-atendimentos-tma";
 
 export type AtendimentoTma = {
   hora: string | null;
@@ -9,39 +9,48 @@ export type AtendimentoTma = {
 };
 
 /**
- * Atendimentos do dia de toda a equipe do gestor (d1_tma_atendimentos),
- * agrupados por operator_email — carrega tudo de uma vez pra o modal de
- * detalhamento não precisar de round-trip ao abrir (volume é o de um dia
- * de uma equipe, não da empresa toda).
+ * Atendimentos do dia de UM operador da equipe do gestor
+ * (d1_tma_atendimentos), por horário — buscados só quando o modal de
+ * detalhamento abre (getAtendimentosOperadorTmaAction). Antes vinham os da
+ * equipe inteira (com telefone de cliente) no payload da página e de novo a
+ * cada 30s no polling, embora só fossem usados com o modal aberto.
+ *
+ * O filtro por gestor_id garante que só sai atendimento da própria equipe.
+ * Erro de banco: null (o modal mostra o erro, não "sem atendimentos").
  */
 export async function getGestorTmaAtendimentos(
   gestorId: string,
-): Promise<Map<string, AtendimentoTma[]>> {
-  const admin = createAdminClient();
-  const dataRef = dataRefHojeBR();
+  operatorEmail: string,
+): Promise<AtendimentoTma[] | null> {
+  type Linha = {
+    hora: string | null;
+    telefone_cliente: string | null;
+    skill: string | null;
+    duracao_segundos: number;
+  };
 
-  const { data, error } = await admin
-    .from("d1_tma_atendimentos")
-    .select("operator_email, hora, telefone_cliente, skill, duracao_segundos")
-    .eq("gestor_id", gestorId)
-    .eq("data_ref", dataRef)
-    .order("hora", { ascending: true });
-
-  if (error) {
-    console.error("[get-gestor-tma-atendimentos] erro:", error.message);
-    return new Map();
-  }
-
-  const porOperador = new Map<string, AtendimentoTma[]>();
-  for (const row of data ?? []) {
-    const lista = porOperador.get(row.operator_email) ?? [];
-    lista.push({
+  try {
+    // Paginado (lerAtendimentosTma): sem isso o PostgREST cortaria em 1000
+    // linhas em silêncio.
+    const linhas = await lerAtendimentosTma<Linha>(
+      (supabase) =>
+        supabase
+          .from("d1_tma_atendimentos")
+          .select("hora, telefone_cliente, skill, duracao_segundos")
+          .eq("gestor_id", gestorId)
+          .eq("operator_email", operatorEmail)
+          .order("hora", { ascending: true }),
+      dataRefHojeBR(),
+      "get-gestor-tma-atendimentos",
+    );
+    return linhas.map((row) => ({
       hora: row.hora,
       telefoneCliente: row.telefone_cliente,
       skill: row.skill,
       duracaoSegundos: row.duracao_segundos,
-    });
-    porOperador.set(row.operator_email, lista);
+    }));
+  } catch (err) {
+    console.error("[get-gestor-tma-atendimentos] erro:", err instanceof Error ? err.message : err);
+    return null;
   }
-  return porOperador;
 }

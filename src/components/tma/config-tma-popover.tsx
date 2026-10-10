@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { IconCheck, IconChevronDown, IconLoader2, IconSettings } from "@tabler/icons-react";
 import { toast } from "sonner";
@@ -17,8 +17,9 @@ import {
 } from "@/components/ui/popover";
 import { saveConfigTabelaTmaAction } from "@/lib/gestor/config-tabela-tma/actions/save-config-tabela-tma-action";
 import { ORDEM_TABELA_TMA_OPTIONS, type OrdemTabelaTma } from "@/lib/gestor/config-tabela-tma/types";
-import { saveTmaMetaAction } from "@/lib/tma/actions/save-tma-meta-action";
+import { metaTmaValida } from "@/lib/tma/tma-status-pure";
 import { cn } from "@/lib/utils";
+import { handleStaleActionError } from "@/lib/utils/handle-stale-action-error";
 
 interface ConfigTmaPopoverProps {
   metaInicial: string; // "MM:SS"
@@ -53,35 +54,80 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
 
   function handleSave() {
     const valor = meta.trim();
-    if (!/^\d{1,3}:\d{2}$/.test(valor)) {
+    // Campo vazio = sem meta própria: remove o override e volta a valer a
+    // meta padrão do KPI (kpi_definitions). Antes o vazio era recusado, e
+    // quem não tinha meta não conseguia salvar nem a ordenação.
+    if (valor !== "" && !metaTmaValida(valor)) {
       toast.error("Meta inválida", {
-        description: "Use o formato MM:SS, ex.: 13:00",
+        description: "Use MM:SS, segundos de 00 a 59 e maior que 00:00 (ex.: 13:00), ou deixe vazio pra usar a meta padrão",
         className: "toast-padrao",
       });
       return;
     }
 
     startTransition(async () => {
-      const [resultMeta, resultOrdem] = await Promise.all([
-        saveTmaMetaAction(valor),
-        saveConfigTabelaTmaAction(ordem),
-      ]);
+      // try/catch como no ConfigTabelaPopover do Consolidado: uma action de
+      // build anterior (deploy com a aba aberta) ou falha de rede rejeita a
+      // promise — sem isto o erro subia até o error boundary, sem aviso.
+      try {
+        // Meta e ordenação numa action só (um upsert): grava as duas ou
+        // nenhuma — antes eram duas em paralelo e uma podia ficar gravada
+        // sem a tela refletir.
+        const result = await saveConfigTabelaTmaAction(valor === "" ? null : valor, ordem);
 
-      if (resultMeta.success && resultOrdem.success) {
-        toast.success("Configurações salvas", { className: "toast-padrao" });
-        onSaved(valor, ordem);
-        setOpen(false);
-        onOpenChange?.(false);
-      } else {
-        toast.error("Erro ao salvar", {
-          description: (!resultMeta.success && resultMeta.error) || (!resultOrdem.success && resultOrdem.error) || undefined,
-          className: "toast-padrao",
-        });
+        if (result.success) {
+          toast.success("Configurações salvas", { className: "toast-padrao" });
+          onSaved(valor, ordem);
+          setOpen(false);
+          onOpenChange?.(false);
+        } else {
+          toast.error("Erro ao salvar", {
+            description: result.error,
+            className: "toast-padrao",
+          });
+        }
+      } catch (err) {
+        if (handleStaleActionError(err)) return;
+        toast.error("Erro inesperado ao salvar", { className: "toast-padrao" });
+        console.error("[ConfigTmaPopover] erro:", err);
       }
     });
   }
 
   const selectedOption = ORDEM_TABELA_TMA_OPTIONS.find((opt) => opt.value === ordem);
+
+  // Seletor de ordenação (listbox) — mesmo do ConfigTabelaPopover do
+  // Consolidado: foco vai para a opção marcada ao abrir e volta para o botão
+  // ao escolher/Esc.
+  const metaInputRef = useRef<HTMLInputElement>(null);
+  const ordemBotaoRef = useRef<HTMLButtonElement>(null);
+  const ordemOpcoesRef = useRef<(HTMLButtonElement | null)[]>([]);
+
+  function abrirOrdem() {
+    setDropdownOpen(true);
+    const i = Math.max(0, ORDEM_TABELA_TMA_OPTIONS.findIndex((opt) => opt.value === ordem));
+    requestAnimationFrame(() => ordemOpcoesRef.current[i]?.focus());
+  }
+
+  function fecharOrdem(devolverFoco: boolean) {
+    setDropdownOpen(false);
+    if (devolverFoco) ordemBotaoRef.current?.focus();
+  }
+
+  function handleOrdemListaKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const opcoes = ordemOpcoesRef.current.filter((el): el is HTMLButtonElement => el !== null);
+    const atual = opcoes.indexOf(document.activeElement as HTMLButtonElement);
+    let proximo: number | null = null;
+    if (e.key === "ArrowDown") proximo = Math.min(opcoes.length - 1, atual + 1);
+    else if (e.key === "ArrowUp") proximo = Math.max(0, atual - 1);
+    else if (e.key === "Home") proximo = 0;
+    else if (e.key === "End") proximo = opcoes.length - 1;
+    else if (e.key === "Tab") setDropdownOpen(false);
+    if (proximo !== null) {
+      e.preventDefault();
+      opcoes[proximo]?.focus();
+    }
+  }
 
   return (
     <>
@@ -114,9 +160,25 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
         <PopoverContent
           data-page="reports-tma-peso"
           align="end"
-          // Sem auto-foco ao abrir (mesmo do consolidado): o Radix foca (e
-          // seleciona) o primeiro campo.
-          onOpenAutoFocus={(e) => e.preventDefault()}
+          // O Radix focaria E selecionaria o valor da meta. Em vez de só
+          // cancelar (o foco ficava fora do popover e o teclado não chegava
+          // aos campos), o foco vai pro campo da meta com o cursor no fim,
+          // sem selecionar o texto.
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            const input = metaInputRef.current;
+            if (!input) return;
+            input.focus({ preventScroll: true });
+            input.setSelectionRange(input.value.length, input.value.length);
+          }}
+          // Esc com o seletor de ordenação aberto fecha só o seletor (o Radix
+          // escuta o Esc no documento, antes do onKeyDown da lista).
+          onEscapeKeyDown={(e) => {
+            if (dropdownOpen) {
+              e.preventDefault();
+              fecharOrdem(true);
+            }
+          }}
           // gap-0 + pt-3: mesmo espaçamento do ConfigTabelaPopover (consolidado).
           className="bg-popover text-popover-foreground border-border w-72 gap-0 rounded-2xl border p-4 pt-3 shadow-2xl"
         >
@@ -137,9 +199,10 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
                 Meta do TMA (MM:SS)
               </Label>
               <Input
+                ref={metaInputRef}
                 id="config-meta-tma"
                 type="text"
-                placeholder="MM:SS"
+                placeholder="Padrão do KPI"
                 value={meta}
                 onChange={(e) => setMeta(e.target.value)}
                 disabled={isPending}
@@ -152,35 +215,70 @@ export function ConfigTmaPopover({ metaInicial, ordemInicial, onSaved, onOpenCha
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="config-ordem-tma" className="text-foreground text-xs font-medium">
+              <Label id="config-ordem-tma-label" htmlFor="config-ordem-tma" className="text-foreground text-xs font-medium">
                 Ordenação dos Operadores
               </Label>
-              <div className="relative">
+              {/* Seletor no padrão listbox (WAI-ARIA), igual ao do Consolidado:
+                  botão anuncia aberto/fechado e a lista; ↑/↓/Home/End movem
+                  entre as opções, Enter/Espaço escolhem, Esc fecha só o
+                  seletor (onEscapeKeyDown no PopoverContent) e Tab sai
+                  fechando. Clique fora do seletor (foco saindo dele) também
+                  fecha. */}
+              <div
+                className="relative"
+                onBlur={(e) => {
+                  if (dropdownOpen && !e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                    setDropdownOpen(false);
+                  }
+                }}
+              >
                 <button
+                  ref={ordemBotaoRef}
                   type="button"
                   id="config-ordem-tma"
                   disabled={isPending}
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  aria-haspopup="listbox"
+                  aria-expanded={dropdownOpen}
+                  aria-controls={dropdownOpen ? "config-ordem-tma-lista" : undefined}
+                  onClick={() => (dropdownOpen ? fecharOrdem(false) : abrirOrdem())}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                      e.preventDefault();
+                      abrirOrdem();
+                    }
+                  }}
                   className="border-border bg-transparent text-foreground w-full flex items-center justify-between rounded-lg border px-3.5 py-2.5 text-xs font-medium transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus:outline-none cursor-pointer"
                 >
                   <span>{selectedOption?.label ?? "Selecione..."}</span>
-                  <IconChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", dropdownOpen && "rotate-180")} />
+                  <IconChevronDown size={14} aria-hidden="true" className={cn("text-muted-foreground transition-transform duration-200", dropdownOpen && "rotate-180")} />
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute left-0 right-0 z-50 mt-1.5 rounded-lg border border-border bg-popover text-popover-foreground p-1 shadow-2xl">
-                    {ORDEM_TABELA_TMA_OPTIONS.map((opt) => {
+                  <div
+                    id="config-ordem-tma-lista"
+                    role="listbox"
+                    aria-labelledby="config-ordem-tma-label"
+                    onKeyDown={handleOrdemListaKeyDown}
+                    className="absolute left-0 right-0 z-50 mt-1.5 rounded-lg border border-border bg-popover text-popover-foreground p-1 shadow-2xl"
+                  >
+                    {ORDEM_TABELA_TMA_OPTIONS.map((opt, i) => {
                       const isSelected = opt.value === ordem;
                       return (
                         <button
                           key={opt.value}
+                          ref={(el) => {
+                            ordemOpcoesRef.current[i] = el;
+                          }}
                           type="button"
+                          role="option"
+                          aria-selected={isSelected}
+                          tabIndex={-1}
                           onClick={() => {
                             setOrdem(opt.value);
-                            setDropdownOpen(false);
+                            fecharOrdem(true);
                           }}
                           className={cn(
-                            "w-full flex items-center justify-between rounded-md px-3 py-2 text-xs font-medium transition-colors text-left cursor-pointer",
+                            "w-full flex items-center justify-between rounded-md px-3 py-2 text-xs font-medium transition-colors text-left cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                             isSelected
                               ? "bg-primary text-primary-foreground font-semibold shadow-sm"
                               : "text-foreground hover:bg-accent"
