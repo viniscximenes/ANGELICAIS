@@ -147,7 +147,14 @@ export function AnaliticoTmaSection({
                   tmaStatus={analitico.tmaStatus}
                   totalAtendidos={analitico.totalAtendidos}
                 />
-                <EvolucaoTmaChart dados={analitico.evolucaoPorHora} thresholdConfig={analitico.thresholdConfig} />
+                {/* Mesmo visual/regras do "Evolução da equipe" do Consolidado
+                    (EvolucaoEquipe), adaptado ao TMA. */}
+                <EvolucaoTmaChart
+                  dados={analitico.evolucaoPorHora}
+                  thresholdConfig={analitico.thresholdConfig}
+                  titulo="Evolução da equipe"
+                  descricao="Atendimentos por hora, com o TMA da equipe em cada hora e o total do dia. Passe o mouse para ver os operadores fora da meta em cada hora."
+                />
               </div>,
               <AnaliticoTmaTabela
                 key="tabela-operador-bucket"

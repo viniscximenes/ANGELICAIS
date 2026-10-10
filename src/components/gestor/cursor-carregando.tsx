@@ -3,9 +3,9 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Indicador de carregamento ao lado do cursor em /s/reports/consolidado —
- * no lugar do cursor "progress" do sistema (bolinha azul do Windows)
- * enquanto o detalhe do operador é buscado. O cursor normal continua
+ * Indicador de carregamento ao lado do cursor em /s/reports/consolidado e
+ * /s/reports/tma-peso (TmaTable) — no lugar do cursor "progress" do sistema
+ * (bolinha azul do Windows) enquanto o detalhe do operador é buscado. O cursor normal continua
  * visível; um spinner circular simples, na cor do texto (branco no tema
  * escuro), acompanha o mouse à direita da seta, na altura da ponta.
  */

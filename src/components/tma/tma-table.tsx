@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type { ReactNode } from "react";
+import { toast } from "sonner";
 
+import { CursorCarregando } from "@/components/gestor/cursor-carregando";
 import {
   corNomeOperador,
   fundoLinhaRuim,
@@ -49,30 +51,36 @@ const VALOR_CELL_CLASS = `${TABELA_VALOR_CELL_CLASS} last:border-r-0`;
 
 export function TmaTable({ linhas, headerButton, thresholdConfig, comDetalhe = true }: TmaTableProps) {
   const [operadorAberto, setOperadorAberto] = useState<TmaLinha | null>(null);
-  // Atendimentos do operador aberto, buscados ao abrir o modal
-  // (getAtendimentosOperadorTmaAction) — null = carregando. Antes vinham os
-  // da equipe inteira (com telefone) no payload da página e a cada polling.
-  const [atendimentos, setAtendimentos] = useState<AtendimentoTma[] | null>(null);
-  const [erroAtendimentos, setErroAtendimentos] = useState(false);
-  // Abrir outro operador antes da resposta chegar: descarta a resposta velha.
-  const aberturaRef = useRef(0);
+  // Atendimentos do operador, buscados no clique
+  // (getAtendimentosOperadorTmaAction). Antes vinham os da equipe inteira
+  // (com telefone) no payload da página e a cada polling.
+  const [atendimentos, setAtendimentos] = useState<AtendimentoTma[]>([]);
+  // Mesmo fluxo do Consolidado (GestorEquipeSection.handleOperadorClick):
+  // busca PRIMEIRO, com o CursorCarregando ao lado do cursor, e só então abre
+  // o modal já com os dados — antes o modal abria vazio e carregava depois.
+  const [carregandoDetalhe, setCarregandoDetalhe] = useState(false);
+  // Onde o clique aconteceu — ponto de partida do spinner antes do 1º movimento.
+  const [posicaoClique, setPosicaoClique] = useState<{ x: number; y: number } | null>(null);
 
-  function abrirDetalhe(linha: TmaLinha) {
-    const abertura = ++aberturaRef.current;
-    setOperadorAberto(linha);
-    setAtendimentos(null);
-    setErroAtendimentos(false);
-    getAtendimentosOperadorTmaAction(linha.operatorEmail)
-      .then((r) => {
-        if (abertura !== aberturaRef.current) return;
-        if (r.success) setAtendimentos(r.atendimentos);
-        else setErroAtendimentos(true);
-      })
-      .catch((err: unknown) => {
-        if (abertura !== aberturaRef.current || handleStaleActionError(err)) return;
-        setErroAtendimentos(true);
-        console.error("[TmaTable] erro ao buscar atendimentos do operador:", err);
-      });
+  async function abrirDetalhe(linha: TmaLinha) {
+    if (carregandoDetalhe) return;
+    setCarregandoDetalhe(true);
+    try {
+      const r = await getAtendimentosOperadorTmaAction(linha.operatorEmail);
+      if (r.success) {
+        setAtendimentos(r.atendimentos);
+        setOperadorAberto(linha);
+      } else {
+        toast.error("Erro ao carregar detalhamento do operador.", { className: "toast-padrao" });
+      }
+    } catch (err) {
+      if (!handleStaleActionError(err)) {
+        console.error("[TmaTable] erro ao buscar detalhamento do operador:", err);
+        toast.error("Erro ao carregar detalhamento do operador.", { className: "toast-padrao" });
+      }
+    } finally {
+      setCarregandoDetalhe(false);
+    }
   }
 
   return (
@@ -86,7 +94,15 @@ export function TmaTable({ linhas, headerButton, thresholdConfig, comDetalhe = t
           cell) nos mesmos <div> do grid — mesmo padrão da EquipeTable do
           Consolidado: leitor de tela associa cada número ao cabeçalho e ao
           operador. */}
-      <div role="table" aria-label="TMA por operador" className="overflow-hidden">
+      <div
+        role="table"
+        aria-label="TMA por operador"
+        // Busca do detalhe em andamento: o CursorCarregando (abaixo) no lugar
+        // do cursor de espera do sistema — mesmo do Consolidado.
+        aria-busy={carregandoDetalhe || undefined}
+        onPointerDownCapture={comDetalhe ? (e) => setPosicaoClique({ x: e.clientX, y: e.clientY }) : undefined}
+        className="overflow-hidden"
+      >
         <div role="row" className="cabecalho-tabela grid gap-0" style={{ gridTemplateColumns: GRID_TEMPLATE_COLUMNS }}>
           <div role="columnheader" className={TABELA_HEADER_CELL_CLASS}>
             Operador
@@ -186,17 +202,15 @@ export function TmaTable({ linhas, headerButton, thresholdConfig, comDetalhe = t
         })}
       </div>
 
+      {carregandoDetalhe && <CursorCarregando inicial={posicaoClique} />}
+
       {comDetalhe && (
         <TmaDetalheDialog
           operador={operadorAberto}
           atendimentos={atendimentos}
-          erroAtendimentos={erroAtendimentos}
           thresholdConfig={thresholdConfig}
           onOpenChange={(open) => {
-            if (!open) {
-              aberturaRef.current++;
-              setOperadorAberto(null);
-            }
+            if (!open) setOperadorAberto(null);
           }}
         />
       )}

@@ -76,3 +76,18 @@
 [data-page="reports-tma-peso"] #config-meta-tma:focus-visible {
   border-color: var(--ring);
 }
+
+/* ───────── Gráficos "Evolução" (EvolucaoTmaChart) ─────────
+ * Mesmo do Consolidado (reports-consolidado.css): o gráfico é focável
+ * (accessibilityLayer — Tab foca, ←/→ percorrem as horas e abrem o
+ * tooltip). Clique com mouse não deixa contorno; foco por teclado mostra um
+ * anel sutil na cor --ring.
+ */
+[data-page="reports-tma-peso"] .grafico-evolucao-chart :is(.recharts-wrapper, .recharts-surface, svg, div):focus:not(:focus-visible) {
+  outline: none;
+}
+[data-page="reports-tma-peso"] .grafico-evolucao-chart .recharts-surface:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

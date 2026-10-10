@@ -1,10 +1,9 @@
-import { formatKpiValue } from "@/lib/kpi/atual/format-kpi-value";
 import type { TmaStatus } from "./tma-status-pure";
 
 /**
  * Formatação compartilhada do TMA — antes cada função existia em duas
- * cópias (get-gestor-tma-analitico.ts / get-rechamada-polo-tma.ts e
- * evolucao-tma-chart.tsx / tma-detalhe-dialog.tsx). Módulo puro, sem I/O:
+ * cópias (get-gestor-tma-analitico.ts / get-rechamada-polo-tma.ts, e as
+ * cores de status no gráfico e no modal). Módulo puro, sem I/O:
  * importável do servidor e do client. Ficar FORA dos dois get-* também
  * resolve o motivo original da cópia de horaCurta (import circular entre
  * eles).
@@ -15,20 +14,6 @@ export function horaCurta(hora: string | null): string {
   if (!hora) return "—";
   const partes = hora.split(":");
   return partes.length >= 2 ? `${partes[0]}:${partes[1]}` : hora;
-}
-
-/** Rótulos das pontas do eixo de horas — mesmo texto do Consolidado (grafico-evolucao.tsx), sem `<`/`≥`. */
-export function formatEixoLabelTma(label: string): string {
-  if (label === "< 08") return "Até 08h";
-  if (label === "≥ 20") return "Após 20h";
-  return label;
-}
-
-/** Distância da meta em MM:SS — "01:23 acima da meta" / "00:40 abaixo da meta" / "na meta". */
-export function formatDistanciaMetaTma(tmaSegundos: number, metaSegundos: number): string {
-  const diff = tmaSegundos - metaSegundos;
-  if (Math.abs(diff) < 1) return "na meta";
-  return `${formatKpiValue(Math.abs(diff), "time")} ${diff < 0 ? "abaixo" : "acima"} da meta`;
 }
 
 /** Cor (CSS) do status: verde dentro da meta, vermelho fora, neutro sem meta/sem dado. */
